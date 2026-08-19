@@ -1,0 +1,47 @@
+set(platform_expected_targets
+  platform_contracts
+  platform_kernel
+  platform_runtime
+  platform_structure
+  platform_planning
+  platform_phy
+  platform_environment
+  platform_adapters
+  platform_assembly
+  platform_observability
+  platform_algorithms
+)
+
+foreach(target_name IN LISTS platform_expected_targets)
+  if(NOT TARGET "${target_name}")
+    message(FATAL_ERROR "Required Platform module target is missing: ${target_name}")
+  endif()
+endforeach()
+
+add_executable(platform_build_smoke_test build_smoke_test.cpp)
+target_link_libraries(platform_build_smoke_test PRIVATE Platform::contracts)
+
+add_test(NAME platform_build_smoke_test COMMAND platform_build_smoke_test)
+
+if(PLATFORM_NS3_AVAILABLE)
+  add_executable(
+    platform_ns3_signal_lifecycle_integration_test
+    ns3_signal_lifecycle_integration_test.cpp
+  )
+  target_include_directories(
+    platform_ns3_signal_lifecycle_integration_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/kernel"
+      "${PROJECT_SOURCE_DIR}/runtime"
+  )
+  target_link_libraries(
+    platform_ns3_signal_lifecycle_integration_test
+    PRIVATE
+      Platform::kernel
+      Platform::runtime
+  )
+  add_test(
+    NAME platform_ns3_signal_lifecycle_integration_test
+    COMMAND platform_ns3_signal_lifecycle_integration_test
+  )
+endif()

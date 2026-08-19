@@ -1,0 +1,1 @@
+platform_add_interface_module(algorithms)
