@@ -51,6 +51,12 @@ struct EventKey final {
 
 using EventCallback = std::function<contracts::Status()>;
 
+struct ScheduledEventIntent final {
+  contracts::SimTime time;
+  EventPhase phase;
+  EventCallback callback;
+};
+
 struct TxStartEvent final {
   contracts::SimTime started_at;
   EventCallback callback;
@@ -88,6 +94,10 @@ class EventDispatcher final {
                                 EventCallback callback)
       -> contracts::Result<EventKey>;
 
+  [[nodiscard]] auto ScheduleBatch(
+      std::vector<ScheduledEventIntent> intents)
+      -> contracts::Result<std::vector<EventKey>>;
+
   [[nodiscard]] auto Schedule(TxStartEvent event)
       -> contracts::Result<EventKey> {
     return ScheduleAt(event.started_at,
@@ -118,6 +128,11 @@ class EventDispatcher final {
 
   [[nodiscard]] auto Run() -> contracts::Status;
 
+  [[nodiscard]] auto PlatformNow() const
+      -> contracts::Result<contracts::SimTime> {
+    return gateway_.PlatformNow();
+  }
+
   [[nodiscard]] auto pending_event_count() const noexcept -> std::size_t;
 
  private:
@@ -133,9 +148,6 @@ class EventDispatcher final {
 
   [[nodiscard]] static constexpr auto IsValidPhase(EventPhase phase) noexcept
       -> bool;
-
-  [[nodiscard]] auto AllocateSequence()
-      -> contracts::Result<EventSequenceId>;
 
   [[nodiscard]] auto FindBucket(contracts::SimTime time)
       -> std::vector<TimeBucket>::iterator;
@@ -168,22 +180,6 @@ inline constexpr auto EventDispatcher::IsValidPhase(EventPhase phase) noexcept
   return false;
 }
 
-inline auto EventDispatcher::AllocateSequence()
-    -> contracts::Result<EventSequenceId> {
-  if(sequence_exhausted_) {
-    return std::unexpected(
-        contracts::Error{contracts::ErrorCode::kOverflow,
-                         "EventSequenceId allocation exhausted"});
-  }
-  const EventSequenceId allocated{next_sequence_};
-  if(next_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
-    sequence_exhausted_ = true;
-  } else {
-    ++next_sequence_;
-  }
-  return allocated;
-}
-
 inline auto EventDispatcher::FindBucket(contracts::SimTime time)
     -> std::vector<TimeBucket>::iterator {
   return std::lower_bound(
@@ -199,55 +195,118 @@ inline auto EventDispatcher::ScheduleAt(contracts::SimTime time,
                                         EventPhase phase,
                                         EventCallback callback)
     -> contracts::Result<EventKey> {
-  if(!IsValidPhase(phase) || !callback) {
-    return std::unexpected(
-        contracts::Error{contracts::ErrorCode::kInvalidArgument,
-                         "EventDispatcher requires a valid phase/callback"});
+  std::vector<ScheduledEventIntent> batch;
+  batch.push_back(
+      ScheduledEventIntent{time, phase, std::move(callback)});
+  auto keys = ScheduleBatch(std::move(batch));
+  if(!keys) {
+    return std::unexpected(keys.error());
+  }
+  return keys->front();
+}
+
+inline auto EventDispatcher::ScheduleBatch(
+    std::vector<ScheduledEventIntent> intents)
+    -> contracts::Result<std::vector<EventKey>> {
+  if(intents.empty()) {
+    return std::vector<EventKey>{};
   }
 
   const auto now = gateway_.PlatformNow();
   if(!now) {
     return std::unexpected(now.error());
   }
-  if(time < *now) {
+
+  for(const auto& intent : intents) {
+    if(!IsValidPhase(intent.phase) || !intent.callback) {
+      return std::unexpected(
+          contracts::Error{contracts::ErrorCode::kInvalidArgument,
+                           "EventDispatcher requires a valid phase/callback"});
+    }
+    if(intent.time < *now) {
+      return std::unexpected(
+          contracts::Error{contracts::ErrorCode::kOutOfRange,
+                           "EventDispatcher cannot schedule into the past"});
+    }
+
+    std::optional<EventPhase> phase_floor;
+    if(dispatching_ && dispatch_time_ && *dispatch_time_ == intent.time) {
+      phase_floor = current_phase_;
+    } else if(last_dispatch_time_ &&
+              *last_dispatch_time_ == intent.time) {
+      phase_floor = last_phase_at_time_;
+    }
+    if(phase_floor && static_cast<std::uint8_t>(intent.phase) <=
+                          static_cast<std::uint8_t>(*phase_floor)) {
+      return std::unexpected(
+          contracts::Error{
+              contracts::ErrorCode::kFailedPrecondition,
+              "Same-time dynamic event must use a later phase"});
+    }
+  }
+
+  const auto required_after_first = intents.size() - 1;
+  const auto remaining_after_first =
+      std::numeric_limits<std::uint64_t>::max() - next_sequence_;
+  if(sequence_exhausted_ ||
+     required_after_first > remaining_after_first) {
     return std::unexpected(
-        contracts::Error{contracts::ErrorCode::kOutOfRange,
-                         "EventDispatcher cannot schedule into the past"});
+        contracts::Error{contracts::ErrorCode::kOverflow,
+                         "EventSequenceId batch capacity exhausted"});
   }
 
-  std::optional<EventPhase> phase_floor;
-  if(dispatching_ && dispatch_time_ && *dispatch_time_ == time) {
-    phase_floor = current_phase_;
-  } else if(last_dispatch_time_ && *last_dispatch_time_ == time) {
-    phase_floor = last_phase_at_time_;
-  }
-  if(phase_floor && static_cast<std::uint8_t>(phase) <=
-                        static_cast<std::uint8_t>(*phase_floor)) {
-    return std::unexpected(
-        contracts::Error{contracts::ErrorCode::kFailedPrecondition,
-                         "Same-time dynamic event must use a later phase"});
+  std::vector<EventKey> keys;
+  keys.reserve(intents.size());
+  auto sequence = next_sequence_;
+  for(const auto& intent : intents) {
+    keys.push_back(
+        EventKey{intent.time, intent.phase, EventSequenceId{sequence}});
+    if(sequence != std::numeric_limits<std::uint64_t>::max()) {
+      ++sequence;
+    }
   }
 
-  const auto sequence = AllocateSequence();
-  if(!sequence) {
-    return std::unexpected(sequence.error());
+  std::vector<contracts::SimTime> new_bucket_times;
+  new_bucket_times.reserve(intents.size());
+  for(const auto& intent : intents) {
+    const auto bucket = FindBucket(intent.time);
+    const bool bucket_exists =
+        bucket != buckets_.end() && bucket->time == intent.time;
+    const bool already_planned =
+        std::find(new_bucket_times.begin(),
+                  new_bucket_times.end(),
+                  intent.time) != new_bucket_times.end();
+    if(!bucket_exists && !already_planned) {
+      new_bucket_times.push_back(intent.time);
+    }
   }
-  EventRecord record{EventKey{time, phase, *sequence}, std::move(callback)};
 
-  auto bucket = FindBucket(time);
-  if(bucket != buckets_.end() && bucket->time == time) {
-    bucket->records.push_back(std::move(record));
-    return EventKey{time, phase, *sequence};
+  for(const auto time : new_bucket_times) {
+    const auto schedule_status = gateway_.ScheduleAt(
+        time, [this, time]() { DispatchTime(time); });
+    if(!schedule_status) {
+      return std::unexpected(schedule_status.error());
+    }
   }
 
-  bucket = buckets_.insert(bucket, TimeBucket{time, {std::move(record)}});
-  const auto schedule_status = gateway_.ScheduleAt(
-      time, [this, time]() { DispatchTime(time); });
-  if(!schedule_status) {
-    buckets_.erase(bucket);
-    return std::unexpected(schedule_status.error());
+  for(std::size_t index = 0; index < intents.size(); ++index) {
+    auto& intent = intents[index];
+    const auto key = keys[index];
+    auto bucket = FindBucket(intent.time);
+    if(bucket == buckets_.end() || bucket->time != intent.time) {
+      bucket = buckets_.insert(bucket, TimeBucket{intent.time, {}});
+    }
+    bucket->records.push_back(
+        EventRecord{key, std::move(intent.callback)});
   }
-  return EventKey{time, phase, *sequence};
+
+  const auto allocated_last = keys.back().sequence.value();
+  if(allocated_last == std::numeric_limits<std::uint64_t>::max()) {
+    sequence_exhausted_ = true;
+  } else {
+    next_sequence_ = allocated_last + 1;
+  }
+  return keys;
 }
 
 inline auto EventDispatcher::DispatchTime(contracts::SimTime time) -> void {

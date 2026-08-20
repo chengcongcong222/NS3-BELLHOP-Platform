@@ -16,6 +16,7 @@ if(BUILD_TESTING)
       phy_channel
       receiver_window
       rx_phy
+      protocol_cycle_plan
   )
     set(test_target "platform_contracts_${contract_name}_test")
     add_executable(

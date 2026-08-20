@@ -287,6 +287,24 @@ TxStart 只执行一次 TransmissionExecutor/Encode，并在完整 TransmissionS
 
 P0 ledger 按 PlanningCycle 保留：cycle 开始为空，arrival 插入，finalize 不删除。CycleClose 必须先验证不存在 `last_effect_end_at > close_time` 的 signal；等于 close time 的 signal已在同刻 SESSION_FINALIZE phase 完成。只有 CycleClose 执行 `FinalizeDeltaSet + CommitCycle`，commit 成功后才清空 ledger；失败不得静默截断 signal 或清空 working registry。一个 cycle 最多成功 commit 一次，successful commit 是后续正式 replan boundary。
 
+### 2.21 ProtocolCyclePlan 安装与 CycleCoordinator 生命周期
+
+`ProtocolCyclePlan` 是 planner 到 kernel/M1 的只读执行计划边界，由合法 `CycleTiming` 和最小 `MacPlan` 组成。`CycleTiming` 必须满足 `starts_at < closes_at`，其 base snapshot version 必须匹配启动 cycle 时的 authoritative snapshot；`MacPlan` 当前只 value-own `TxOpportunity`。TxOpportunity 仍仅表示 sender 在指定 simulation time 获得发送机会，不等于 packet dequeue，也不携带 packet、target、receiver candidates、channel query 或 PHY result。
+
+计划 factory 必须把 opportunities 按 `eligible_at`、`sender NodeId` 升序 canonicalize，并拒绝相同 sender/eligible_at 的重复项。所有 opportunity 必须位于 `[starts_at, closes_at)`；`eligible_at == closes_at` 即使 TX_START phase 早于 CYCLE_CLOSE 也不合法，因为正时长 physical send 无法满足 P0 closed-cycle。
+
+`PlanInstaller` 只把一个 canonical ProtocolCyclePlan 转换为 N 个 TX_START 事件和恰好一个 CYCLE_CLOSE 事件。它不选择 packet/route/target/receiver，不调用 PHY、Channel、Bellhop、CommitService 或 `ns3::Simulator`；事件只经既有 `EventDispatcher` 进入 ns-3。M1 internal execution hook 只携带 `TxOpportunity/CycleTiming + SimTime now`，具体 packet/target/receiver mapping 属于后续 runtime/assembly owner，本阶段只允许存在于 test fixture。
+
+`CycleCoordinator` 负责单个 PlanningCycle 的 M1 lifecycle，不持有或修改 WorldSnapshot、CycleWorkingState、ledger、PHY 或 planner state。同一 coordinator 最多安装一个 plan；安装后的 cycle id/timing 不可变；base version mismatch、double install、double close 和 completed-cycle reuse 必须显式失败。只有既有 runtime CycleClose hook 成功完成 Commit 后 coordinator 才转为 completed，不增加第二个 CommitService 调用点，也不自动生成下一周期。
+
+`ProtocolCyclePlan` 安装具有 Platform-level ALL-or-NONE 语义。`EventDispatcher` 必须先对完整 batch 预检 callback、time、phase、same-time dynamic phase floor 和整批 `EventSequenceId` 容量，并完成全部 EventKey 分配；只有整批合法且所需 ns-3 timestamp drain 已成功注册后，TX_START 与唯一 CYCLE_CLOSE 才能一起成为可执行 business events。失败安装不得改变 pending business event 集合；允许底层留下不包含 business callback 的 harmless empty drain。`PlanInstaller` 禁止逐项形成不可回滚 side effect，`CycleCoordinator` 只能在完整 batch 成功后从 idle 转为 active，失败后必须保持 idle 且允许合法 plan 重试。
+
+已调度 Platform event 必须 value-own 执行所需的 immutable `TxOpportunity` 或 `CycleTiming` payload，不得保存指向 caller-owned `ProtocolCyclePlan`、`MacPlan` vector 或 span element 的引用/指针；因此 caller plan 生命周期不约束 event lifetime。Event execution hook 与 dispatcher 仍是 ScenarioRuntime/kernel 的长期 owner，必须覆盖本次 SimulationRun 生命周期。
+
+安装失败发生在任何 plan business event 可执行之前，适用上述原子失败与 retry 语义。安装成功后的 callback error（包括 TxStart、receiver processing 或当前 zero-delay phase conflict）属于 P0 SimulationRun-fatal execution failure；本阶段不 rollback cycle、不恢复 coordinator、不继续下一周期，调用方必须终止该 SimulationRun 并丢弃对应 ScenarioRuntime。
+
+P0 eventized runtime 暂不支持 TX_START 在同 timestamp 动态产生零传播延迟 SIGNAL_ARRIVAL：TX_START phase 50 向已执行过的 SIGNAL_ARRIVAL phase 20 回插违反冻结 causal ordering，必须返回 `kFailedPrecondition`。禁止把 arrival 静默平移到 `+1ns`，也禁止更改 phase 来掩盖该边界；未来支持方案保持独立 ADR/TBD。
+
 ## 3. 影响
 
 ### 3.1 正向影响
@@ -347,5 +365,6 @@ P0 ledger 按 PlanningCycle 保留：cycle 开始为空，arrival 插入，final
 - kernel 对外最终使用 `ScheduleAt` 还是同时提供命名明确的 `ScheduleAfter`；
 - Trace sink 的缓冲、背压、降级和落盘策略；
 - ns-3.47 的具体获取方式、编译器和 CI 交付矩阵。
+- zero-delay propagation 在 TX_START 同刻进入 SIGNAL_ARRIVAL 的未来 eventization 方案。
 
 这些事项保持 TBD/配置化/后续 ADR，不得由实现人员写成不可替换的隐式默认值。
