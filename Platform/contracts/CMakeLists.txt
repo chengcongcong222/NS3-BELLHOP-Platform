@@ -18,6 +18,7 @@ if(BUILD_TESTING)
       rx_phy
       protocol_cycle_plan
       structure
+      link_feasibility
   )
     set(test_target "platform_contracts_${contract_name}_test")
     add_executable(

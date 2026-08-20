@@ -315,6 +315,18 @@ M3 对一个 PlanningCycle 产生只读 `StructureSnapshot`，它只 value-own `
 
 `LogicalTopology` 使用与 `DirectedLink` 语义独立的 `LogicalLink`，表示协议结构实际选择的 directed adjacency；它不使用 STAR/MESH/TREE 等 topology type 标签。每个 LogicalLink 必须存在于同一 NodeId universe 的 ConnectivityGraph，因此 `LogicalTopology` 必须是 `ConnectivityGraph` 的子集。所有 directed edge set 均按 source NodeId、target NodeId 升序 canonicalize，结果不得依赖 caller insertion order、unordered iteration 或 pointer address。
 
+### 2.23 M3 directed connectivity decision layer
+
+P0 的 `ConnectivityGraph` 从 WorldSnapshot 的 canonical node order 确定性枚举全部非 self ordered directed pairs，外层按 source NodeId、内层按 target NodeId 升序。Planning observation time 固定使用该 WorldSnapshot 的 `committed_at`，position 直接读取对应 `NodeCommittedState`；M3 不读取 Now、不创建 StateProjector，也不访问 runtime working overlay。
+
+每个 directed candidate 依次经过 capability gate、可选 coarse range reject gate、`ILinkFeasibilityEstimator` 和 threshold decision。只有 source `can_transmit` 且 target `can_receive` 才能继续；duplex mode 不参与本阶段静态判定。可选 range 使用完整 3D Euclidean distance，超过配置上限时只能 reject 且不得调用 estimator；未超过范围只表示允许继续估计，绝不自动接受 edge，range 不等价于水声链路模型。
+
+M3 只依赖抽象 `ILinkFeasibilityEstimator`，不得知道 Bellhop、Channel provider 或 Tx/Rx PHY concrete implementation。Estimator 对相同 query 和相同 immutable configuration 必须 deterministic；其 score 是 finite、dimensionless、estimator-specific decision score，数值越大表示在配套 policy 下越适合作为 one-hop candidate，但不等于 SNR、PER、TL 或 received level，不要求位于 `[0,1]`，也不写入 ConnectivityGraph。
+
+Connectivity policy 使用 inclusive threshold：上周期不存在的 edge 仅在 `score >= enter_threshold` 时进入，上周期存在的 edge 在 `score >= keep_threshold` 时保留，并要求 `enter_threshold >= keep_threshold`。Capability 或 coarse range rejection 优先于 hysteresis，不能因 previous edge 存在而强行保留。Previous graph 的完整 NodeId universe（包括 isolated node）必须与当前 WorldSnapshot 一致。
+
+每个通过 capability/range gate 的 pair 对 estimator 恰好调用一次，并验证 estimate 的 source、target、observed_at provenance 和 finite score。任一 estimator error、provenance mismatch 或非法 result 都使整个 graph build 失败；禁止返回 partial graph、吞掉错误或回退为 range-only graph。Builder 使用纯局部构建状态，失败后可由调用方使用合法 estimator 重新 Build。Coarse range 与 enter/keep threshold 的具体协议配置值仍保持显式配置/TBD，不定义生产默认值。
+
 ## 3. 影响
 
 ### 3.1 正向影响
