@@ -17,6 +17,7 @@ if(BUILD_TESTING)
       receiver_window
       rx_phy
       protocol_cycle_plan
+      structure
   )
     set(test_target "platform_contracts_${contract_name}_test")
     add_executable(

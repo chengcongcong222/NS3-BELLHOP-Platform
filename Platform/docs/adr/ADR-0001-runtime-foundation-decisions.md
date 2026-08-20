@@ -2,7 +2,7 @@
 
 - 状态：Accepted / Frozen for P0
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2 的基础边界
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -304,6 +304,16 @@ P0 ledger 按 PlanningCycle 保留：cycle 开始为空，arrival 插入，final
 安装失败发生在任何 plan business event 可执行之前，适用上述原子失败与 retry 语义。安装成功后的 callback error（包括 TxStart、receiver processing 或当前 zero-delay phase conflict）属于 P0 SimulationRun-fatal execution failure；本阶段不 rollback cycle、不恢复 coordinator、不继续下一周期，调用方必须终止该 SimulationRun 并丢弃对应 ScenarioRuntime。
 
 P0 eventized runtime 暂不支持 TX_START 在同 timestamp 动态产生零传播延迟 SIGNAL_ARRIVAL：TX_START phase 50 向已执行过的 SIGNAL_ARRIVAL phase 20 回插违反冻结 causal ordering，必须返回 `kFailedPrecondition`。禁止把 arrival 静默平移到 `+1ns`，也禁止更改 phase 来掩盖该边界；未来支持方案保持独立 ADR/TBD。
+
+### 2.22 M3 structure contracts 与确定性数据模型
+
+M3 对一个 PlanningCycle 产生只读 `StructureSnapshot`，它只 value-own `RoleTable`、`ConnectivityGraph`、`LogicalTopology` 以及 `PlanningCycleId + base SnapshotVersion` provenance，不嵌入完整 WorldSnapshot、ProtocolCyclePlan 或 runtime owner。三个结构对象必须由同一个 canonical NodeId universe 验证，禁止把基于 S(k) 的结构结果静默用于 S(k+1)。`NodeId{0}` 在 universe、binding 和 edge 中均为合法 identity，不承担 invalid sentinel 语义。
+
+`RoleTable` 是 `(NodeId, ProtocolRole)` binding set。一个节点可以同时持有多个不同 protocol role；完全相同的 binding 禁止重复，“没有角色”通过 binding 不存在表达，不定义零值 INVALID role。Binding 按 NodeId、ProtocolRole 显式非零 underlying value 升序 canonicalize。Sink、Controller、Relay、AccessNode 等均属于 RoleTable，不把 sink identity 复制到 topology。
+
+`ConnectivityGraph` 是 directed one-hop feasibility candidate graph。`source -> target` 与 `target -> source` 是独立 edge；P0 禁止 self-loop 和 duplicate edge。Connectivity edge 只表达 M3 判定的一跳候选，不是 PHY reception result、Bellhop path、routing table 或 MAC schedule，也不携带 SNR、SINR、PER、TL、delay、frequency、path、noise、PHY pointer 或预先冻结的 edge weight。
+
+`LogicalTopology` 使用与 `DirectedLink` 语义独立的 `LogicalLink`，表示协议结构实际选择的 directed adjacency；它不使用 STAR/MESH/TREE 等 topology type 标签。每个 LogicalLink 必须存在于同一 NodeId universe 的 ConnectivityGraph，因此 `LogicalTopology` 必须是 `ConnectivityGraph` 的子集。所有 directed edge set 均按 source NodeId、target NodeId 升序 canonicalize，结果不得依赖 caller insertion order、unordered iteration 或 pointer address。
 
 ## 3. 影响
 
