@@ -19,6 +19,7 @@ if(BUILD_TESTING)
       protocol_cycle_plan
       structure
       link_feasibility
+      routing
   )
     set(test_target "platform_contracts_${contract_name}_test")
     add_executable(

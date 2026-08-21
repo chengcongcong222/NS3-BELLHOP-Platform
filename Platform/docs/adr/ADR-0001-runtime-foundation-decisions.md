@@ -2,7 +2,7 @@
 
 - 状态：Accepted / Frozen for P0
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界与 M4 routing contract
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -338,6 +338,16 @@ Role assignment 与 logical topology 保持独立语义。P0 的确定性基线 
 StructureBuilder 的 Build 是 complete-or-error：connectivity、role、topology 或最终 StructureSnapshot validation 任一失败都不返回 partial result，也不保存半成品 mutable state；合法输入可以随后安全重试。Configured roles 依赖 RoleTable factory canonicalize，topology policy 按 canonical connectivity 顺序映射或筛选，builder 禁止引入 unordered iteration、pointer ordering 或 thread timing。
 
 当 StructureBuilder 把 previous ConnectivityGraph 交给 hysteresis 时，同一 SimulationRun 内配套的 ConnectivityDecisionPolicy 和 ILinkFeasibilityEstimator decision-score semantics 必须保持不变。更换 estimator、score definition 或 threshold semantics 必须启动新 run，或显式丢弃 previous connectivity history；P0 不支持 hot reconfiguration。
+
+### 2.25 M4 next-hop routing contract 与 DirectToSink baseline
+
+M4 routing 只允许在 M3 已选择的 LogicalTopology 上运行，不得绕过 logical edge 而直接使用 ConnectivityGraph candidate。`RouteEntry` 明确区分当前持有 packet 并准备转发的 forwarding node、DigitalPacket 的 end-to-end destination 和本次 physical send 的 next hop；forwarding node 不得等于 destination 或 next hop，但 next hop 可以等于 destination，`NodeId{0}` 在三个位置均为合法 identity，no-route 必须由查询返回空 optional 表达。
+
+`RoutingPlan` 是 value-owned next-hop forwarding table，并直接绑定输入 StructureSnapshot 的 PlanningCycleId 和 base SnapshotVersion provenance，不 value-own StructureSnapshot、packet、TransmissionTarget、MAC 或 PHY result。Entry 按 forwarding node、destination、next hop 升序 canonicalize；P0 的每个 `(forwarding node, destination)` route key 最多有一个 next hop，不支持 ECMP/multipath route。每个 entry 的三个 NodeId 都必须属于结构 node universe，且 `(forwarding node, next hop)` 必须是已有 LogicalLink。
+
+No-route 是正常网络状态。通用 RoutingPlan contract 只验证 identity、route-key uniqueness、logical next-hop adjacency、node universe 和 provenance，不强制 partial route entries 构成全局完整、最终到达 destination 的无环 chain；具体 planner 对自身算法结果负责。
+
+P0 的 `DirectToSinkRoutingPlanner` 只在该具体 planner 下要求 RoleTable 恰好包含一个 sink。它仅为 LogicalTopology 中已有的 `source -> sink` directed uplink 生成 `{forwarding=source, destination=sink, next-hop=sink}`，不从 `sink -> source` 制造反向 route，也不要求 source 具有 MEMBER role。Disconnected node 或唯一 sink 下没有可用 uplink 均产生成功但可能为空的 RoutingPlan，不使整个 planning operation 失败。Build 使用纯局部 entries 并通过 RoutingPlan factory 完成最终构造，因此保持 deterministic、complete-or-error 且失败后可重试。
 
 ## 3. 影响
 
