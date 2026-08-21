@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
 
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
+#include <ns3_factory/contracts/routing.hpp>
 #include <ns3_factory/contracts/time.hpp>
 #include <ns3_factory/contracts/tx_opportunity.hpp>
 
@@ -130,6 +132,11 @@ class ProtocolCyclePlan final {
       std::vector<TxOpportunity> tx_opportunities)
       -> Result<ProtocolCyclePlan>;
 
+  [[nodiscard]] static auto Create(RoutingPlan routing_plan,
+                                   CycleTiming timing,
+                                   MacPlan mac_plan)
+      -> Result<ProtocolCyclePlan>;
+
   [[nodiscard]] constexpr auto timing() const noexcept
       -> const CycleTiming& {
     return timing_;
@@ -140,14 +147,24 @@ class ProtocolCyclePlan final {
     return mac_plan_;
   }
 
+  [[nodiscard]] constexpr auto routing_plan() const noexcept
+      -> const std::optional<RoutingPlan>& {
+    return routing_plan_;
+  }
+
   auto operator==(const ProtocolCyclePlan&) const -> bool = default;
 
  private:
-  ProtocolCyclePlan(CycleTiming timing, MacPlan mac_plan) noexcept
-      : timing_(timing), mac_plan_(std::move(mac_plan)) {}
+  ProtocolCyclePlan(CycleTiming timing,
+                    MacPlan mac_plan,
+                    std::optional<RoutingPlan> routing_plan) noexcept
+      : timing_(timing),
+        mac_plan_(std::move(mac_plan)),
+        routing_plan_(std::move(routing_plan)) {}
 
   CycleTiming timing_;
   MacPlan mac_plan_;
+  std::optional<RoutingPlan> routing_plan_;
 };
 
 inline auto ProtocolCyclePlan::Create(
@@ -159,7 +176,34 @@ inline auto ProtocolCyclePlan::Create(
     return std::unexpected(mac_plan.error());
   }
 
-  return ProtocolCyclePlan{timing, std::move(*mac_plan)};
+  return ProtocolCyclePlan{
+      timing, std::move(*mac_plan), std::nullopt};
+}
+
+inline auto ProtocolCyclePlan::Create(RoutingPlan routing_plan,
+                                      CycleTiming timing,
+                                      MacPlan mac_plan)
+    -> Result<ProtocolCyclePlan> {
+  if(routing_plan.cycle_id() != timing.cycle_id() ||
+     routing_plan.base_snapshot_version() !=
+         timing.base_snapshot_version()) {
+    return std::unexpected(
+        Error{ErrorCode::kFailedPrecondition,
+              "RoutingPlan provenance does not match CycleTiming"});
+  }
+
+  const auto opportunities = mac_plan.tx_opportunities();
+  auto validated_mac_plan = MacPlan::Create(
+      timing,
+      std::vector<TxOpportunity>{opportunities.begin(),
+                                 opportunities.end()});
+  if(!validated_mac_plan) {
+    return std::unexpected(validated_mac_plan.error());
+  }
+
+  return ProtocolCyclePlan{timing,
+                           std::move(*validated_mac_plan),
+                           std::move(routing_plan)};
 }
 
 }  // namespace ns3_factory::contracts

@@ -32,4 +32,17 @@ if(BUILD_TESTING)
     NAME platform_planning_configured_tdma_mac_planner_test
     COMMAND platform_planning_configured_tdma_mac_planner_test
   )
+
+  add_executable(
+    platform_planning_composite_protocol_cycle_planner_test
+    tests/composite_protocol_cycle_planner_test.cpp
+  )
+  target_link_libraries(
+    platform_planning_composite_protocol_cycle_planner_test
+    PRIVATE Platform::planning
+  )
+  add_test(
+    NAME platform_planning_composite_protocol_cycle_planner_test
+    COMMAND platform_planning_composite_protocol_cycle_planner_test
+  )
 endif()

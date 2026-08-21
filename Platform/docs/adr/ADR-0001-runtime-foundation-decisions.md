@@ -359,6 +359,14 @@ Configured TDMA slot allocation 不依赖 RoutingPlan、LogicalTopology connecti
 
 `MacPlanningResult` 只是 planning-internal 的 `CycleTiming + MacPlan` 阶段结果，不替代或生成 ProtocolCyclePlan。Planner 使用纯局部 schedule，最终经 MacPlan factory canonicalize/validate，保持 deterministic、complete-or-error 且 overflow 后可重试。当前 TxOpportunity 只表达 slot start，不携带 slot-end deadline；因此 P0-S1-04B 不保证 runtime Encode 后的实际 TxEmission duration 自动小于 slot duration，也不声称 physical send 必然包含在对应 slot。Strict physical slot occupancy enforcement 必须经后续独立 contract/runtime 审查，禁止 planner 猜测 duration 或调用 PHY。
 
+### 2.27 M4 routed ProtocolCyclePlan 与组合规划
+
+`ProtocolCyclePlan` 是标准 cycle planning/execution bundle，并 value-own `CycleTiming + MacPlan + optional<RoutingPlan>`。原有 schedule-only factory 保留为 kernel/MAC-only 兼容入口并明确产生 `routing_plan = nullopt`；该空值只表示兼容模式，不表示 routing planner 失败。生产组合规划路径必须使用 routed factory，并要求 RoutingPlan 的 cycle id、base snapshot version 与 CycleTiming 完全一致。Routed factory 必须使用既有 MacPlan factory 对传入 MacPlan 按当前 CycleTiming 重新 canonicalize 和验证，不能信任阶段对象曾在其他 timing 下有效。
+
+`IProtocolCyclePlanner` 是 planning-internal 的同步组合规划接口。P0 基线 `CompositeProtocolCyclePlanner` 只引用 caller-owned `IRoutingPlanner` 与 `IMacPlanner`，不持有 runtime owner、scheduler 或跨调用 mutable partial result。每次 Build 首先验证 WorldSnapshot/StructureSnapshot base version 和包含 isolated nodes 的完整 NodeId universe；preflight 失败不得调用任一 child planner。随后固定按 routing、MAC、final compose 顺序执行，任一 child error 或输出 provenance mismatch 都使整个 Build complete-or-error，禁止 fallback、partial ProtocolCyclePlan 或跳过失败阶段；合法输入可在同一组合器上重试。
+
+组合器再次核验 RoutingPlan 的 cycle/base 与 StructureSnapshot 一致，并核验 MAC CycleTiming 的 cycle 与 StructureSnapshot、base 与 StructureSnapshot/WorldSnapshot 一致。通用组合器不要求 `CycleTiming.starts_at == WorldSnapshot.committed_at`；该关系是 ConfiguredTdmaMacPlanner 的具体策略，不是通用 M4 composition invariant。RoutingPlan 与 MacPlan 保持正交：组合器不根据 route presence 过滤 TxOpportunity，因此无 route 的 sender 仍可拥有 opportunity。PlanInstaller 继续只消费 timing/MAC，RoutingPlan 到 packet selection、next-hop 和 TransmissionTarget 的绑定留给 P0-S1-04D TxStart resolver。
+
 ## 3. 影响
 
 ### 3.1 正向影响
