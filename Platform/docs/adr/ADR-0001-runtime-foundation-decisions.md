@@ -327,6 +327,18 @@ Connectivity policy 使用 inclusive threshold：上周期不存在的 edge 仅�
 
 每个通过 capability/range gate 的 pair 对 estimator 恰好调用一次，并验证 estimate 的 source、target、observed_at provenance 和 finite score。任一 estimator error、provenance mismatch 或非法 result 都使整个 graph build 失败；禁止返回 partial graph、吞掉错误或回退为 range-only graph。Builder 使用纯局部构建状态，失败后可由调用方使用合法 estimator 重新 Build。Coarse range 与 enter/keep threshold 的具体协议配置值仍保持显式配置/TBD，不定义生产默认值。
 
+### 2.24 M3 role、logical topology 与完整 StructureBuilder pipeline
+
+P0 M3 的固定构建次序是 `ConnectivityGraph -> RoleTable -> LogicalTopology -> StructureSnapshot`。`StructureBuilder` 只编排现有 connectivity builder、role policy 和 logical-topology policy；它不调度 ns-3、不调用 Tx/Rx PHY、不生成 route/MAC plan，也不 commit WorldSnapshot。最终 StructureSnapshot 的 cycle id 来自 build request，base snapshot version 必须直接读取当前 WorldSnapshot，调用方不得另传一份可能分叉的 base version。
+
+Role assignment 与 logical topology 保持独立语义。P0 的确定性基线 `ConfiguredRoleAssignmentPolicy` 只 value-own 并产生显式配置的 RoleBinding，不为未配置节点隐式补 MEMBER；无角色节点可表示 inactive、temporarily unavailable 或非协议参与节点。Dynamic sink/controller/access-node election 属于后续算法，不在本阶段冻结。
+
+`AllFeasibleLinksTopologyPolicy` 仅按 ConnectivityGraph 的 canonical directed-edge 顺序，把每个 DirectedLink 显式映射为语义独立的 LogicalLink；不 mirror、不增加 edge，也不引入 MESH 类型标签。`SingleSinkStarTopologyPolicy` 只在该具体 policy 下要求 RoleTable 恰好包含一个 sink，并仅保留 ConnectivityGraph 中 source 或 target 等于该 sink 的既有 directed edge。它不制造反向链路；member 与 sink 不连通是合法结构状态，后续 routing 层负责判断是否存在 route。Sink/controller/access-node identity 只保留在 RoleTable，不复制进 LogicalTopology。
+
+StructureBuilder 的 Build 是 complete-or-error：connectivity、role、topology 或最终 StructureSnapshot validation 任一失败都不返回 partial result，也不保存半成品 mutable state；合法输入可以随后安全重试。Configured roles 依赖 RoleTable factory canonicalize，topology policy 按 canonical connectivity 顺序映射或筛选，builder 禁止引入 unordered iteration、pointer ordering 或 thread timing。
+
+当 StructureBuilder 把 previous ConnectivityGraph 交给 hysteresis 时，同一 SimulationRun 内配套的 ConnectivityDecisionPolicy 和 ILinkFeasibilityEstimator decision-score semantics 必须保持不变。更换 estimator、score definition 或 threshold semantics 必须启动新 run，或显式丢弃 previous connectivity history；P0 不支持 hot reconfiguration。
+
 ## 3. 影响
 
 ### 3.1 正向影响
