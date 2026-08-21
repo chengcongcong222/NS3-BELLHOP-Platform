@@ -2,7 +2,7 @@
 
 - 状态：Accepted / Frozen for P0
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界与 M4 routing contract
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界与 M4 routing/MAC planning contracts
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -348,6 +348,16 @@ M4 routing 只允许在 M3 已选择的 LogicalTopology 上运行，不得绕过
 No-route 是正常网络状态。通用 RoutingPlan contract 只验证 identity、route-key uniqueness、logical next-hop adjacency、node universe 和 provenance，不强制 partial route entries 构成全局完整、最终到达 destination 的无环 chain；具体 planner 对自身算法结果负责。
 
 P0 的 `DirectToSinkRoutingPlanner` 只在该具体 planner 下要求 RoleTable 恰好包含一个 sink。它仅为 LogicalTopology 中已有的 `source -> sink` directed uplink 生成 `{forwarding=source, destination=sink, next-hop=sink}`，不从 `sink -> source` 制造反向 route，也不要求 source 具有 MEMBER role。Disconnected node 或唯一 sink 下没有可用 uplink 均产生成功但可能为空的 RoutingPlan，不使整个 planning operation 失败。Build 使用纯局部 entries 并通过 RoutingPlan factory 完成最终构造，因此保持 deterministic、complete-or-error 且失败后可重试。
+
+### 2.26 M4 configured TDMA slot-start planning
+
+P0-S1-04B 的 TDMA baseline 是 configured fixed-slot-start planner。`ConfiguredTdmaPolicy` value-own 一个严格大于零的 slot duration 和至少一个 slot owner；slot owner vector 的输入顺序就是业务 slot 顺序，禁止按 NodeId sort，且同一 sender 在不同 slot 重复出现合法。对于 cycle start `T0`、slot duration `D` 和第 `i` 个 configured owner，planner 生成一个 `eligible_at = T0 + iD` 的 TxOpportunity，并令 cycle close 等于 `T0 + ND`；全部时间推进必须使用 checked integer-nanosecond arithmetic。
+
+Cycle start 固定为 WorldSnapshot `committed_at`。CycleTiming 的 cycle id 来自 StructureSnapshot，base version 来自 WorldSnapshot；Build 必须同时验证 StructureSnapshot base version 与 WorldSnapshot version 相等，以及两者包含 isolated nodes 在内的完整 NodeId universe 相同。每个 configured slot owner 必须存在于该 universe 且具备 transmit capability，否则整个 Build 失败，不允许 silent skip 或替换 sender。
+
+Configured TDMA slot allocation 不依赖 RoutingPlan、LogicalTopology connectivity 或 ProtocolRole。存在且可发送的 sink、controller、relay、access node、anchor 或无显式 role 节点都可以按配置获得 opportunity；opportunity 不代表已有 packet、route 或实际 transmission，queue empty/no-route 时可以不使用。
+
+`MacPlanningResult` 只是 planning-internal 的 `CycleTiming + MacPlan` 阶段结果，不替代或生成 ProtocolCyclePlan。Planner 使用纯局部 schedule，最终经 MacPlan factory canonicalize/validate，保持 deterministic、complete-or-error 且 overflow 后可重试。当前 TxOpportunity 只表达 slot start，不携带 slot-end deadline；因此 P0-S1-04B 不保证 runtime Encode 后的实际 TxEmission duration 自动小于 slot duration，也不声称 physical send 必然包含在对应 slot。Strict physical slot occupancy enforcement 必须经后续独立 contract/runtime 审查，禁止 planner 猜测 duration 或调用 PHY。
 
 ## 3. 影响
 

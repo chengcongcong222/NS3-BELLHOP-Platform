@@ -67,6 +67,10 @@ class CycleTiming final {
 
 class MacPlan final {
  public:
+  [[nodiscard]] static auto Create(
+      const CycleTiming& timing,
+      std::vector<TxOpportunity> tx_opportunities) -> Result<MacPlan>;
+
   [[nodiscard]] auto tx_opportunities() const noexcept
       -> std::span<const TxOpportunity> {
     return std::span<const TxOpportunity>{tx_opportunities_};
@@ -82,6 +86,42 @@ class MacPlan final {
 
   std::vector<TxOpportunity> tx_opportunities_;
 };
+
+inline auto MacPlan::Create(
+    const CycleTiming& timing,
+    std::vector<TxOpportunity> tx_opportunities) -> Result<MacPlan> {
+  std::sort(
+      tx_opportunities.begin(),
+      tx_opportunities.end(),
+      [](const TxOpportunity& lhs, const TxOpportunity& rhs) {
+        if(lhs.eligible_at != rhs.eligible_at) {
+          return lhs.eligible_at < rhs.eligible_at;
+        }
+        return lhs.sender_node_id < rhs.sender_node_id;
+      });
+
+  for(const auto& opportunity : tx_opportunities) {
+    if(opportunity.eligible_at < timing.starts_at() ||
+       opportunity.eligible_at >= timing.closes_at()) {
+      return std::unexpected(
+          Error{ErrorCode::kOutOfRange,
+                "TxOpportunity must be within [starts_at, closes_at)"});
+    }
+  }
+
+  for(std::size_t index = 1; index < tx_opportunities.size(); ++index) {
+    const auto& previous = tx_opportunities[index - 1];
+    const auto& current = tx_opportunities[index];
+    if(previous.eligible_at == current.eligible_at &&
+       previous.sender_node_id == current.sender_node_id) {
+      return std::unexpected(
+          Error{ErrorCode::kAlreadyExists,
+                "MacPlan contains duplicate sender/time TxOpportunity"});
+    }
+  }
+
+  return MacPlan{std::move(tx_opportunities)};
+}
 
 class ProtocolCyclePlan final {
  public:
@@ -114,38 +154,12 @@ inline auto ProtocolCyclePlan::Create(
     CycleTiming timing,
     std::vector<TxOpportunity> tx_opportunities)
     -> Result<ProtocolCyclePlan> {
-  std::sort(
-      tx_opportunities.begin(),
-      tx_opportunities.end(),
-      [](const TxOpportunity& lhs, const TxOpportunity& rhs) {
-        if(lhs.eligible_at != rhs.eligible_at) {
-          return lhs.eligible_at < rhs.eligible_at;
-        }
-        return lhs.sender_node_id < rhs.sender_node_id;
-      });
-
-  for(const auto& opportunity : tx_opportunities) {
-    if(opportunity.eligible_at < timing.starts_at() ||
-       opportunity.eligible_at >= timing.closes_at()) {
-      return std::unexpected(
-          Error{ErrorCode::kOutOfRange,
-                "TxOpportunity must be within [starts_at, closes_at)"});
-    }
+  auto mac_plan = MacPlan::Create(timing, std::move(tx_opportunities));
+  if(!mac_plan) {
+    return std::unexpected(mac_plan.error());
   }
 
-  for(std::size_t index = 1; index < tx_opportunities.size(); ++index) {
-    const auto& previous = tx_opportunities[index - 1];
-    const auto& current = tx_opportunities[index];
-    if(previous.eligible_at == current.eligible_at &&
-       previous.sender_node_id == current.sender_node_id) {
-      return std::unexpected(
-          Error{ErrorCode::kAlreadyExists,
-                "MacPlan contains duplicate sender/time TxOpportunity"});
-    }
-  }
-
-  return ProtocolCyclePlan{
-      timing, MacPlan{std::move(tx_opportunities)}};
+  return ProtocolCyclePlan{timing, std::move(*mac_plan)};
 }
 
 }  // namespace ns3_factory::contracts

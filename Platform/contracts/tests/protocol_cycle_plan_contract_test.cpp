@@ -8,6 +8,7 @@
 
 using ns3_factory::contracts::CycleTiming;
 using ns3_factory::contracts::ErrorCode;
+using ns3_factory::contracts::MacPlan;
 using ns3_factory::contracts::NodeId;
 using ns3_factory::contracts::PlanningCycleId;
 using ns3_factory::contracts::ProtocolCyclePlan;
@@ -60,7 +61,10 @@ auto TestCanonicalization() -> bool {
       first_input[2], first_input[3], first_input[0], first_input[1]};
   const auto first = ProtocolCyclePlan::Create(*timing, first_input);
   const auto second = ProtocolCyclePlan::Create(*timing, second_input);
-  if(!first || !second || *first != *second) {
+  const auto standalone_mac_plan = MacPlan::Create(*timing, first_input);
+  if(!first || !second || !standalone_mac_plan ||
+     *first != *second ||
+     *standalone_mac_plan != first->mac_plan()) {
     return false;
   }
 
