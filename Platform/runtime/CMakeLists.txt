@@ -70,4 +70,38 @@ if(BUILD_TESTING)
     NAME platform_runtime_receiver_processing_test
     COMMAND platform_runtime_receiver_processing_test
   )
+
+  add_executable(
+    platform_runtime_packet_queue_store_test
+    tests/packet_queue_store_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_packet_queue_store_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_packet_queue_store_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_packet_queue_store_test
+    COMMAND platform_runtime_packet_queue_store_test
+  )
+
+  add_executable(
+    platform_runtime_tx_preparation_test
+    tests/tx_preparation_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_tx_preparation_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_tx_preparation_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_tx_preparation_test
+    COMMAND platform_runtime_tx_preparation_test
+  )
 endif()

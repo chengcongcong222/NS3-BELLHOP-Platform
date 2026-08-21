@@ -367,6 +367,16 @@ Configured TDMA slot allocation 不依赖 RoutingPlan、LogicalTopology connecti
 
 组合器再次核验 RoutingPlan 的 cycle/base 与 StructureSnapshot 一致，并核验 MAC CycleTiming 的 cycle 与 StructureSnapshot、base 与 StructureSnapshot/WorldSnapshot 一致。通用组合器不要求 `CycleTiming.starts_at == WorldSnapshot.committed_at`；该关系是 ConfiguredTdmaMacPlanner 的具体策略，不是通用 M4 composition invariant。RoutingPlan 与 MacPlan 保持正交：组合器不根据 route presence 过滤 TxOpportunity，因此无 route 的 sender 仍可拥有 opportunity。PlanInstaller 继续只消费 timing/MAC，RoutingPlan 到 packet selection、next-hop 和 TransmissionTarget 的绑定留给 P0-S1-04D TxStart resolver。
 
+### 2.28 M2 packet queue、FIFO selection 与 transmission target resolution
+
+Packet queue 是 M2 runtime-internal side state，不进入 public contracts。`PacketQueueStore` value-own canonical NodeId universe 和每节点 FIFO queue；queue owner 表示当前持有 packet 并准备 forwarding 的节点，与 `DigitalPacket.source_node_id` 表示的端到端原始 source 相互独立。Enqueue 必须验证 owner、packet source 和 unicast destination 属于固定 universe；同一 PacketId 只禁止在同一 owner queue 内重复，不建立网络范围的全局唯一性约束。Queue 暂不进入 WorldSnapshot formal state，snapshot/checkpoint integration 保持 TBD。
+
+P0 selector baseline 是 strict FIFO。`FifoPacketSelector` 只复制选择 TxOpportunity sender queue 的 front packet，不消费、不重排、不做 route lookup，也不因 front packet 无 route 而扫描后续 packet。Empty queue 是正常 NoPacket/opportunity-unused outcome。Selection 和 Ready preparation 必须 value-own DigitalPacket，不保存 deque iterator、element reference 或 queue pointer；实际消费必须使用 expected PacketId 条件删除，并留到未来成功创建 physical TransmissionSession 之后。
+
+Target resolution 只读取 RoutingPlan，不回退到 ConnectivityGraph 或 LogicalTopology。Broadcast packet 直接解析为 BroadcastTransmissionTarget，不要求 routing binding；unicast packet 使用 `RoutingPlan.FindNextHop(TxOpportunity.sender_node_id, end-to-end destination)`，命中结果是 current-hop UnicastTransmissionTarget，不一般等于 end-to-end destination。RoutingPlan binding 缺失是 `kFailedPrecondition`，而 binding 存在但 route entry 缺失是正常 NoRoute/opportunity-unused outcome。Selected queue owner 与 opportunity sender 不同、或 outgoing unicast destination 等于 sender，均为 runtime invariant violation。
+
+Selection、resolution 和 P0-S1-04D1 preparation 全部不修改 queue，也不调用 TransmissionExecutor、PHY、Channel 或 scheduler。TransmissionTarget 只表达 protocol/link-layer send intent，与未来 physical candidate receiver enumeration 保持分离。未来执行顺序冻结为 `Select -> Resolve -> Execute -> successful physical TransmissionSession -> conditional ConsumeSelected once`，其 TxStart integration、candidate receiver fan-out 和消费绑定属于 P0-S1-04D2。
+
 ## 3. 影响
 
 ### 3.1 正向影响
