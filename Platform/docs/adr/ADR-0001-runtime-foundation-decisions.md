@@ -455,6 +455,18 @@ Production Tx-side adapter 必须实现既有 `ITxPhy::Encode(DigitalPacket, TxE
 
 现有 RxDecodeRequest 只包含 ReceiverWindow 和 NoiseObservation，不能承载原始时域 waveform。因此本阶段不把 waveform demodulator 伪装为 production IRxPhy，也不扩张 ReceivedSignal、RxDecodeRequest 或 Channel contracts。Full waveform propagation/Rx binding 如需 waveform handle、sample provenance 或 explicit deterministic RNG contract，必须后续独立 ADR 和 contract review；Bellhop provider、环境资产与高级 MAC/routing 同样不属于本阶段。
 
+### 2.36 P0 normalized static acoustic-field provider
+
+P0 runtime environment data 固定为每个 run 一个 normalized、immutable `AcousticFieldAsset`。Asset 拥有显式 frequency、source-depth、receiver-depth、horizontal-range axes，以及固定的 frequency-major → source-depth → receiver-depth → range cell layout。每个 cell 包含 aggregate transmission loss、integer-nanosecond first-arrival delay 和既有 contract `PropagationPath`。Runtime provider 通过 immutable shared lifetime 持有 asset；asset 不保存 node/transmission identity，provider 不使用 random、cache-dependent result、wall clock、filesystem、network 或 subprocess。
+
+Raw Bellhop `.env`/`.bty`/`.arr` parsing、Bellhop execution、WOA/Argo/GEBCO acquisition 和 manifest/HDF5/NetCDF persistence 属于 offline import/build pipeline。`AcousticFieldChannelProvider::Query` 只消费 normalized in-memory asset；它不选择 candidate receiver，不决定 topology/routing，不运行 Bellhop。Query 越出 asset domain 时明确失败，禁止 clamp、extrapolate、free-space/fixed-loss fallback 或 synthetic direct path。
+
+Depth conversion 必须显式配置 `surface_z_meters` 和 positive-up/positive-down vertical-axis direction，禁止从 `Position3d.z_meters` 正负号猜深度。Bellhop-style P0 range 固定为 `hypot(tx.x-rx.x, tx.y-rx.y)`，不是 3D slant range，因为 source/receiver depth 已是独立 field dimensions。P0 asset 是 range-only/axisymmetric，不使用 bearing/azimuth；azimuth-dependent 3D field 留待后续设计。
+
+Frequency selection 是 discrete profile selection：选择与 query center frequency 绝对差最小的 profile，等距时选择较低 frequency，并且 offset 必须不大于显式配置的 finite non-negative maximum。`ChannelQuery.bandwidth_hz` 仍是合法 metadata，但不触发 multi-profile averaging 或 broadband integration。`ChannelQuery.emitted_at` 当前不选择或插值 environment snapshot；因此相同空间/frequency query 在不同 simulation time 的 physical values 相同，而 response transmission/receiver identity 仍逐 query 继承并验证。
+
+选定 frequency profile 后，aggregate TL 与 first-arrival delay 在 source depth、receiver depth、horizontal range 上做 trilinear interpolation。Delay 以 `long double` nanoseconds 插值，checked `int64` range，并 round 到 nearest integer nanosecond。Multipath vector 不做 cell 间 matching 或 interpolation，完整取自 nearest spatial cell；每个维度等距时选择较低 axis coordinate/index。因此 P0 有意采用 mixed-resolution response：interpolated scalar first-arrival delay 配合 nearest-cell relative-excess-delay paths。Scalar 与 path representation 继续是互斥处理选择，不得同时作用于同一 waveform transfer。Coherent path-field interpolation、broadband integration、time-varying field、raw asset persistence/import 和 acoustic-field-based M3 feasibility estimator 均留待后续。
+
 ## 3. 影响
 
 ### 3.1 正向影响
