@@ -138,4 +138,38 @@ if(BUILD_TESTING)
     NAME platform_runtime_plan_bound_tx_runtime_test
     COMMAND platform_runtime_plan_bound_tx_runtime_test
   )
+
+  add_executable(
+    platform_runtime_transmission_record_store_test
+    tests/transmission_record_store_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_transmission_record_store_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_transmission_record_store_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_transmission_record_store_test
+    COMMAND platform_runtime_transmission_record_store_test
+  )
+
+  add_executable(
+    platform_runtime_reception_disposition_service_test
+    tests/reception_disposition_service_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_reception_disposition_service_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_reception_disposition_service_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_reception_disposition_service_test
+    COMMAND platform_runtime_reception_disposition_service_test
+  )
 endif()

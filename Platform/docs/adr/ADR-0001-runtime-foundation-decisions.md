@@ -397,6 +397,18 @@ Planner 从 sink 在 reversed logical graph 上执行一次 BFS，得到每个 n
 
 Planner 每次 Build 只使用局部 adjacency、distance、frontier 和 entries，保持 deterministic、complete-or-error 且失败后可安全重试。本阶段不引入 edge weight、full-path contract、ECMP、随机负载均衡、ConnectivityGraph fallback、distance/delay/TL/SNR/energy metric，也不修改 runtime relay/queue 行为。
 
+### 2.31 Transmission record 与 reception network disposition
+
+`ReceptionSession` 继续表达 receiver-specific physical reception result，不承载完整 `DigitalPacket` 或 current-hop `TransmissionTarget`。Rx network disposition 必须以 Reception 的 TransmissionId 查询 runtime-owned `TransmissionRecordStore`，不得根据 PacketId/sender/receiver 猜测，也不得使用当前 RoutingPlan、LogicalTopology 或 ConnectivityGraph 重新解释过去的 transmission。`TransmissionRecord` value-own 恰好一个完整 DigitalPacket 和对应 Transmission，只验证二者 PacketId 一致；packet 的 end-to-end original source 与 transmission 的 current-hop sender 可以不同，基础 record contract 不强制 destination 与 target 组合一致。
+
+TransmissionRecord 按 TransmissionId 唯一注册，duplicate registration 返回 `kAlreadyExists`，missing lookup 是 runtime invariant failure 而不是 NotDecoded、Overheard 或 NoRoute。Record 至少从 successful TxStart 保留到该 transmission 的全部 ReceptionSession finalize 完成；实际 TxStart registration、SessionFinalize disposition wiring 与 closed-cycle cleanup 留给 P0-S1-05B2。
+
+`ReceptionDispositionService` 是无 side effect 的纯判定。它在任何正常 outcome 前验证 Reception、RxDecodeResult、desired ReceivedSignal 及 TransmissionRecord 的 TransmissionId、PacketId、receiver 和 current-hop sender provenance，并拒绝 self reception。Identity 合法的 `kNotDecoded` 是正常 `NotDecodedReception`；decoded physical reception 不自动等于 protocol acceptance。
+
+对于 unicast，只有 receiver 等于 actual Transmission 的 current-hop target 才能接受 packet，其他 decoded receiver 均为 `OverheardReception`，即使它恰好是 end-to-end destination。Target 等于 end-to-end destination 时产生 value-owned `LocalDeliveryReception`，否则产生 value-owned `RelayEnqueueReception`；relay action 必须原样保留 PacketId、original source、destination 和 payload。匹配的 broadcast destination/target 对每个 decoded non-sender receiver产生 LocalDelivery，但不自动 relay、flood 或重新广播。Decoded 状态下的 unicast-target/broadcast-destination 或 broadcast-target/unicast-destination 返回 `kFailedPrecondition`。
+
+P0-S1-05B1 只生成 disposition value，不修改 PacketQueueStore、WorldSnapshot、ledger 或 ReceptionResultAccumulator，不执行 application delivery、relay enqueue、Rx callback、ACK、retransmission 或 routing recompute。ReceptionResultAccumulator 继续保存全部 physical ReceptionSession，包括 NotDecoded、Overheard 和 accepted reception；这些 action 的应用与 record lifecycle integration 属于后续阶段。
+
 ## 3. 影响
 
 ### 3.1 正向影响
