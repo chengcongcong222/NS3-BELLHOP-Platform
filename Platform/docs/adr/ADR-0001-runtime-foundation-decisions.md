@@ -467,6 +467,16 @@ Frequency selection 是 discrete profile selection：选择与 query center freq
 
 选定 frequency profile 后，aggregate TL 与 first-arrival delay 在 source depth、receiver depth、horizontal range 上做 trilinear interpolation。Delay 以 `long double` nanoseconds 插值，checked `int64` range，并 round 到 nearest integer nanosecond。Multipath vector 不做 cell 间 matching 或 interpolation，完整取自 nearest spatial cell；每个维度等距时选择较低 axis coordinate/index。因此 P0 有意采用 mixed-resolution response：interpolated scalar first-arrival delay 配合 nearest-cell relative-excess-delay paths。Scalar 与 path representation 继续是互斥处理选择，不得同时作用于同一 waveform transfer。Coherent path-field interpolation、broadband integration、time-varying field、raw asset persistence/import 和 acoustic-field-based M3 feasibility estimator 均留待后续。
 
+### 2.37 Bellhop ASCII raw arrival offline import
+
+Bellhop raw `.arr` 属于 environment 的 offline import 输入；runtime provider 只消费 normalized in-memory `AcousticFieldAsset`，不得解析 `.arr`，也不得在线运行 Bellhop。P0 只支持经 legacy 实文件、Python parser 和直接 token inspection 确认的、以精确 quoted `'2D'` header 开始的 2D ASCII arrival dialect；binary、3D 和旧式无明确 header 的格式均不支持。
+
+Import caller 必须通过 `BellhopReceiverRangeUnit` 明确声明原始 receiver-range axis 使用 meters 或 kilometers，parser 禁止根据数值、行数或文件长度猜测单位。文件 frequency 字段按 grammar 直接作为 Hz 保存，不受旧 preprocess CLI 输入单位影响。Raw dataset 的 source-depth、receiver-depth 和转换后的 receiver-range axes 必须 non-empty、finite、non-negative、strictly increasing，禁止 parser sort、clamp 或 canonical repair；最终 cell order 固定为 source-depth → receiver-depth → receiver-range。
+
+`BellhopRawArrival` 无损 value-own 文件中的 raw magnitude、degrees phase、real/imaginary seconds delay、source/receiver angles 与 top/bottom bounce counts。Raw magnitude 只验证 finite/non-negative，暂不解释为 absolute pressure gain、TL 或其他新平台物理量；phase 原样保留 degrees，不 wrap 或转换 radians；complex delay 的 real/imaginary parts 全部保留，signed imaginary delay 不得在 parser 层丢弃或解释。`Narr == 0` 是合法 empty cell，不生成 synthetic arrival、fallback TL 或 fallback path。
+
+`BellhopRawArrivalBundle` 只组织 frequency strictly increasing、spatial axes 完全一致的多个单频 raw datasets，不执行 resample、interpolate、nearest merge、coherent sum、aggregate TL、first-arrival selection、CIR 或 `PropagationPath` 构造。`RawArrival -> AcousticFieldAsset` normalization 属于下一阶段独立的 physics/contract review；P0-S2-03 到 raw bundle 为止。
+
 ## 3. 影响
 
 ### 3.1 正向影响

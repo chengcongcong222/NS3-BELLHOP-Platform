@@ -32,4 +32,30 @@ if(BUILD_TESTING)
     NAME platform_environment_acoustic_field_channel_provider_test
     COMMAND platform_environment_acoustic_field_channel_provider_test
   )
+
+  add_executable(
+    platform_environment_bellhop_ascii_arrival_parser_test
+    tests/bellhop_ascii_arrival_parser_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_bellhop_ascii_arrival_parser_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_bellhop_ascii_arrival_parser_test
+    COMMAND platform_environment_bellhop_ascii_arrival_parser_test
+  )
+
+  add_executable(
+    platform_environment_bellhop_raw_arrival_bundle_test
+    tests/bellhop_raw_arrival_bundle_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_bellhop_raw_arrival_bundle_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_bellhop_raw_arrival_bundle_test
+    COMMAND platform_environment_bellhop_raw_arrival_bundle_test
+  )
 endif()
