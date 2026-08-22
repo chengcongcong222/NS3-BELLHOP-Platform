@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <string_view>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "internal/packet_bit_adapter.hpp"
 #include "internal/waveform.hpp"
 #include "internal/waveform_pipeline.hpp"
+#include "internal/waveform_statistics.hpp"
 
 namespace {
 
@@ -39,9 +41,11 @@ using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::MultipathTap;
 using ns3_factory::phy::internal::NoiseProfile;
+using ns3_factory::phy::internal::RecoverPayloadBytes;
 using ns3_factory::phy::internal::RunWaveformPipeline;
 using ns3_factory::phy::internal::WaveformBuffer;
 using ns3_factory::phy::internal::WaveformPipelineConfig;
+using ns3_factory::phy::internal::WaveformStatisticsAccumulator;
 using ns3_factory::phy::internal::WenzCompositePsdDb;
 using ns3_factory::phy::internal::WenzNoiseConfig;
 
@@ -60,6 +64,16 @@ auto TestDigitalPacketPayloadExtraction() -> bool {
   const auto frame = ExtractPayloadBitFrame(packet);
   const auto expected = BitFrame::Create(
       {1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1});
+  if(!frame || !expected) {
+    return Check(false, "DigitalPacket payload extraction");
+  }
+
+  const auto recovered_payload = RecoverPayloadBytes(*frame);
+  const auto partial_frame = BitFrame::Create({1, 0, 1});
+  if(!partial_frame) {
+    return Check(false, "Partial-byte frame fixture creation");
+  }
+  const auto partial_payload = RecoverPayloadBytes(*partial_frame);
 
   const DigitalPacket empty_packet{PacketId{11},
                                    NodeId{1},
@@ -67,8 +81,10 @@ auto TestDigitalPacketPayloadExtraction() -> bool {
                                    {}};
   const auto empty_frame = ExtractPayloadBitFrame(empty_packet);
 
-  return Check(frame && expected, "DigitalPacket payload extraction") &&
-         Check(*frame == *expected, "MSB-first payload bit order") &&
+  return Check(*frame == *expected, "MSB-first payload bit order") &&
+         Check(recovered_payload && *recovered_payload == packet.payload,
+               "Recovered payload bytes") &&
+         Check(!partial_payload, "Partial-byte payload rejection") &&
          Check(!empty_frame, "Empty DigitalPacket payload rejection");
 }
 
@@ -139,12 +155,23 @@ auto TestBpskAwgnRoundTrip() -> bool {
       NoiseProfile{AwgnNoiseConfig{-30.0, 1234U}},
       true};
   const auto result = RunWaveformPipeline(*source, config);
+  if(!result) {
+    return Check(false, "BPSK pipeline execution");
+  }
+
+  const auto recovered_payload = RecoverPayloadBytes(result->recovered());
+  WaveformStatisticsAccumulator statistics;
+  const auto observed = statistics.Observe(*result);
   return Check(result.has_value(), "BPSK pipeline execution") &&
          Check(result->recovered() == *source, "BPSK recovered bits") &&
          Check(result->bit_error_count() == 0U,
                "BPSK zero bit errors") &&
          Check(result->bit_error_rate() == 0.0, "BPSK zero BER") &&
-         Check(!result->packet_error(), "BPSK zero packet error");
+         Check(!result->packet_error(), "BPSK zero packet error") &&
+         Check(recovered_payload && *recovered_payload == packet.payload,
+               "BPSK recovered payload bytes") &&
+         Check(observed && statistics.packet_count() == 1U,
+               "Pipeline-result statistics observation");
 }
 
 auto TestBfskWenzRoundTrip() -> bool {
@@ -171,10 +198,17 @@ auto TestBfskWenzRoundTrip() -> bool {
       NoiseProfile{WenzNoiseConfig{0.4, 4.0, 5678U}},
       true};
   const auto result = RunWaveformPipeline(*source, config);
+  if(!result) {
+    return Check(false, "BFSK pipeline execution");
+  }
+
+  const auto recovered_payload = RecoverPayloadBytes(result->recovered());
   return Check(result.has_value(), "BFSK pipeline execution") &&
          Check(result->recovered() == *source, "BFSK recovered bits") &&
          Check(result->bit_error_count() == 0U,
-               "BFSK zero bit errors");
+               "BFSK zero bit errors") &&
+         Check(recovered_payload && *recovered_payload == packet.payload,
+               "BFSK recovered payload bytes");
 }
 
 auto TestNoiseDeterminismAndSelection() -> bool {
@@ -212,6 +246,38 @@ auto TestNoiseDeterminismAndSelection() -> bool {
                "Wenz wind-dependent PSD");
 }
 
+auto TestMultiPacketStatistics() -> bool {
+  WaveformStatisticsAccumulator statistics;
+  const auto first = statistics.Observe(8U, 0U);
+  const auto second = statistics.Observe(8U, 2U);
+  const auto third = statistics.Observe(16U, 0U);
+  const auto invalid = statistics.Observe(7U, 8U);
+
+  WaveformStatisticsAccumulator overflow_statistics;
+  const auto maximum = overflow_statistics.Observe(
+      std::numeric_limits<std::size_t>::max(), 0U);
+  const auto overflow = overflow_statistics.Observe(1U, 0U);
+
+  return Check(first && second && third,
+               "Multi-packet statistics observations") &&
+         Check(!invalid, "Invalid packet statistics rejection") &&
+         Check(statistics.packet_count() == 3U,
+               "Statistics packet count") &&
+         Check(statistics.packet_error_count() == 1U,
+               "Statistics packet error count") &&
+         Check(statistics.total_bit_count() == 32U,
+               "Statistics total bit count") &&
+         Check(statistics.total_bit_error_count() == 2U,
+               "Statistics total bit error count") &&
+         Check(std::abs(statistics.bit_error_rate() - 0.0625) <
+                   1.0e-12,
+               "Aggregate BER") &&
+         Check(std::abs(statistics.packet_error_rate() - 1.0 / 3.0) <
+                   1.0e-12,
+               "Aggregate PER") &&
+         Check(maximum && !overflow, "Statistics overflow rejection");
+}
+
 auto TestQpskExtensionPoint() -> bool {
   const auto modulator = CreateModulator(ModulationScheme::kQpsk);
   const auto demodulator = CreateDemodulator(ModulationScheme::kQpsk);
@@ -228,6 +294,7 @@ int main() {
       TestBpskAwgnRoundTrip() &&
       TestBfskWenzRoundTrip() &&
       TestNoiseDeterminismAndSelection() &&
+      TestMultiPacketStatistics() &&
       TestQpskExtensionPoint();
   if(!passed) {
     return 1;

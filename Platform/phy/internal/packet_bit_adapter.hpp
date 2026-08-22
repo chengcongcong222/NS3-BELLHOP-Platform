@@ -42,4 +42,29 @@ namespace ns3_factory::phy::internal {
   return BitFrame::Create(std::move(bits));
 }
 
+[[nodiscard]] inline auto RecoverPayloadBytes(const BitFrame& frame)
+    -> Result<std::vector<std::byte>> {
+  constexpr auto kBitsPerByte = 8U;
+  if(frame.bit_count() % kBitsPerByte != 0U) {
+    return std::unexpected(
+        Error{ErrorCode::kFailedPrecondition,
+              "Recovered bit count must be a whole number of bytes"});
+  }
+
+  std::vector<std::byte> payload;
+  payload.reserve(frame.bit_count() / kBitsPerByte);
+  for(std::size_t byte_index = 0U;
+      byte_index < frame.bit_count() / kBitsPerByte;
+      ++byte_index) {
+    unsigned int value = 0U;
+    for(std::size_t bit_index = 0U; bit_index < kBitsPerByte;
+        ++bit_index) {
+      value = (value << 1U) |
+              frame.bits()[byte_index * kBitsPerByte + bit_index];
+    }
+    payload.push_back(static_cast<std::byte>(value));
+  }
+  return payload;
+}
+
 }  // namespace ns3_factory::phy::internal
