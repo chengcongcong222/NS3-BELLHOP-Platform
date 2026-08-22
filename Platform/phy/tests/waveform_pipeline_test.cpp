@@ -1,31 +1,39 @@
+#include <cstddef>
 #include <cmath>
 #include <iostream>
 #include <string_view>
 #include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
+#include <ns3_factory/contracts/destination.hpp>
 #include <ns3_factory/contracts/identity.hpp>
+#include <ns3_factory/contracts/packet.hpp>
 #include <ns3_factory/contracts/time.hpp>
 
 #include "internal/channel_processor.hpp"
 #include "internal/modulation.hpp"
 #include "internal/noise_generator.hpp"
+#include "internal/packet_bit_adapter.hpp"
 #include "internal/waveform.hpp"
 #include "internal/waveform_pipeline.hpp"
 
 namespace {
 
 using ns3_factory::contracts::ChannelFieldResponse;
+using ns3_factory::contracts::DigitalPacket;
 using ns3_factory::contracts::NodeId;
+using ns3_factory::contracts::PacketId;
 using ns3_factory::contracts::PropagationPath;
 using ns3_factory::contracts::SimDuration;
 using ns3_factory::contracts::TransmissionId;
+using ns3_factory::contracts::UnicastDestination;
 using ns3_factory::phy::internal::ApplyMultipath;
 using ns3_factory::phy::internal::AwgnNoiseConfig;
 using ns3_factory::phy::internal::BitFrame;
 using ns3_factory::phy::internal::BuildMultipathTaps;
 using ns3_factory::phy::internal::CreateDemodulator;
 using ns3_factory::phy::internal::CreateModulator;
+using ns3_factory::phy::internal::ExtractPayloadBitFrame;
 using ns3_factory::phy::internal::GenerateNoise;
 using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
@@ -42,6 +50,26 @@ auto Check(bool condition, std::string_view message) -> bool {
     std::cerr << "FAILED: " << message << '\n';
   }
   return condition;
+}
+
+auto TestDigitalPacketPayloadExtraction() -> bool {
+  const DigitalPacket packet{PacketId{10},
+                             NodeId{1},
+                             UnicastDestination{NodeId{2}},
+                             {std::byte{0xA5}, std::byte{0x03}}};
+  const auto frame = ExtractPayloadBitFrame(packet);
+  const auto expected = BitFrame::Create(
+      {1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1});
+
+  const DigitalPacket empty_packet{PacketId{11},
+                                   NodeId{1},
+                                   UnicastDestination{NodeId{2}},
+                                   {}};
+  const auto empty_frame = ExtractPayloadBitFrame(empty_packet);
+
+  return Check(frame && expected, "DigitalPacket payload extraction") &&
+         Check(*frame == *expected, "MSB-first payload bit order") &&
+         Check(!empty_frame, "Empty DigitalPacket payload rejection");
 }
 
 auto TestBellhopPathAdapterAndFractionalDelay() -> bool {
@@ -88,9 +116,13 @@ auto TestBellhopPathAdapterAndFractionalDelay() -> bool {
 }
 
 auto TestBpskAwgnRoundTrip() -> bool {
-  auto source = BitFrame::Create({0, 1, 1, 0, 1, 0, 0, 1});
+  const DigitalPacket packet{PacketId{20},
+                             NodeId{1},
+                             UnicastDestination{NodeId{2}},
+                             {std::byte{0x69}}};
+  const auto source = ExtractPayloadBitFrame(packet);
   if(!source) {
-    return Check(false, "BPSK source frame creation");
+    return Check(false, "BPSK DigitalPacket payload extraction");
   }
 
   const ModulationConfig modulation{ModulationScheme::kBpsk,
@@ -116,9 +148,13 @@ auto TestBpskAwgnRoundTrip() -> bool {
 }
 
 auto TestBfskWenzRoundTrip() -> bool {
-  auto source = BitFrame::Create({1, 0, 1, 1, 0, 0, 1, 0});
+  const DigitalPacket packet{PacketId{21},
+                             NodeId{1},
+                             UnicastDestination{NodeId{2}},
+                             {std::byte{0xB2}}};
+  const auto source = ExtractPayloadBitFrame(packet);
   if(!source) {
-    return Check(false, "BFSK source frame creation");
+    return Check(false, "BFSK DigitalPacket payload extraction");
   }
 
   const ModulationConfig modulation{ModulationScheme::kBfsk,
@@ -187,6 +223,7 @@ auto TestQpskExtensionPoint() -> bool {
 
 int main() {
   const auto passed =
+      TestDigitalPacketPayloadExtraction() &&
       TestBellhopPathAdapterAndFractionalDelay() &&
       TestBpskAwgnRoundTrip() &&
       TestBfskWenzRoundTrip() &&
