@@ -155,4 +155,29 @@ if(PLATFORM_NS3_AVAILABLE)
     NAME platform_ns3_scenario_runtime_multihop_integration_test
     COMMAND platform_ns3_scenario_runtime_multihop_integration_test
   )
+
+  add_executable(
+    platform_ns3_scenario_runtime_m5_tx_integration_test
+    ns3_scenario_runtime_m5_tx_integration_test.cpp
+  )
+  target_include_directories(
+    platform_ns3_scenario_runtime_m5_tx_integration_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/assembly"
+      "${PROJECT_SOURCE_DIR}/assembly/tests"
+      "${PROJECT_SOURCE_DIR}/kernel"
+      "${PROJECT_SOURCE_DIR}/planning"
+      "${PROJECT_SOURCE_DIR}/runtime"
+      "${PROJECT_SOURCE_DIR}/structure"
+  )
+  target_link_libraries(
+    platform_ns3_scenario_runtime_m5_tx_integration_test
+    PRIVATE
+      Platform::assembly
+      Platform::phy
+  )
+  add_test(
+    NAME platform_ns3_scenario_runtime_m5_tx_integration_test
+    COMMAND platform_ns3_scenario_runtime_m5_tx_integration_test
+  )
 endif()

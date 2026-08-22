@@ -443,6 +443,18 @@ Production `Ns3TransmissionSessionEventSink` 只把完整 TransmissionSession �
 
 `RunCycles` 只允许从 Ready 进入 Running，成功后为 Completed，任一 fatal error 后为 Failed；Completed/Failed object 均不得原地 retry、resume 或 reset。N=0 返回 `kInvalidArgument`；`first_cycle_id + N - 1` 必须在任何 cycle 执行前 checked preflight，溢出返回 `kOverflow`。每个 successful cycle 仍是独立正式 transaction，必须由 CommitService 完成一次 authoritative `V -> V+1`，并在 Run 返回后验证 coordinator completed、committed time、last cycle id、空 ledger 和空 transmission record store。整个 RunCycles 是 prefix-commit 而非全 run atomic：后续周期失败时保留之前成功 commit，立即停止且不 retry、不 skip、不进入再后续周期。Current-cycle queue/delivery 等 side-state rollback、checkpoint/restart 与 failed-run recovery 继续保持 TBD。
 
+### 2.35 P0-S2 cross-module PHY provider integration
+
+P0-S1 core runtime 已 CLOSED，P0-S2 开始在 integration branch 上进行跨模块 provider 合流。`Platform::phy` 只依赖 `Platform::contracts`，不得依赖或 include runtime、kernel、planning、structure、assembly、ns-3、Bellhop 或 ScenarioRuntime；其他模块不得为了接入旧 PHY 实现而反向修改冻结的 runtime execution semantics。
+
+DigitalPacket 继续只表达 PacketId、end-to-end source/destination 和 payload 信息，不增加 waveform sample、symbol、sample rate 或 carrier state。WaveformBuffer、BitFrame、modulation/demodulation、multipath application、waveform noise synthesis、BER/PER statistics 和完整 waveform pipeline 都保持 PHY internal。TxEmission 继续是 runtime 所需的 Tx physical metadata，不携带完整 waveform，也不建立 global TransmissionId-to-waveform cache。
+
+Production Tx-side adapter 必须实现既有 `ITxPhy::Encode(DigitalPacket, TxEncodeRequest) -> TxEmission`，并保持 TransmissionId、PacketId、sender 和 started_at provenance。一次 physical send 只调用一次 Tx PHY 和一次 modulation；receiver fan-out 在 TxEmission 创建之后通过独立 ChannelQuery 完成，receiver 数量不得重复 payload serialization、modulation 或 sender-side Encode。Configured waveform Tx adapter 可在内部生成 waveform 以确定 duration 和 metadata，但 waveform 生命周期不得泄漏到 runtime。
+
+`IChannelFieldProvider` 继续独占 position/frequency/time 到 TL/delay/path 的 provider boundary；PHY channel processor 只能把既有 ChannelFieldResponse 作用于 internal waveform，不决定 topology、receiver set 或运行 Bellhop。`INoiseFieldProvider` 继续提供 runtime packet/scalar NoiseObservation；internal waveform noise synthesis 不能替代或改变该 contract。所有进入 production provider path 的结果对 equal request/configuration 必须 deterministic；random_device、wall-clock seed、implicit/global RNG 禁止使用，waveform noise 只允许显式 deterministic seed/state。
+
+现有 RxDecodeRequest 只包含 ReceiverWindow 和 NoiseObservation，不能承载原始时域 waveform。因此本阶段不把 waveform demodulator 伪装为 production IRxPhy，也不扩张 ReceivedSignal、RxDecodeRequest 或 Channel contracts。Full waveform propagation/Rx binding 如需 waveform handle、sample provenance 或 explicit deterministic RNG contract，必须后续独立 ADR 和 contract review；Bellhop provider、环境资产与高级 MAC/routing 同样不属于本阶段。
+
 ## 3. 影响
 
 ### 3.1 正向影响
