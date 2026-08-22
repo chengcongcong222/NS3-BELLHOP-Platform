@@ -21,6 +21,19 @@ if(BUILD_TESTING)
   )
 
   add_executable(
+    platform_planning_shortest_path_to_sink_routing_planner_test
+    tests/shortest_path_to_sink_routing_planner_test.cpp
+  )
+  target_link_libraries(
+    platform_planning_shortest_path_to_sink_routing_planner_test
+    PRIVATE Platform::planning
+  )
+  add_test(
+    NAME platform_planning_shortest_path_to_sink_routing_planner_test
+    COMMAND platform_planning_shortest_path_to_sink_routing_planner_test
+  )
+
+  add_executable(
     platform_planning_configured_tdma_mac_planner_test
     tests/configured_tdma_mac_planner_test.cpp
   )

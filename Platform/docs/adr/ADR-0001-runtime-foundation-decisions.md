@@ -387,6 +387,16 @@ TxStart 固定执行 `Prepare -> ResolveCandidates -> CycleSignalRuntime::Handle
 
 如果 physical execution 与 eventization 已成功后，expected PacketId 条件消费仍失败，该状态表示不可恢复的内部并发/invariant violation，SimulationRun 必须 fatal；P0 不 rollback 已注册事件，也不伪造 queue 恢复。Zero-delay propagation 仍会因同 timestamp phase 回插而在 eventization 阶段失败，并保持 packet 未消费。Packet queue 仍位于 WorldSnapshot 之外，其 checkpoint/restart 与 authoritative persistence 保持 TBD；本阶段也不实现 Rx forwarding、energy accounting 或 strict slot-duration enforcement。
 
+### 2.30 Directed minimum-hop shortest-path-to-sink routing
+
+P0 的 `ShortestPathToSinkRoutingPlanner` 只在当前 `StructureSnapshot::logical_topology()` 的 directed edges 上计算到唯一 sink 的 minimum-hop route。该具体 planner 要求 RoleTable 恰好包含一个 `ProtocolRole::kSink`；RoleTable 的通用 contract 仍允许零个或多个 sink。除识别 sink 外，planner 不按 MEMBER、RELAY、CONTROLLER、ACCESS_NODE、ANCHOR 或 role absence 过滤 forwarding node。
+
+Planner 从 sink 在 reversed logical graph 上执行一次 BFS，得到每个 node 到 sink 的 hop distance；原图 `A -> B` 只允许 A 通过 B 接近 sink，不隐含 `B -> A`。Unreachable 和 isolated node 是合法 no-route 状态，不使 Build 失败；sink 自身不产生 self route。Directed cycle 必须通过已访问 distance 安全终止，无法到达 sink 的 cycle 不产生 route。
+
+对于 reachable node X，next hop 必须是原始 LogicalTopology 中满足 `distance[H] == distance[X] - 1` 的 outgoing neighbor。不同 hop count 时 shorter path 优先；多个 equal-hop neighbor 中显式选择 NodeId 最小者，不依赖 BFS discovery、caller edge order、unordered iteration、pointer address 或随机数。输出仍为现有 next-hop `RoutingPlan`，并通过 `RoutingPlan::Create` 完成 canonicalization、provenance 和 logical-edge validation。
+
+Planner 每次 Build 只使用局部 adjacency、distance、frontier 和 entries，保持 deterministic、complete-or-error 且失败后可安全重试。本阶段不引入 edge weight、full-path contract、ECMP、随机负载均衡、ConnectivityGraph fallback、distance/delay/TL/SNR/energy metric，也不修改 runtime relay/queue 行为。
+
 ## 3. 影响
 
 ### 3.1 正向影响
