@@ -431,6 +431,18 @@ WorldStateStore、PacketQueueStore、ApplicationDeliveryStore、CommunicationIdA
 
 Target decode failure 继续不恢复已消费的 sender packet；后续周期会正常观察到 NoPacket，ACK/ARQ/retransmission 不在 P0-S1-05C 范围。Commit failure 后既有 PacketQueueStore/ApplicationDeliveryStore side effects 当前不提供事务回滚，SimulationRun 按 fatal 处理。上述 run-level side-state 仍不属于 WorldSnapshot formal state，checkpoint/restart 因而继续不完整。
 
+### 2.34 Production continuous-cycle ScenarioRuntime
+
+P0-S1-05 数据面至此 CLOSED。Production continuous-cycle orchestration 属于 assembly composition root：`ScenarioRuntime` 组合 kernel、runtime、structure 与 planning，但这些模块不得反向依赖 assembly。`CycleCoordinator` 继续是 one-cycle owner，`EventDispatcher` 继续只负责一个 cycle/event dispatch epoch；每个 PlanningCycle 必须新建 EventDispatcher、PlanInstaller、CycleCoordinator 以及 CycleWorkingState、signal ledger、reception accumulator、transmission records、CycleSignalRuntime 和 PlanBoundTxRuntime 等 cycle-scoped owner，禁止给 coordinator 增加 Reset/Reopen/reinstall 语义。
+
+一次 `RunCycles(N)` 使用同一个 caller-owned Ns3KernelGateway 和同一个 ns-3 Simulator lifetime。上一周期 `CycleClose@T` 已完成且该 dispatcher 的 Run 返回后，assembly 同步运行下一周期 M3/M4，此过程不推进 simulation clock；随后新 EventDispatcher 可以从同一精确 Platform time T 安装下一周期的 `TxStart@T`。EventPhase monotonicity 只约束单个 dispatcher dispatch epoch 内的 same-time dynamic insertion；跨 dispatcher 的正式 cycle boundary 不是 phase90 callback 中的回插。不得使用 `+1ns`，也不得放宽 same-time dynamic event 必须采用更晚 phase 的既有规则。整个 RunCycles 成功或失败退出时只 Destroy simulator 一次，cycle-scoped owner 不得自行 Destroy。
+
+每个周期必须重新读取最新 committed WorldSnapshot，校验 kernel Now 不晚于 committed_at，并真正执行 `StructureBuilder::Build` 与 `IProtocolCyclePlanner::Build`。StructureSnapshot、CycleTiming 和可选 RoutingPlan 的 cycle id/base SnapshotVersion provenance 必须再次由 ScenarioRuntime 验证；plan start 必须同时不早于 snapshot committed time 和 kernel Now。WorldStateStore、PacketQueueStore、ApplicationDeliveryStore、CommunicationIdAllocator 与 previous ConnectivityGraph 是 run-level state。Previous graph value-owned 于 ScenarioRuntime，只把上一 successful cycle 的 graph传给下一次 M3，并且只在当前 cycle 成功 commit 与 post-run invariant validation 后更新；failed cycle candidate 不得污染 hysteresis history。
+
+Production `Ns3TransmissionSessionEventSink` 只把完整 TransmissionSession 转换为 SignalArrival/SessionFinalize intents，不注册 record、不消费 queue、不判定 disposition、不 commit。它必须按 event time、EventPhase、receiver NodeId、TransmissionId 显式形成 deterministic order，并通过一次 `ScheduleBatch` 发布完整 session 的 lifecycle events。零传播延迟在 TX_START@T 动态生成 SIGNAL_ARRIVAL@T 时仍按既有 rule 返回 `kFailedPrecondition`，禁止 inline arrival、phase rewrite 或时间平移。Production execution hook 仅把 PlanBoundTxRuntime 的 Executed、UnusedNoPacket、UnusedNoRoute 正常 outcome 映射为 success，并把 CycleClose 委托给 CycleSignalRuntime；runtime Error 原样传播。
+
+`RunCycles` 只允许从 Ready 进入 Running，成功后为 Completed，任一 fatal error 后为 Failed；Completed/Failed object 均不得原地 retry、resume 或 reset。N=0 返回 `kInvalidArgument`；`first_cycle_id + N - 1` 必须在任何 cycle 执行前 checked preflight，溢出返回 `kOverflow`。每个 successful cycle 仍是独立正式 transaction，必须由 CommitService 完成一次 authoritative `V -> V+1`，并在 Run 返回后验证 coordinator completed、committed time、last cycle id、空 ledger 和空 transmission record store。整个 RunCycles 是 prefix-commit 而非全 run atomic：后续周期失败时保留之前成功 commit，立即停止且不 retry、不 skip、不进入再后续周期。Current-cycle queue/delivery 等 side-state rollback、checkpoint/restart 与 failed-run recovery 继续保持 TBD。
+
 ## 3. 影响
 
 ### 3.1 正向影响
