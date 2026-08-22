@@ -65,4 +65,25 @@ if(PLATFORM_NS3_AVAILABLE)
     NAME platform_ns3_plan_driven_cycle_integration_test
     COMMAND platform_ns3_plan_driven_cycle_integration_test
   )
+
+  add_executable(
+    platform_ns3_plan_bound_tx_runtime_integration_test
+    ns3_plan_bound_tx_runtime_integration_test.cpp
+  )
+  target_include_directories(
+    platform_ns3_plan_bound_tx_runtime_integration_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/kernel"
+      "${PROJECT_SOURCE_DIR}/runtime"
+  )
+  target_link_libraries(
+    platform_ns3_plan_bound_tx_runtime_integration_test
+    PRIVATE
+      Platform::kernel
+      Platform::runtime
+  )
+  add_test(
+    NAME platform_ns3_plan_bound_tx_runtime_integration_test
+    COMMAND platform_ns3_plan_bound_tx_runtime_integration_test
+  )
 endif()

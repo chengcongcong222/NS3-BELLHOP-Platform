@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <deque>
 #include <optional>
+#include <span>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -40,14 +41,20 @@ class PacketQueueStore final {
   [[nodiscard]] auto size(contracts::NodeId queue_owner) const
       -> contracts::Result<std::size_t>;
 
+  [[nodiscard]] auto node_ids() const noexcept
+      -> std::span<const contracts::NodeId> {
+    return std::span<const contracts::NodeId>{node_ids_};
+  }
+
  private:
   struct NodeQueue final {
     contracts::NodeId owner_node_id;
     std::deque<contracts::DigitalPacket> packets;
   };
 
-  explicit PacketQueueStore(std::vector<NodeQueue> queues) noexcept
-      : queues_(std::move(queues)) {}
+  PacketQueueStore(std::vector<contracts::NodeId> node_ids,
+                   std::vector<NodeQueue> queues) noexcept
+      : node_ids_(std::move(node_ids)), queues_(std::move(queues)) {}
 
   [[nodiscard]] auto FindQueue(contracts::NodeId queue_owner) noexcept
       -> NodeQueue*;
@@ -58,6 +65,7 @@ class PacketQueueStore final {
   [[nodiscard]] auto ContainsNode(contracts::NodeId node_id) const noexcept
       -> bool;
 
+  std::vector<contracts::NodeId> node_ids_;
   std::vector<NodeQueue> queues_;
 };
 
@@ -78,7 +86,7 @@ inline auto PacketQueueStore::Create(
   for(const auto node_id : node_ids) {
     queues.push_back(NodeQueue{node_id, {}});
   }
-  return PacketQueueStore{std::move(queues)};
+  return PacketQueueStore{std::move(node_ids), std::move(queues)};
 }
 
 inline auto PacketQueueStore::FindQueue(

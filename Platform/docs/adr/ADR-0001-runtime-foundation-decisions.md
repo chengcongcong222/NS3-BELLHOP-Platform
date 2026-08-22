@@ -377,6 +377,16 @@ Target resolution 只读取 RoutingPlan，不回退到 ConnectivityGraph 或 Log
 
 Selection、resolution 和 P0-S1-04D1 preparation 全部不修改 queue，也不调用 TransmissionExecutor、PHY、Channel 或 scheduler。TransmissionTarget 只表达 protocol/link-layer send intent，与未来 physical candidate receiver enumeration 保持分离。未来执行顺序冻结为 `Select -> Resolve -> Execute -> successful physical TransmissionSession -> conditional ConsumeSelected once`，其 TxStart integration、candidate receiver fan-out 和消费绑定属于 P0-S1-04D2。
 
+### 2.29 Plan-bound TxStart、physical candidate fan-out 与条件消费
+
+`PlanBoundTxRuntime` value-own 已安装的 immutable `ProtocolCyclePlan`，因此 caller 销毁原始 plan 不影响后续 TxStart。创建时必须把 plan 的 PlanningCycleId、base SnapshotVersion 和包含 isolated node 的完整 NodeId universe 分别绑定到 `CycleWorkingState` 与 `PacketQueueStore`；任一不一致均在事件执行前失败。每次 TxStart 必须是 plan MacPlan 中的精确 `TxOpportunity` 成员，并要求 dispatcher 传入的 `now` 精确等于 `eligible_at`，禁止近似时间、隐式 slot 或未计划发送。
+
+P0 physical candidate resolver 只从 cycle base snapshot 的 canonical node order 枚举所有不同于 sender 且 `can_receive` 的节点。结果因此严格按 NodeId 升序，允许为空，并且不读取 TransmissionTarget、PacketDestination、RoutingPlan、ConnectivityGraph 或 LogicalTopology。Unicast 与 broadcast 使用同一 shared-channel fan-out 规则：target 是 current-hop protocol/link intent，不是唯一 physical receiver，也不是 candidate filter。
+
+TxStart 固定执行 `Prepare -> ResolveCandidates -> CycleSignalRuntime::HandleTxStart -> eventize完整TransmissionSession -> ConsumeFront(expected PacketId)`。NoPacket 与 NoRoute 是成功但 opportunity-unused 的正常 outcome；routing binding 缺失及其他 invariant violation 仍是 error。Encode、channel fan-out、session construction 或 eventization 任一失败时不得消费 queue；只有完整 session 已成功建立并成功登记全部 signal lifecycle events 后才条件消费一次 queue front。为保持 runtime 不依赖 kernel，eventization 通过 runtime-internal sink interface 由 assembly/kernel-side adapter 实现，runtime 不 include kernel、ns-3 或 planning internal header。
+
+如果 physical execution 与 eventization 已成功后，expected PacketId 条件消费仍失败，该状态表示不可恢复的内部并发/invariant violation，SimulationRun 必须 fatal；P0 不 rollback 已注册事件，也不伪造 queue 恢复。Zero-delay propagation 仍会因同 timestamp phase 回插而在 eventization 阶段失败，并保持 packet 未消费。Packet queue 仍位于 WorldSnapshot 之外，其 checkpoint/restart 与 authoritative persistence 保持 TBD；本阶段也不实现 Rx forwarding、energy accounting 或 strict slot-duration enforcement。
+
 ## 3. 影响
 
 ### 3.1 正向影响
