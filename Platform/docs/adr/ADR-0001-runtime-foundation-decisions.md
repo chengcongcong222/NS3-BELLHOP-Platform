@@ -421,6 +421,16 @@ P0-S1-05B1 只生成 disposition value，不修改 PacketQueueStore、WorldSnaps
 
 CycleClose 固定先验证 ledger、finalize delta 并成功 CommitCycle，再依次清理 in-flight ledger 与 TransmissionRecordStore。Commit failure 保留 records；零 receiver transmission 仍注册一个 record 并在成功 close 后清理。PacketQueueStore 与 ApplicationDeliveryStore 作为跨 cycle side-state 保留，当前不属于 WorldSnapshot formal state，因此 queue/application delivery 的 checkpoint/restart 完整恢复继续保持 TBD。
 
+### 2.33 P0 multi-cycle multi-hop data-plane acceptance
+
+P0 data plane 已通过 test-side per-cycle acceptance harness 证明，同一个 `DigitalPacket` 可以跨多个 PlanningCycle 依次 relay 并最终交付 sink。PacketId、end-to-end original source、destination 和 payload 在所有 hop 中保持不变；每次 physical hop 则独立拥有新的 TransmissionId、实际 current sender 和由当期 RoutingPlan 解析出的 current-hop TransmissionTarget。非 target 节点即使成功物理解码仍只形成 Overheard，不得产生 relay 或提前 local delivery。
+
+WorldStateStore、PacketQueueStore、ApplicationDeliveryStore、CommunicationIdAllocator 以及确定性测试 PHY/provider 是 run-level state。每个 cycle 重新从最新 committed WorldSnapshot 创建 CycleWorkingState，并重新运行 StructureBuilder、ShortestPathToSinkRoutingPlanner、ConfiguredTdmaMacPlanner 与 CompositeProtocolCyclePlanner；StructureSnapshot、RoutingPlan 和 CycleTiming 的 cycle/base provenance 必须匹配该周期 authoritative snapshot。Relay queue 只在下一个正式 planning boundary 被下一周期计划使用，不在当前周期触发 M3/M4 recompute。
+
+05C 的多周期执行只由 integration test 中的 per-cycle harness 依次创建新的 TransmissionRecordStore、CycleSignalRuntime、PlanBoundTxRuntime、EventDispatcher、PlanInstaller 和 CycleCoordinator。当前 production CycleCoordinator 仍是 single-cycle owner；本验收不增加 reset/reinstall、production continuous-cycle coordinator，不改变 same-time EventPhase floor，也不使用 `+1ns` boundary workaround。每周期使用上一 snapshot 的绝对 committed_at 作为 start，并在成功 close 后精确 Commit 一次。
+
+Target decode failure 继续不恢复已消费的 sender packet；后续周期会正常观察到 NoPacket，ACK/ARQ/retransmission 不在 P0-S1-05C 范围。Commit failure 后既有 PacketQueueStore/ApplicationDeliveryStore side effects 当前不提供事务回滚，SimulationRun 按 fatal 处理。上述 run-level side-state 仍不属于 WorldSnapshot formal state，checkpoint/restart 因而继续不完整。
+
 ## 3. 影响
 
 ### 3.1 正向影响
