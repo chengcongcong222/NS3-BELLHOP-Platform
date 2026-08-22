@@ -27,6 +27,8 @@ class TransmissionRecordStore final {
     return records_.size();
   }
 
+  auto ClearForCycleClose() noexcept -> void { records_.clear(); }
+
  private:
   std::vector<TransmissionRecord> records_;
 };

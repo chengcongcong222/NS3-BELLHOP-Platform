@@ -409,6 +409,18 @@ TransmissionRecord 按 TransmissionId 唯一注册，duplicate registration 返�
 
 P0-S1-05B1 只生成 disposition value，不修改 PacketQueueStore、WorldSnapshot、ledger 或 ReceptionResultAccumulator，不执行 application delivery、relay enqueue、Rx callback、ACK、retransmission 或 routing recompute。ReceptionResultAccumulator 继续保存全部 physical ReceptionSession，包括 NotDecoded、Overheard 和 accepted reception；这些 action 的应用与 record lifecycle integration 属于后续阶段。
 
+### 2.32 Transmission record lifecycle 与 reception side effects
+
+`CycleSignalRuntime` 在 `TransmissionExecutor` 已返回完整 `TransmissionSession`、且 transmission 与全部 received signal 均通过 closed-cycle boundary validation 后，为一次 physical send 注册恰好一个 `TransmissionRecord`，然后才把 session 返回给 `PlanBoundTxRuntime` 进行 lifecycle event publication。NoPacket、NoRoute、Tx/Channel failure 和 cycle-crossing rejection 均不注册 record；record create/register failure 是 SimulationRun-fatal runtime error，不得继续 publish 或消费 sender queue。Event publication 在 record registration 之后失败时，不 rollback 已形成的 record，sender queue 仍不消费。
+
+`TransmissionRecordStore` 是 cycle-transient join state。Receiver finalize 必须以 `ReceptionSession.reception.transmission_id` 精确查询 record，并固定执行 `ReceiverProcessor::ProcessReceivedSignal -> ReceptionDispositionService::Decide -> ReceptionResultAccumulator::Append -> ReceptionDispositionApplier::Apply`。Decide 失败时不 append physical result 且不执行 network side effect；Decide 成功后所有 NotDecoded、Overheard、LocalDelivery 和 RelayEnqueue 的合法 physical `ReceptionSession` 都先进入 accumulator。后续 Apply 失败是 SimulationRun-fatal，但不 rollback 已累积的 reception、发送端消费或此前 signal lifecycle state。
+
+`NotDecodedReception` 与 `OverheardReception` 没有 network side effect。`LocalDeliveryReception` value-own ReceptionId、TransmissionId、receiver NodeId 和完整 DigitalPacket，并写入 runtime-owned `ApplicationDeliveryStore`，不得进入 receiver outgoing queue。该 store value-own canonical NodeId universe，只按 ReceptionId 禁止重复；同一 PacketId 经不同 ReceptionId/TransmissionId 到达同一或不同 receiver 均合法，broadcast 的 per-receiver deliveries 也不得按 PacketId 去重。
+
+`RelayEnqueueReception` 把完整 DigitalPacket 同步写入 receiver 的 `PacketQueueStore`，保持 PacketId、end-to-end original source、destination 与 payload 不变。enqueue 在 finalize callback 返回前对同周期后续 TxOpportunity 立即可见，不触发 M3/M4 replan，也不增加 ready-at 或 next-cycle-only 状态。同一 owner queue 的 duplicate PacketId 继续由 PacketQueueStore 返回 error；duplicate suppression 留给后续独立 policy。目标节点 NotDecoded 不恢复已经因 successful physical send 消费的 sender packet；ACK、ARQ 和 retransmission 尚未实现。
+
+CycleClose 固定先验证 ledger、finalize delta 并成功 CommitCycle，再依次清理 in-flight ledger 与 TransmissionRecordStore。Commit failure 保留 records；零 receiver transmission 仍注册一个 record 并在成功 close 后清理。PacketQueueStore 与 ApplicationDeliveryStore 作为跨 cycle side-state 保留，当前不属于 WorldSnapshot formal state，因此 queue/application delivery 的 checkpoint/restart 完整恢复继续保持 TBD。
+
 ## 3. 影响
 
 ### 3.1 正向影响

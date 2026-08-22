@@ -19,6 +19,7 @@
 #include <ns3_factory/contracts/topology.hpp>
 #include <ns3_factory/contracts/tx_phy.hpp>
 
+#include "internal/application_delivery_store.hpp"
 #include "internal/candidate_receiver_resolver.hpp"
 #include "internal/commit_service.hpp"
 #include "internal/communication_id_allocator.hpp"
@@ -30,9 +31,12 @@
 #include "internal/packet_selector.hpp"
 #include "internal/plan_bound_tx_runtime.hpp"
 #include "internal/receiver_processor.hpp"
+#include "internal/reception_disposition_applier.hpp"
+#include "internal/reception_disposition_service.hpp"
 #include "internal/reception_result_accumulator.hpp"
 #include "internal/transmission_executor.hpp"
 #include "internal/transmission_session_event_sink.hpp"
+#include "internal/transmission_record_store.hpp"
 #include "internal/tx_preparation.hpp"
 #include "internal/world_state_store.hpp"
 
@@ -216,10 +220,22 @@ class NoopEventSink final : public ITransmissionSessionEventSink {
   std::size_t count{0};
 };
 
+class FailingEventSink final : public ITransmissionSessionEventSink {
+ public:
+  auto Publish(const TransmissionSession&) -> Status override {
+    ++count;
+    return std::unexpected(
+        Error{ErrorCode::kUnavailable, "fixture event publication failure"});
+  }
+
+  std::size_t count{0};
+};
+
 struct Fixture final {
   WorldStateStore world_store;
   CycleWorkingState working;
   PacketQueueStore queues;
+  ApplicationDeliveryStore deliveries;
   CommunicationIdAllocator ids{TransmissionId{1}, ReceptionId{1}};
   MockTxPhy tx_phy;
   MockChannel channel;
@@ -230,6 +246,9 @@ struct Fixture final {
   CommitService commit;
   InFlightSignalLedger ledger;
   ReceptionResultAccumulator results;
+  TransmissionRecordStore records;
+  ReceptionDispositionService disposition_service;
+  ReceptionDispositionApplier disposition_applier;
   CycleSignalRuntime signal_runtime;
   FifoPacketSelector selector;
   TxPreparationService preparation;
@@ -239,23 +258,29 @@ struct Fixture final {
   Fixture(WorldSnapshot snapshot,
           CycleWorkingState cycle,
           PacketQueueStore packet_queues,
+          ApplicationDeliveryStore application_deliveries,
           SimDuration duration = For(1),
           bool channel_failure = false,
           SimTime close = At(10))
       : world_store(snapshot),
         working(std::move(cycle)),
         queues(std::move(packet_queues)),
+        deliveries(std::move(application_deliveries)),
         tx_phy(duration),
         channel(channel_failure),
         executor(ids, tx_phy, channel),
         receiver(ids, noise, rx),
         commit(world_store),
+        disposition_applier(queues, deliveries),
         signal_runtime(executor,
                        receiver,
                        working,
                        commit,
                        ledger,
                        results,
+                       records,
+                       disposition_service,
+                       disposition_applier,
                        SnapshotVersion{0},
                        close),
         preparation(selector) {}
@@ -271,11 +296,13 @@ auto MakeFixture(std::vector<NodeCommittedState> nodes,
       *snapshot, PlanningCycleId{0}, SimTime::Zero());
   std::vector<NodeId> node_ids;
   for(const auto& node : snapshot->nodes()) node_ids.push_back(node.node_id);
+  auto deliveries = ApplicationDeliveryStore::Create(node_ids);
   auto queues = PacketQueueStore::Create(std::move(node_ids));
-  if(!working || !queues) return nullptr;
+  if(!working || !queues || !deliveries) return nullptr;
   return std::make_unique<Fixture>(*snapshot,
                                    std::move(*working),
                                    std::move(*queues),
+                                   std::move(*deliveries),
                                    duration,
                                    channel_failure,
                                    close);
@@ -338,7 +365,8 @@ auto TestBindingMembershipTimeAndPlanLifetime() -> bool {
       bound->HandleTxStart(TxOpportunity{NodeId{0}, At(1)}, At(1));
   return !cycle_failure && !base_failure && !universe_failure &&
          !wrong_opportunity && !wrong_time && no_packet &&
-         std::holds_alternative<UnusedNoPacketTxStart>(*no_packet);
+         std::holds_alternative<UnusedNoPacketTxStart>(*no_packet) &&
+         fixture->records.size() == 0;
 }
 
 auto TestBroadcastFanOutConsumeAndZeroCandidates() -> bool {
@@ -383,9 +411,11 @@ auto TestBroadcastFanOutConsumeAndZeroCandidates() -> bool {
   const auto zero_result =
       zero_bound->HandleTxStart(TxOpportunity{NodeId{0}, At(1)}, At(1));
   return session.received_signals().size() == 3 &&
+         fixture->records.size() == 1 &&
          fixture->channel.receiver_ids_ == expected &&
          *fixture->queues.size(NodeId{2}) == 0 && zero_result &&
          std::holds_alternative<ExecutedTxStart>(*zero_result) &&
+         zero->records.size() == 1 &&
          zero->tx_phy.count_ == 1 && zero->channel.count_ == 0 &&
          std::get<ExecutedTxStart>(*zero_result)
              .session.received_signals().empty() &&
@@ -457,7 +487,8 @@ auto TestRelayUnicastFanOutAndNoRouteHeadBlocking() -> bool {
          *fixture->queues.size(NodeId{1}) == 0 && first && second &&
          std::holds_alternative<UnusedNoRouteTxStart>(*first) &&
          std::holds_alternative<UnusedNoRouteTxStart>(*second) &&
-         blocked->tx_phy.count_ == 0 && *blocked->queues.size(NodeId{0}) == 2 &&
+         blocked->tx_phy.count_ == 0 && blocked->records.size() == 0 &&
+         *blocked->queues.size(NodeId{0}) == 2 &&
          front && *front && (*front)->packet_id == PacketId{4};
 }
 
@@ -530,10 +561,15 @@ auto TestRepeatedSlotsAndExecutionFailuresPreserveQueue() -> bool {
       TxOpportunity{NodeId{0}, At(1)}, At(1));
 
   return first && second && repeated->tx_phy.count_ == 2 &&
+         repeated->records.size() == 2 &&
          *repeated->queues.size(NodeId{0}) == 0 && !failed &&
          failed.error().code == ErrorCode::kUnavailable &&
+         channel_failure->records.size() == 0 &&
+         channel_failure->event_sink.count == 0 &&
          *channel_failure->queues.size(NodeId{0}) == 1 && !crossed &&
          crossed.error().code == ErrorCode::kFailedPrecondition &&
+         crossing->records.size() == 0 &&
+         crossing->event_sink.count == 0 &&
          *crossing->queues.size(NodeId{0}) == 1;
 }
 
@@ -569,8 +605,67 @@ auto TestPostExecutionConsumeFailureIsFatal() -> bool {
   const auto front = fixture->queues.PeekFront(NodeId{0});
   return !result &&
          result.error().code == ErrorCode::kFailedPrecondition &&
-         fixture->tx_phy.count_ == 1 && front && *front &&
+         fixture->tx_phy.count_ == 1 && fixture->records.size() == 1 &&
+         front && *front &&
          (*front)->packet_id == PacketId{10};
+}
+
+auto TestPublicationFailureRetainsRecordAndQueue() -> bool {
+  auto fixture = MakeFixture({Node(0)});
+  auto plan = SchedulePlan({TxOpportunity{NodeId{0}, At(1)}});
+  if(!fixture || !plan || !fixture->queues.Enqueue(
+                            NodeId{0},
+                            Packet(11, 0, BroadcastDestination{}))) {
+    return false;
+  }
+  FailingEventSink event_sink;
+  auto bound = PlanBoundTxRuntime::Create(std::move(*plan),
+                                          fixture->working,
+                                          fixture->queues,
+                                          fixture->preparation,
+                                          fixture->candidates,
+                                          fixture->signal_runtime,
+                                          event_sink);
+  if(!bound) return false;
+
+  const auto result =
+      bound->HandleTxStart(TxOpportunity{NodeId{0}, At(1)}, At(1));
+  return !result && result.error().code == ErrorCode::kUnavailable &&
+         event_sink.count == 1 && fixture->records.size() == 1 &&
+         *fixture->queues.size(NodeId{0}) == 1;
+}
+
+auto TestRegistrationFailurePreventsPublicationAndConsume() -> bool {
+  auto fixture = MakeFixture({Node(0)});
+  auto plan = SchedulePlan({TxOpportunity{NodeId{0}, At(1)}});
+  const auto packet = Packet(12, 0, BroadcastDestination{});
+  auto existing = TransmissionRecord::Create(
+      packet,
+      Transmission{TransmissionId{1},
+                   PacketId{12},
+                   NodeId{0},
+                   BroadcastTransmissionTarget{},
+                   At(1),
+                   At(2)});
+  if(!fixture || !plan || !existing ||
+     !fixture->records.Register(std::move(*existing)) ||
+     !fixture->queues.Enqueue(NodeId{0}, packet)) {
+    return false;
+  }
+  auto bound = PlanBoundTxRuntime::Create(std::move(*plan),
+                                          fixture->working,
+                                          fixture->queues,
+                                          fixture->preparation,
+                                          fixture->candidates,
+                                          fixture->signal_runtime,
+                                          fixture->event_sink);
+  if(!bound) return false;
+
+  const auto result =
+      bound->HandleTxStart(TxOpportunity{NodeId{0}, At(1)}, At(1));
+  return !result && result.error().code == ErrorCode::kAlreadyExists &&
+         fixture->records.size() == 1 && fixture->event_sink.count == 0 &&
+         *fixture->queues.size(NodeId{0}) == 1;
 }
 
 }  // namespace
@@ -580,7 +675,9 @@ auto main() -> int {
                  TestBroadcastFanOutConsumeAndZeroCandidates() &&
                  TestRelayUnicastFanOutAndNoRouteHeadBlocking() &&
                  TestRepeatedSlotsAndExecutionFailuresPreserveQueue() &&
-                 TestPostExecutionConsumeFailureIsFatal()
+                 TestPostExecutionConsumeFailureIsFatal() &&
+                 TestPublicationFailureRetainsRecordAndQueue() &&
+                 TestRegistrationFailurePreventsPublicationAndConsume()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;
 }

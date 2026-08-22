@@ -172,4 +172,55 @@ if(BUILD_TESTING)
     NAME platform_runtime_reception_disposition_service_test
     COMMAND platform_runtime_reception_disposition_service_test
   )
+
+  add_executable(
+    platform_runtime_application_delivery_store_test
+    tests/application_delivery_store_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_application_delivery_store_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_application_delivery_store_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_application_delivery_store_test
+    COMMAND platform_runtime_application_delivery_store_test
+  )
+
+  add_executable(
+    platform_runtime_reception_disposition_applier_test
+    tests/reception_disposition_applier_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_reception_disposition_applier_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_reception_disposition_applier_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_reception_disposition_applier_test
+    COMMAND platform_runtime_reception_disposition_applier_test
+  )
+
+  add_executable(
+    platform_runtime_cycle_reception_wiring_test
+    tests/cycle_reception_wiring_test.cpp
+  )
+  target_include_directories(
+    platform_runtime_cycle_reception_wiring_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    platform_runtime_cycle_reception_wiring_test
+    PRIVATE Platform::runtime
+  )
+  add_test(
+    NAME platform_runtime_cycle_reception_wiring_test
+    COMMAND platform_runtime_cycle_reception_wiring_test
+  )
 endif()
