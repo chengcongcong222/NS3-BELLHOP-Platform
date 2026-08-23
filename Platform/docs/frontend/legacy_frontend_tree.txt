@@ -1,0 +1,51 @@
+Legacy root: /home/ccc/work/NS3_Factory/frontend
+Recorded depth: 5
+
+frontend/
+|-- index.html
+|-- package.json
+|-- package-lock.json
+|-- public/
+|   `-- demo/
+|       |-- star_demo_simple_summary.csv
+|       `-- star_monitoring_demo_simple.json
+|-- results/
+|   |-- hil_loopback_demo_hil_log.csv
+|   |-- hil_loopback_demo_hil_report.md
+|   |-- hil_loopback_summary.csv
+|   |-- hil_loopback_summary_events.json
+|   `-- hil_loopback_summary_rays.json
+|-- src/
+|   |-- App.tsx
+|   |-- main.tsx
+|   |-- types.ts
+|   |-- styles.css
+|   |-- components/
+|   |   |-- MetricCard.tsx
+|   |   |-- MiniTrend.tsx
+|   |   |-- ProfileView.tsx
+|   |   |-- PropertyInspector.tsx
+|   |   |-- ScenarioWizard.tsx
+|   |   |-- Scene3DView.tsx
+|   |   |-- SectionCard.tsx
+|   |   |-- Shell.tsx
+|   |   |-- StudioCanvas.tsx
+|   |   `-- TopologyPreview.tsx
+|   |-- pages/
+|   |   |-- AssetsPage.tsx
+|   |   |-- EnvironmentPage.tsx
+|   |   |-- ExperimentTemplatesPage.tsx
+|   |   |-- OverviewPage.tsx
+|   |   |-- SettingsPage.tsx
+|   |   `-- StudioPage.tsx
+|   |-- services/
+|   |   |-- api.ts
+|   |   `-- demoData.ts
+|   `-- stores/
+|       `-- studioRuntimeStore.ts
+|-- tsconfig.app.json
+|-- tsconfig.json
+|-- tsconfig.node.json
+`-- vite.config.ts
+
+Excluded from this tree/package: node_modules, dist, build, coverage, cache, `.git`, TypeScript build-info files, generated `vite.config.js`/`.d.ts`, `PropertyInspector.tsx.backup`, and large/generated result or media artifacts. The public demo and results paths above are recorded for provenance but are not copied into `legacy-reference`.
