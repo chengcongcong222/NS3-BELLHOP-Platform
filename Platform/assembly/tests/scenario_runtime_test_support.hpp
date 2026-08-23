@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -143,8 +144,15 @@ class MockTxPhy final : public ITxPhy {
 class MockChannel final : public IChannelFieldProvider {
  public:
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     receiver_audit.push_back(query.receiver_node_id());
+    if(std::find(no_arrival_receivers.begin(),
+                 no_arrival_receivers.end(),
+                 query.receiver_node_id()) !=
+       no_arrival_receivers.end()) {
+      return ChannelNoArrival{query.transmission_id(),
+                              query.receiver_node_id()};
+    }
     return ChannelFieldResponse::Create(query.transmission_id(),
                                         query.receiver_node_id(),
                                         70.0,
@@ -153,6 +161,7 @@ class MockChannel final : public IChannelFieldProvider {
   }
 
   mutable std::vector<NodeId> receiver_audit;
+  std::vector<NodeId> no_arrival_receivers;
   SimDuration propagation_delay{DurationSeconds(1)};
 };
 
@@ -161,6 +170,7 @@ class MockNoise final : public INoiseFieldProvider {
   auto Query(const NoiseQuery& query) const
       -> Result<NoiseObservation> override {
     ++count;
+    receiver_audit.push_back(query.receiver_node_id());
     return NoiseObservation::Create(query.receiver_node_id(),
                                     query.observed_from(),
                                     query.observed_until(),
@@ -170,6 +180,7 @@ class MockNoise final : public INoiseFieldProvider {
   }
 
   mutable std::size_t count{0};
+  mutable std::vector<NodeId> receiver_audit;
 };
 
 class MockRxPhy final : public IRxPhy {
@@ -178,6 +189,7 @@ class MockRxPhy final : public IRxPhy {
       -> Result<RxDecodeResult> override {
     ++count;
     const auto& signal = request.receiver_window().desired_signal();
+    receiver_audit.push_back(signal.receiver_node_id());
     return RxDecodeResult::Create(signal.transmission_id(),
                                   signal.emission().packet_id(),
                                   signal.receiver_node_id(),
@@ -185,6 +197,7 @@ class MockRxPhy final : public IRxPhy {
   }
 
   mutable std::size_t count{0};
+  mutable std::vector<NodeId> receiver_audit;
 };
 
 class CyclingPlanner final : public IProtocolCyclePlanner {

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,8 @@
 using ns3_factory::contracts::BroadcastDestination;
 using ns3_factory::contracts::BroadcastTransmissionTarget;
 using ns3_factory::contracts::ChannelFieldResponse;
+using ns3_factory::contracts::ChannelFieldOutcome;
+using ns3_factory::contracts::ChannelNoArrival;
 using ns3_factory::contracts::ChannelQuery;
 using ns3_factory::contracts::DigitalPacket;
 using ns3_factory::contracts::DuplexMode;
@@ -149,12 +152,20 @@ class MockTxPhy final : public ITxPhy {
 class MockChannelFieldProvider final : public IChannelFieldProvider {
  public:
   [[nodiscard]] auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     queries_.push_back(query);
     if(fail_on_call_ && queries_.size() == *fail_on_call_) {
       return std::unexpected(
           Error{ErrorCode::kUnavailable,
                 "test fixture channel provider failure"});
+    }
+
+    if(std::find(no_arrival_receivers_.begin(),
+                 no_arrival_receivers_.end(),
+                 query.receiver_node_id()) !=
+       no_arrival_receivers_.end()) {
+      return ChannelNoArrival{query.transmission_id(),
+                              query.receiver_node_id()};
     }
 
     const auto receiver = mismatch_identity_ ? NodeId{999}
@@ -175,6 +186,10 @@ class MockChannelFieldProvider final : public IChannelFieldProvider {
     mismatch_identity_ = mismatch;
   }
 
+  auto SetNoArrivalReceivers(std::vector<NodeId> receivers) -> void {
+    no_arrival_receivers_ = std::move(receivers);
+  }
+
   [[nodiscard]] auto queries() const noexcept
       -> const std::vector<ChannelQuery>& {
     return queries_;
@@ -183,6 +198,7 @@ class MockChannelFieldProvider final : public IChannelFieldProvider {
  private:
   std::optional<std::size_t> fail_on_call_;
   bool mismatch_identity_{false};
+  std::vector<NodeId> no_arrival_receivers_;
   mutable std::vector<ChannelQuery> queries_;
 };
 
@@ -366,6 +382,45 @@ auto TestBroadcastTargetStillCreatesOneSession() -> bool {
          session->received_signals().size() == 3 &&
          std::holds_alternative<BroadcastTransmissionTarget>(
              session->transmission().target);
+}
+
+auto TestMixedArrivalFanOut() -> bool {
+  auto working = MakeWorkingState();
+  if(!working) return false;
+  CommunicationIdAllocator allocator{TransmissionId{220}};
+  MockTxPhy tx_phy;
+  MockChannelFieldProvider channel;
+  channel.SetNoArrivalReceivers({NodeId{2}});
+  const TransmissionExecutor executor{allocator, tx_phy, channel};
+  auto session = executor.ExecuteTransmission(
+      *working, MakeRequest(NodeId{4}, {NodeId{3}, NodeId{2}, NodeId{1}}));
+  return session && tx_phy.encode_count() == 1U &&
+         channel.queries().size() == 3U &&
+         channel.queries()[0].receiver_node_id() == NodeId{1} &&
+         channel.queries()[1].receiver_node_id() == NodeId{2} &&
+         channel.queries()[2].receiver_node_id() == NodeId{3} &&
+         session->received_signals().size() == 2U &&
+         session->received_signals()[0].receiver_node_id() == NodeId{1} &&
+         session->received_signals()[1].receiver_node_id() == NodeId{3} &&
+         session->transmission().transmission_id == TransmissionId{220} &&
+         session->emission().transmission_id() == TransmissionId{220};
+}
+
+auto TestAllNoArrivalStillCreatesOneSession() -> bool {
+  auto working = MakeWorkingState();
+  if(!working) return false;
+  CommunicationIdAllocator allocator{TransmissionId{230}};
+  MockTxPhy tx_phy;
+  MockChannelFieldProvider channel;
+  channel.SetNoArrivalReceivers({NodeId{1}, NodeId{2}, NodeId{3}});
+  const TransmissionExecutor executor{allocator, tx_phy, channel};
+  auto session = executor.ExecuteTransmission(
+      *working, MakeRequest(NodeId{4}, {NodeId{3}, NodeId{1}, NodeId{2}}));
+  return session && tx_phy.encode_count() == 1U &&
+         channel.queries().size() == 3U &&
+         session->received_signals().empty() &&
+         session->transmission().transmission_id == TransmissionId{230} &&
+         session->emission().transmission_id() == TransmissionId{230};
 }
 
 auto TestCandidateValidation() -> bool {
@@ -568,6 +623,8 @@ auto main() -> int {
   if(!TestAllocator() || !TestOneCandidateAndEmptyFanOut() ||
      !TestBroadcastCardinalityOrderingAndRelay() ||
      !TestBroadcastTargetStillCreatesOneSession() ||
+     !TestMixedArrivalFanOut() ||
+     !TestAllNoArrivalStillCreatesOneSession() ||
      !TestCandidateValidation() || !TestNodeZeroAsSenderAndReceiver() ||
      !TestEligibilityAndIdentityFailures() ||
      !TestDurationAndEndOverflow() || !TestChannelFailuresAreAtomic() ||

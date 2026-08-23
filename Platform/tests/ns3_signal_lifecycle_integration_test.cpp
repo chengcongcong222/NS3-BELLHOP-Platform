@@ -27,6 +27,7 @@
 using ns3_factory::contracts::BroadcastDestination;
 using ns3_factory::contracts::BroadcastTransmissionTarget;
 using ns3_factory::contracts::ChannelFieldResponse;
+using ns3_factory::contracts::ChannelFieldOutcome;
 using ns3_factory::contracts::ChannelQuery;
 using ns3_factory::contracts::DecodeOutcome;
 using ns3_factory::contracts::DigitalPacket;
@@ -133,7 +134,7 @@ class MockTxPhy final : public ITxPhy {
 class MockChannel final : public IChannelFieldProvider {
  public:
   [[nodiscard]] auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     ++query_count_;
     return ChannelFieldResponse::Create(query.transmission_id(),
                                         query.receiver_node_id(),

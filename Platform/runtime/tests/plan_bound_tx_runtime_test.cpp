@@ -164,12 +164,16 @@ class MockChannel final : public IChannelFieldProvider {
   explicit MockChannel(bool fail = false) noexcept : fail_(fail) {}
 
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     ++count_;
     receiver_ids_.push_back(query.receiver_node_id());
     if(fail_) {
       return std::unexpected(
           Error{ErrorCode::kUnavailable, "fixture channel failure"});
+    }
+    if(no_arrival_) {
+      return ChannelNoArrival{query.transmission_id(),
+                              query.receiver_node_id()};
     }
     return ChannelFieldResponse::Create(query.transmission_id(),
                                         query.receiver_node_id(),
@@ -180,6 +184,7 @@ class MockChannel final : public IChannelFieldProvider {
 
   mutable std::size_t count_{0};
   mutable std::vector<NodeId> receiver_ids_;
+  bool no_arrival_{false};
 
  private:
   bool fail_;
@@ -420,6 +425,41 @@ auto TestBroadcastFanOutConsumeAndZeroCandidates() -> bool {
          std::get<ExecutedTxStart>(*zero_result)
              .session.received_signals().empty() &&
          *zero->queues.size(NodeId{0}) == 0;
+}
+
+auto TestAllNoArrivalPublishesAndConsumesOnce() -> bool {
+  auto fixture = MakeFixture({Node(0), Node(1), Node(2), Node(3)});
+  auto plan = SchedulePlan({TxOpportunity{NodeId{0}, At(1)}});
+  if(!fixture || !plan ||
+     !fixture->queues.Enqueue(
+         NodeId{0}, Packet(20, 0, BroadcastDestination{}))) {
+    return false;
+  }
+  fixture->channel.no_arrival_ = true;
+  auto bound = PlanBoundTxRuntime::Create(std::move(*plan),
+                                          fixture->working,
+                                          fixture->queues,
+                                          fixture->preparation,
+                                          fixture->candidates,
+                                          fixture->signal_runtime,
+                                          fixture->event_sink);
+  if(!bound) return false;
+  const auto result =
+      bound->HandleTxStart(TxOpportunity{NodeId{0}, At(1)}, At(1));
+  if(!result || !std::holds_alternative<ExecutedTxStart>(*result)) {
+    return false;
+  }
+  const auto& session = std::get<ExecutedTxStart>(*result).session;
+  const auto next_transmission = fixture->ids.NextTransmissionId();
+  const auto next_reception = fixture->ids.NextReceptionId();
+  return fixture->tx_phy.count_ == 1U && fixture->channel.count_ == 3U &&
+         fixture->channel.receiver_ids_ ==
+             std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} &&
+         session.received_signals().empty() &&
+         fixture->records.size() == 1U && fixture->event_sink.count == 1U &&
+         *fixture->queues.size(NodeId{0}) == 0U && next_transmission &&
+         *next_transmission == TransmissionId{2} && next_reception &&
+         *next_reception == ReceptionId{1};
 }
 
 auto TestRelayUnicastFanOutAndNoRouteHeadBlocking() -> bool {
@@ -673,6 +713,7 @@ auto TestRegistrationFailurePreventsPublicationAndConsume() -> bool {
 auto main() -> int {
   return TestBindingMembershipTimeAndPlanLifetime() &&
                  TestBroadcastFanOutConsumeAndZeroCandidates() &&
+                 TestAllNoArrivalPublishesAndConsumesOnce() &&
                  TestRelayUnicastFanOutAndNoRouteHeadBlocking() &&
                  TestRepeatedSlotsAndExecutionFailuresPreserveQueue() &&
                  TestPostExecutionConsumeFailureIsFatal() &&

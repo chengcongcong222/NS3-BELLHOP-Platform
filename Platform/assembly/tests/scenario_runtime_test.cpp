@@ -60,6 +60,55 @@ auto TestSuccessfulLifecycle() -> bool {
          now && *now == SimTime::Zero();
 }
 
+auto TestMixedArrivalScenarioRuntime() -> bool {
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{20}, {NodeId{0}});
+  const auto packet = TestPacket();
+  if(!fixture || !fixture->Enqueue(packet)) return false;
+  fixture->channel.no_arrival_receivers = {NodeId{2}};
+  const auto run = fixture->runtime.RunCycles(1);
+  const auto next_transmission = fixture->ids.NextTransmissionId();
+  const auto next_reception = fixture->ids.NextReceptionId();
+  return run && fixture->runtime.state() == ScenarioRuntimeState::kCompleted &&
+         fixture->tx_phy.audit.size() == 1U &&
+         fixture->channel.receiver_audit ==
+             std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} &&
+         fixture->noise.count == 2U && fixture->rx_phy.count == 2U &&
+         fixture->noise.receiver_audit ==
+             std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+         fixture->rx_phy.receiver_audit ==
+             std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+         fixture->QueueHasOnly(NodeId{1}, packet) &&
+         fixture->deliveries.size() == 0U &&
+         fixture->world.current_snapshot().version() == SnapshotVersion{1} &&
+         fixture->world.last_committed_cycle_id() == PlanningCycleId{20} &&
+         next_transmission && *next_transmission == TransmissionId{101} &&
+         next_reception && *next_reception == ReceptionId{1'002};
+}
+
+auto TestAllNoArrivalScenarioRuntime() -> bool {
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{30}, {NodeId{0}});
+  const auto packet = TestPacket();
+  if(!fixture || !fixture->Enqueue(packet)) return false;
+  fixture->channel.no_arrival_receivers =
+      {NodeId{1}, NodeId{2}, NodeId{3}};
+  const auto run = fixture->runtime.RunCycles(1);
+  const auto next_transmission = fixture->ids.NextTransmissionId();
+  const auto next_reception = fixture->ids.NextReceptionId();
+  return run && fixture->runtime.state() == ScenarioRuntimeState::kCompleted &&
+         fixture->tx_phy.audit.size() == 1U &&
+         fixture->channel.receiver_audit ==
+             std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} &&
+         fixture->noise.count == 0U && fixture->rx_phy.count == 0U &&
+         fixture->noise.receiver_audit.empty() &&
+         fixture->rx_phy.receiver_audit.empty() &&
+         fixture->QueueHasOnly(std::nullopt, packet) &&
+         fixture->deliveries.size() == 0U &&
+         fixture->world.current_snapshot().version() == SnapshotVersion{1} &&
+         fixture->world.last_committed_cycle_id() == PlanningCycleId{30} &&
+         next_transmission && *next_transmission == TransmissionId{101} &&
+         next_reception && *next_reception == ReceptionId{1'000};
+}
+
 auto TestKernelAheadOfSnapshotFailsBeforePlanning() -> bool {
   auto fixture = RuntimeFixture::Create(PlanningCycleId{0}, {NodeId{0}});
   if(!fixture) return false;
@@ -147,6 +196,8 @@ auto TestFailureStopsAndPreservesSuccessfulPrefix() -> bool {
 auto main() -> int {
   return TestArgumentPreflightAndTerminalState() &&
                  TestSuccessfulLifecycle() &&
+                 TestMixedArrivalScenarioRuntime() &&
+                 TestAllNoArrivalScenarioRuntime() &&
                  TestKernelAheadOfSnapshotFailsBeforePlanning() &&
                  TestZeroDelayRemainsFatalWithoutTimeShift() &&
                  TestFailureStopsAndPreservesSuccessfulPrefix()

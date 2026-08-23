@@ -49,12 +49,16 @@ class CountingAcousticFieldProvider final : public IChannelFieldProvider {
       : delegate_(delegate) {}
 
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     ++count;
     receiver_ids.push_back(query.receiver_node_id());
-    auto response = delegate_.get().Query(query);
-    if(response) responses.push_back(*response);
-    return response;
+    auto outcome = delegate_.get().Query(query);
+    if(outcome) {
+      const auto* response =
+          std::get_if<ChannelFieldResponse>(&*outcome);
+      if(response != nullptr) responses.push_back(*response);
+    }
+    return outcome;
   }
 
   mutable std::size_t count{0U};

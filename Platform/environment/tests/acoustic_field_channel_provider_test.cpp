@@ -93,6 +93,20 @@ auto Query(TransmissionId transmission_id,
                               bandwidth_hz);
 }
 
+auto QueryResponse(const AcousticFieldChannelProvider& provider,
+                   const ChannelQuery& query)
+    -> Result<ChannelFieldResponse> {
+  auto outcome = provider.Query(query);
+  if(!outcome) return std::unexpected(outcome.error());
+  const auto* response = std::get_if<ChannelFieldResponse>(&*outcome);
+  if(response == nullptr) {
+    return std::unexpected(
+        Error{ErrorCode::kFailedPrecondition,
+              "Normalized acoustic field unexpectedly returned no-arrival"});
+  }
+  return *response;
+}
+
 auto PhysicalEqual(const ChannelFieldResponse& lhs,
                    const ChannelFieldResponse& rhs) -> bool {
   return lhs.aggregate_transmission_loss_db() ==
@@ -136,12 +150,12 @@ auto TestFrequencySelectionAndBandwidthIndependence() -> bool {
   if(!exact || !near_low || !near_high || !tie || !out || !wide) {
     return false;
   }
-  const auto exact_response = provider->Query(*exact);
-  const auto low_response = provider->Query(*near_low);
-  const auto high_response = provider->Query(*near_high);
-  const auto tie_response = provider->Query(*tie);
+  const auto exact_response = QueryResponse(*provider, *exact);
+  const auto low_response = QueryResponse(*provider, *near_low);
+  const auto high_response = QueryResponse(*provider, *near_high);
+  const auto tie_response = QueryResponse(*provider, *tie);
   const auto out_response = provider->Query(*out);
-  const auto wide_response = provider->Query(*wide);
+  const auto wide_response = QueryResponse(*provider, *wide);
   return exact_response && low_response && high_response && tie_response &&
          !out_response && wide_response &&
          exact_response->aggregate_transmission_loss_db() == 210.0 &&
@@ -174,7 +188,7 @@ auto InterpolationMatches(AcousticFieldChannelProvider& provider,
   const auto query = Query(TransmissionId{id}, NodeId{id}, source_depth,
                            receiver_depth, range);
   if(!query) return false;
-  const auto response = provider.Query(*query);
+  const auto response = QueryResponse(provider, *query);
   return response &&
          response->aggregate_transmission_loss_db() ==
              ExpectedLoss(source_depth, receiver_depth, range) &&
@@ -207,7 +221,7 @@ auto TestDelayRoundingToNearestNanosecond() -> bool {
       std::make_shared<const AcousticFieldAsset>(std::move(*asset)));
   const auto query = Query(TransmissionId{20}, NodeId{1}, 10, 30, 1);
   if(!provider || !query) return false;
-  const auto response = provider->Query(*query);
+  const auto response = QueryResponse(*provider, *query);
   return response &&
          response->first_arrival_delay() ==
              SimDuration::FromNanoseconds(1);
@@ -243,7 +257,7 @@ auto TestSingletonSpatialAxesRequireExactCoordinates() -> bool {
      !different_range) {
     return false;
   }
-  const auto exact_response = provider->Query(*exact);
+  const auto exact_response = QueryResponse(*provider, *exact);
   return exact_response &&
          exact_response->aggregate_transmission_loss_db() == 42.0 &&
          exact_response->first_arrival_delay() ==
@@ -275,8 +289,8 @@ auto TestNearestCellPathsAndLowerTie() -> bool {
   const auto tie = Query(TransmissionId{40}, NodeId{1}, 15, 40, 5);
   const auto upper = Query(TransmissionId{41}, NodeId{1}, 16, 41, 6);
   if(!tie || !upper) return false;
-  const auto tie_response = provider->Query(*tie);
-  const auto upper_response = provider->Query(*upper);
+  const auto tie_response = QueryResponse(*provider, *tie);
+  const auto upper_response = QueryResponse(*provider, *upper);
   return tie_response && upper_response && tie_response->paths().size() == 1U &&
          upper_response->paths().size() == 1U &&
          tie_response->paths().front().pressure_gain_linear() == 1.0 &&
@@ -292,8 +306,8 @@ auto TestStaticTimeAndIdentitySemantics() -> bool {
       TransmissionId{51}, NodeId{8}, 15, 40, 5, 20'000.0, 2'000.0,
       SimTime::FromNanoseconds(9'000'000'000));
   if(!at_t0 || !at_t1) return false;
-  const auto first = provider->Query(*at_t0);
-  const auto second = provider->Query(*at_t1);
+  const auto first = QueryResponse(*provider, *at_t0);
+  const auto second = QueryResponse(*provider, *at_t1);
   return first && second && PhysicalEqual(*first, *second) &&
          first->transmission_id() == TransmissionId{50} &&
          first->receiver_node_id() == NodeId{7} &&

@@ -477,6 +477,16 @@ Import caller 必须通过 `BellhopReceiverRangeUnit` 明确声明原始 receive
 
 `BellhopRawArrivalBundle` 只组织 frequency strictly increasing、spatial axes 完全一致的多个单频 raw datasets，不执行 resample、interpolate、nearest merge、coherent sum、aggregate TL、first-arrival selection、CIR 或 `PropagationPath` 构造。`RawArrival -> AcousticFieldAsset` normalization 属于下一阶段独立的 physics/contract review；P0-S2-03 到 raw bundle 为止。
 
+### 2.38 Explicit channel no-arrival outcome
+
+一个合法 `ChannelQuery` 可以正常得到 `ChannelFieldResponse` 或 `ChannelNoArrival`。两者组成通用、非 Bellhop-specific 的 `ChannelFieldOutcome`，并都必须保留 query 的 TransmissionId 与 receiver NodeId provenance。`ChannelNoArrival` 表示 provider 正常完成、但该 receiver 没有任何可进入 signal lifecycle 的 physical arrival；它是 normal physical outcome，不是 `Error`，也不携带 synthetic TL、delay、path 或 provider metadata。Provider `Error` 继续只表达 invalid query、out-of-domain、configuration/provider failure、corrupt asset 或 unsupported request 等真正失败；out-of-domain 不得转换为 no-arrival。
+
+Candidate receiver enumeration 继续只依据 node universe、sender exclusion 和 receive capability，独立于 channel outcome；`TransmissionTarget` 也不裁剪 physical candidate fan-out。Runtime 对每个 candidate 完成 ChannelQuery 和 outcome identity validation：response 创建一个具体 `ReceivedSignal`，no-arrival 不创建 signal 并继续处理后续 candidate。No-arrival 不进入 SignalArrival、SessionFinalize、NoiseQuery、RxDecode 或 ReceptionSession pipeline，也不产生 placeholder `NotDecodedReception`；它与已有 physical signal 进入 Rx 后得到 `DecodeOutcome::kNotDecoded` 是不同语义。
+
+一次 physical send 因而允许产生 0..N 个 `ReceivedSignal`。即使所有 candidates 都是 no-arrival，该 send 仍只有一个 TransmissionSession、TxEmission、Encode 和 TransmissionRecord；session 的 received-signals 可以为空，event sink 必须正常接受空 lifecycle batch。Successful TxStart 仍消费 sender packet 恰好一次，CycleClose/Commit 正常完成；P0 未实现 ACK/ARQ，不恢复该 packet。
+
+现有 normalized `AcousticFieldAsset` 尚不表达 no-arrival cell，因此 `AcousticFieldChannelProvider` 对现有 valid in-domain asset query 继续返回 `ChannelFieldResponse` outcome，且 out-of-domain 继续返回 Error。Normalized asset coverage/no-arrival schema 与 Bellhop raw normalization 留给 P0-S2-04B；本阶段不建立 `BellhopRawArrival -> ChannelNoArrival`、aggregate TL 或 `PropagationPath` 映射，也不把 channel outcome 接入 M3 feasibility estimation。
+
 ## 3. 影响
 
 ### 3.1 正向影响

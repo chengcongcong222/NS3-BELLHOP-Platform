@@ -35,7 +35,7 @@ class AcousticFieldChannelProvider final
   }
 
   [[nodiscard]] auto Query(const contracts::ChannelQuery& query) const
-      -> contracts::Result<contracts::ChannelFieldResponse> override;
+      -> contracts::Result<contracts::ChannelFieldOutcome> override;
 
   [[nodiscard]] constexpr auto asset() const noexcept
       -> const AcousticFieldAsset& {
@@ -77,7 +77,7 @@ struct AxisWeights final {
 
 inline auto AcousticFieldChannelProvider::Query(
     const contracts::ChannelQuery& query) const
-    -> contracts::Result<contracts::ChannelFieldResponse> {
+    -> contracts::Result<contracts::ChannelFieldOutcome> {
   const auto source_depth =
       asset_->coordinate_frame().DepthMeters(query.tx_position());
   if(!source_depth) return std::unexpected(source_depth.error());
@@ -161,10 +161,11 @@ inline auto AcousticFieldChannelProvider::Query(
           static_cast<contracts::NanosecondCount>(rounded_nanoseconds)),
       nearest_cell.paths);
   if(!response) return std::unexpected(response.error());
+  contracts::ChannelFieldOutcome outcome{std::move(*response)};
   const auto identity =
-      contracts::ValidateChannelFieldResponseIdentity(query, *response);
+      contracts::ValidateChannelFieldOutcomeIdentity(query, outcome);
   if(!identity) return std::unexpected(identity.error());
-  return response;
+  return outcome;
 }
 
 }  // namespace ns3_factory::environment::internal

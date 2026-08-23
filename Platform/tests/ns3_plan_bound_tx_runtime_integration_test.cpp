@@ -139,7 +139,7 @@ class MockChannel final : public IChannelFieldProvider {
  public:
   explicit MockChannel(SimDuration delay) noexcept : delay_(delay) {}
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     ++count;
     receivers.push_back(query.receiver_node_id());
     return ChannelFieldResponse::Create(query.transmission_id(),

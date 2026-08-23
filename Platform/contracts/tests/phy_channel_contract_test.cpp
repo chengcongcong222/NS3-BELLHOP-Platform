@@ -17,7 +17,9 @@
 
 using ns3_factory::contracts::BroadcastDestination;
 using ns3_factory::contracts::BroadcastTransmissionTarget;
+using ns3_factory::contracts::ChannelFieldOutcome;
 using ns3_factory::contracts::ChannelFieldResponse;
+using ns3_factory::contracts::ChannelNoArrival;
 using ns3_factory::contracts::ChannelQuery;
 using ns3_factory::contracts::CheckedAdd;
 using ns3_factory::contracts::DigitalPacket;
@@ -37,6 +39,7 @@ using ns3_factory::contracts::TransmissionId;
 using ns3_factory::contracts::TxEmission;
 using ns3_factory::contracts::TxEncodeRequest;
 using ns3_factory::contracts::ValidateChannelFieldResponseIdentity;
+using ns3_factory::contracts::ValidateChannelFieldOutcomeIdentity;
 
 template <typename T>
 concept HasReceiverIdentity =
@@ -75,14 +78,37 @@ template <typename T>
 concept HasLegacyAmplitudeLinear =
     requires(const T value) { value.amplitude_linear(); };
 
+template <typename T>
+concept HasAggregateTransmissionLoss = requires(const T value) {
+  value.aggregate_transmission_loss_db();
+};
+
+template <typename T>
+concept HasFirstArrivalDelay = requires(const T value) {
+  value.first_arrival_delay();
+};
+
+template <typename T>
+concept HasPropagationPaths = requires(const T value) { value.paths(); };
+
 static_assert(!HasReceiverIdentity<TxEncodeRequest>);
 static_assert(!HasReceiverCollection<TxEncodeRequest>);
 static_assert(!HasReceiverIdentity<TxEmission>);
 static_assert(!HasReceiverCollection<TxEmission>);
 static_assert(HasReceiverIdentity<ChannelQuery>);
 static_assert(HasReceiverIdentity<ChannelFieldResponse>);
+static_assert(HasReceiverIdentity<ChannelNoArrival>);
 static_assert(!HasReceiverCollection<ChannelQuery>);
 static_assert(!HasReceiverCollection<ChannelFieldResponse>);
+static_assert(!HasReceiverCollection<ChannelNoArrival>);
+static_assert(!HasAggregateTransmissionLoss<ChannelNoArrival>);
+static_assert(!HasFirstArrivalDelay<ChannelNoArrival>);
+static_assert(!HasPropagationPaths<ChannelNoArrival>);
+static_assert(std::variant_size_v<ChannelFieldOutcome> == 2U);
+static_assert(std::same_as<std::variant_alternative_t<0, ChannelFieldOutcome>,
+                           ChannelFieldResponse>);
+static_assert(std::same_as<std::variant_alternative_t<1, ChannelFieldOutcome>,
+                           ChannelNoArrival>);
 static_assert(!HasCommitMethod<ITxPhy> && !HasApplyMethod<ITxPhy> &&
               !HasScheduleMethod<ITxPhy>);
 static_assert(!HasCommitMethod<IChannelFieldProvider> &&
@@ -98,7 +124,7 @@ static_assert(requires(const ITxPhy& phy,
 static_assert(requires(const IChannelFieldProvider& provider,
                        const ChannelQuery& query) {
   { provider.Query(query) } ->
-      std::same_as<Result<ChannelFieldResponse>>;
+      std::same_as<Result<ChannelFieldOutcome>>;
 });
 static_assert(std::same_as<
               decltype(std::declval<const ChannelQuery&>().tx_position()),
@@ -112,6 +138,11 @@ static_assert(!HasLegacyAmplitudeLinear<PropagationPath>);
 static_assert(requires(const ChannelQuery& query,
                        const ChannelFieldResponse& response) {
   { ValidateChannelFieldResponseIdentity(query, response) } ->
+      std::same_as<Status>;
+});
+static_assert(requires(const ChannelQuery& query,
+                       const ChannelFieldOutcome& outcome) {
+  { ValidateChannelFieldOutcomeIdentity(query, outcome) } ->
       std::same_as<Status>;
 });
 
@@ -142,7 +173,7 @@ class TestTxPhy final : public ITxPhy {
 class TestChannelFieldProvider final : public IChannelFieldProvider {
  public:
   [[nodiscard]] auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     std::vector<PropagationPath> paths;
     paths.reserve(3);
     for(const auto& specification :
@@ -272,26 +303,31 @@ auto main() -> int {
       return EXIT_FAILURE;
     }
 
-    auto response = channel_provider.Query(query);
-    if(!response ||
-       response->transmission_id() != emission.transmission_id() ||
-       response->receiver_node_id() != receiver_ids[index] ||
-       response->aggregate_transmission_loss_db() != 72.5 ||
-       response->first_arrival_delay() !=
+    auto outcome = channel_provider.Query(query);
+    if(!outcome ||
+       !std::holds_alternative<ChannelFieldResponse>(*outcome)) {
+      return EXIT_FAILURE;
+    }
+    const auto& response = std::get<ChannelFieldResponse>(*outcome);
+    if(response.transmission_id() != emission.transmission_id() ||
+       response.receiver_node_id() != receiver_ids[index] ||
+       response.aggregate_transmission_loss_db() != 72.5 ||
+       response.first_arrival_delay() !=
            SimDuration::FromNanoseconds(1'500) ||
-       response->paths().size() != 3 ||
-       response->paths()[0].excess_delay() != SimDuration::Zero() ||
-       response->paths()[1].excess_delay() !=
+       response.paths().size() != 3 ||
+       response.paths()[0].excess_delay() != SimDuration::Zero() ||
+       response.paths()[1].excess_delay() !=
            SimDuration::FromNanoseconds(5) ||
-       response->paths()[2].excess_delay() !=
+       response.paths()[2].excess_delay() !=
            SimDuration::FromNanoseconds(11) ||
-       !ValidateChannelFieldResponseIdentity(query, *response)) {
+       !ValidateChannelFieldResponseIdentity(query, response) ||
+       !ValidateChannelFieldOutcomeIdentity(query, *outcome)) {
       return EXIT_FAILURE;
     }
 
     const auto absolute_path_delay =
-        CheckedAdd(response->first_arrival_delay(),
-                   response->paths()[2].excess_delay());
+        CheckedAdd(response.first_arrival_delay(),
+                   response.paths()[2].excess_delay());
     if(!absolute_path_delay ||
        *absolute_path_delay != SimDuration::FromNanoseconds(1'511)) {
       return EXIT_FAILURE;
@@ -300,9 +336,9 @@ auto main() -> int {
     // Scalar and path-aware processing are alternative representations.
     const auto scalar_received_level_db =
         emission.source_level_db_re_1upa_at_1m() -
-        response->aggregate_transmission_loss_db();
+        response.aggregate_transmission_loss_db();
     const auto path_aware_pressure_gain =
-        response->paths()[0].pressure_gain_linear();
+        response.paths()[0].pressure_gain_linear();
     if(scalar_received_level_db != 107.5 ||
        path_aware_pressure_gain != 1.25) {
       return EXIT_FAILURE;
@@ -412,6 +448,60 @@ auto main() -> int {
          ErrorCode::kFailedPrecondition ||
      receiver_identity_status.error().code !=
          ErrorCode::kFailedPrecondition) {
+    return EXIT_FAILURE;
+  }
+
+  const ChannelFieldOutcome mismatched_response_transmission{
+      *mismatched_transmission};
+  const ChannelFieldOutcome mismatched_response_receiver{
+      *mismatched_receiver};
+  const ChannelFieldOutcome matching_no_arrival{ChannelNoArrival{
+      queries[0].transmission_id(), queries[0].receiver_node_id()}};
+  const ChannelFieldOutcome mismatched_no_arrival_transmission{
+      ChannelNoArrival{TransmissionId{999},
+                       queries[0].receiver_node_id()}};
+  const ChannelFieldOutcome mismatched_no_arrival_receiver{
+      ChannelNoArrival{queries[0].transmission_id(), NodeId{999}}};
+  const auto bad_response_transmission =
+      ValidateChannelFieldOutcomeIdentity(
+          queries[0], mismatched_response_transmission);
+  const auto bad_response_receiver = ValidateChannelFieldOutcomeIdentity(
+      queries[0], mismatched_response_receiver);
+  const auto good_no_arrival = ValidateChannelFieldOutcomeIdentity(
+      queries[0], matching_no_arrival);
+  const auto bad_no_arrival_transmission =
+      ValidateChannelFieldOutcomeIdentity(
+          queries[0], mismatched_no_arrival_transmission);
+  const auto bad_no_arrival_receiver =
+      ValidateChannelFieldOutcomeIdentity(
+          queries[0], mismatched_no_arrival_receiver);
+  if(bad_response_transmission || bad_response_receiver ||
+     !good_no_arrival || bad_no_arrival_transmission ||
+     bad_no_arrival_receiver ||
+     bad_response_transmission.error().code !=
+         ErrorCode::kFailedPrecondition ||
+     bad_response_receiver.error().code != ErrorCode::kFailedPrecondition ||
+     bad_no_arrival_transmission.error().code !=
+         ErrorCode::kFailedPrecondition ||
+     bad_no_arrival_receiver.error().code !=
+         ErrorCode::kFailedPrecondition) {
+    return EXIT_FAILURE;
+  }
+
+  const auto zero_identity_query = ChannelQuery::Create(
+      TransmissionId{0},
+      NodeId{1},
+      NodeId{0},
+      Position3d{0.0, 0.0, 0.0},
+      Position3d{1.0, 0.0, 0.0},
+      SimTime::Zero(),
+      1.0,
+      1.0);
+  const ChannelFieldOutcome zero_identity_no_arrival{
+      ChannelNoArrival{TransmissionId{0}, NodeId{0}}};
+  if(!zero_identity_query ||
+     !ValidateChannelFieldOutcomeIdentity(*zero_identity_query,
+                                          zero_identity_no_arrival)) {
     return EXIT_FAILURE;
   }
 

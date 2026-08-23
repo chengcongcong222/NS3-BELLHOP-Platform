@@ -75,7 +75,7 @@ class MockTxPhy final : public ITxPhy {
 class MockChannel final : public IChannelFieldProvider {
  public:
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     return ChannelFieldResponse::Create(query.transmission_id(),
                                         query.receiver_node_id(),
                                         70.0,

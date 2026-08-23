@@ -4,6 +4,7 @@
 #include <cmath>
 #include <span>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/contracts/errors.hpp>
@@ -191,6 +192,9 @@ inline auto ChannelQuery::Create(TransmissionId transmission_id,
                       bandwidth_hz};
 }
 
+// A concrete channel result with at least one physical arrival. Scalar-only
+// means the arrival is represented without explicit multipath components;
+// it does not mean no-arrival.
 class ChannelFieldResponse final {
  public:
   [[nodiscard]] static auto Create(TransmissionId transmission_id,
@@ -300,6 +304,35 @@ inline auto ChannelFieldResponse::Create(
                               std::move(paths)};
 }
 
+// A valid channel query that completed normally but produced no physical
+// arrival at this receiver. This is not a provider error and carries no
+// synthetic loss, delay, or path values.
+class ChannelNoArrival final {
+ public:
+  constexpr ChannelNoArrival(TransmissionId transmission_id,
+                             NodeId receiver_node_id) noexcept
+      : transmission_id_(transmission_id),
+        receiver_node_id_(receiver_node_id) {}
+
+  [[nodiscard]] constexpr auto transmission_id() const noexcept
+      -> TransmissionId {
+    return transmission_id_;
+  }
+
+  [[nodiscard]] constexpr auto receiver_node_id() const noexcept -> NodeId {
+    return receiver_node_id_;
+  }
+
+  auto operator==(const ChannelNoArrival&) const -> bool = default;
+
+ private:
+  TransmissionId transmission_id_;
+  NodeId receiver_node_id_;
+};
+
+using ChannelFieldOutcome =
+    std::variant<ChannelFieldResponse, ChannelNoArrival>;
+
 // Providers must return the same transmission/receiver identity as the query.
 // Callers validate at the provider boundary before admitting a response to a
 // later receive pipeline.
@@ -315,12 +348,31 @@ inline auto ChannelFieldResponse::Create(
   return {};
 }
 
+// Both normal channel outcomes retain the query identity. Callers validate
+// this before either creating a ReceivedSignal or accepting no-arrival.
+[[nodiscard]] inline auto ValidateChannelFieldOutcomeIdentity(
+    const ChannelQuery& query,
+    const ChannelFieldOutcome& outcome) -> Status {
+  const auto matches = std::visit(
+      [&query](const auto& value) {
+        return query.transmission_id() == value.transmission_id() &&
+               query.receiver_node_id() == value.receiver_node_id();
+      },
+      outcome);
+  if(!matches) {
+    return std::unexpected(
+        Error{ErrorCode::kFailedPrecondition,
+              "ChannelFieldOutcome identity does not match ChannelQuery"});
+  }
+  return {};
+}
+
 class IChannelFieldProvider {
  public:
   virtual ~IChannelFieldProvider() = default;
 
   [[nodiscard]] virtual auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> = 0;
+      -> Result<ChannelFieldOutcome> = 0;
 };
 
 }  // namespace ns3_factory::contracts

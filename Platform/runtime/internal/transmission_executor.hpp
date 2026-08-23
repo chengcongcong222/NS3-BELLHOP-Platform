@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
@@ -163,16 +164,19 @@ inline auto TransmissionExecutor::ExecuteTransmission(
       return std::unexpected(query.error());
     }
 
-    auto response = channel_provider_.Query(*query);
-    if(!response) {
-      return std::unexpected(response.error());
+    auto outcome = channel_provider_.Query(*query);
+    if(!outcome) {
+      return std::unexpected(outcome.error());
     }
-    const auto response_identity =
-        contracts::ValidateChannelFieldResponseIdentity(*query, *response);
-    if(!response_identity) {
-      return std::unexpected(response_identity.error());
+    const auto outcome_identity =
+        contracts::ValidateChannelFieldOutcomeIdentity(*query, *outcome);
+    if(!outcome_identity) {
+      return std::unexpected(outcome_identity.error());
     }
 
+    const auto* response =
+        std::get_if<contracts::ChannelFieldResponse>(&*outcome);
+    if(response == nullptr) continue;
     auto received_signal =
         contracts::ReceivedSignal::Create(*emission, *response);
     if(!received_signal) {

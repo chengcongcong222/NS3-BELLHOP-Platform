@@ -137,7 +137,7 @@ class MockTxPhy final : public ITxPhy {
 class MockChannel final : public IChannelFieldProvider {
  public:
   auto Query(const ChannelQuery& query) const
-      -> Result<ChannelFieldResponse> override {
+      -> Result<ChannelFieldOutcome> override {
     ++count;
     receivers.push_back(query.receiver_node_id());
     return ChannelFieldResponse::Create(query.transmission_id(),
