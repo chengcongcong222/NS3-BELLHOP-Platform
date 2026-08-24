@@ -118,6 +118,21 @@ if(BUILD_TESTING)
   )
 
   add_executable(
+    platform_environment_offline_raw_environment_asset_builder_test
+    tests/offline_raw_environment_asset_builder_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_offline_raw_environment_asset_builder_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_offline_raw_environment_asset_builder_test
+    COMMAND
+      platform_environment_offline_raw_environment_asset_builder_test
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/woss_cache_fixture"
+  )
+
+  add_executable(
     platform_environment_real_asset_golden_test
     tests/real_asset_golden_test.cpp
   )
@@ -169,7 +184,8 @@ if(BUILD_TESTING)
   )
   if(PLATFORM_RAW_DATA_PYTHON
      AND PLATFORM_WOA_TEMPERATURE_DATASET
-     AND PLATFORM_WOA_SALINITY_DATASET)
+     AND PLATFORM_WOA_SALINITY_DATASET
+     AND PLATFORM_BELLHOP_EXECUTABLE)
     add_test(
       NAME platform_environment_raw_environment_import_test
       COMMAND
@@ -179,6 +195,7 @@ if(BUILD_TESTING)
         "${PLATFORM_WOA_TEMPERATURE_DATASET}"
         "${PLATFORM_WOA_SALINITY_DATASET}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/gebco_response_fixture.json"
+        "${PLATFORM_BELLHOP_EXECUTABLE}"
     )
     set_tests_properties(
       platform_environment_raw_environment_import_test
