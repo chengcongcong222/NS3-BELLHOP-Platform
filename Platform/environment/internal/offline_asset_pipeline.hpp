@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <ns3_factory/contracts/errors.hpp>
-#include "acoustic_field_asset.hpp"
+#include "acoustic_environment_asset.hpp"
 #include "bellhop_environment_builder.hpp"
 #include "environment_coordinate_frame.hpp"
 #include "environment_profile.hpp"
@@ -41,6 +42,13 @@ struct EnvironmentAssetGenerationRequest final {
   std::vector<double> surface_ranges_meters;
   std::vector<double> surface_elevations_meters;
   std::vector<BellhopFrequencyGenerationPlan> frequency_plans;
+};
+
+struct AcousticEnvironmentAssetMetadata final {
+  std::string asset_id;
+  std::uint32_t version;
+  std::string valid_time;
+  internal::AssetProvenance provenance;
 };
 
 // The only Bellhop build path. Runtime providers consume the normalized
@@ -126,6 +134,36 @@ class OfflineBellhopAssetPipeline final {
         request.asset_format_version,
         std::move(provenance),
         request.coordinate_frame);
+  }
+
+  [[nodiscard]] auto GenerateEnvironmentAsset(
+      const EnvironmentAssetGenerationRequest& request,
+      AcousticEnvironmentAssetMetadata metadata,
+      SoundSpeedProfile sound_speed_profile,
+      BathymetryProfile bathymetry_profile) const
+      -> contracts::Result<internal::AcousticEnvironmentAsset> {
+    auto atlas = Generate(request,
+                          sound_speed_profile,
+                          bathymetry_profile);
+    if(!atlas) {
+      return std::unexpected(atlas.error());
+    }
+    std::vector<internal::BellhopFrequencyConfiguration> configurations;
+    configurations.reserve(request.frequency_plans.size());
+    for(const auto& plan : request.frequency_plans) {
+      configurations.push_back({plan.frequency_hz, plan.configuration});
+    }
+    return internal::AcousticEnvironmentAsset::Create(
+        std::move(metadata.asset_id),
+        metadata.version,
+        request.geographic_region,
+        std::move(metadata.valid_time),
+        std::move(sound_speed_profile),
+        std::move(bathymetry_profile),
+        std::move(configurations),
+        std::move(metadata.provenance),
+        std::make_shared<const internal::AcousticFieldAtlas>(
+            std::move(*atlas)));
   }
 
  private:
@@ -246,6 +284,33 @@ class OfflineEnvironmentAssetPipeline final {
     return bellhop_pipeline_.Generate(request,
                                       std::move(*sound_speed_profile),
                                       std::move(*bathymetry_profile));
+  }
+
+  [[nodiscard]] auto GenerateEnvironmentAsset(
+      const EnvironmentAssetGenerationRequest& request,
+      AcousticEnvironmentAssetMetadata metadata) const
+      -> contracts::Result<internal::AcousticEnvironmentAsset> {
+    auto hydrographic_profile =
+        environment_source_.get().LoadHydrographicProfile(
+            request.source_query);
+    if(!hydrographic_profile) {
+      return std::unexpected(hydrographic_profile.error());
+    }
+    auto sound_speed_profile =
+        sound_speed_model_.get().Compute(*hydrographic_profile);
+    if(!sound_speed_profile) {
+      return std::unexpected(sound_speed_profile.error());
+    }
+    auto bathymetry_profile =
+        bathymetry_source_.get().LoadBathymetryProfile(request.source_query);
+    if(!bathymetry_profile) {
+      return std::unexpected(bathymetry_profile.error());
+    }
+    return bellhop_pipeline_.GenerateEnvironmentAsset(
+        request,
+        std::move(metadata),
+        std::move(*sound_speed_profile),
+        std::move(*bathymetry_profile));
   }
 
  private:

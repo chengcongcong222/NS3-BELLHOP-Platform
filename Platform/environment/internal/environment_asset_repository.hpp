@@ -9,46 +9,49 @@
 
 #include <ns3_factory/contracts/errors.hpp>
 
-#include "acoustic_field_asset.hpp"
+#include "acoustic_environment_asset.hpp"
 
 namespace ns3_factory::environment {
 
-struct AcousticFieldAssetKey final {
+struct EnvironmentAssetKey final {
   std::string asset_id;
   std::uint32_t revision;
 
-  auto operator==(const AcousticFieldAssetKey&) const -> bool = default;
+  auto operator==(const EnvironmentAssetKey&) const -> bool = default;
 };
 
-class IAcousticFieldAssetRepository {
+class IEnvironmentAssetRepository {
  public:
-  virtual ~IAcousticFieldAssetRepository() = default;
+  virtual ~IEnvironmentAssetRepository() = default;
+
+  [[nodiscard]] virtual auto Store(
+      std::shared_ptr<const internal::AcousticEnvironmentAsset> asset)
+      -> contracts::Status = 0;
 
   [[nodiscard]] virtual auto Find(
-      const AcousticFieldAssetKey& key) const noexcept
-      -> std::shared_ptr<const internal::AcousticFieldAsset> = 0;
+      const EnvironmentAssetKey& key) const noexcept
+      -> std::shared_ptr<const internal::AcousticEnvironmentAsset> = 0;
 };
 
 // Deterministic process-local repository for immutable normalized assets.
 // Persistence remains an explicit later design decision; this repository does
 // not read files, run Bellhop, or perform fallback asset selection.
-class InMemoryAcousticFieldAssetRepository final
-    : public IAcousticFieldAssetRepository {
+class InMemoryEnvironmentAssetRepository final
+    : public IEnvironmentAssetRepository {
  public:
-  [[nodiscard]] auto Add(
-      AcousticFieldAssetKey key,
-      std::shared_ptr<const internal::AcousticFieldAsset> asset)
-      -> contracts::Status {
-    if(key.asset_id.empty() || key.revision == 0U || !asset) {
+  [[nodiscard]] auto Store(
+      std::shared_ptr<const internal::AcousticEnvironmentAsset> asset)
+      -> contracts::Status override {
+    if(!asset) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kInvalidArgument,
-                           "Asset repository requires a non-empty id, "
-                           "non-zero revision, and non-null asset"});
+                           "Asset repository requires a non-null asset"});
     }
+    const EnvironmentAssetKey key{asset->asset_id(), asset->version()};
     if(Find(key)) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kAlreadyExists,
-                           "Acoustic field asset id/revision already exists"});
+                           "Environment asset id/revision already exists"});
     }
     entries_.push_back(Entry{std::move(key), std::move(asset)});
     std::sort(entries_.begin(), entries_.end(), [](const auto& lhs,
@@ -62,8 +65,8 @@ class InMemoryAcousticFieldAssetRepository final
   }
 
   [[nodiscard]] auto Find(
-      const AcousticFieldAssetKey& key) const noexcept
-      -> std::shared_ptr<const internal::AcousticFieldAsset> override {
+      const EnvironmentAssetKey& key) const noexcept
+      -> std::shared_ptr<const internal::AcousticEnvironmentAsset> override {
     const auto found = std::find_if(
         entries_.begin(), entries_.end(), [&](const auto& entry) {
           return entry.key == key;
@@ -73,8 +76,8 @@ class InMemoryAcousticFieldAssetRepository final
 
  private:
   struct Entry final {
-    AcousticFieldAssetKey key;
-    std::shared_ptr<const internal::AcousticFieldAsset> asset;
+    EnvironmentAssetKey key;
+    std::shared_ptr<const internal::AcousticEnvironmentAsset> asset;
   };
 
   std::vector<Entry> entries_;

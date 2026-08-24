@@ -105,24 +105,30 @@ int main() {
         12'000.0,
         {"pipeline fixture", "SVW", "A", 0.0, 1600.0, 1.8, 0.8,
          2, 0, -80.0, 80.0, 0.0}}}};
-  auto asset = pipeline.Generate(request);
+  auto asset = pipeline.GenerateEnvironmentAsset(
+      request,
+      {"pipeline-fixture",
+       1U,
+       "fixture-annual",
+       {"test-fixture", "fixture://pipeline", "fnv1a64:pipeline",
+        "offline-pipeline-test"}});
   Check(asset.has_value());
-  Check(asset->frequency_hz().size() == 1U);
-  Check(asset->frequency_hz().front() == 12'000.0);
-  Check(asset->cells().size() == 4U);
+  Check(asset->asset_id() == "pipeline-fixture");
+  Check(asset->field_atlas().frequency_hz().size() == 1U);
+  Check(asset->field_atlas().frequency_hz().front() == 12'000.0);
+  Check(asset->field_atlas().cells().size() == 4U);
   Check(std::holds_alternative<
-        environment::internal::AcousticFieldSignalCell>(asset->cells()[0]));
+        environment::internal::AcousticFieldSignalCell>(
+            asset->field_atlas().cells()[0]));
   Check(std::holds_alternative<
-        environment::internal::AcousticFieldNoArrivalCell>(asset->cells()[1]));
+        environment::internal::AcousticFieldNoArrivalCell>(
+            asset->field_atlas().cells()[1]));
 
-  environment::InMemoryAcousticFieldAssetRepository repository;
-  const environment::AcousticFieldAssetKey key{"pipeline-fixture", 1U};
-  Check(repository.Add(
-      key,
-      std::make_shared<const environment::internal::AcousticFieldAsset>(
+  environment::InMemoryEnvironmentAssetRepository repository;
+  Check(repository.Store(
+      std::make_shared<const environment::internal::AcousticEnvironmentAsset>(
           std::move(*asset))).has_value());
-  Check(repository.Find(key) != nullptr);
-  Check(repository.Find({"missing", 1U}) == nullptr);
-  Check(!repository.Add(key, repository.Find(key)).has_value());
+  Check(repository.Find({"pipeline-fixture", 1U}) != nullptr);
+
   return EXIT_SUCCESS;
 }

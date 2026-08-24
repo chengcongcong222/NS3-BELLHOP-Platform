@@ -55,6 +55,7 @@ if(BUILD_TESTING)
       bellhop_environment_builder
       environment_asset_repository
       environment_profile
+      legacy_asset_loader
       offline_asset_pipeline
   )
     set(test_target "platform_environment_${environment_test}_test")

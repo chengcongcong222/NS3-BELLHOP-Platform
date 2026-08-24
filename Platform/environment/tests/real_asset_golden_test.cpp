@@ -121,13 +121,23 @@ int main(int argc, char** argv) {
          -80.0,
          80.0,
          0.0}}}};
-  auto generated = pipeline.Generate(request,
-                                     std::move(cached->sound_speed_profile),
-                                     std::move(cached->bathymetry_profile));
-  if(!generated) {
-    std::cerr << "Generation failed: " << generated.error().message << '\n';
+  auto generated_asset = pipeline.GenerateEnvironmentAsset(
+      request,
+      {cached->manifest.source_id,
+       1U,
+       cached->manifest.time_descriptor,
+       {cached->provenance.source_format,
+        cached->provenance.source_uri,
+        cached->provenance.content_digest,
+        cached->provenance.generated_by}},
+      std::move(cached->sound_speed_profile),
+      std::move(cached->bathymetry_profile));
+  if(!generated_asset) {
+    std::cerr << "Generation failed: "
+              << generated_asset.error().message << '\n';
   }
-  Check(generated.has_value());
+  Check(generated_asset.has_value());
+  const auto& generated = generated_asset->field_atlas();
 
   auto reference_dataset =
       environment::internal::import::BellhopAsciiArrivalParser::ParseFile(
@@ -148,18 +158,18 @@ int main(int argc, char** argv) {
           request.coordinate_frame);
   Check(reference.has_value());
 
-  Check(generated->format_version() == reference->format_version());
-  Check(generated->coordinate_frame() == reference->coordinate_frame());
-  Check(std::ranges::equal(generated->frequency_hz(),
+  Check(generated.format_version() == reference->format_version());
+  Check(generated.coordinate_frame() == reference->coordinate_frame());
+  Check(std::ranges::equal(generated.frequency_hz(),
                            reference->frequency_hz()));
-  Check(std::ranges::equal(generated->source_depth_m(),
+  Check(std::ranges::equal(generated.source_depth_m(),
                            reference->source_depth_m()));
-  Check(std::ranges::equal(generated->receiver_depth_m(),
+  Check(std::ranges::equal(generated.receiver_depth_m(),
                            reference->receiver_depth_m()));
-  Check(std::ranges::equal(generated->horizontal_range_m(),
+  Check(std::ranges::equal(generated.horizontal_range_m(),
                            reference->horizontal_range_m()));
-  if(!std::ranges::equal(generated->cells(), reference->cells())) {
-    const auto generated_cells = generated->cells();
+  if(!std::ranges::equal(generated.cells(), reference->cells())) {
+    const auto generated_cells = generated.cells();
     const auto reference_cells = reference->cells();
     for(std::size_t index = 0U; index < generated_cells.size(); ++index) {
       if(generated_cells[index] == reference_cells[index]) {
@@ -188,6 +198,6 @@ int main(int argc, char** argv) {
       break;
     }
   }
-  Check(std::ranges::equal(generated->cells(), reference->cells()));
+  Check(std::ranges::equal(generated.cells(), reference->cells()));
   return EXIT_SUCCESS;
 }
