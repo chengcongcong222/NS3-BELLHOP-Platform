@@ -31,6 +31,24 @@ set(
   CACHE FILEPATH
   "Optional reference ARR for the real Environment golden test"
 )
+set(
+  PLATFORM_RAW_DATA_PYTHON
+  ""
+  CACHE FILEPATH
+  "Optional Python interpreter with numpy/netCDF4 for raw WOA tests"
+)
+set(
+  PLATFORM_WOA_TEMPERATURE_DATASET
+  ""
+  CACHE FILEPATH
+  "Optional WOA temperature NetCDF for the raw Environment import test"
+)
+set(
+  PLATFORM_WOA_SALINITY_DATASET
+  ""
+  CACHE FILEPATH
+  "Optional WOA salinity NetCDF for the raw Environment import test"
+)
 
 if(BUILD_TESTING)
   foreach(existing_environment_test IN ITEMS
@@ -123,6 +141,48 @@ if(BUILD_TESTING)
     set_tests_properties(
       platform_environment_real_asset_golden_test
       PROPERTIES LABELS "integration;bellhop;real-asset"
+    )
+  endif()
+
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_Interpreter_FOUND)
+    add_test(
+      NAME platform_environment_raw_import_tool_self_test
+      COMMAND
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/import_raw_environment.py"
+        --self-test
+    )
+    set_tests_properties(
+      platform_environment_raw_import_tool_self_test
+      PROPERTIES LABELS "environment;offline-tool"
+    )
+  endif()
+
+  add_executable(
+    platform_environment_raw_environment_import_test
+    tests/raw_environment_import_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_raw_environment_import_test
+    PRIVATE Platform::environment
+  )
+  if(PLATFORM_RAW_DATA_PYTHON
+     AND PLATFORM_WOA_TEMPERATURE_DATASET
+     AND PLATFORM_WOA_SALINITY_DATASET)
+    add_test(
+      NAME platform_environment_raw_environment_import_test
+      COMMAND
+        platform_environment_raw_environment_import_test
+        "${PLATFORM_RAW_DATA_PYTHON}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/import_raw_environment.py"
+        "${PLATFORM_WOA_TEMPERATURE_DATASET}"
+        "${PLATFORM_WOA_SALINITY_DATASET}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/gebco_response_fixture.json"
+    )
+    set_tests_properties(
+      platform_environment_raw_environment_import_test
+      PROPERTIES LABELS "environment;integration;raw-data;real-asset"
     )
   endif()
 endif()
