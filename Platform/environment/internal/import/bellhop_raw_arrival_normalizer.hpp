@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -128,24 +129,40 @@ struct NormalizedBellhopPath final {
 
   std::vector<NormalizedBellhopPath> normalized;
   normalized.reserve(raw_cell.arrivals.size());
-  long double aggregate_gain = 0.0L;
   auto first_arrival = contracts::SimDuration::FromNanoseconds(
       std::numeric_limits<contracts::NanosecondCount>::max());
   for(const auto& raw : raw_cell.arrivals) {
     auto path = NormalizeBellhopPath(raw, omega);
     if(!path) return std::unexpected(path.error());
+    if(path->absolute_delay < first_arrival) {
+      first_arrival = path->absolute_delay;
+    }
+    normalized.push_back(*path);
+  }
+
+  // Bellhop may emit equivalent arrivals in a different order across runs.
+  // Canonicalize before accumulation so normalization is independent of that
+  // serialization order and produces a stable aggregate scalar.
+  std::sort(normalized.begin(), normalized.end(), [](const auto& lhs,
+                                                     const auto& rhs) {
+    if(lhs.absolute_delay != rhs.absolute_delay) {
+      return lhs.absolute_delay < rhs.absolute_delay;
+    }
+    if(lhs.pressure_gain_linear != rhs.pressure_gain_linear) {
+      return lhs.pressure_gain_linear < rhs.pressure_gain_linear;
+    }
+    return lhs.phase_radians < rhs.phase_radians;
+  });
+  long double aggregate_gain = 0.0L;
+  for(const auto& path : normalized) {
     aggregate_gain = std::hypot(
         aggregate_gain,
-        static_cast<long double>(path->pressure_gain_linear));
+        static_cast<long double>(path.pressure_gain_linear));
     if(!std::isfinite(aggregate_gain)) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kOverflow,
                            "Bellhop aggregate pressure gain overflowed"});
     }
-    if(path->absolute_delay < first_arrival) {
-      first_arrival = path->absolute_delay;
-    }
-    normalized.push_back(*path);
   }
 
   if(aggregate_gain == 0.0L) {

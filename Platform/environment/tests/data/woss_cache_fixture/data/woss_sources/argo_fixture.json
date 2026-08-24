@@ -1,0 +1,24 @@
+{
+  "id": "argo-fixture-source",
+  "name": "argo-fixture-source",
+  "provider": "woss",
+  "mode": "cache-import",
+  "artifacts": {
+    "ssp_file": "data/ssp/fixture.csv",
+    "bathymetry_file": "data/bathymetry/fixture.json"
+  },
+  "location": {
+    "latitude_deg": 18.0,
+    "longitude_deg": 130.0
+  },
+  "time_reference": {
+    "label": "Argo profile fixture"
+  },
+  "datasets": {
+    "argo": "argo-profile-fixture",
+    "gebco": "2020-public-api"
+  },
+  "cache": {
+    "source_kind": "argo-gebco-cache-fixture"
+  }
+}

@@ -191,6 +191,26 @@ auto TestAggregateLossIgnoresPhase() -> bool {
          second_signal.aggregate_transmission_loss_db;
 }
 
+auto TestArrivalOrderingDoesNotChangeNormalizedAsset() -> bool {
+  const auto first = Bundle(
+      12'000.0,
+      {100.0},
+      {{{Raw(0.25, 90.0, 0.2),
+         Raw(0.5, -45.0, 0.1),
+         Raw(0.125, 180.0, 0.3)}}});
+  const auto reordered = Bundle(
+      12'000.0,
+      {100.0},
+      {{{Raw(0.125, 180.0, 0.3),
+         Raw(0.5, -45.0, 0.1),
+         Raw(0.25, 90.0, 0.2)}}});
+  if(!first || !reordered) return false;
+  const auto first_asset = Normalize(*first);
+  const auto reordered_asset = Normalize(*reordered);
+  return first_asset && reordered_asset &&
+         std::ranges::equal(first_asset->cells(), reordered_asset->cells());
+}
+
 auto TestDelayRoundingAndNoArrivalClassification() -> bool {
   auto bundle = Bundle(
       1'000.0,
@@ -391,6 +411,7 @@ auto main(int argc, char** argv) -> int {
   const auto tests_pass =
       TestGoldenComplexSemanticsAndAggregateLoss() &&
       TestAggregateLossIgnoresPhase() &&
+      TestArrivalOrderingDoesNotChangeNormalizedAsset() &&
       TestDelayRoundingAndNoArrivalClassification() &&
       TestBundleAxesAndFrequencyMajorCellOrderArePreserved() &&
       TestExplicitNormalizationFailures();

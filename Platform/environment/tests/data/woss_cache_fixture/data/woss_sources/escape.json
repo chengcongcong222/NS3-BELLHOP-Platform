@@ -1,0 +1,21 @@
+{
+  "id": "escape-source",
+  "name": "escape-source",
+  "provider": "woss",
+  "mode": "cache-import",
+  "artifacts": {
+    "ssp_file": "../outside.csv",
+    "bathymetry_file": "data/bathymetry/fixture.json"
+  },
+  "location": {
+    "latitude_deg": 18.0,
+    "longitude_deg": 130.0
+  },
+  "time_reference": {
+    "label": "WOA23 month-04 climatology"
+  },
+  "datasets": {
+    "woa": "2023-month-04-1deg",
+    "gebco": "2020-public-api"
+  }
+}
