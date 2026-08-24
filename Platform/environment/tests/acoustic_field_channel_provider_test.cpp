@@ -40,7 +40,7 @@ auto MakeAffineAsset(std::vector<double> ranges = {0.0, 10.0})
               30.0 * ranges[range]);
           const auto identity = static_cast<double>(
               1U + 100U * f + 20U * s + 5U * receiver + range);
-          cells.push_back(AcousticFieldCell{
+          cells.push_back(AcousticFieldSignalCell{
               loss,
               SimDuration::FromNanoseconds(delay),
               {Path(identity, -identity)}});
@@ -71,6 +71,28 @@ auto MakeProvider(std::shared_ptr<const AcousticFieldAsset> asset,
   if(!frequency) return std::unexpected(frequency.error());
   return AcousticFieldChannelProvider::Create(
       std::move(asset), *frequency);
+}
+
+auto MakeMixedCoverageAsset()
+    -> std::shared_ptr<const AcousticFieldAsset> {
+  const auto frame = EnvironmentCoordinateFrame::Create(
+      0.0, VerticalAxisDirection::kPositiveUp);
+  if(!frame) return {};
+  auto asset = AcousticFieldAsset::Create(
+      1U,
+      "mixed coverage fixture",
+      *frame,
+      {20'000.0},
+      {10.0},
+      {30.0},
+      {0.0, 10.0},
+      {AcousticFieldNoArrivalCell{},
+       AcousticFieldSignalCell{
+           91.0,
+           SimDuration::FromNanoseconds(123),
+           {Path(0.25, 0.75)}}});
+  if(!asset) return {};
+  return std::make_shared<const AcousticFieldAsset>(std::move(*asset));
 }
 
 auto Query(TransmissionId transmission_id,
@@ -214,8 +236,9 @@ auto TestDelayRoundingToNearestNanosecond() -> bool {
       {10.0},
       {30.0},
       {0.0, 2.0},
-      {AcousticFieldCell{1.0, SimDuration::Zero(), {}},
-       AcousticFieldCell{1.0, SimDuration::FromNanoseconds(1), {}}});
+      {AcousticFieldSignalCell{1.0, SimDuration::Zero(), {}},
+       AcousticFieldSignalCell{
+           1.0, SimDuration::FromNanoseconds(1), {}}});
   if(!asset) return false;
   auto provider = MakeProvider(
       std::make_shared<const AcousticFieldAsset>(std::move(*asset)));
@@ -239,7 +262,7 @@ auto TestSingletonSpatialAxesRequireExactCoordinates() -> bool {
       {10.0},
       {30.0},
       {5.0},
-      {AcousticFieldCell{
+      {AcousticFieldSignalCell{
           42.0, SimDuration::FromNanoseconds(123), {}}});
   if(!asset) return false;
   auto provider = MakeProvider(
@@ -317,6 +340,67 @@ auto TestStaticTimeAndIdentitySemantics() -> bool {
          ValidateChannelFieldResponseIdentity(*at_t1, *second);
 }
 
+auto TestCoverageClassificationAndMixedStencilPolicy() -> bool {
+  auto provider = MakeProvider(MakeMixedCoverageAsset());
+  if(!provider) return false;
+  const auto exact_no_arrival =
+      Query(TransmissionId{60}, NodeId{0}, 10, 30, 0);
+  const auto exact_signal =
+      Query(TransmissionId{61}, NodeId{1}, 10, 30, 10);
+  const auto nearest_no_arrival =
+      Query(TransmissionId{62}, NodeId{2}, 10, 30, 4);
+  const auto lower_tie_no_arrival =
+      Query(TransmissionId{63}, NodeId{3}, 10, 30, 5);
+  const auto nearest_signal =
+      Query(TransmissionId{64}, NodeId{4}, 10, 30, 6);
+  const auto time_independent = Query(
+      TransmissionId{65},
+      NodeId{5},
+      10,
+      30,
+      0,
+      20'000.0,
+      2'000.0,
+      SimTime::FromNanoseconds(9'000'000'000));
+  if(!exact_no_arrival || !exact_signal || !nearest_no_arrival ||
+     !lower_tie_no_arrival || !nearest_signal || !time_independent) {
+    return false;
+  }
+
+  const auto no_arrival = provider->Query(*exact_no_arrival);
+  const auto signal = provider->Query(*exact_signal);
+  const auto nearest_none = provider->Query(*nearest_no_arrival);
+  const auto tie_none = provider->Query(*lower_tie_no_arrival);
+  const auto nearest_response = provider->Query(*nearest_signal);
+  const auto later_none = provider->Query(*time_independent);
+  if(!no_arrival || !signal || !nearest_none || !tie_none ||
+     !nearest_response || !later_none) {
+    return false;
+  }
+  const auto* exact_none = std::get_if<ChannelNoArrival>(&*no_arrival);
+  const auto* exact_response = std::get_if<ChannelFieldResponse>(&*signal);
+  const auto* near_none = std::get_if<ChannelNoArrival>(&*nearest_none);
+  const auto* tie = std::get_if<ChannelNoArrival>(&*tie_none);
+  const auto* near_response =
+      std::get_if<ChannelFieldResponse>(&*nearest_response);
+  const auto* later = std::get_if<ChannelNoArrival>(&*later_none);
+  return exact_none != nullptr && exact_response != nullptr &&
+         near_none != nullptr && tie != nullptr &&
+         near_response != nullptr && later != nullptr &&
+         exact_none->transmission_id() == TransmissionId{60} &&
+         exact_none->receiver_node_id() == NodeId{0} &&
+         exact_response->aggregate_transmission_loss_db() == 91.0 &&
+         exact_response->first_arrival_delay() ==
+             SimDuration::FromNanoseconds(123) &&
+         near_response->aggregate_transmission_loss_db() == 91.0 &&
+         near_response->first_arrival_delay() ==
+             SimDuration::FromNanoseconds(123) &&
+         near_response->paths().size() == 1U &&
+         near_response->paths().front().pressure_gain_linear() == 0.25 &&
+         later->transmission_id() == TransmissionId{65} &&
+         later->receiver_node_id() == NodeId{5};
+}
+
 auto TestProviderOwnershipAndConfigurationValidation() -> bool {
   auto frame = EnvironmentCoordinateFrame::Create(
       0.0, VerticalAxisDirection::kPositiveUp);
@@ -340,6 +424,7 @@ auto main() -> int {
                  TestOutOfDomainDoesNotClampOrExtrapolate() &&
                  TestNearestCellPathsAndLowerTie() &&
                  TestStaticTimeAndIdentitySemantics() &&
+                 TestCoverageClassificationAndMixedStencilPolicy() &&
                  TestProviderOwnershipAndConfigurationValidation()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;

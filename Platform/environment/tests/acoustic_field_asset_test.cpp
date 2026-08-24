@@ -2,6 +2,7 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
@@ -14,9 +15,8 @@ using namespace ns3_factory::environment::internal;
 namespace {
 
 auto Cell(double loss_db = 70.0) -> AcousticFieldCell {
-  return AcousticFieldCell{loss_db,
-                           SimDuration::FromNanoseconds(1'000),
-                           {}};
+  return AcousticFieldSignalCell{
+      loss_db, SimDuration::FromNanoseconds(1'000), {}};
 }
 
 auto Build(std::vector<double> frequencies,
@@ -60,7 +60,8 @@ auto TestValidAssetAndLayout() -> bool {
          asset->provenance() == "deterministic fixture" &&
          asset->coordinate_frame().surface_z_meters() == 0.0 &&
          asset->cells().size() == 16U &&
-         asset->cell(1U, 0U, 1U, 0U)
+         std::get<AcousticFieldSignalCell>(
+             asset->cell(1U, 0U, 1U, 0U))
                  .aggregate_transmission_loss_db == 1010.0;
 }
 
@@ -100,9 +101,9 @@ auto TestCellValidation() -> bool {
       {10.0},
       {10.0},
       {0.0},
-      {AcousticFieldCell{70.0,
-                         SimDuration::FromNanoseconds(-1),
-                         {}}});
+      {AcousticFieldSignalCell{70.0,
+                               SimDuration::FromNanoseconds(-1),
+                               {}}});
   const auto delayed_path = PropagationPath::Create(
       SimDuration::FromNanoseconds(1), 0.5, 0.0);
   if(!delayed_path) return false;
@@ -111,10 +112,19 @@ auto TestCellValidation() -> bool {
       {10.0},
       {10.0},
       {0.0},
-      {AcousticFieldCell{70.0,
-                         SimDuration::FromNanoseconds(1),
-                         {*delayed_path}}});
-  return !bad_count && !bad_loss && !bad_delay && !no_zero_path;
+      {AcousticFieldSignalCell{70.0,
+                               SimDuration::FromNanoseconds(1),
+                               {*delayed_path}}});
+  const auto no_arrival = Build(
+      {20'000.0},
+      {10.0},
+      {10.0},
+      {0.0},
+      {AcousticFieldNoArrivalCell{}});
+  return !bad_count && !bad_loss && !bad_delay && !no_zero_path &&
+         no_arrival &&
+         std::holds_alternative<AcousticFieldNoArrivalCell>(
+             no_arrival->cell(0U, 0U, 0U, 0U));
 }
 
 auto TestDimensionProductOverflow() -> bool {

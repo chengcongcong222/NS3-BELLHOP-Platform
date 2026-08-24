@@ -58,4 +58,17 @@ if(BUILD_TESTING)
     NAME platform_environment_bellhop_raw_arrival_bundle_test
     COMMAND platform_environment_bellhop_raw_arrival_bundle_test
   )
+
+  add_executable(
+    platform_environment_bellhop_raw_arrival_normalizer_test
+    tests/bellhop_raw_arrival_normalizer_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_bellhop_raw_arrival_normalizer_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_bellhop_raw_arrival_normalizer_test
+    COMMAND platform_environment_bellhop_raw_arrival_normalizer_test
+  )
 endif()

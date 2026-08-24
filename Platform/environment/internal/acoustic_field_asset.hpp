@@ -8,6 +8,7 @@
 #include <span>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
@@ -18,13 +19,20 @@
 
 namespace ns3_factory::environment::internal {
 
-struct AcousticFieldCell final {
+struct AcousticFieldSignalCell final {
   double aggregate_transmission_loss_db;
   contracts::SimDuration first_arrival_delay;
   std::vector<contracts::PropagationPath> paths;
 
-  auto operator==(const AcousticFieldCell&) const -> bool = default;
+  auto operator==(const AcousticFieldSignalCell&) const -> bool = default;
 };
+
+struct AcousticFieldNoArrivalCell final {
+  auto operator==(const AcousticFieldNoArrivalCell&) const -> bool = default;
+};
+
+using AcousticFieldCell =
+    std::variant<AcousticFieldSignalCell, AcousticFieldNoArrivalCell>;
 
 [[nodiscard]] inline auto CheckedGridCellCount(
     std::size_t frequency_count,
@@ -242,23 +250,25 @@ inline auto AcousticFieldAsset::Create(
   }
 
   for(auto& cell : cells) {
-    if(!std::isfinite(cell.aggregate_transmission_loss_db)) {
+    auto* signal = std::get_if<AcousticFieldSignalCell>(&cell);
+    if(signal == nullptr) continue;
+    if(!std::isfinite(signal->aggregate_transmission_loss_db)) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kInvalidArgument,
                            "Acoustic field transmission loss must be "
                            "finite"});
     }
-    if(cell.first_arrival_delay < contracts::SimDuration::Zero()) {
+    if(signal->first_arrival_delay < contracts::SimDuration::Zero()) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kOutOfRange,
                            "Acoustic field first arrival delay must be "
                            "non-negative"});
     }
-    std::sort(cell.paths.begin(),
-              cell.paths.end(),
+    std::sort(signal->paths.begin(),
+              signal->paths.end(),
               detail::CanonicalPathLess);
-    if(!cell.paths.empty() &&
-       cell.paths.front().excess_delay() !=
+    if(!signal->paths.empty() &&
+       signal->paths.front().excess_delay() !=
            contracts::SimDuration::Zero()) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kFailedPrecondition,

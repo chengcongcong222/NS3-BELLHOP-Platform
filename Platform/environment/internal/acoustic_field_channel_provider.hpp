@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <variant>
 
 #include <ns3_factory/contracts/channel.hpp>
 #include <ns3_factory/contracts/errors.hpp>
@@ -101,29 +102,71 @@ inline auto AcousticFieldChannelProvider::Query(
       ResolveGridAxis(asset_->horizontal_range_m(), *horizontal_range);
   if(!range_lookup) return std::unexpected(range_lookup.error());
 
+  const auto& nearest_cell = asset_->cell(
+      *frequency_index,
+      source_lookup->nearest_index,
+      receiver_lookup->nearest_index,
+      range_lookup->nearest_index);
+  const auto* nearest_signal =
+      std::get_if<AcousticFieldSignalCell>(&nearest_cell);
+  if(nearest_signal == nullptr) {
+    contracts::ChannelFieldOutcome outcome{
+        contracts::ChannelNoArrival{query.transmission_id(),
+                                    query.receiver_node_id()}};
+    const auto identity =
+        contracts::ValidateChannelFieldOutcomeIdentity(query, outcome);
+    if(!identity) return std::unexpected(identity.error());
+    return outcome;
+  }
+
   const auto source_weights = detail::BuildAxisWeights(*source_lookup);
   const auto receiver_weights = detail::BuildAxisWeights(*receiver_lookup);
   const auto range_weights = detail::BuildAxisWeights(*range_lookup);
-  long double transmission_loss_db = 0.0L;
-  long double first_arrival_nanoseconds = 0.0L;
+  bool all_stencil_cells_are_signal = true;
   for(std::size_t source = 0U; source < source_weights.count; ++source) {
     for(std::size_t receiver = 0U; receiver < receiver_weights.count;
         ++receiver) {
       for(std::size_t range = 0U; range < range_weights.count; ++range) {
-        const auto weight = source_weights.weights[source] *
-                            receiver_weights.weights[receiver] *
-                            range_weights.weights[range];
         const auto& cell = asset_->cell(
             *frequency_index,
             source_weights.indices[source],
             receiver_weights.indices[receiver],
             range_weights.indices[range]);
-        transmission_loss_db +=
-            weight * static_cast<long double>(
-                         cell.aggregate_transmission_loss_db);
-        first_arrival_nanoseconds +=
-            weight * static_cast<long double>(
-                         cell.first_arrival_delay.nanoseconds());
+        if(!std::holds_alternative<AcousticFieldSignalCell>(cell)) {
+          all_stencil_cells_are_signal = false;
+        }
+      }
+    }
+  }
+
+  long double transmission_loss_db =
+      static_cast<long double>(
+          nearest_signal->aggregate_transmission_loss_db);
+  long double first_arrival_nanoseconds =
+      static_cast<long double>(
+          nearest_signal->first_arrival_delay.nanoseconds());
+  if(all_stencil_cells_are_signal) {
+    transmission_loss_db = 0.0L;
+    first_arrival_nanoseconds = 0.0L;
+    for(std::size_t source = 0U; source < source_weights.count; ++source) {
+      for(std::size_t receiver = 0U; receiver < receiver_weights.count;
+          ++receiver) {
+        for(std::size_t range = 0U; range < range_weights.count; ++range) {
+          const auto weight = source_weights.weights[source] *
+                              receiver_weights.weights[receiver] *
+                              range_weights.weights[range];
+          const auto& signal = std::get<AcousticFieldSignalCell>(
+              asset_->cell(*frequency_index,
+                           source_weights.indices[source],
+                           receiver_weights.indices[receiver],
+                           range_weights.indices[range]));
+          transmission_loss_db +=
+              weight * static_cast<long double>(
+                           signal.aggregate_transmission_loss_db);
+          first_arrival_nanoseconds +=
+              weight * static_cast<long double>(
+                           signal.first_arrival_delay.nanoseconds());
+        }
       }
     }
   }
@@ -148,18 +191,13 @@ inline auto AcousticFieldChannelProvider::Query(
                          "int64 nanoseconds"});
   }
 
-  const auto& nearest_cell = asset_->cell(
-      *frequency_index,
-      source_lookup->nearest_index,
-      receiver_lookup->nearest_index,
-      range_lookup->nearest_index);
   auto response = contracts::ChannelFieldResponse::Create(
       query.transmission_id(),
       query.receiver_node_id(),
       interpolated_loss,
       contracts::SimDuration::FromNanoseconds(
           static_cast<contracts::NanosecondCount>(rounded_nanoseconds)),
-      nearest_cell.paths);
+      nearest_signal->paths);
   if(!response) return std::unexpected(response.error());
   contracts::ChannelFieldOutcome outcome{std::move(*response)};
   const auto identity =

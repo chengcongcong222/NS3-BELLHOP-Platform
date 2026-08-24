@@ -1,11 +1,12 @@
-#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
@@ -15,18 +16,23 @@
 
 #include "internal/acoustic_field_channel_provider.hpp"
 #include "internal/configured_tx_phy.hpp"
+#include "internal/import/bellhop_arrival_import_options.hpp"
+#include "internal/import/bellhop_ascii_arrival_parser.hpp"
+#include "internal/import/bellhop_raw_arrival_bundle.hpp"
+#include "internal/import/bellhop_raw_arrival_normalizer.hpp"
 #include "scenario_runtime_test_support.hpp"
 
 using namespace ns3_factory::assembly::internal;
 using namespace ns3_factory::assembly::test;
 using namespace ns3_factory::environment::internal;
+using namespace ns3_factory::environment::internal::import;
 using namespace ns3_factory::phy::internal;
 
 namespace {
 
-class CountingM5TxPhy final : public ITxPhy {
+class CountingTxPhy final : public ITxPhy {
  public:
-  explicit CountingM5TxPhy(const ConfiguredTxPhy& delegate) noexcept
+  explicit CountingTxPhy(const ConfiguredTxPhy& delegate) noexcept
       : delegate_(delegate) {}
 
   auto Encode(const DigitalPacket& packet,
@@ -42,38 +48,42 @@ class CountingM5TxPhy final : public ITxPhy {
   std::reference_wrapper<const ConfiguredTxPhy> delegate_;
 };
 
-class CountingAcousticFieldProvider final : public IChannelFieldProvider {
+class CountingChannelProvider final : public IChannelFieldProvider {
  public:
-  explicit CountingAcousticFieldProvider(
+  explicit CountingChannelProvider(
       const AcousticFieldChannelProvider& delegate) noexcept
       : delegate_(delegate) {}
 
   auto Query(const ChannelQuery& query) const
       -> Result<ChannelFieldOutcome> override {
-    ++count;
+    ++query_count;
     receiver_ids.push_back(query.receiver_node_id());
     auto outcome = delegate_.get().Query(query);
     if(outcome) {
-      const auto* response =
-          std::get_if<ChannelFieldResponse>(&*outcome);
-      if(response != nullptr) responses.push_back(*response);
+      if(std::holds_alternative<ChannelFieldResponse>(*outcome)) {
+        ++response_count;
+      } else {
+        ++no_arrival_count;
+      }
     }
     return outcome;
   }
 
-  mutable std::size_t count{0U};
+  mutable std::size_t query_count{0U};
+  mutable std::size_t response_count{0U};
+  mutable std::size_t no_arrival_count{0U};
   mutable std::vector<NodeId> receiver_ids;
-  mutable std::vector<ChannelFieldResponse> responses;
 
  private:
   std::reference_wrapper<const AcousticFieldChannelProvider> delegate_;
 };
 
-class FixedNoiseFieldProvider final : public INoiseFieldProvider {
+class CountingNoise final : public INoiseFieldProvider {
  public:
   auto Query(const NoiseQuery& query) const
       -> Result<NoiseObservation> override {
     ++count;
+    receiver_ids.push_back(query.receiver_node_id());
     return NoiseObservation::Create(query.receiver_node_id(),
                                     query.observed_from(),
                                     query.observed_until(),
@@ -83,14 +93,16 @@ class FixedNoiseFieldProvider final : public INoiseFieldProvider {
   }
 
   mutable std::size_t count{0U};
+  mutable std::vector<NodeId> receiver_ids;
 };
 
-class AlwaysDecodeRxPhy final : public IRxPhy {
+class CountingRx final : public IRxPhy {
  public:
   auto Decode(const RxDecodeRequest& request) const
       -> Result<RxDecodeResult> override {
     ++count;
     const auto& signal = request.receiver_window().desired_signal();
+    receiver_ids.push_back(signal.receiver_node_id());
     return RxDecodeResult::Create(signal.transmission_id(),
                                   signal.emission().packet_id(),
                                   signal.receiver_node_id(),
@@ -98,6 +110,7 @@ class AlwaysDecodeRxPhy final : public IRxPhy {
   }
 
   mutable std::size_t count{0U};
+  mutable std::vector<NodeId> receiver_ids;
 };
 
 constexpr auto PositionedNode(std::uint64_t id,
@@ -110,7 +123,7 @@ constexpr auto PositionedNode(std::uint64_t id,
                   Velocity3d{0.0, 0.0, 0.0}}};
 }
 
-auto IntegrationSnapshot() -> Result<WorldSnapshot> {
+auto Snapshot() -> Result<WorldSnapshot> {
   return WorldSnapshot::Create(
       SnapshotVersion{0},
       SimTime::Zero(),
@@ -120,33 +133,40 @@ auto IntegrationSnapshot() -> Result<WorldSnapshot> {
        PositionedNode(3, 3.0, 40.0)});
 }
 
-auto IntegrationField() -> Result<AcousticFieldAsset> {
-  std::vector<AcousticFieldCell> cells;
-  for(const auto receiver_depth : {20.0, 30.0, 40.0}) {
-    for(const auto range : {1.0, 2.0, 3.0}) {
-      auto path = PropagationPath::Create(
-          SimDuration::Zero(),
-          (receiver_depth + range) / 100.0,
-          receiver_depth / 100.0);
-      if(!path) return std::unexpected(path.error());
-      cells.push_back(AcousticFieldSignalCell{
-          50.0 + receiver_depth + range,
-          SimDuration::FromNanoseconds(static_cast<NanosecondCount>(
-              (receiver_depth + range) * 1'000'000.0)),
-          {*path}});
-    }
-  }
+auto ImportedField() -> Result<AcousticFieldAsset> {
+  // One source depth, three receiver depths and three ranges. Only the
+  // N1/range-1 and N3/range-3 diagonal cells contain arrivals; N2 is an
+  // explicit Narr==0 coverage cell.
+  std::istringstream ascii{
+      "'2D'\n"
+      "12000\n"
+      "1 10\n"
+      "3 20 30 40\n"
+      "3 1 2 3\n"
+      "1\n"
+      "1\n"
+      "0.2 30 0.020 0 -10 10 0 0\n"
+      "0\n"
+      "0\n"
+      "0\n"
+      "0\n"
+      "0\n"
+      "0\n"
+      "0\n"
+      "1\n"
+      "0.1 -45 0.030 0 -20 20 0 1\n"};
+  BellhopArrivalImportOptions options{BellhopReceiverRangeUnit::kMeters};
+  auto dataset = BellhopAsciiArrivalParser::Parse(ascii, options);
+  if(!dataset) return std::unexpected(dataset.error());
+  std::vector<BellhopRawArrivalDataset> datasets;
+  datasets.push_back(std::move(*dataset));
+  auto bundle = BellhopRawArrivalBundle::Create(std::move(datasets));
+  if(!bundle) return std::unexpected(bundle.error());
   auto frame = EnvironmentCoordinateFrame::Create(
       0.0, VerticalAxisDirection::kPositiveUp);
   if(!frame) return std::unexpected(frame.error());
-  return AcousticFieldAsset::Create(1U,
-                                    "P0-S2-02 integration fixture",
-                                    *frame,
-                                    {12'000.0},
-                                    {10.0},
-                                    {20.0, 30.0, 40.0},
-                                    {1.0, 2.0, 3.0},
-                                    std::move(cells));
+  return BellhopRawArrivalNormalizer::Normalize(
+      *bundle, 1U, "synthetic Bellhop ASCII integration", *frame);
 }
 
 auto QueueHasOnly(const PacketQueueStore& queues,
@@ -165,32 +185,8 @@ auto QueueHasOnly(const PacketQueueStore& queues,
   return true;
 }
 
-auto ResponsesMatchThreePhysicalReceivers(
-    const CountingAcousticFieldProvider& provider) -> bool {
-  if(provider.receiver_ids !=
-         std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} ||
-     provider.responses.size() != 3U) {
-    return false;
-  }
-  const std::vector<double> expected_loss{71.0, 82.0, 93.0};
-  const std::vector<SimDuration> expected_delay{
-      SimDuration::FromNanoseconds(21'000'000),
-      SimDuration::FromNanoseconds(32'000'000),
-      SimDuration::FromNanoseconds(43'000'000)};
-  for(std::size_t index = 0U; index < provider.responses.size(); ++index) {
-    const auto& response = provider.responses[index];
-    if(response.receiver_node_id() != provider.receiver_ids[index] ||
-       response.aggregate_transmission_loss_db() != expected_loss[index] ||
-       response.first_arrival_delay() != expected_delay[index] ||
-       response.paths().size() != 1U) {
-      return false;
-    }
-  }
-  return true;
-}
-
-auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
-  auto snapshot = IntegrationSnapshot();
+auto TestRawImportToScenarioRuntime() -> bool {
+  auto snapshot = Snapshot();
   auto queues_result = PacketQueueStore::Create(NodeIds());
   auto deliveries_result = ApplicationDeliveryStore::Create(NodeIds());
   auto connectivity_policy =
@@ -206,11 +202,10 @@ auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
           SimDuration::FromNanoseconds(125'000),
           4'000.0,
           120.0});
-  auto field = IntegrationField();
+  auto field = ImportedField();
   auto frequency = DiscreteFrequencySelectionPolicy::Create(0.0);
   if(!snapshot || !queues_result || !deliveries_result ||
-     !connectivity_policy || !configured_tx || !field ||
-     !frequency) {
+     !connectivity_policy || !configured_tx || !field || !frequency) {
     return false;
   }
   auto acoustic_provider = AcousticFieldChannelProvider::Create(
@@ -233,10 +228,10 @@ auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
   StructureBuilder structure_builder{
       *connectivity_policy, estimator, roles, topology};
   CyclingPlanner planner{gateway, PlanningCycleId{0}, {NodeId{0}}};
-  CountingM5TxPhy tx_phy{*configured_tx};
-  CountingAcousticFieldProvider channel{*acoustic_provider};
-  FixedNoiseFieldProvider noise;
-  AlwaysDecodeRxPhy rx_phy;
+  CountingTxPhy tx_phy{*configured_tx};
+  CountingChannelProvider channel{*acoustic_provider};
+  CountingNoise noise;
+  CountingRx rx;
   ScenarioRuntime runtime{gateway,
                           world,
                           queues,
@@ -247,7 +242,7 @@ auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
                           tx_phy,
                           channel,
                           noise,
-                          rx_phy,
+                          rx,
                           PlanningCycleId{0}};
   const auto packet = TestPacket();
   if(!queues.Enqueue(NodeId{0}, packet)) return false;
@@ -257,27 +252,32 @@ auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
     std::cerr << "RunCycles failed: " << run.error().message << '\n';
     return false;
   }
+  const auto next_transmission = ids.NextTransmissionId();
+  const auto next_reception = ids.NextReceptionId();
   const auto valid =
       runtime.state() == ScenarioRuntimeState::kCompleted &&
-      tx_phy.count == 1U && channel.count == 3U &&
-      ResponsesMatchThreePhysicalReceivers(channel) &&
-      noise.count == 3U && rx_phy.count == 3U &&
-      QueueHasOnly(queues, NodeId{1}, packet) && deliveries.size() == 0U &&
+      tx_phy.count == 1U && channel.query_count == 3U &&
+      channel.response_count == 2U &&
+      channel.no_arrival_count == 1U &&
+      channel.receiver_ids ==
+          std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} &&
+      noise.count == 2U &&
+      noise.receiver_ids == std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+      rx.count == 2U &&
+      rx.receiver_ids == std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+      next_transmission && *next_transmission == TransmissionId{101} &&
+      next_reception && *next_reception == ReceptionId{1'002} &&
+      QueueHasOnly(queues, NodeId{1}, packet) &&
+      deliveries.size() == 0U &&
       world.current_snapshot().version() == SnapshotVersion{1} &&
       world.current_snapshot().committed_at() == Seconds(10);
   if(!valid) {
-    std::cerr << "Unexpected integration result: tx=" << tx_phy.count
-              << " channel=" << channel.count << " noise=" << noise.count
-              << " rx=" << rx_phy.count
-              << " responses=" << channel.responses.size()
-              << " deliveries=" << deliveries.size() << '\n';
-    for(const auto& response : channel.responses) {
-      std::cerr << "  receiver=" << response.receiver_node_id().value()
-                << " loss="
-                << response.aggregate_transmission_loss_db()
-                << " delay="
-                << response.first_arrival_delay().nanoseconds() << '\n';
-    }
+    std::cerr << "Unexpected import integration result: tx="
+              << tx_phy.count << " query=" << channel.query_count
+              << " response=" << channel.response_count
+              << " no_arrival=" << channel.no_arrival_count
+              << " noise=" << noise.count << " rx=" << rx.count
+              << '\n';
   }
   return valid;
 }
@@ -285,6 +285,5 @@ auto TestScenarioRuntimeUsesM5AndAcousticFieldFanout() -> bool {
 }  // namespace
 
 auto main() -> int {
-  return TestScenarioRuntimeUsesM5AndAcousticFieldFanout() ? EXIT_SUCCESS
-                                                           : EXIT_FAILURE;
+  return TestRawImportToScenarioRuntime() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
