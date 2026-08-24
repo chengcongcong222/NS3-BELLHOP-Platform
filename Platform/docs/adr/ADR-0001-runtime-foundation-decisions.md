@@ -499,6 +499,18 @@ P0 aggregate transmission loss 是 incoherent power-equivalent pressure fallback
 
 Provider 先按既有 discrete frequency tolerance 选择 profile，再以 source depth、receiver depth、horizontal range 各自的 nearest lower-tie index决定 coverage。Nearest cell 为 no-arrival 时正常返回携带 query TransmissionId/receiver NodeId 的 `ChannelNoArrival`；nearest cell 为 signal 且 scalar interpolation stencil 全为 signal 时，继续 trilinear interpolation TL/first-arrival 并取 nearest-cell paths；nearest cell 为 signal 但 stencil 含 no-arrival 时，完整采用 nearest signal cell 的 TL、first-arrival 和 paths，不跨 coverage boundary 插值或填 synthetic TL。Out-of-domain 与缺失 frequency profile 始终是 Error，绝不能变成 no-arrival。该 asset 是 static：emitted_at 不改变 signal/no-arrival classification。所有路径禁止 synthetic direct path、infinite-TL sentinel、silent clamp 或 fallback。
 
+### 2.40 Canonical environment asset package and repository
+
+P0 normalized acoustic field 的持久化格式固定为一个包含 `manifest.txt` 与 `field.bin` 的 canonical package directory。Manifest 使用严格、有固定字段顺序的 `key=value` text grammar，必须声明 `NS3_FACTORY_ACOUSTIC_FIELD` format identifier、package/asset format version、producer/source/normalization provenance、coordinate frame、四条 axis 的 unit/count、cell/signal/no-arrival count、payload byte count 和 checksum。Unknown format/version、缺失/多余/乱序字段或不支持的 unit/checksum 必须明确 reject；producer 不得隐含用户名、机器绝对路径或旧 repository path，Bellhop import 必须记录 raw source logical name 与 normalization policy version。Writer 不自动加入 wall-clock timestamp；相同 asset 与 provenance 必须产生完全相同的 manifest 和 payload bytes。
+
+`field.bin` 固定使用 little-endian fixed-width integers 与 IEEE-754 binary64，不 raw-dump C++ struct/variant。Payload 依次保存独立 magic/version、asset format/provenance、coordinate frame、四个完整 axis value vector，以及 frequency-major → source-depth → receiver-depth → range 的逐 cell 数据。Signal cell 显式编码 aggregate TL、signed int64 first-arrival nanoseconds、path count，并对每条 canonical path 编码 signed int64 excess-delay nanoseconds、pressure gain 与 phase；NoArrival cell 只编码独立 kind，不保存 synthetic TL/delay/path。Loader 必须验证 magic/version、count arithmetic、enum、finite/domain/canonical path rules、cell count、truncation、unexpected trailing bytes 和 manifest/payload consistency，并把 decoded value 再交给 `AcousticFieldAsset::Create` canonical validation；禁止 partial load、repair、resort 或 renormalize。
+
+Payload checksum 固定为 deterministic FNV-1a 64，仅用于 accidental corruption detection，不是 cryptographic integrity 或 authentication guarantee。Checksum mismatch 必须拒绝 package；安全防篡改、签名和 trust distribution 留待后续独立设计。
+
+`EnvironmentAssetId` 是 repository-internal stable identity，不是 filesystem path，只允许受限的单 path-component 字符集，禁止 absolute path、separator injection 与 `..` traversal。同 ID 已存在返回 `AlreadyExists`，不自动改名或覆盖；registered package immutable，更新必须使用新 ID/version。Repository root 由 application/assembly 显式提供，repository 可 register/load/list/find validated packages，但不把 root/package path 暴露为 domain identity。Register 必须先在同一 repository root 的保留临时目录完成 write 与 loader validation，再以 rename 发布最终 AssetId；正常 API failure 必须清理自己创建的临时状态且不得留下可见 final ID。Power-loss durable transaction、`fsync` protocol 与 multi-process concurrency guarantee 仍不属于 P0。
+
+`AcousticFieldChannelProvider` 仍只持有 `shared_ptr<const AcousticFieldAsset>`。Scenario/application assembly 必须在 `ScenarioRuntime` 开始前通过 repository load/validate 一次；TransmissionExecutor → `IChannelFieldProvider::Query` 热路径禁止 filesystem、repository、network 或 subprocess I/O。HDF5、NetCDF、SQLite、cryptographic integrity、Bellhop subprocess、WOA/GEBCO acquisition 和 in-place registered-asset update 均不在本 P0 package 范围。
+
 ## 3. 影响
 
 ### 3.1 正向影响

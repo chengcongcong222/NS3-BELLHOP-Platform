@@ -71,4 +71,30 @@ if(BUILD_TESTING)
     NAME platform_environment_bellhop_raw_arrival_normalizer_test
     COMMAND platform_environment_bellhop_raw_arrival_normalizer_test
   )
+
+  add_executable(
+    platform_environment_asset_package_test
+    tests/environment_asset_package_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_asset_package_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_asset_package_test
+    COMMAND platform_environment_asset_package_test
+  )
+
+  add_executable(
+    platform_environment_asset_repository_test
+    tests/environment_asset_repository_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_asset_repository_test
+    PRIVATE Platform::environment
+  )
+  add_test(
+    NAME platform_environment_asset_repository_test
+    COMMAND platform_environment_asset_repository_test
+  )
 endif()

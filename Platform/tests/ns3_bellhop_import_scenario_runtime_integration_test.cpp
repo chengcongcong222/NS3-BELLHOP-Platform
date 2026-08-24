@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -15,6 +16,7 @@
 #include <ns3_factory/contracts/tx_phy.hpp>
 
 #include "internal/acoustic_field_channel_provider.hpp"
+#include "internal/environment_asset_repository.hpp"
 #include "internal/configured_tx_phy.hpp"
 #include "internal/import/bellhop_arrival_import_options.hpp"
 #include "internal/import/bellhop_ascii_arrival_parser.hpp"
@@ -29,6 +31,29 @@ using namespace ns3_factory::environment::internal::import;
 using namespace ns3_factory::phy::internal;
 
 namespace {
+
+class TemporaryAssetRepository final {
+ public:
+  TemporaryAssetRepository()
+      : root_(std::filesystem::temp_directory_path() /
+              "ns3_factory_bellhop_import_runtime_repository") {
+    std::error_code ignored;
+    std::filesystem::remove_all(root_, ignored);
+    std::filesystem::create_directory(root_);
+  }
+
+  ~TemporaryAssetRepository() {
+    std::error_code ignored;
+    std::filesystem::remove_all(root_, ignored);
+  }
+
+  [[nodiscard]] auto root() const -> const std::filesystem::path& {
+    return root_;
+  }
+
+ private:
+  std::filesystem::path root_;
+};
 
 class CountingTxPhy final : public ITxPhy {
  public:
@@ -185,7 +210,8 @@ auto QueueHasOnly(const PacketQueueStore& queues,
   return true;
 }
 
-auto TestRawImportToScenarioRuntime() -> bool {
+auto TestRawImportPackageToScenarioRuntime() -> bool {
+  TemporaryAssetRepository temporary_repository;
   auto snapshot = Snapshot();
   auto queues_result = PacketQueueStore::Create(NodeIds());
   auto deliveries_result = ApplicationDeliveryStore::Create(NodeIds());
@@ -204,13 +230,37 @@ auto TestRawImportToScenarioRuntime() -> bool {
           120.0});
   auto field = ImportedField();
   auto frequency = DiscreteFrequencySelectionPolicy::Create(0.0);
+  auto repository =
+      EnvironmentAssetRepository::Open(temporary_repository.root());
+  auto asset_id = EnvironmentAssetId::Create("synthetic-bellhop-field-v1");
+  auto package_provenance = EnvironmentAssetPackageProvenance::Create(
+      EnvironmentAssetProducerType::kBellhopRawImport,
+      "platform-integration-test",
+      "synthetic Bellhop import-to-runtime field",
+      "synthetic-runtime.arr",
+      "bellhop-normalization-v1");
   if(!snapshot || !queues_result || !deliveries_result ||
      !connectivity_policy || !configured_tx || !field || !frequency) {
     return false;
   }
+  if(!repository || !asset_id || !package_provenance) return false;
+  const auto registration = repository->Register(
+      *asset_id, *field, *package_provenance);
+  auto loaded_field = repository->Load(*asset_id);
+  if(!registration || !loaded_field ||
+     registration->signal_cell_count != 2U ||
+     registration->no_arrival_cell_count != 7U) {
+    return false;
+  }
+
+  // Runtime receives the immutable in-memory handle. Removing the offline
+  // package before execution proves ChannelProvider::Query has no filesystem
+  // dependency.
+  std::error_code remove_error;
+  std::filesystem::remove_all(temporary_repository.root(), remove_error);
+  if(remove_error) return false;
   auto acoustic_provider = AcousticFieldChannelProvider::Create(
-      std::make_shared<const AcousticFieldAsset>(std::move(*field)),
-      *frequency);
+      std::move(*loaded_field), *frequency);
   if(!acoustic_provider) return false;
 
   Ns3KernelGateway gateway;
@@ -285,5 +335,6 @@ auto TestRawImportToScenarioRuntime() -> bool {
 }  // namespace
 
 auto main() -> int {
-  return TestRawImportToScenarioRuntime() ? EXIT_SUCCESS : EXIT_FAILURE;
+  return TestRawImportPackageToScenarioRuntime() ? EXIT_SUCCESS
+                                                  : EXIT_FAILURE;
 }
