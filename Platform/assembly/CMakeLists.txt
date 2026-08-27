@@ -14,6 +14,26 @@ target_link_libraries(
 
 if(BUILD_TESTING)
   add_executable(
+    platform_assembly_acceptance_run_report_test
+    tests/acceptance_run_report_test.cpp
+  )
+  target_include_directories(
+    platform_assembly_acceptance_run_report_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/assembly"
+      "${PROJECT_SOURCE_DIR}/environment"
+      "${PROJECT_SOURCE_DIR}/phy"
+  )
+  target_link_libraries(
+    platform_assembly_acceptance_run_report_test
+    PRIVATE Platform::assembly
+  )
+  add_test(
+    NAME platform_assembly_acceptance_run_report_test
+    COMMAND platform_assembly_acceptance_run_report_test
+  )
+
+  add_executable(
     platform_assembly_acceptance_feature_test
     tests/acceptance_feature_test.cpp
   )

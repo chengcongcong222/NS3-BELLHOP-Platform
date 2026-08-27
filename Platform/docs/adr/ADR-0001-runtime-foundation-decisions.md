@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3-02 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3-03 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Trace/Acceptance Scenario
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -550,6 +550,18 @@ P0 fusion 使用经过 finite/rank/conditioning 检查的 2D bearing-line least-
 Acceptance scenario 的 110 dB 通过 `AcceptanceScenarioConfig -> RateBasedTxPhyConfig -> TxEmission` 直接映射到 `source_level_db_re_1upa_at_1m`，因此 P0 simulation 固定解释为 110 dB re 1 uPa @ 1 m。Hardware source-level reference/calibration 仍等待 communication-device parameter confirmation，当前 fixture 不宣称完成硬件标定。
 
 Acceptance `ber_requirement = 1e-4` 与 packet delivery/decoded ratio 是不同概念。当前只有 decoded/not-decoded outcome，因此不得声称已验证 physical BER；BER metric plumbing 和可信物理 BER source 留给后续 M5/metrics 工作。
+
+P0-S3-03 至此 CLOSED：一个 `FusionResult` 对应一个完整 seal 的独立 window，保存 canonical observation identities；后续 window 只能使用新 identity。四周期 Acceptance4Node 形成 cycles 1～2 与 cycles 3～4 两个互不重叠的 24 s 结果；首窗口存在 NoArrival/NotDecoded 时，旧 observation 在结果形成后仍全部 seal，不得泄漏到下一窗口。Least-squares solver 的输入接口不包含 acceptance true-target position。
+
+### 2.44 Acceptance run projection and metric verdict
+
+`AcceptanceRunProjection` 属于 assembly acceptance result side，只在 run 完成后读取 immutable scenario config、实际 applied `RateBasedTxPhy` config、typed Trace sequence、`FusionResultStore` 与 final read-only `WorldSnapshot`。它不得读取可写 `CycleWorkingState`、`ProtocolKnowledgeStore` 或 runtime owner，不得向 runtime、planner、PHY 或后续 cycle 反馈任何控制。相同输入必须生成相同 projection；不使用 wall clock、random 或 unordered output ordering。
+
+Projection 从 Trace 分别统计 Transmission、signal/no-arrival ChannelOutcome、Reception 以及 NotDecoded/Overheard/LocalDelivery/RelayEnqueue；从 final snapshot 读取 run end/version，从 config 读取 run start/node profile，从实际 applied PHY config 读取 effective rate，从 `FusionResultStore` 读取 result count、first/latest summary、minimum observation count 与 maximum completed period。运行 delivery/decode/no-arrival 统计只表达运行质量，不是 BER。
+
+第三方 acceptance metric status 固定支持 `Pass`、`Fail`、`NotEvaluated`，不得压缩为 bool。Acceptance4Node 正式评估 NetworkNodeCount、CommunicationRate、FeatureLevelFusion、BearingPointCount 与 FusionPeriod；bearing point 必须来自每个 `FusionResult.observation_count`，fusion period 必须来自每个结果的 checked timestamps，rate 必须来自实际 applied `RateBasedTxPhy` config。Extended6Node 只生成 projection，不生成 3～4 node 第三方 verdict。
+
+当前 Rx provider 没有 auditable BER 数值，因此 BitErrorRate 必须是 `NotEvaluated`，reason 为 physical Rx provider 尚未暴露可审计 BER。禁止从 packet delivery ratio、decode success ratio、NoArrival ratio 或其他 packet-level count 推导伪 BER。任何正式项为 `NotEvaluated` 时 overall 不得 PASS，固定为 `NotFullyEvaluated`（若另有失败项则为 `Fail`）。Human-readable formatter 只是 deterministic typed-result projection，不使用 ANSI 或 terminal-dependent formatting，也不进入因果路径。
 
 ## 3. 影响
 

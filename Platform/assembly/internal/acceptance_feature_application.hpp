@@ -73,6 +73,11 @@ class AcceptanceFeatureApplication final
     return fusion_result_store_.results();
   }
 
+  [[nodiscard]] constexpr auto fusion_result_store() const noexcept
+      -> const FusionResultStore& {
+    return fusion_result_store_;
+  }
+
   [[nodiscard]] constexpr auto accepted_observation_count() const noexcept
       -> std::size_t {
     return fusion_accumulator_.unique_observation_count();

@@ -16,6 +16,7 @@
 #include <ns3_factory/contracts/trace.hpp>
 
 #include "internal/acceptance_feature_application.hpp"
+#include "internal/acceptance_run_report.hpp"
 #include "internal/acceptance_scenario_config.hpp"
 #include "internal/application_delivery_store.hpp"
 #include "internal/communication_id_allocator.hpp"
@@ -174,6 +175,7 @@ struct RunOptions final {
 
 struct RunObservation final {
   WorldSnapshot final_snapshot;
+  AcceptanceRunProjection projection;
   std::vector<GeneratedFeatureReport> generated_reports;
   std::vector<FusionResult> fusion_results;
   std::vector<TraceEvent> trace_events;
@@ -245,8 +247,16 @@ auto Execute(RunOptions options) -> Result<RunObservation> {
                 "Acceptance feature queue did not drain"});
     }
   }
+  const auto projection = AcceptanceRunProjection::Build(
+      *config,
+      *tx_phy,
+      trace.events,
+      application->fusion_result_store(),
+      world.current_snapshot());
+  if(!projection) return std::unexpected(projection.error());
   return RunObservation{
       world.current_snapshot(),
+      std::move(*projection),
       std::vector<GeneratedFeatureReport>{application->generated_reports().begin(),
                                           application->generated_reports().end()},
       std::vector<FusionResult>{application->fusion_results().begin(),
@@ -406,6 +416,9 @@ auto TestNoArrivalAndNotDecodedDoNotEnterFusion() -> bool {
       TransmissionId{1'000},
       TransmissionId{1'001}});
   if(!run || run->fusion_results.size() != 2) return false;
+  const auto* projection = &run->projection;
+  const auto report = BuildAcceptanceRunReport(*projection);
+  if(!report) return false;
   const auto& first_fusion = run->fusion_results.front();
   const auto& second_fusion = run->fusion_results.back();
   const auto node10_first = std::find_if(
@@ -445,6 +458,21 @@ auto TestNoArrivalAndNotDecodedDoNotEnterFusion() -> bool {
          CountReceptionDisposition(
              run->trace_events,
              TraceReceptionDisposition::kNotDecoded) == 1 &&
+         projection->transmission_count() == 15 &&
+         projection->channel_signal_count() == 44 &&
+         projection->channel_no_arrival_count() == 1 &&
+         projection->reception_count() == 44 &&
+         projection->not_decoded_count() == 1 &&
+         projection->fusion_result_count() == 2 &&
+         projection->minimum_observation_count() == 6 &&
+         projection->maximum_completed_fusion_period() ==
+             SimDuration::FromNanoseconds(28'000'000'000) &&
+         report->bearing_point_count.status == AcceptanceMetricStatus::kPass &&
+         report->fusion_period.status == AcceptanceMetricStatus::kPass &&
+         report->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         report->overall_status ==
+             AcceptanceOverallStatus::kNotFullyEvaluated &&
          node10_first != run->generated_reports.end() &&
          node10_second != run->generated_reports.end() &&
          node10_first->report.sensor_x_meters_quantized !=
@@ -456,6 +484,9 @@ auto TestAcceptance4NodeRecurringFusionWindows() -> bool {
   const auto run = Execute(RunOptions{
       AcceptanceScenarioProfile::kAcceptance4Node, 4, std::nullopt, std::nullopt});
   if(!run || run->fusion_results.size() != 2) return false;
+  const auto* projection = &run->projection;
+  const auto report = BuildAcceptanceRunReport(*projection);
+  if(!report) return false;
   const auto& first = run->fusion_results.front();
   const auto& second = run->fusion_results.back();
   return run->generated_reports.size() == 12 &&
@@ -471,6 +502,12 @@ auto TestAcceptance4NodeRecurringFusionWindows() -> bool {
          first.meets_period_requirement && second.meets_period_requirement &&
          Accurate(first) && Accurate(second) &&
          ObservationWindowsAreDisjoint(run->fusion_results) &&
+         projection->fusion_result_count() == 2 &&
+         projection->minimum_observation_count() == 6 &&
+         projection->maximum_completed_fusion_period() ==
+             SimDuration::FromNanoseconds(24'000'000'000) &&
+         report->bearing_point_count.status == AcceptanceMetricStatus::kPass &&
+         report->fusion_period.status == AcceptanceMetricStatus::kPass &&
          CountTrace(run->trace_events, TraceKind::kCycleCommit) == 4;
 }
 
@@ -488,6 +525,7 @@ auto TestExtended6NodeOneCycleFusion() -> bool {
          fusion.meets_period_requirement && Accurate(fusion) &&
          run->network_refresh_count == 1 &&
          run->applied_schedule_update_count == 1 &&
+         !BuildAcceptanceRunReport(run->projection) &&
          HasMatchingInputAndTransmission(*run) &&
          CountTrace(run->trace_events, TraceKind::kCycleCommit) == 1;
 }

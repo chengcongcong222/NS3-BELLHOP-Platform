@@ -6,10 +6,10 @@
 | --- | --- |
 | 通信原理演示网络：3～4 nodes | `Acceptance4Node`：3 个移动探测节点 + 1 个固定融合中心，是第三方验收基线 |
 | 通信速率：60 bit/s | `RateBasedTxPhy` 按 payload bytes × 8 计算 airtime；非整纳秒结果确定性向上取整 |
-| 通信误码率：BER ≤ 1e-4 | `ber_requirement = 1e-4` 作为场景约束保存；S3-02 不伪造 BER 测量值，指标计算留给后续 PHY/metrics 集成 |
-| 分布式探测：特征级融合 | S3-02 只实现网络运行场景；特征级融合留 P0-S3-03 |
-| 方位观测：≥ 5 points | S3-02 不制造业务观测；方位点采集与验收留 P0-S3-03 |
-| 完整探测周期：≤ 180 s | 标准场景 communication cycle 为 12 s；12-cycle 网络回归为 144 s。业务 fusion period 的最终验收留 P0-S3-03 |
+| 通信误码率：BER ≤ 1e-4 | `ber_requirement = 1e-4` 作为场景约束保存；当前 Rx provider 不提供可审计 BER，正式状态为 `NotEvaluated` |
+| 分布式探测：特征级融合 | `DetectionFeatureReportV1` 经正式网络路径送达并由 feature-level bearing solver 融合 |
+| 方位观测：≥ 5 points | 每个独立 `FusionResult` 从自身 canonical observation identities 统计，标准结果为 6 points |
+| 完整探测周期：≤ 180 s | 从每个 fusion window 首条 observation 到该结果 completion 计算；标准四节点正常窗口为 24 s |
 | 3～4 nodes 是验收规模 | `Extended6Node`：5 个移动探测节点 + 1 个固定融合中心，只是项目扩展示范，不称为第三方硬指标 |
 
 ## 场景参数
@@ -58,3 +58,22 @@ Feature-level fusion 只使用每条成功业务 observation 自带的 sensor po
 `FusionResult` 是 run-level application output，不写入 `WorldSnapshot`。它保存 fusion sequence、第一条有效 observation 的 sample time、controlled `RUNTIME_DECISION` completion time、observation count、canonical observation identities、estimated target、fusion-center bearing、residual RMS 和 period requirement result。P0 fusion period 定义为：当前 fusion window 第一条有效 observation 的 `sample_time` 到 `FusionResult.completed_at`。成功形成结果时整个 active window 被 seal 并消费，后续 window 只能接收新的 identity，禁止 sliding-window reuse。Acceptance4Node 无丢包 golden run 每两个 12 s cycles 累计六点并形成一个独立结果；四周期 run 因而形成两个互不重叠、各 24 s 的结果。Extended6Node 是五 sensor、一个 20 s cycle 完成五点的项目扩展示范，不是第三方节点数硬指标。
 
 BER requirement `1e-4` 仍只作为 acceptance 配置约束保存。当前 decoded/not-decoded packet outcome 或 packet delivery ratio 都不是 physical BER；BER metric plumbing 与可信物理 BER source 继续留给后续 M5/metrics 阶段。
+
+## Run projection and acceptance report
+
+`AcceptanceRunProjection` 是 run 完成后的只读 result-side 投影。它只读取 immutable `AcceptanceScenarioConfig`、实际 applied `RateBasedTxPhy` 配置、typed Trace sequence、`FusionResultStore` 与 final `WorldSnapshot`，不持有或访问可写 `CycleWorkingState`、`ProtocolKnowledgeStore` 或 runtime owner，也不向运行时反馈控制。相同输入 sequence/value 必须产生完全相同的 projection。
+
+| Result / metric | Authoritative evidence source |
+| --- | --- |
+| Run start、node/mobile/fusion-center count | immutable `AcceptanceScenarioConfig` |
+| Run end、duration、final snapshot version | final read-only `WorldSnapshot` |
+| Cycle/Transmission/Channel/Reception/disposition counts | typed Trace events |
+| Effective communication rate | actually applied `RateBasedTxPhy::config()` |
+| Fusion count、first/latest summary | `FusionResultStore` |
+| Bearing points | each `FusionResult.observation_count` |
+| Fusion period | each `FusionResult.started_at/completed_at` and checked period |
+| BER | future auditable M5 Rx quality source（当前不存在） |
+
+第三方 `Acceptance4Node` report 对 NetworkNodeCount、CommunicationRate、FeatureLevelFusion、BearingPointCount 与 FusionPeriod 分别输出 `Pass`/`Fail`，BER 输出 `NotEvaluated`，原因固定为 physical Rx provider 尚未暴露可审计 BER。只要任何正式项是 `NotEvaluated`，overall 必须是 `NotFullyEvaluated`，绝不能显示 PASS。`Extended6Node` 只生成运行 projection，不生成 3～4 node 第三方 acceptance verdict。
+
+`NoArrival`、`NotDecoded`、`Overheard`、`LocalDelivery` 与 `RelayEnqueue` 是运行质量统计，可与融合指标同时呈现；packet delivery ratio、decode success ratio 或 no-arrival ratio 均不得替代 BER。Deterministic text formatter 只负责把 typed result 映射成无 ANSI、无 terminal-dependent 行为的展示文本，不进入 runtime contract 或因果路径。
