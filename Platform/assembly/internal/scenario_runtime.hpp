@@ -1,10 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <limits>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include <ns3_factory/contracts/channel.hpp>
 #include <ns3_factory/contracts/errors.hpp>
@@ -39,6 +41,7 @@
 #include "internal/reception_disposition_applier.hpp"
 #include "internal/reception_disposition_service.hpp"
 #include "internal/reception_result_accumulator.hpp"
+#include "internal/scenario_cycle_application.hpp"
 #include "internal/structure_builder.hpp"
 #include "internal/transmission_executor.hpp"
 #include "internal/transmission_record_store.hpp"
@@ -56,8 +59,8 @@ enum class ScenarioRuntimeState {
 
 class ScenarioRuntime final {
  public:
-  // A non-null caller-provided sink must outlive this runtime. Omitting it
-  // composes the assembly-owned NullTraceSink.
+  // Non-null caller-provided trace/application hooks must outlive this
+  // runtime. Omitting the trace sink composes the assembly-owned null sink.
   ScenarioRuntime(
       kernel::internal::Ns3KernelGateway& gateway,
       runtime::internal::WorldStateStore& world_store,
@@ -72,7 +75,8 @@ class ScenarioRuntime final {
       const contracts::IRxPhy& rx_phy,
       contracts::PlanningCycleId first_cycle_id,
       contracts::ITraceSink* trace_sink = nullptr,
-      std::size_t network_update_interval_cycles = 1) noexcept
+      std::size_t network_update_interval_cycles = 1,
+      IScenarioCycleApplication* cycle_application = nullptr) noexcept
       : gateway_(gateway),
         world_store_(world_store),
         queue_store_(queue_store),
@@ -86,7 +90,8 @@ class ScenarioRuntime final {
         rx_phy_(rx_phy),
         first_cycle_id_(first_cycle_id),
         trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink),
-        network_update_interval_cycles_(network_update_interval_cycles) {}
+        network_update_interval_cycles_(network_update_interval_cycles),
+        cycle_application_(cycle_application) {}
 
   ScenarioRuntime(const ScenarioRuntime&) = delete;
   auto operator=(const ScenarioRuntime&) -> ScenarioRuntime& = delete;
@@ -163,6 +168,7 @@ class ScenarioRuntime final {
   contracts::NullTraceSink null_trace_sink_;
   contracts::ITraceSink* trace_sink_;
   std::size_t network_update_interval_cycles_;
+  IScenarioCycleApplication* cycle_application_;
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
   std::optional<contracts::ConnectivityGraph> previous_connectivity_;
   std::optional<contracts::StructureSnapshot> applied_structure_;
@@ -312,6 +318,94 @@ inline auto ScenarioRuntime::RunOneCycle(
   runtime::internal::TxPreparationService preparation{selector};
   runtime::internal::CandidateReceiverResolver candidate_resolver;
   kernel::internal::EventDispatcher dispatcher{gateway_};
+  if(cycle_application_ != nullptr) {
+    auto input_nodes = std::vector<contracts::NodeId>{
+        cycle_application_->input_node_ids().begin(),
+        cycle_application_->input_node_ids().end()};
+    std::sort(input_nodes.begin(), input_nodes.end());
+    if(std::adjacent_find(input_nodes.begin(), input_nodes.end()) !=
+       input_nodes.end()) {
+      return std::unexpected(
+          contracts::Error{contracts::ErrorCode::kAlreadyExists,
+                           "Cycle application input node is duplicated"});
+    }
+    std::vector<contracts::NodeId> scheduled_inputs;
+    std::vector<kernel::internal::ScheduledEventIntent> application_events;
+    application_events.reserve(input_nodes.size() + 1);
+    auto* const application = cycle_application_;
+    auto* const current_working_state = &*working_state;
+    auto* const gateway = &gateway_;
+    for(const auto& opportunity : plan->mac_plan().tx_opportunities()) {
+      if(!std::binary_search(input_nodes.begin(),
+                             input_nodes.end(),
+                             opportunity.sender_node_id) ||
+         std::binary_search(scheduled_inputs.begin(),
+                            scheduled_inputs.end(),
+                            opportunity.sender_node_id)) {
+        continue;
+      }
+      const auto insertion = std::lower_bound(
+          scheduled_inputs.begin(),
+          scheduled_inputs.end(),
+          opportunity.sender_node_id);
+      scheduled_inputs.insert(insertion, opportunity.sender_node_id);
+      const auto expected_time = opportunity.eligible_at;
+      const auto input_node_id = opportunity.sender_node_id;
+      application_events.push_back(
+          kernel::internal::ScheduledEventIntent{
+              expected_time,
+              kernel::internal::EventPhase::kInputReady,
+              [application,
+               current_working_state,
+               gateway,
+               cycle_id,
+               input_node_id,
+               expected_time]() -> contracts::Status {
+                const auto now = gateway->PlatformNow();
+                if(!now) return std::unexpected(now.error());
+                if(*now != expected_time) {
+                  return std::unexpected(
+                      contracts::Error{
+                          contracts::ErrorCode::kFailedPrecondition,
+                          "Application input event time mismatch"});
+                }
+                return application->OnInputReady(
+                    cycle_id, input_node_id, *now, *current_working_state);
+              }});
+    }
+    if(scheduled_inputs != input_nodes) {
+      return std::unexpected(
+          contracts::Error{
+              contracts::ErrorCode::kFailedPrecondition,
+              "Cycle application input node has no TxOpportunity"});
+    }
+    const auto decision_time = plan->timing().closes_at();
+    application_events.push_back(
+        kernel::internal::ScheduledEventIntent{
+            decision_time,
+            kernel::internal::EventPhase::kRuntimeDecision,
+            [application,
+             current_working_state,
+             gateway,
+             cycle_id,
+             decision_time]() -> contracts::Status {
+              const auto now = gateway->PlatformNow();
+              if(!now) return std::unexpected(now.error());
+              if(*now != decision_time) {
+                return std::unexpected(
+                    contracts::Error{
+                        contracts::ErrorCode::kFailedPrecondition,
+                        "Application decision event time mismatch"});
+              }
+              return application->OnRuntimeDecision(
+                  cycle_id, *now, *current_working_state);
+            }});
+    const auto scheduled_application_events =
+        dispatcher.ScheduleBatch(std::move(application_events));
+    if(!scheduled_application_events) {
+      return std::unexpected(scheduled_application_events.error());
+    }
+  }
   Ns3TransmissionSessionEventSink event_sink{dispatcher, signal_runtime};
   auto tx_runtime = runtime::internal::PlanBoundTxRuntime::Create(
       *plan,

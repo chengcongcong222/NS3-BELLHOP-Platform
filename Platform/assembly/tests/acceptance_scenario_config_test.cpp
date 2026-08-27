@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <limits>
 #include <utility>
 
 #include <ns3_factory/contracts/connectivity.hpp>
@@ -35,6 +36,11 @@ auto TestStandardProfiles() -> bool {
              12'000'000'000 &&
          acceptance->network_update_interval_cycles() == 10 &&
          acceptance->ber_requirement() == 1.0e-4 &&
+         acceptance->minimum_bearing_points() == 5 &&
+         acceptance->maximum_fusion_period().nanoseconds() ==
+             180'000'000'000 &&
+         acceptance->target_x_meters() == 200.0 &&
+         acceptance->target_y_meters() == 150.0 &&
          acceptance->average_initial_horizontal_range_meters() > 900.0 &&
          acceptance->average_initial_horizontal_range_meters() < 1'100.0 &&
          world && world->nodes().size() == 4 && fusion &&
@@ -76,6 +82,13 @@ auto TestValidationFailures() -> bool {
   auto short_slot = *base;
   short_slot.tdma_slot_duration =
       SimDuration::FromNanoseconds(3'999'999'999);
+  auto insufficient_points = *base;
+  insufficient_points.minimum_bearing_points = 4;
+  auto zero_fusion_period = *base;
+  zero_fusion_period.maximum_fusion_period = SimDuration::Zero();
+  auto invalid_target = *base;
+  invalid_target.target_x_meters =
+      std::numeric_limits<double>::infinity();
 
   return !AcceptanceScenarioConfig::Create(std::move(too_few)) &&
          !AcceptanceScenarioConfig::Create(std::move(too_many)) &&
@@ -84,7 +97,10 @@ auto TestValidationFailures() -> bool {
          !AcceptanceScenarioConfig::Create(std::move(zero_interval)) &&
          !AcceptanceScenarioConfig::Create(std::move(zero_ber)) &&
          !AcceptanceScenarioConfig::Create(std::move(one_ber)) &&
-         !AcceptanceScenarioConfig::Create(std::move(short_slot));
+         !AcceptanceScenarioConfig::Create(std::move(short_slot)) &&
+         !AcceptanceScenarioConfig::Create(std::move(insufficient_points)) &&
+         !AcceptanceScenarioConfig::Create(std::move(zero_fusion_period)) &&
+         !AcceptanceScenarioConfig::Create(std::move(invalid_target));
 }
 
 auto TestExtendedScenarioPlanningValidation() -> bool {

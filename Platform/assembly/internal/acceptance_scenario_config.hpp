@@ -43,6 +43,10 @@ struct AcceptanceScenarioParameters final {
   contracts::SimDuration tdma_guard_interval;
   std::size_t network_update_interval_cycles;
   double ber_requirement;
+  std::size_t minimum_bearing_points;
+  contracts::SimDuration maximum_fusion_period;
+  double target_x_meters;
+  double target_y_meters;
   double center_frequency_hz;
   double occupied_bandwidth_hz;
   double source_level_db;
@@ -112,6 +116,24 @@ class AcceptanceScenarioConfig final {
 
   [[nodiscard]] constexpr auto ber_requirement() const noexcept -> double {
     return parameters_.ber_requirement;
+  }
+
+  [[nodiscard]] constexpr auto minimum_bearing_points() const noexcept
+      -> std::size_t {
+    return parameters_.minimum_bearing_points;
+  }
+
+  [[nodiscard]] constexpr auto maximum_fusion_period() const noexcept
+      -> contracts::SimDuration {
+    return parameters_.maximum_fusion_period;
+  }
+
+  [[nodiscard]] constexpr auto target_x_meters() const noexcept -> double {
+    return parameters_.target_x_meters;
+  }
+
+  [[nodiscard]] constexpr auto target_y_meters() const noexcept -> double {
+    return parameters_.target_y_meters;
   }
 
   [[nodiscard]] constexpr auto center_frequency_hz() const noexcept
@@ -237,6 +259,15 @@ inline auto AcceptanceScenarioConfig::Create(
     return std::unexpected(
         contracts::Error{contracts::ErrorCode::kOutOfRange,
                          "BER requirement must be finite and within (0, 1)"});
+  }
+  if(parameters.minimum_bearing_points < 5 ||
+     parameters.maximum_fusion_period <= contracts::SimDuration::Zero() ||
+     !std::isfinite(parameters.target_x_meters) ||
+     !std::isfinite(parameters.target_y_meters)) {
+    return std::unexpected(
+        contracts::Error{
+            contracts::ErrorCode::kInvalidArgument,
+            "Acceptance fusion requirements and target must be valid"});
   }
   const auto tx_phy = phy::internal::RateBasedTxPhy::Create(
       phy::internal::RateBasedTxPhyConfig{
@@ -426,6 +457,10 @@ inline constexpr auto kSensorSpeedMetersPerSecond = 5'000.0 / 3'600.0;
       contracts::SimDuration::FromNanoseconds(2'000'000'000),
       10,
       1.0e-4,
+      5,
+      contracts::SimDuration::FromNanoseconds(180'000'000'000),
+      200.0,
+      150.0,
       25'000.0,
       4'000.0,
       110.0,

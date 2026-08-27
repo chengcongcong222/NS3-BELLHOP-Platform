@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3-01 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3-02 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Trace/Acceptance Scenario
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -534,6 +534,22 @@ M4 planner 可以每个 communication cycle deterministic 地建立 `CandidatePl
 P0-S3-02 acceptance 配置采用 TDMA，并显式配置 2 s guard interval、60 bit/s rate 与 payload-only airtime（payload bytes × 8，非整纳秒时向上取整）。这些数值属于 acceptance scenario，不是 Platform 全局 MAC 规则或 `ITxPhy` 常量；既有 `ConfiguredTxPhy` 保持不变。Slot 必须能容纳 maximum planned packet airtime 与 guard，communication cycle duration 由 applied slot count 和 slot duration 计算。
 
 M1 继续只是 Platform 对 ns-3 `Simulator` time/event scheduling 的封装层。双时间尺度逻辑不得增加 fixed-step execution、custom EventQueue 或 second simulation clock；位置推进继续由 committed `SimTime` difference 经 StateProjector 计算。
+
+P0-S3-02 至此 CLOSED：applied execution template 保存 update-cycle 的 routing entries、TDMA owner ordering、relative slot offsets 与 cycle duration，但不保存旧绝对 event time 或旧 provenance。每个 reuse cycle 必须从当前 StructureSnapshot 的 `PlanningCycleId`/base version 和当前 committed cycle start 重新构造 plan。Non-update CandidatePlan 的 routing、timing 与 opportunities 均不得进入执行、World 或 causal Trace。
+
+### 2.43 Acceptance detection feature and bearing fusion
+
+Acceptance business input 必须经 M1/ns-3 事件进入现有 network path。ScenarioRuntime 对每个配置 sensor 的首个 applied TxOpportunity 在相同 SimTime 安装 `INPUT_READY` callback；该 callback 从只读 CycleWorkingState projection 生成业务包并只执行 PacketQueue enqueue，之后既有 `TX_START -> TransmissionExecutor` 路径发送。Fusion evaluation 固定在 cycle close timestamp 的既有 `RUNTIME_DECISION` phase，先于 `CYCLE_CLOSE` Commit 且晚于该时刻的 session finalize；禁止外部 fixed-step loop、第二 scheduler、wall-clock timer或新 EventPhase。
+
+`DetectionFeatureReportV1` 固定为 acceptance-specific 15-byte little-endian payload：type/version、sender-local observation sequence、run-relative sample time milliseconds、signed meter-quantized sensor x/y、signed bearing centidegrees、confidence percent 和 flags。它不是硬件/PHY/MAC frame，不添加 header、CRC 或 waveform。报告 position 必须来自其 sample SimTime 的 projected node state；bearing 是 target 与该 sample position 的 deterministic global-frame `atan2` 结果，P0 不使用隐式 RNG noise。
+
+Feature-level fusion 只处理成功送达 fusion center 的 LocalDelivery 中的位置与方位 feature，不读取 raw waveform、ADC 或 ChannelResponse。Observation identity 固定为 `(sender NodeId, observation_sequence)`；duplicate delivery 不重复计数，同一 sender 在不同时间的不同 sequence 是不同 point，因此 `>=5 points` 可以跨 cycle 且不要求五个不同节点。ChannelNoArrival、NotDecoded、Overheard 和 RelayEnqueue 均不得进入 accumulator。
+
+P0 fusion 使用经过 finite/rank/conditioning 检查的 2D bearing-line least-squares intersection；solver 只接收 received feature report 中的 sensor position、bearing、confidence/metadata 以及用于结果方位表达的 fusion-center position，绝不接收 acceptance true-target position。True target 只允许用于 workload bearing generation 与 test-side error comparison。退化几何明确失败，不返回伪 target。Fusion window 在成功结果后完整 seal 并消费，结果保存该 window 的 canonical observation identities；任何 identity 不得进入后续结果，禁止 sliding-window reuse。Period 从该 window 第一条有效 observation 的 sample time 计到 cycle-end `RUNTIME_DECISION` completion time。`FusionResult` 是 run-level application output，不写入 authoritative WorldSnapshot，也不加入 core TraceEvent；core Trace 继续只记录实际 Transmission、ChannelOutcome、Reception 与 CycleCommit。
+
+Acceptance scenario 的 110 dB 通过 `AcceptanceScenarioConfig -> RateBasedTxPhyConfig -> TxEmission` 直接映射到 `source_level_db_re_1upa_at_1m`，因此 P0 simulation 固定解释为 110 dB re 1 uPa @ 1 m。Hardware source-level reference/calibration 仍等待 communication-device parameter confirmation，当前 fixture 不宣称完成硬件标定。
+
+Acceptance `ber_requirement = 1e-4` 与 packet delivery/decoded ratio 是不同概念。当前只有 decoded/not-decoded outcome，因此不得声称已验证 physical BER；BER metric plumbing 和可信物理 BER source 留给后续 M5/metrics 工作。
 
 ## 3. 影响
 
