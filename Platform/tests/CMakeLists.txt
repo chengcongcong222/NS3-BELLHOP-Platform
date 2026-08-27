@@ -236,4 +236,31 @@ if(PLATFORM_NS3_AVAILABLE)
     NAME platform_ns3_bellhop_import_scenario_runtime_integration_test
     COMMAND platform_ns3_bellhop_import_scenario_runtime_integration_test
   )
+
+  add_executable(
+    platform_ns3_acceptance_scenario_integration_test
+    ns3_acceptance_scenario_integration_test.cpp
+  )
+  target_include_directories(
+    platform_ns3_acceptance_scenario_integration_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/assembly"
+      "${PROJECT_SOURCE_DIR}/environment"
+      "${PROJECT_SOURCE_DIR}/kernel"
+      "${PROJECT_SOURCE_DIR}/phy"
+      "${PROJECT_SOURCE_DIR}/planning"
+      "${PROJECT_SOURCE_DIR}/runtime"
+      "${PROJECT_SOURCE_DIR}/structure"
+  )
+  target_link_libraries(
+    platform_ns3_acceptance_scenario_integration_test
+    PRIVATE
+      Platform::assembly
+      Platform::environment
+      Platform::phy
+  )
+  add_test(
+    NAME platform_ns3_acceptance_scenario_integration_test
+    COMMAND platform_ns3_acceptance_scenario_integration_test
+  )
 endif()

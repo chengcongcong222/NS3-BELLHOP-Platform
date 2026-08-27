@@ -18,6 +18,7 @@
 #include <ns3_factory/contracts/tx_phy.hpp>
 
 #include "internal/application_delivery_store.hpp"
+#include "internal/applied_mac_schedule.hpp"
 #include "internal/candidate_receiver_resolver.hpp"
 #include "internal/commit_service.hpp"
 #include "internal/communication_id_allocator.hpp"
@@ -70,7 +71,8 @@ class ScenarioRuntime final {
       const contracts::INoiseFieldProvider& noise_provider,
       const contracts::IRxPhy& rx_phy,
       contracts::PlanningCycleId first_cycle_id,
-      contracts::ITraceSink* trace_sink = nullptr) noexcept
+      contracts::ITraceSink* trace_sink = nullptr,
+      std::size_t network_update_interval_cycles = 1) noexcept
       : gateway_(gateway),
         world_store_(world_store),
         queue_store_(queue_store),
@@ -83,7 +85,8 @@ class ScenarioRuntime final {
         noise_provider_(noise_provider),
         rx_phy_(rx_phy),
         first_cycle_id_(first_cycle_id),
-        trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink) {}
+        trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink),
+        network_update_interval_cycles_(network_update_interval_cycles) {}
 
   ScenarioRuntime(const ScenarioRuntime&) = delete;
   auto operator=(const ScenarioRuntime&) -> ScenarioRuntime& = delete;
@@ -101,6 +104,21 @@ class ScenarioRuntime final {
   [[nodiscard]] constexpr auto previous_connectivity() const noexcept
       -> const std::optional<contracts::ConnectivityGraph>& {
     return previous_connectivity_;
+  }
+
+  [[nodiscard]] constexpr auto candidate_plan_build_count() const noexcept
+      -> std::size_t {
+    return candidate_plan_build_count_;
+  }
+
+  [[nodiscard]] constexpr auto network_refresh_count() const noexcept
+      -> std::size_t {
+    return network_refresh_count_;
+  }
+
+  [[nodiscard]] constexpr auto applied_schedule_update_count() const noexcept
+      -> std::size_t {
+    return applied_schedule_update_count_;
   }
 
  private:
@@ -144,8 +162,15 @@ class ScenarioRuntime final {
   contracts::PlanningCycleId first_cycle_id_;
   contracts::NullTraceSink null_trace_sink_;
   contracts::ITraceSink* trace_sink_;
+  std::size_t network_update_interval_cycles_;
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
   std::optional<contracts::ConnectivityGraph> previous_connectivity_;
+  std::optional<contracts::StructureSnapshot> applied_structure_;
+  std::optional<AppliedMacSchedule> applied_mac_schedule_;
+  std::size_t completed_cycle_count_{0};
+  std::size_t candidate_plan_build_count_{0};
+  std::size_t network_refresh_count_{0};
+  std::size_t applied_schedule_update_count_{0};
 };
 
 inline auto ScenarioRuntime::ValidateProvenance(
@@ -189,27 +214,71 @@ inline auto ScenarioRuntime::RunOneCycle(
             "Kernel time is later than the authoritative snapshot time"});
   }
 
-  std::optional<std::reference_wrapper<
-      const contracts::ConnectivityGraph>> previous;
-  if(previous_connectivity_) previous = std::cref(*previous_connectivity_);
-  auto structure = structure_builder_.Build(
-      structure::internal::StructureBuildRequest{
-          cycle_id, snapshot, previous});
+  const auto is_network_update_cycle =
+      completed_cycle_count_ % network_update_interval_cycles_ == 0;
+  contracts::Result<contracts::StructureSnapshot> structure =
+      std::unexpected(
+          contracts::Error{contracts::ErrorCode::kInternal,
+                           "Structure selection was not initialized"});
+  if(is_network_update_cycle) {
+    std::optional<std::reference_wrapper<
+        const contracts::ConnectivityGraph>> previous;
+    if(previous_connectivity_) previous = std::cref(*previous_connectivity_);
+    structure = structure_builder_.Build(
+        structure::internal::StructureBuildRequest{
+            cycle_id, snapshot, previous});
+  } else if(applied_structure_) {
+    structure = contracts::StructureSnapshot::Create(
+        cycle_id,
+        snapshot.version(),
+        applied_structure_->role_table(),
+        applied_structure_->connectivity_graph(),
+        applied_structure_->logical_topology());
+  } else {
+    return std::unexpected(
+        contracts::Error{
+            contracts::ErrorCode::kFailedPrecondition,
+            "Non-update cycle has no applied network structure"});
+  }
   if(!structure) return std::unexpected(structure.error());
-  auto plan_result = cycle_planner_.Build(snapshot, *structure);
-  if(!plan_result) return std::unexpected(plan_result.error());
-  std::optional<contracts::ProtocolCyclePlan> plan{
-      std::move(*plan_result)};
+  auto candidate_result = cycle_planner_.Build(snapshot, *structure);
+  if(!candidate_result) return std::unexpected(candidate_result.error());
+  ++candidate_plan_build_count_;
+  std::optional<contracts::ProtocolCyclePlan> candidate_plan{
+      std::move(*candidate_result)};
   const auto provenance =
-      ValidateProvenance(cycle_id, snapshot, *structure, *plan);
+      ValidateProvenance(cycle_id, snapshot, *structure, *candidate_plan);
   if(!provenance) return provenance;
-  if(plan->timing().starts_at() < snapshot.committed_at() ||
-     plan->timing().starts_at() < *now) {
+  if(candidate_plan->timing().starts_at() < snapshot.committed_at() ||
+     candidate_plan->timing().starts_at() < *now) {
     return std::unexpected(
         contracts::Error{
             contracts::ErrorCode::kFailedPrecondition,
             "Cycle plan starts before snapshot or kernel time"});
   }
+
+  contracts::Result<AppliedMacSchedule> candidate_schedule =
+      AppliedMacSchedule::Capture(*candidate_plan);
+  if(!candidate_schedule) {
+    return std::unexpected(candidate_schedule.error());
+  }
+  contracts::Result<contracts::ProtocolCyclePlan> execution_result =
+      is_network_update_cycle
+          ? contracts::Result<contracts::ProtocolCyclePlan>{*candidate_plan}
+          : applied_mac_schedule_
+                ? applied_mac_schedule_->Bind(
+                      *structure, snapshot.committed_at())
+                : contracts::Result<contracts::ProtocolCyclePlan>{
+                      std::unexpected(
+                          contracts::Error{
+                              contracts::ErrorCode::kFailedPrecondition,
+                              "Non-update cycle has no applied MAC schedule"})};
+  if(!execution_result) return std::unexpected(execution_result.error());
+  std::optional<contracts::ProtocolCyclePlan> plan{
+      std::move(*execution_result)};
+  const auto execution_provenance =
+      ValidateProvenance(cycle_id, snapshot, *structure, *plan);
+  if(!execution_provenance) return execution_provenance;
 
   auto working_state = runtime::internal::CycleWorkingState::Create(
       snapshot, cycle_id, plan->timing().starts_at());
@@ -261,6 +330,7 @@ inline auto ScenarioRuntime::RunOneCycle(
   if(!installed) return std::unexpected(installed.error());
   const auto timing = plan->timing();
   plan.reset();
+  candidate_plan.reset();
 
   const auto run = dispatcher.Run();
   if(!run) return run;
@@ -280,7 +350,14 @@ inline auto ScenarioRuntime::RunOneCycle(
             "Completed cycle did not satisfy commit or cleanup invariants"});
   }
 
-  previous_connectivity_ = structure->connectivity_graph();
+  if(is_network_update_cycle) {
+    previous_connectivity_ = structure->connectivity_graph();
+    applied_structure_ = std::move(*structure);
+    applied_mac_schedule_ = std::move(*candidate_schedule);
+    ++network_refresh_count_;
+    ++applied_schedule_update_count_;
+  }
+  ++completed_cycle_count_;
   return {};
 }
 
@@ -294,6 +371,11 @@ inline auto ScenarioRuntime::RunCycles(std::size_t cycle_count)
   }
   state_ = ScenarioRuntimeState::kRunning;
   SimulatorDestroyGuard destroy_guard{gateway_};
+  if(network_update_interval_cycles_ == 0) {
+    return Fail(contracts::Error{
+        contracts::ErrorCode::kInvalidArgument,
+        "ScenarioRuntime network update interval must be positive"});
+  }
   if(cycle_count == 0) {
     return Fail(contracts::Error{
         contracts::ErrorCode::kInvalidArgument,

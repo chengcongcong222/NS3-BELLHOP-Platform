@@ -1,8 +1,8 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S2 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3-01 CLOSED
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Deterministic Read-Only Trace Core
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Trace/Acceptance Scenario
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -522,6 +522,18 @@ Trace emission 固定为 causal result 之后的 best-effort 只读旁路。Tran
 `ITraceSink::Emit` 是 `noexcept -> Status`，但 causal caller 必须无条件忽略该 Status。NullTraceSink 是默认 assembly composition；测试可使用 recording 或 always-fail sink。Sink failure 不得改变 snapshot/version/time、packet queue、delivery、ID allocation、cycle outcome、runtime terminal state 或事件顺序。Core 不增加全局 trace sequence number；输出顺序直接沿用既有 deterministic simulation order，包括 cycle order、EventPhase、canonical NodeId fan-out 和稳定 communication identity。
 
 Production core 不实现 buffer、backpressure、retry、persistence、serialization、SSE/WebSocket、metrics aggregation 或 frontend projection policy。`runtime` 只依赖 contracts trace，不依赖 observability；`observability` 只依赖 contracts；具体 sink 由 assembly 注入。上述产品化策略继续保持后续独立设计。
+
+P0-S3-01 至此 CLOSED：上述 typed trace、causal emission、best-effort sink isolation 和 deterministic ordering 已通过 OFF/ON 测试冻结。
+
+### 2.42 Acceptance scenario dual-timescale TDMA execution
+
+一个 `PlanningCycle` 继续严格表示一个 communication cycle，不引入第二种 cycle identity。World authoritative state 在每个 communication cycle 都执行一次正式 Commit，保持逐周期 `Vn -> Vn+1`；`NetworkUpdateIntervalCycles` 只控制正式 M3 structure 与 applied M4 MAC schedule 的低频更新，不改变 Commit 频率、simulation time 或 `PlanningCycleId` 语义。以 interval 10 为例，第一、十一、二十一等周期刷新 M3，其余周期使用最近一次已生效的 RoleTable、ConnectivityGraph 与 LogicalTopology，并以当前 cycle/version provenance 重新绑定。
+
+M4 planner 可以每个 communication cycle deterministic 地建立 `CandidatePlan`。只有 network-update cycle 的 candidate MAC schedule 在该周期成功 Commit 后成为新的 applied schedule；非 update cycle 仍使用最近一次 applied schedule 的 slot owner、relative offset 与 cycle duration，同时使用当前周期 candidate 的 routing/provenance。未施加 candidate 不改变 queue、WorldSnapshot、Transmission 或 Reception，也不产生 causal state Trace；未来 planner diagnostics 如有需要必须使用单独评审的 trace 类型。
+
+P0-S3-02 acceptance 配置采用 TDMA，并显式配置 2 s guard interval、60 bit/s rate 与 payload-only airtime（payload bytes × 8，非整纳秒时向上取整）。这些数值属于 acceptance scenario，不是 Platform 全局 MAC 规则或 `ITxPhy` 常量；既有 `ConfiguredTxPhy` 保持不变。Slot 必须能容纳 maximum planned packet airtime 与 guard，communication cycle duration 由 applied slot count 和 slot duration 计算。
+
+M1 继续只是 Platform 对 ns-3 `Simulator` time/event scheduling 的封装层。双时间尺度逻辑不得增加 fixed-step execution、custom EventQueue 或 second simulation clock；位置推进继续由 committed `SimTime` difference 经 StateProjector 计算。
 
 ## 3. 影响
 

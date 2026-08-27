@@ -203,16 +203,27 @@ auto TestRepeatedOwnerIsValid() -> bool {
 auto TestPolicyValidation() -> bool {
   const auto positive =
       ConfiguredTdmaPolicy::Create(For(1), {NodeId{0}});
+  const auto guarded =
+      ConfiguredTdmaPolicy::Create(For(10), For(2), {NodeId{0}});
   const auto zero = ConfiguredTdmaPolicy::Create(
       SimDuration::Zero(), {NodeId{0}});
   const auto negative =
       ConfiguredTdmaPolicy::Create(For(-1), {NodeId{0}});
   const auto empty = ConfiguredTdmaPolicy::Create(For(1), {});
-  return positive && !zero &&
+  const auto negative_guard =
+      ConfiguredTdmaPolicy::Create(For(10), For(-1), {NodeId{0}});
+  const auto no_transmission_window =
+      ConfiguredTdmaPolicy::Create(For(10), For(10), {NodeId{0}});
+  return positive && guarded && guarded->guard_interval() == For(2) &&
+         !zero &&
          zero.error().code == ErrorCode::kInvalidArgument &&
          !negative &&
          negative.error().code == ErrorCode::kInvalidArgument &&
-         !empty && empty.error().code == ErrorCode::kInvalidArgument;
+         !empty && empty.error().code == ErrorCode::kInvalidArgument &&
+         !negative_guard &&
+         negative_guard.error().code == ErrorCode::kInvalidArgument &&
+         !no_transmission_window &&
+         no_transmission_window.error().code == ErrorCode::kInvalidArgument;
 }
 
 auto TestCapabilityFailureUnknownOwnerAndRetry() -> bool {
