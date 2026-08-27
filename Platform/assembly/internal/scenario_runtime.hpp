@@ -14,6 +14,7 @@
 #include <ns3_factory/contracts/rx_phy.hpp>
 #include <ns3_factory/contracts/state.hpp>
 #include <ns3_factory/contracts/structure.hpp>
+#include <ns3_factory/contracts/trace.hpp>
 #include <ns3_factory/contracts/tx_phy.hpp>
 
 #include "internal/application_delivery_store.hpp"
@@ -54,6 +55,8 @@ enum class ScenarioRuntimeState {
 
 class ScenarioRuntime final {
  public:
+  // A non-null caller-provided sink must outlive this runtime. Omitting it
+  // composes the assembly-owned NullTraceSink.
   ScenarioRuntime(
       kernel::internal::Ns3KernelGateway& gateway,
       runtime::internal::WorldStateStore& world_store,
@@ -66,7 +69,8 @@ class ScenarioRuntime final {
       const contracts::IChannelFieldProvider& channel_provider,
       const contracts::INoiseFieldProvider& noise_provider,
       const contracts::IRxPhy& rx_phy,
-      contracts::PlanningCycleId first_cycle_id) noexcept
+      contracts::PlanningCycleId first_cycle_id,
+      contracts::ITraceSink* trace_sink = nullptr) noexcept
       : gateway_(gateway),
         world_store_(world_store),
         queue_store_(queue_store),
@@ -78,7 +82,8 @@ class ScenarioRuntime final {
         channel_provider_(channel_provider),
         noise_provider_(noise_provider),
         rx_phy_(rx_phy),
-        first_cycle_id_(first_cycle_id) {}
+        first_cycle_id_(first_cycle_id),
+        trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink) {}
 
   ScenarioRuntime(const ScenarioRuntime&) = delete;
   auto operator=(const ScenarioRuntime&) -> ScenarioRuntime& = delete;
@@ -137,6 +142,8 @@ class ScenarioRuntime final {
   const contracts::INoiseFieldProvider& noise_provider_;
   const contracts::IRxPhy& rx_phy_;
   contracts::PlanningCycleId first_cycle_id_;
+  contracts::NullTraceSink null_trace_sink_;
+  contracts::ITraceSink* trace_sink_;
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
   std::optional<contracts::ConnectivityGraph> previous_connectivity_;
 };
@@ -230,7 +237,8 @@ inline auto ScenarioRuntime::RunOneCycle(
       disposition_service,
       disposition_applier,
       base_version,
-      plan->timing().closes_at()};
+      plan->timing().closes_at(),
+      trace_sink_};
   runtime::internal::FifoPacketSelector selector;
   runtime::internal::TxPreparationService preparation{selector};
   runtime::internal::CandidateReceiverResolver candidate_resolver;

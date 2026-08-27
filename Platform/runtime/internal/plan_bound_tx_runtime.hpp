@@ -190,6 +190,7 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
             "Physical transmission succeeded but conditional queue consume "
             "failed"});
   }
+  signal_runtime_.get().EmitTransmissionSuccess(*session);
   return ExecutedTxStart{std::move(*session)};
 }
 

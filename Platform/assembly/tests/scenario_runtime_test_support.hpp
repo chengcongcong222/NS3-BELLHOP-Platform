@@ -146,6 +146,11 @@ class MockChannel final : public IChannelFieldProvider {
   auto Query(const ChannelQuery& query) const
       -> Result<ChannelFieldOutcome> override {
     receiver_audit.push_back(query.receiver_node_id());
+    if(fail_on_receiver && query.receiver_node_id() == *fail_on_receiver) {
+      return std::unexpected(
+          Error{ErrorCode::kUnavailable,
+                "Injected channel provider failure"});
+    }
     if(std::find(no_arrival_receivers.begin(),
                  no_arrival_receivers.end(),
                  query.receiver_node_id()) !=
@@ -162,6 +167,7 @@ class MockChannel final : public IChannelFieldProvider {
 
   mutable std::vector<NodeId> receiver_audit;
   std::vector<NodeId> no_arrival_receivers;
+  std::optional<NodeId> fail_on_receiver;
   SimDuration propagation_delay{DurationSeconds(1)};
 };
 
@@ -190,14 +196,21 @@ class MockRxPhy final : public IRxPhy {
     ++count;
     const auto& signal = request.receiver_window().desired_signal();
     receiver_audit.push_back(signal.receiver_node_id());
+    const auto outcome =
+        std::find(not_decoded_receivers.begin(),
+                  not_decoded_receivers.end(),
+                  signal.receiver_node_id()) != not_decoded_receivers.end()
+            ? DecodeOutcome::kNotDecoded
+            : DecodeOutcome::kDecoded;
     return RxDecodeResult::Create(signal.transmission_id(),
                                   signal.emission().packet_id(),
                                   signal.receiver_node_id(),
-                                  DecodeOutcome::kDecoded);
+                                  outcome);
   }
 
   mutable std::size_t count{0};
   mutable std::vector<NodeId> receiver_audit;
+  std::vector<NodeId> not_decoded_receivers;
 };
 
 class CyclingPlanner final : public IProtocolCyclePlanner {
@@ -270,7 +283,8 @@ class RuntimeFixture final {
       PlanningCycleId first_cycle_id,
       std::vector<NodeId> owners,
       FeasibilityMode mode = FeasibilityMode::kStableChain,
-      std::optional<std::size_t> fail_on_call = std::nullopt)
+      std::optional<std::size_t> fail_on_call = std::nullopt,
+      ITraceSink* trace_sink = nullptr)
       -> std::unique_ptr<RuntimeFixture> {
     auto snapshot = InitialSnapshot();
     auto queues = PacketQueueStore::Create(NodeIds());
@@ -288,7 +302,8 @@ class RuntimeFixture final {
         first_cycle_id,
         std::move(owners),
         mode,
-        fail_on_call}};
+        fail_on_call,
+        trace_sink}};
   }
 
   auto Enqueue(DigitalPacket packet) -> Status {
@@ -336,7 +351,8 @@ class RuntimeFixture final {
                  PlanningCycleId first_cycle_id,
                  std::vector<NodeId> owners,
                  FeasibilityMode mode,
-                 std::optional<std::size_t> fail_on_call)
+                 std::optional<std::size_t> fail_on_call,
+                 ITraceSink* trace_sink)
       : world(std::move(snapshot)),
         queues(std::move(queue_store)),
         deliveries(std::move(delivery_store)),
@@ -366,7 +382,8 @@ class RuntimeFixture final {
                 channel,
                 noise,
                 rx_phy,
-                first_cycle_id) {}
+                first_cycle_id,
+                trace_sink) {}
 };
 
 }  // namespace ns3_factory::assembly::test

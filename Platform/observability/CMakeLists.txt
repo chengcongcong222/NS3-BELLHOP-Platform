@@ -1,1 +1,3 @@
 platform_add_interface_module(observability)
+
+target_link_libraries(platform_observability INTERFACE Platform::contracts)

@@ -1,10 +1,14 @@
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
 #include <utility>
+#include <variant>
 
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
 #include <ns3_factory/contracts/time.hpp>
+#include <ns3_factory/contracts/trace.hpp>
 
 #include "internal/commit_service.hpp"
 #include "internal/cycle_working_state.hpp"
@@ -32,7 +36,8 @@ class CycleSignalRuntime final {
                      InFlightSignalLedger& ledger,
                      ReceptionResultAccumulator& results,
                      contracts::SnapshotVersion expected_version,
-                     contracts::SimTime cycle_close_time) noexcept
+                     contracts::SimTime cycle_close_time,
+                     contracts::ITraceSink* trace_sink = nullptr) noexcept
       : transmission_executor_(transmission_executor),
         receiver_processor_(receiver_processor),
         working_state_(working_state),
@@ -40,7 +45,8 @@ class CycleSignalRuntime final {
         ledger_(ledger),
         results_(results),
         expected_version_(expected_version),
-        cycle_close_time_(cycle_close_time) {}
+        cycle_close_time_(cycle_close_time),
+        trace_sink_(trace_sink) {}
 
   CycleSignalRuntime(
       TransmissionExecutor& transmission_executor,
@@ -53,7 +59,8 @@ class CycleSignalRuntime final {
       const ReceptionDispositionService& disposition_service,
       ReceptionDispositionApplier& disposition_applier,
       contracts::SnapshotVersion expected_version,
-      contracts::SimTime cycle_close_time) noexcept
+      contracts::SimTime cycle_close_time,
+      contracts::ITraceSink* trace_sink = nullptr) noexcept
       : transmission_executor_(transmission_executor),
         receiver_processor_(receiver_processor),
         working_state_(working_state),
@@ -64,7 +71,8 @@ class CycleSignalRuntime final {
         disposition_service_(&disposition_service),
         disposition_applier_(&disposition_applier),
         expected_version_(expected_version),
-        cycle_close_time_(cycle_close_time) {}
+        cycle_close_time_(cycle_close_time),
+        trace_sink_(trace_sink) {}
 
   [[nodiscard]] auto HandleTxStart(contracts::SimTime event_time,
                                    TransmissionExecutionRequest request)
@@ -88,7 +96,19 @@ class CycleSignalRuntime final {
   [[nodiscard]] auto HandleCycleClose(contracts::SimTime close_time)
       -> contracts::Status;
 
+  // Called only after the session event batch and conditional queue consume
+  // have both succeeded. Trace delivery cannot change that causal outcome.
+  auto EmitTransmissionSuccess(
+      const TransmissionSession& session) const noexcept -> void;
+
  private:
+  auto Emit(contracts::Result<contracts::TraceEvent> event) const noexcept
+      -> void {
+    if(trace_sink_ == nullptr || !event) return;
+    const auto ignored = trace_sink_->Emit(*event);
+    static_cast<void>(ignored);
+  }
+
   TransmissionExecutor& transmission_executor_;
   ReceiverProcessor& receiver_processor_;
   CycleWorkingState& working_state_;
@@ -100,8 +120,57 @@ class CycleSignalRuntime final {
   ReceptionDispositionApplier* disposition_applier_{nullptr};
   contracts::SnapshotVersion expected_version_;
   contracts::SimTime cycle_close_time_;
+  contracts::ITraceSink* trace_sink_{nullptr};
   bool committed_{false};
 };
+
+inline auto CycleSignalRuntime::EmitTransmissionSuccess(
+    const TransmissionSession& session) const noexcept -> void {
+  const auto& transmission = session.transmission();
+  const auto target = std::visit(
+      [](const auto& value) -> contracts::TraceTransmissionTarget {
+        using Target = std::remove_cvref_t<decltype(value)>;
+        if constexpr(std::is_same_v<
+                         Target,
+                         contracts::UnicastTransmissionTarget>) {
+          return contracts::TraceUnicastTransmissionTarget{value.node_id};
+        } else {
+          return contracts::TraceBroadcastTransmissionTarget{};
+        }
+      },
+      transmission.target);
+  Emit(contracts::TraceEvent::Create(
+      transmission.started_at,
+      contracts::TransmissionTrace{transmission.transmission_id,
+                                   transmission.packet_id,
+                                   transmission.sender_node_id,
+                                   target,
+                                   transmission.started_at,
+                                   transmission.ended_at}));
+
+  for(const auto& channel : session.channel_outcomes()) {
+    const auto outcome = std::visit(
+        [](const auto& value) -> contracts::TraceChannelOutcome {
+          using Outcome = std::remove_cvref_t<decltype(value)>;
+          if constexpr(std::is_same_v<
+                           Outcome,
+                           SignalChannelExecutionSummary>) {
+            return contracts::TraceSignalChannelOutcome{
+                value.first_arrival_delay,
+                value.aggregate_transmission_loss_db,
+                static_cast<std::uint64_t>(value.path_count)};
+          } else {
+            return contracts::TraceNoArrivalChannelOutcome{};
+          }
+        },
+        channel.outcome);
+    Emit(contracts::TraceEvent::Create(
+        transmission.started_at,
+        contracts::ChannelOutcomeTrace{transmission.transmission_id,
+                                       channel.receiver_node_id,
+                                       outcome}));
+  }
+}
 
 inline auto CycleSignalRuntime::HandleTxStart(
     contracts::SimTime event_time,
@@ -162,8 +231,37 @@ inline auto CycleSignalRuntime::HandleSessionFinalize(
     if(!disposition) {
       return std::unexpected(disposition.error());
     }
+    const auto reception = session->reception();
+    const auto packet_id = session->desired_signal().emission().packet_id();
+    const auto trace_disposition = std::visit(
+        [](const auto& value) {
+          using Disposition = std::remove_cvref_t<decltype(value)>;
+          if constexpr(std::is_same_v<Disposition,
+                                      NotDecodedReception>) {
+            return contracts::TraceReceptionDisposition::kNotDecoded;
+          } else if constexpr(std::is_same_v<Disposition,
+                                             OverheardReception>) {
+            return contracts::TraceReceptionDisposition::kOverheard;
+          } else if constexpr(std::is_same_v<Disposition,
+                                             LocalDeliveryReception>) {
+            return contracts::TraceReceptionDisposition::kLocalDelivery;
+          } else {
+            return contracts::TraceReceptionDisposition::kRelayEnqueue;
+          }
+        },
+        *disposition);
     results_.Append(std::move(*session));
-    return disposition_applier_->Apply(std::move(*disposition));
+    const auto applied =
+        disposition_applier_->Apply(std::move(*disposition));
+    if(!applied) return applied;
+    Emit(contracts::TraceEvent::Create(
+        event_time,
+        contracts::ReceptionTrace{reception.reception_id,
+                                  reception.transmission_id,
+                                  packet_id,
+                                  reception.receiver_node_id,
+                                  trace_disposition}));
+    return {};
   }
   results_.Append(std::move(*session));
   return {};
@@ -199,6 +297,13 @@ inline auto CycleSignalRuntime::HandleCycleClose(
     record_store_->ClearForCycleClose();
   }
   committed_ = true;
+  Emit(contracts::TraceEvent::Create(
+      close_time,
+      contracts::CycleCommitTrace{
+          working_state_.cycle_id(),
+          expected_version_,
+          contracts::SnapshotVersion{expected_version_.value() + 1},
+          close_time}));
   return {};
 }
 

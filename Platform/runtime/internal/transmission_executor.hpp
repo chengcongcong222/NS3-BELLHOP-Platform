@@ -150,6 +150,8 @@ inline auto TransmissionExecutor::ExecuteTransmission(
 
   std::vector<contracts::ReceivedSignal> received_signals;
   received_signals.reserve(receiver_states.size());
+  std::vector<ChannelExecutionSummary> channel_outcomes;
+  channel_outcomes.reserve(receiver_states.size());
   for(const auto& receiver_state : receiver_states) {
     auto query = contracts::ChannelQuery::Create(
         *transmission_id,
@@ -176,19 +178,31 @@ inline auto TransmissionExecutor::ExecuteTransmission(
 
     const auto* response =
         std::get_if<contracts::ChannelFieldResponse>(&*outcome);
-    if(response == nullptr) continue;
+    if(response == nullptr) {
+      channel_outcomes.push_back(
+          ChannelExecutionSummary{receiver_state.node_id,
+                                  NoArrivalChannelExecutionSummary{}});
+      continue;
+    }
     auto received_signal =
         contracts::ReceivedSignal::Create(*emission, *response);
     if(!received_signal) {
       return std::unexpected(received_signal.error());
     }
     received_signals.push_back(std::move(*received_signal));
+    channel_outcomes.push_back(ChannelExecutionSummary{
+        receiver_state.node_id,
+        SignalChannelExecutionSummary{
+            response->first_arrival_delay(),
+            response->aggregate_transmission_loss_db(),
+            response->paths().size()}});
   }
 
   return TransmissionSession{std::move(request.selected_packet),
                              transmission,
                              std::move(*emission),
-                             std::move(received_signals)};
+                             std::move(received_signals),
+                             std::move(channel_outcomes)};
 }
 
 }  // namespace ns3_factory::runtime::internal

@@ -1,8 +1,8 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0
+- 状态：Accepted / Frozen for P0；P0-S2 CLOSED
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop，以及架构模块 M1/M2/M3 的基础边界与 M4 routing/MAC planning contracts
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Deterministic Read-Only Trace Core
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -75,9 +75,9 @@ M3/M4/M5/M6/M8 不得通过 contracts 获取 runtime owner 的可写引用、指
 
 - P0-S0 Contracts Freeze；
 - P0-S1 Core Closed Loop；
-- P0-S2 Protocol Baselines；
-- P0-S3 PHY/Channel Integration；
-- P0-S4 Environment/Bellhop Integration；
+- P0-S2 Cross-Module Provider Integration；
+- P0-S3 Deterministic Read-Only Trace Core；
+- 后续 provider、environment 与 productization 阶段按独立任务冻结；
 - 后续阶段继续使用 `P0-S*`。
 
 `M1-M8` 只用于 P0.4 架构模块编号，不再用于开发阶段编号。
@@ -510,6 +510,18 @@ Payload checksum 固定为 deterministic FNV-1a 64，仅用于 accidental corrup
 `EnvironmentAssetId` 是 repository-internal stable identity，不是 filesystem path，只允许受限的单 path-component 字符集，禁止 absolute path、separator injection 与 `..` traversal。同 ID 已存在返回 `AlreadyExists`，不自动改名或覆盖；registered package immutable，更新必须使用新 ID/version。Repository root 由 application/assembly 显式提供，repository 可 register/load/list/find validated packages，但不把 root/package path 暴露为 domain identity。Register 必须先在同一 repository root 的保留临时目录完成 write 与 loader validation，再以 rename 发布最终 AssetId；正常 API failure 必须清理自己创建的临时状态且不得留下可见 final ID。Power-loss durable transaction、`fsync` protocol 与 multi-process concurrency guarantee 仍不属于 P0。
 
 `AcousticFieldChannelProvider` 仍只持有 `shared_ptr<const AcousticFieldAsset>`。Scenario/application assembly 必须在 `ScenarioRuntime` 开始前通过 repository load/validate 一次；TransmissionExecutor → `IChannelFieldProvider::Query` 热路径禁止 filesystem、repository、network 或 subprocess I/O。HDF5、NetCDF、SQLite、cryptographic integrity、Bellhop subprocess、WOA/GEBCO acquisition 和 in-place registered-asset update 均不在本 P0 package 范围。
+
+P0-S2 至此 CLOSED：configured Tx PHY、waveform internal pipeline、normalized acoustic-field provider、Bellhop raw import/normalization，以及 canonical environment asset package/repository 已通过各自冻结测试。Runtime hot path 继续只消费已装配的 contracts provider，不反向依赖 PHY 或 environment 实现。
+
+### 2.41 Deterministic read-only trace core
+
+P0-S3-01 的 trace 边界固定在 `contracts/trace.hpp`。该 header 只依赖 Platform time、strong identity、error/status 与 trace 自有的小型只读摘要；不得嵌入 WorldSnapshot、ProtocolCyclePlan、runtime owner、provider response 大对象或 ns-3 类型。`TraceEvent` 由 `occurred_at`、与 payload 一致的 `TraceKind` 和四种 typed payload 组成：CycleCommit、Transmission、ChannelOutcome、Reception。Transmission target 使用 trace 自有 Unicast/Broadcast 摘要；ChannelOutcome 使用 Signal/NoArrival variant，NoArrival 不保存伪造 TL、delay 或 path；Reception 只保存最终 NotDecoded、Overheard、LocalDelivery 或 RelayEnqueue disposition。
+
+Trace emission 固定为 causal result 之后的 best-effort 只读旁路。Transmission trace 每个成功 TransmissionSession 精确一条，且只在完整 receiver fan-out、session event batch publication 与 sender queue conditional consume 全部成功后发送；随后按 canonical candidate receiver 顺序为每个 receiver 发送一条 ChannelOutcome trace。Provider 在 receiver loop 中途失败时，此次 transmission/channel success trace 必须全部为零。Receiver trace 只在 reception finalize、disposition decision 与 disposition application 成功后发送。CycleCommit trace 只在 CommitService 已完成 authoritative `V -> V+1` 后发送。广播仍是一条 Transmission trace、每个 candidate 一条 ChannelOutcome trace、每个实际 ReceptionSession 一条 Reception trace。
+
+`ITraceSink::Emit` 是 `noexcept -> Status`，但 causal caller 必须无条件忽略该 Status。NullTraceSink 是默认 assembly composition；测试可使用 recording 或 always-fail sink。Sink failure 不得改变 snapshot/version/time、packet queue、delivery、ID allocation、cycle outcome、runtime terminal state 或事件顺序。Core 不增加全局 trace sequence number；输出顺序直接沿用既有 deterministic simulation order，包括 cycle order、EventPhase、canonical NodeId fan-out 和稳定 communication identity。
+
+Production core 不实现 buffer、backpressure、retry、persistence、serialization、SSE/WebSocket、metrics aggregation 或 frontend projection policy。`runtime` 只依赖 contracts trace，不依赖 observability；`observability` 只依赖 contracts；具体 sink 由 assembly 注入。上述产品化策略继续保持后续独立设计。
 
 ## 3. 影响
 

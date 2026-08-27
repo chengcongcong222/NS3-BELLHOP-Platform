@@ -20,6 +20,7 @@ if(BUILD_TESTING)
       structure
       link_feasibility
       routing
+      trace
   )
     set(test_target "platform_contracts_${contract_name}_test")
     add_executable(

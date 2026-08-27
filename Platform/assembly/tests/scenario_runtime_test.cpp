@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <limits>
+#include <optional>
+#include <variant>
 #include <vector>
 
 #include "scenario_runtime_test_support.hpp"
@@ -8,6 +10,57 @@ using namespace ns3_factory::assembly::internal;
 using namespace ns3_factory::assembly::test;
 
 namespace {
+
+class RecordingTraceSink final : public ITraceSink {
+ public:
+  auto Emit(const TraceEvent& event) noexcept -> Status override {
+    events.push_back(event);
+    return {};
+  }
+
+  std::vector<TraceEvent> events;
+};
+
+class AlwaysFailTraceSink final : public ITraceSink {
+ public:
+  auto Emit(const TraceEvent&) noexcept -> Status override {
+    ++attempt_count;
+    return std::unexpected(
+        Error{ErrorCode::kUnavailable, "Injected trace sink failure"});
+  }
+
+  std::size_t attempt_count{0};
+};
+
+auto CountKind(const RecordingTraceSink& sink, TraceKind kind)
+    -> std::size_t {
+  return static_cast<std::size_t>(std::count_if(
+      sink.events.begin(), sink.events.end(), [kind](const TraceEvent& event) {
+        return event.kind() == kind;
+      }));
+}
+
+auto ReceptionDispositions(const RecordingTraceSink& sink)
+    -> std::vector<TraceReceptionDisposition> {
+  std::vector<TraceReceptionDisposition> values;
+  for(const auto& event : sink.events) {
+    if(const auto* reception =
+           std::get_if<ReceptionTrace>(&event.payload())) {
+      values.push_back(reception->disposition);
+    }
+  }
+  return values;
+}
+
+auto HasCanonicalTraceOrder(const RecordingTraceSink& sink) -> bool {
+  for(std::size_t index = 1; index < sink.events.size(); ++index) {
+    if(sink.events[index].occurred_at() <
+       sink.events[index - 1].occurred_at()) {
+      return false;
+    }
+  }
+  return true;
+}
 
 auto TestArgumentPreflightAndTerminalState() -> bool {
   auto zero = RuntimeFixture::Create(PlanningCycleId{7}, {NodeId{0}});
@@ -61,13 +114,30 @@ auto TestSuccessfulLifecycle() -> bool {
 }
 
 auto TestMixedArrivalScenarioRuntime() -> bool {
-  auto fixture = RuntimeFixture::Create(PlanningCycleId{20}, {NodeId{0}});
+  RecordingTraceSink trace;
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{20},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &trace);
   const auto packet = TestPacket();
   if(!fixture || !fixture->Enqueue(packet)) return false;
   fixture->channel.no_arrival_receivers = {NodeId{2}};
   const auto run = fixture->runtime.RunCycles(1);
   const auto next_transmission = fixture->ids.NextTransmissionId();
   const auto next_reception = fixture->ids.NextReceptionId();
+  std::vector<NodeId> signal_receivers;
+  std::vector<NodeId> no_arrival_receivers;
+  for(const auto& event : trace.events) {
+    const auto* channel =
+        std::get_if<ChannelOutcomeTrace>(&event.payload());
+    if(channel == nullptr) continue;
+    if(std::holds_alternative<TraceSignalChannelOutcome>(channel->outcome)) {
+      signal_receivers.push_back(channel->receiver_node_id);
+    } else {
+      no_arrival_receivers.push_back(channel->receiver_node_id);
+    }
+  }
   return run && fixture->runtime.state() == ScenarioRuntimeState::kCompleted &&
          fixture->tx_phy.audit.size() == 1U &&
          fixture->channel.receiver_audit ==
@@ -82,11 +152,28 @@ auto TestMixedArrivalScenarioRuntime() -> bool {
          fixture->world.current_snapshot().version() == SnapshotVersion{1} &&
          fixture->world.last_committed_cycle_id() == PlanningCycleId{20} &&
          next_transmission && *next_transmission == TransmissionId{101} &&
-         next_reception && *next_reception == ReceptionId{1'002};
+         next_reception && *next_reception == ReceptionId{1'002} &&
+         CountKind(trace, TraceKind::kTransmission) == 1 &&
+         CountKind(trace, TraceKind::kChannelOutcome) == 3 &&
+         CountKind(trace, TraceKind::kReception) == 2 &&
+         CountKind(trace, TraceKind::kCycleCommit) == 1 &&
+         trace.events.size() == 7 && HasCanonicalTraceOrder(trace) &&
+         ReceptionDispositions(trace) ==
+             std::vector<TraceReceptionDisposition>{
+                 TraceReceptionDisposition::kRelayEnqueue,
+                 TraceReceptionDisposition::kOverheard} &&
+         signal_receivers ==
+             std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+         no_arrival_receivers == std::vector<NodeId>{NodeId{2}};
 }
 
 auto TestAllNoArrivalScenarioRuntime() -> bool {
-  auto fixture = RuntimeFixture::Create(PlanningCycleId{30}, {NodeId{0}});
+  RecordingTraceSink trace;
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{30},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &trace);
   const auto packet = TestPacket();
   if(!fixture || !fixture->Enqueue(packet)) return false;
   fixture->channel.no_arrival_receivers =
@@ -94,6 +181,14 @@ auto TestAllNoArrivalScenarioRuntime() -> bool {
   const auto run = fixture->runtime.RunCycles(1);
   const auto next_transmission = fixture->ids.NextTransmissionId();
   const auto next_reception = fixture->ids.NextReceptionId();
+  const auto all_outcomes_are_no_arrival = std::all_of(
+      trace.events.begin(), trace.events.end(), [](const TraceEvent& event) {
+        const auto* channel =
+            std::get_if<ChannelOutcomeTrace>(&event.payload());
+        return channel == nullptr ||
+               std::holds_alternative<TraceNoArrivalChannelOutcome>(
+                   channel->outcome);
+      });
   return run && fixture->runtime.state() == ScenarioRuntimeState::kCompleted &&
          fixture->tx_phy.audit.size() == 1U &&
          fixture->channel.receiver_audit ==
@@ -106,7 +201,213 @@ auto TestAllNoArrivalScenarioRuntime() -> bool {
          fixture->world.current_snapshot().version() == SnapshotVersion{1} &&
          fixture->world.last_committed_cycle_id() == PlanningCycleId{30} &&
          next_transmission && *next_transmission == TransmissionId{101} &&
-         next_reception && *next_reception == ReceptionId{1'000};
+         next_reception && *next_reception == ReceptionId{1'000} &&
+         CountKind(trace, TraceKind::kTransmission) == 1 &&
+         CountKind(trace, TraceKind::kChannelOutcome) == 3 &&
+         CountKind(trace, TraceKind::kReception) == 0 &&
+         CountKind(trace, TraceKind::kCycleCommit) == 1 &&
+         trace.events.size() == 5 && HasCanonicalTraceOrder(trace) &&
+         all_outcomes_are_no_arrival &&
+         std::get<CycleCommitTrace>(trace.events.back().payload()) ==
+             CycleCommitTrace{PlanningCycleId{30},
+                              SnapshotVersion{0},
+                              SnapshotVersion{1},
+                              Seconds(10)};
+}
+
+auto TestProviderFailureEmitsNoSuccessfulTrace() -> bool {
+  RecordingTraceSink trace;
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{40},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &trace);
+  const auto packet = TestPacket();
+  if(!fixture || !fixture->Enqueue(packet)) return false;
+  fixture->channel.fail_on_receiver = NodeId{2};
+  const auto run = fixture->runtime.RunCycles(1);
+  const auto next_transmission = fixture->ids.NextTransmissionId();
+  return !run && run.error().code == ErrorCode::kUnavailable &&
+         fixture->runtime.state() == ScenarioRuntimeState::kFailed &&
+         fixture->channel.receiver_audit ==
+             std::vector<NodeId>{NodeId{1}, NodeId{2}} &&
+         fixture->QueueHasOnly(NodeId{0}, packet) &&
+         fixture->world.current_snapshot().version() == SnapshotVersion{0} &&
+         next_transmission && *next_transmission == TransmissionId{101} &&
+         trace.events.empty();
+}
+
+auto TestAllReceptionDispositions() -> bool {
+  RecordingTraceSink trace;
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{50},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &trace);
+  const auto packet = TestPacket();
+  if(!fixture || !fixture->Enqueue(packet)) return false;
+  fixture->rx_phy.not_decoded_receivers = {NodeId{1}};
+  const auto run = fixture->runtime.RunCycles(1);
+  auto dispositions = ReceptionDispositions(trace);
+  std::sort(dispositions.begin(), dispositions.end());
+  return run && dispositions ==
+                    std::vector<TraceReceptionDisposition>{
+                        TraceReceptionDisposition::kNotDecoded,
+                        TraceReceptionDisposition::kOverheard,
+                        TraceReceptionDisposition::kOverheard} &&
+         fixture->QueueHasOnly(std::nullopt, packet) &&
+         fixture->deliveries.size() == 0;
+}
+
+auto TestBroadcastCardinality() -> bool {
+  RecordingTraceSink trace;
+  auto fixture = RuntimeFixture::Create(PlanningCycleId{60},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &trace);
+  const DigitalPacket packet{PacketId{20},
+                             NodeId{0},
+                             BroadcastDestination{},
+                             {std::byte{0x01}}};
+  if(!fixture || !fixture->Enqueue(packet)) return false;
+  const auto run = fixture->runtime.RunCycles(1);
+  if(!run || CountKind(trace, TraceKind::kTransmission) != 1 ||
+     CountKind(trace, TraceKind::kChannelOutcome) != 3 ||
+     CountKind(trace, TraceKind::kReception) != 3 ||
+     fixture->deliveries.size() != 3) {
+    return false;
+  }
+  const auto transmission = std::find_if(
+      trace.events.begin(), trace.events.end(), [](const TraceEvent& event) {
+        return event.kind() == TraceKind::kTransmission;
+      });
+  if(transmission == trace.events.end()) return false;
+  const auto transmission_id =
+      std::get<TransmissionTrace>(transmission->payload()).transmission_id;
+  return std::holds_alternative<TraceBroadcastTransmissionTarget>(
+             std::get<TransmissionTrace>(transmission->payload()).target) &&
+         std::all_of(
+             trace.events.begin(),
+             trace.events.end(),
+             [transmission_id](const TraceEvent& event) {
+               if(const auto* channel =
+                      std::get_if<ChannelOutcomeTrace>(&event.payload())) {
+                 return channel->transmission_id == transmission_id;
+               }
+               if(const auto* reception =
+                      std::get_if<ReceptionTrace>(&event.payload())) {
+                 return reception->transmission_id == transmission_id;
+               }
+               return true;
+             });
+}
+
+auto TestThreeCycleDeterminismAndCounts() -> bool {
+  RecordingTraceSink first_trace;
+  RecordingTraceSink second_trace;
+  auto first = RuntimeFixture::Create(PlanningCycleId{70},
+                                      {NodeId{0}, NodeId{1}, NodeId{2}},
+                                      FeasibilityMode::kStableChain,
+                                      std::nullopt,
+                                      &first_trace);
+  auto second = RuntimeFixture::Create(PlanningCycleId{70},
+                                       {NodeId{0}, NodeId{1}, NodeId{2}},
+                                       FeasibilityMode::kStableChain,
+                                       std::nullopt,
+                                       &second_trace);
+  const auto packet = TestPacket();
+  if(!first || !second || !first->Enqueue(packet) ||
+     !second->Enqueue(packet)) {
+    return false;
+  }
+  const auto first_run = first->runtime.RunCycles(3);
+  const auto second_run = second->runtime.RunCycles(3);
+  if(!first_run || !second_run || first_trace.events != second_trace.events ||
+     !HasCanonicalTraceOrder(first_trace) ||
+     CountKind(first_trace, TraceKind::kCycleCommit) != 3 ||
+     CountKind(first_trace, TraceKind::kTransmission) != 3 ||
+     CountKind(first_trace, TraceKind::kChannelOutcome) != 9 ||
+     CountKind(first_trace, TraceKind::kReception) != 9 ||
+     first->world.current_snapshot().version() != SnapshotVersion{3} ||
+     first->world.current_snapshot().committed_at() != Seconds(30) ||
+     first->deliveries.size() != 1 ||
+     !first->QueueHasOnly(std::nullopt, packet)) {
+    return false;
+  }
+
+  std::vector<NodeId> targets;
+  for(const auto& event : first_trace.events) {
+    const auto* transmission =
+        std::get_if<TransmissionTrace>(&event.payload());
+    if(transmission == nullptr) continue;
+    const auto* target = std::get_if<TraceUnicastTransmissionTarget>(
+        &transmission->target);
+    if(target == nullptr || transmission->packet_id != packet.packet_id) {
+      return false;
+    }
+    targets.push_back(target->node_id);
+  }
+  const auto dispositions = ReceptionDispositions(first_trace);
+  return targets == std::vector<NodeId>{NodeId{1}, NodeId{2}, NodeId{3}} &&
+         std::count(dispositions.begin(),
+                    dispositions.end(),
+                    TraceReceptionDisposition::kRelayEnqueue) == 2 &&
+         std::count(dispositions.begin(),
+                    dispositions.end(),
+                    TraceReceptionDisposition::kLocalDelivery) == 1 &&
+         std::count(dispositions.begin(),
+                    dispositions.end(),
+                    TraceReceptionDisposition::kOverheard) == 6;
+}
+
+auto TestFailingSinkIsNonCausal() -> bool {
+  NullTraceSink null_sink;
+  AlwaysFailTraceSink failing_sink;
+  auto baseline = RuntimeFixture::Create(PlanningCycleId{80},
+                                         {NodeId{0}},
+                                         FeasibilityMode::kStableChain,
+                                         std::nullopt,
+                                         &null_sink);
+  auto failing = RuntimeFixture::Create(PlanningCycleId{80},
+                                        {NodeId{0}},
+                                        FeasibilityMode::kStableChain,
+                                        std::nullopt,
+                                        &failing_sink);
+  const auto packet = TestPacket();
+  if(!baseline || !failing || !baseline->Enqueue(packet) ||
+     !failing->Enqueue(packet)) {
+    return false;
+  }
+  baseline->channel.no_arrival_receivers = {NodeId{2}};
+  failing->channel.no_arrival_receivers = {NodeId{2}};
+  const auto baseline_run = baseline->runtime.RunCycles(1);
+  const auto failing_run = failing->runtime.RunCycles(1);
+  const auto baseline_tx = baseline->ids.NextTransmissionId();
+  const auto failing_tx = failing->ids.NextTransmissionId();
+  const auto baseline_rx = baseline->ids.NextReceptionId();
+  const auto failing_rx = failing->ids.NextReceptionId();
+  const auto baseline_now = baseline->gateway.PlatformNow();
+  const auto failing_now = failing->gateway.PlatformNow();
+  const auto& baseline_snapshot = baseline->world.current_snapshot();
+  const auto& failing_snapshot = failing->world.current_snapshot();
+  return baseline_run && failing_run && failing_sink.attempt_count == 7 &&
+         baseline_snapshot.version() == failing_snapshot.version() &&
+         baseline_snapshot.committed_at() ==
+             failing_snapshot.committed_at() &&
+         std::equal(baseline_snapshot.nodes().begin(),
+                    baseline_snapshot.nodes().end(),
+                    failing_snapshot.nodes().begin(),
+                    failing_snapshot.nodes().end()) &&
+         baseline->world.last_committed_cycle_id() ==
+             failing->world.last_committed_cycle_id() &&
+         baseline->QueueHasOnly(NodeId{1}, packet) &&
+         failing->QueueHasOnly(NodeId{1}, packet) &&
+         baseline->deliveries.size() == failing->deliveries.size() &&
+         baseline_tx == failing_tx && baseline_rx == failing_rx &&
+         baseline_now == failing_now &&
+         baseline->planner.cycle_ids == failing->planner.cycle_ids &&
+         baseline->runtime.state() == failing->runtime.state();
 }
 
 auto TestKernelAheadOfSnapshotFailsBeforePlanning() -> bool {
@@ -198,6 +499,11 @@ auto main() -> int {
                  TestSuccessfulLifecycle() &&
                  TestMixedArrivalScenarioRuntime() &&
                  TestAllNoArrivalScenarioRuntime() &&
+                 TestProviderFailureEmitsNoSuccessfulTrace() &&
+                 TestAllReceptionDispositions() &&
+                 TestBroadcastCardinality() &&
+                 TestThreeCycleDeterminismAndCounts() &&
+                 TestFailingSinkIsNonCausal() &&
                  TestKernelAheadOfSnapshotFailsBeforePlanning() &&
                  TestZeroDelayRemainsFatalWithoutTimeShift() &&
                  TestFailureStopsAndPreservesSuccessfulPrefix()
