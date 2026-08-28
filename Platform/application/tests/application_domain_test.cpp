@@ -117,9 +117,14 @@ class FakeRunExecutor final : public IRunExecutor {
  public:
   auto Execute(const RunId& run_id,
                const ScenarioDefinition& scenario,
-               const ExperimentDefinition& experiment) const
+               const ExperimentDefinition& experiment,
+               ITraceSink& trace_sink) const
       -> Result<RunResult> override {
     ++execute_count;
+    for(const auto& event : trace_events) {
+      const auto ignored = trace_sink.Emit(event);
+      (void)ignored;
+    }
     if(failure) return std::unexpected(*failure);
     const auto ended_at = SimTime::FromNanoseconds(
         static_cast<std::int64_t>(experiment.simulation_cycle_count()) *
@@ -153,6 +158,7 @@ class FakeRunExecutor final : public IRunExecutor {
 
   mutable std::size_t execute_count{0};
   std::optional<Error> failure;
+  std::vector<TraceEvent> trace_events;
 };
 
 auto TestIdAndDefinitionValidation() -> bool {
@@ -200,7 +206,8 @@ auto TestRepositoriesAndLifecycle() -> bool {
     return false;
   }
   FakeRunExecutor executor;
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   auto run_id = RunId::Create("run-1");
   auto missing_experiment_run_id = RunId::Create("run-missing-experiment");
   if(!run_id || !missing_experiment_run_id) return false;
@@ -268,7 +275,8 @@ auto TestMissingScenarioIsDistinguished() -> bool {
   RunRepository runs;
   if(!experiments.Register(*experiment)) return false;
   FakeRunExecutor executor;
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   const auto created = service.CreateRun(
       *run_id,
       ExperimentReference{experiment->experiment_id(),
@@ -290,7 +298,8 @@ auto TestRunIdDoesNotAffectDeterminism() -> bool {
     return false;
   }
   FakeRunExecutor executor;
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   auto first_id = RunId::Create("run-a");
   auto second_id = RunId::Create("run-b");
   if(!first_id || !second_id) return false;
@@ -324,7 +333,8 @@ auto TestRunCapturesExactDefinitionVersions() -> bool {
     return false;
   }
   FakeRunExecutor executor;
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   auto run_id = RunId::Create("run-captured-v1");
   if(!run_id) return false;
   const auto v1_reference = ExperimentReference{
@@ -364,7 +374,8 @@ auto TestFailedRunIsTerminalAndAuditable() -> bool {
   FakeRunExecutor executor;
   executor.failure =
       Error{ErrorCode::kNotFound, "Environment asset missing"};
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   auto run_id = RunId::Create("run-failed");
   if(!run_id) return false;
   const auto reference = ExperimentReference{

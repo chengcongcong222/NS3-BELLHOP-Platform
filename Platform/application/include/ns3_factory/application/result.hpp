@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <ns3_factory/application/domain.hpp>
+#include <ns3_factory/application/run_events.hpp>
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
 #include <ns3_factory/contracts/state.hpp>
@@ -38,6 +39,7 @@ struct RunRecord final {
   std::optional<contracts::SimTime> simulation_ended_at;
   std::optional<contracts::SnapshotVersion> final_snapshot_version;
   std::optional<RunFailureSummary> failure;
+  std::optional<bool> event_stream_complete;
 
   auto operator==(const RunRecord&) const -> bool = default;
 };
@@ -129,7 +131,8 @@ class IRunExecutor {
   [[nodiscard]] virtual auto Execute(
       const RunId& run_id,
       const ScenarioDefinition& scenario,
-      const ExperimentDefinition& experiment) const
+      const ExperimentDefinition& experiment,
+      contracts::ITraceSink& trace_sink) const
       -> contracts::Result<RunResult> = 0;
 };
 

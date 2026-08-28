@@ -119,7 +119,8 @@ class RunRepository final {
   [[nodiscard]] auto Insert(RunRecord record) -> contracts::Status {
     if(record.lifecycle != RunLifecycle::kCreated ||
        record.simulation_started_at || record.simulation_ended_at ||
-       record.final_snapshot_version || record.failure) {
+       record.final_snapshot_version || record.failure ||
+       record.event_stream_complete) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kInvalidArgument,
                            "A new RunRecord must be in the Created state"});
@@ -153,6 +154,28 @@ class RunRepository final {
           contracts::Error{contracts::ErrorCode::kNotFound,
                            "RunId was not found"});
     }
+    const auto same_inputs =
+        position->record.experiment == record.experiment &&
+        position->record.scenario == record.scenario &&
+        position->record.environment == record.environment;
+    const auto begins_running =
+        position->record.lifecycle == RunLifecycle::kCreated &&
+        record.lifecycle == RunLifecycle::kRunning &&
+        record.simulation_started_at && !record.simulation_ended_at &&
+        !record.final_snapshot_version && !record.failure &&
+        !record.event_stream_complete;
+    const auto becomes_failed =
+        position->record.lifecycle == RunLifecycle::kRunning &&
+        record.lifecycle == RunLifecycle::kFailed &&
+        record.simulation_started_at && !record.simulation_ended_at &&
+        !record.final_snapshot_version && record.failure &&
+        record.event_stream_complete;
+    if(!same_inputs || position->result ||
+       (!begins_running && !becomes_failed)) {
+      return std::unexpected(
+          contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+                           "Run lifecycle transition is invalid"});
+    }
     position->record = std::move(record);
     return {};
   }
@@ -167,7 +190,19 @@ class RunRepository final {
     }
     if(position->record.lifecycle != RunLifecycle::kRunning ||
        record.lifecycle != RunLifecycle::kCompleted ||
-       result.run_id != record.run_id || position->result) {
+       result.run_id != record.run_id || position->result ||
+       position->record.experiment != record.experiment ||
+       position->record.scenario != record.scenario ||
+       position->record.environment != record.environment ||
+       !record.simulation_started_at || !record.simulation_ended_at ||
+       !record.final_snapshot_version || record.failure ||
+       !record.event_stream_complete ||
+       *record.simulation_started_at !=
+           result.projection.simulation_started_at ||
+       *record.simulation_ended_at !=
+           result.projection.simulation_ended_at ||
+       *record.final_snapshot_version !=
+           result.projection.final_snapshot_version) {
       return std::unexpected(
           contracts::Error{contracts::ErrorCode::kFailedPrecondition,
                            "Run cannot publish a result in its current state"});

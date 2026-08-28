@@ -10,7 +10,7 @@ Frontend
   → ScenarioRuntime
 ```
 
-The frontend never calls runtime internals directly. HTTP, FastAPI, JSON, SSE, authentication and database persistence are not part of P0-S4-01.
+The frontend never calls runtime internals directly. HTTP, FastAPI, JSON, an SSE socket, authentication and database persistence are not part of P0-S4-02.
 
 ## Stable read models
 
@@ -25,6 +25,8 @@ These DTOs do not expose `CycleWorkingState`, `ProtocolKnowledgeStore`, `Protoco
 
 Application adapters own conversion from assembly results into this boundary. Frontend view-model adapters may later perform presentation/unit conversion, but browser floating-point seconds never become authoritative simulation time.
 
-## Deferred event boundary
+## Read-only event boundary
 
-Core `TraceEvent` remains unchanged. A future S4-02 event-facing application projection may add a Run-local sequence/cursor while wrapping typed trace summaries, without modifying core trace identity or advancing simulation time. SSE transport, retention, replay and reconnect semantics are therefore intentionally deferred rather than embedded in RunService.
+Core `TraceEvent` remains unchanged. `RunEventRecord` wraps one typed trace with a RunId and a Run-local sequence assigned once at append. `RunService::ReadEvents` accepts a last-seen sequence cursor and a bounded limit; it never creates a Run, executes a Run or advances simulation time. Readers cannot access journal append or a trace sink pointer.
+
+Events, snapshots and results are independent read resources. Event replay is not required to reconstruct or validate the formal `RunResult`, and the journal never stores a `WorldSnapshot`. A future HTTP/SSE adapter may serialize these records and map a transport resume token to the application cursor, but HTTP status, headers, `text/event-stream`, retention and reconnect policy remain S4-03 work.

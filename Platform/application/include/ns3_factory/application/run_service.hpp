@@ -12,11 +12,13 @@ class RunService final {
   RunService(const ScenarioRepository& scenarios,
              const ExperimentRepository& experiments,
              RunRepository& runs,
-             const IRunExecutor& executor) noexcept
+             const IRunExecutor& executor,
+             IRunEventJournal& events) noexcept
       : scenarios_(scenarios),
         experiments_(experiments),
         runs_(runs),
-        executor_(executor) {}
+        executor_(executor),
+        events_(events) {}
 
   [[nodiscard]] auto CreateRun(RunId run_id,
                                ExperimentReference experiment_reference)
@@ -30,6 +32,7 @@ class RunService final {
                      experiment->scenario(),
                      scenario->environment(),
                      RunLifecycle::kCreated,
+                     std::nullopt,
                      std::nullopt,
                      std::nullopt,
                      std::nullopt,
@@ -58,21 +61,29 @@ class RunService final {
     const auto running = runs_.get().Replace(*record);
     if(!running) return std::unexpected(running.error());
 
-    auto result = executor_.get().Execute(run_id, *scenario, *experiment);
-    if(!result) return Fail(*record, result.error());
+    RunEventSink event_sink{run_id, events_.get()};
+    auto result =
+        executor_.get().Execute(run_id, *scenario, *experiment, event_sink);
+    if(!result) {
+      return Fail(*record,
+                  result.error(),
+                  event_sink.event_stream_complete());
+    }
     if(result->run_id != run_id ||
        result->projection.simulation_started_at !=
            *record->simulation_started_at) {
       return Fail(
           *record,
           contracts::Error{contracts::ErrorCode::kFailedPrecondition,
-                           "Run executor returned mismatched provenance"});
+                           "Run executor returned mismatched provenance"},
+          event_sink.event_stream_complete());
     }
     record->lifecycle = RunLifecycle::kCompleted;
     record->simulation_ended_at = result->projection.simulation_ended_at;
     record->final_snapshot_version =
         result->projection.final_snapshot_version;
     record->failure.reset();
+    record->event_stream_complete = event_sink.event_stream_complete();
     const auto completed = runs_.get().Complete(*record, *result);
     if(!completed) return std::unexpected(completed.error());
     return result;
@@ -88,13 +99,33 @@ class RunService final {
     return runs_.get().GetResult(run_id);
   }
 
+  [[nodiscard]] auto ReadEvents(const RunId& run_id,
+                                RunEventSequence cursor,
+                                std::size_t limit) const
+      -> contracts::Result<std::vector<RunEventRecord>> {
+    const auto record = runs_.get().Find(run_id);
+    if(!record) return std::unexpected(record.error());
+    return events_.get().ReadAfter(run_id, cursor, limit);
+  }
+
+  [[nodiscard]] auto GetLatestEventSequence(const RunId& run_id) const
+      -> contracts::Result<RunEventSequence> {
+    const auto record = runs_.get().Find(run_id);
+    if(!record) return std::unexpected(record.error());
+    return events_.get().GetLatestSequence(run_id);
+  }
+
  private:
-  [[nodiscard]] auto Fail(RunRecord record, contracts::Error error)
+  [[nodiscard]] auto Fail(
+      RunRecord record,
+      contracts::Error error,
+      std::optional<bool> event_stream_complete = std::nullopt)
       -> contracts::Result<RunResult> {
     record.lifecycle = RunLifecycle::kFailed;
     record.simulation_ended_at.reset();
     record.final_snapshot_version.reset();
     record.failure = RunFailureSummary{error.code, error.message};
+    record.event_stream_complete = event_stream_complete;
     const auto replaced = runs_.get().Replace(std::move(record));
     if(!replaced) return std::unexpected(replaced.error());
     return std::unexpected(std::move(error));
@@ -104,6 +135,7 @@ class RunService final {
   std::reference_wrapper<const ExperimentRepository> experiments_;
   std::reference_wrapper<RunRepository> runs_;
   std::reference_wrapper<const IRunExecutor> executor_;
+  std::reference_wrapper<IRunEventJournal> events_;
 };
 
 }  // namespace ns3_factory::application

@@ -23,6 +23,19 @@ if(BUILD_TESTING)
     NAME platform_application_domain_test
     COMMAND platform_application_domain_test
   )
+
+  add_executable(
+    platform_application_run_event_journal_test
+    tests/run_event_journal_test.cpp
+  )
+  target_link_libraries(
+    platform_application_run_event_journal_test
+    PRIVATE Platform::application
+  )
+  add_test(
+    NAME platform_application_run_event_journal_test
+    COMMAND platform_application_run_event_journal_test
+  )
 endif()
 
 if(BUILD_TESTING AND PLATFORM_NS3_AVAILABLE)

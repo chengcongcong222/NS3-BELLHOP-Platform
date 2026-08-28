@@ -80,6 +80,48 @@ auto SameSimulationResult(const RunResult& lhs,
          lhs.fusion_results == rhs.fusion_results && lhs.nodes == rhs.nodes;
 }
 
+auto SameTracePayloadOrder(const std::vector<RunEventRecord>& lhs,
+                           const std::vector<RunEventRecord>& rhs) -> bool {
+  if(lhs.size() != rhs.size()) return false;
+  for(std::size_t index = 0; index < lhs.size(); ++index) {
+    if(lhs[index].sequence != rhs[index].sequence ||
+       lhs[index].trace_event != rhs[index].trace_event) {
+      return false;
+    }
+  }
+  return true;
+}
+
+class AlwaysFailJournal final : public IRunEventJournal {
+ public:
+  auto ReadAfter(const RunId&,
+                 RunEventSequence cursor,
+                 std::size_t limit) const
+      -> Result<std::vector<RunEventRecord>> override {
+    if(limit == 0U || limit > kMaximumRunEventReadLimit) {
+      return std::unexpected(
+          Error{ErrorCode::kInvalidArgument, "Invalid limit"});
+    }
+    if(cursor != RunEventSequence::BeforeFirst()) {
+      return std::unexpected(
+          Error{ErrorCode::kOutOfRange, "Invalid cursor"});
+    }
+    return std::vector<RunEventRecord>{};
+  }
+
+  auto GetLatestSequence(const RunId&) const
+      -> Result<RunEventSequence> override {
+    return RunEventSequence::BeforeFirst();
+  }
+
+ private:
+  auto Append(const RunId&, const TraceEvent&) noexcept
+      -> Result<RunEventRecord> override {
+    return std::unexpected(
+        Error{ErrorCode::kUnavailable, "Injected journal failure"});
+  }
+};
+
 auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
   TemporaryRepositoryRoot temporary;
   auto environments = EnvironmentAssetRepository::Open(temporary.path());
@@ -130,12 +172,15 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
     return false;
   }
   AcceptanceRunExecutor executor{*environments};
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   auto run_id = RunId::Create("run-modeled");
   auto second_run_id = RunId::Create("run-modeled-repeat");
   auto direct_run_id = RunId::Create("run-direct-baseline");
   auto missing_run_id = RunId::Create("run-no-quality");
-  if(!run_id || !second_run_id || !direct_run_id || !missing_run_id) {
+  auto failed_journal_run_id = RunId::Create("run-journal-failure");
+  if(!run_id || !second_run_id || !direct_run_id || !missing_run_id ||
+     !failed_journal_run_id) {
     return false;
   }
   const auto modeled_reference = ExperimentReference{
@@ -146,15 +191,29 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
   }
   const auto result = service.ExecuteRun(*run_id);
   const auto repeated = service.ExecuteRun(*second_run_id);
-  const auto direct = executor.Execute(*direct_run_id, *scenario, *experiment);
+  NullTraceSink direct_trace;
+  const auto direct =
+      executor.Execute(*direct_run_id, *scenario, *experiment, direct_trace);
   const auto record = service.GetRun(*run_id);
   const auto stored = service.GetResult(*run_id);
+  const auto first_events = service.ReadEvents(
+      *run_id, RunEventSequence::BeforeFirst(),
+      kMaximumRunEventReadLimit);
+  const auto repeated_events = service.ReadEvents(
+      *second_run_id, RunEventSequence::BeforeFirst(),
+      kMaximumRunEventReadLimit);
   if(!result || !repeated || !direct || !record || !stored ||
-     !result->acceptance_report) {
+     !first_events || !repeated_events || !result->acceptance_report) {
     return false;
   }
   const auto& acceptance = *result->acceptance_report;
+  const auto expected_event_count =
+      result->projection.transmission_count +
+      result->projection.channel_signal_count +
+      result->projection.channel_no_arrival_count +
+      result->projection.reception_count + result->projection.cycle_count;
   if(record->lifecycle != RunLifecycle::kCompleted ||
+     record->event_stream_complete != true ||
      record->experiment != modeled_reference ||
      record->scenario != scenario_reference ||
      record->environment != scenario->environment() ||
@@ -173,8 +232,36 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
      acceptance.fusion_period != MetricStatus::kPass ||
      acceptance.overall != OverallStatus::kPass ||
      !acceptance.maximum_ber || *acceptance.maximum_ber >= 1.0e-4 ||
+     first_events->size() != expected_event_count ||
+     !SameTracePayloadOrder(*first_events, *repeated_events) ||
      !SameSimulationResult(*result, *repeated) ||
      !SameSimulationResult(*result, *direct) || *stored != *result) {
+    return false;
+  }
+
+  RunRepository failed_journal_runs;
+  AlwaysFailJournal failed_journal;
+  RunService failed_journal_service{scenarios,
+                                    experiments,
+                                    failed_journal_runs,
+                                    executor,
+                                    failed_journal};
+  if(!failed_journal_service.CreateRun(*failed_journal_run_id,
+                                       modeled_reference)) {
+    return false;
+  }
+  const auto failed_journal_result =
+      failed_journal_service.ExecuteRun(*failed_journal_run_id);
+  const auto failed_journal_record =
+      failed_journal_service.GetRun(*failed_journal_run_id);
+  const auto failed_journal_stored =
+      failed_journal_service.GetResult(*failed_journal_run_id);
+  if(!failed_journal_result || !failed_journal_record ||
+     !failed_journal_stored ||
+     !SameSimulationResult(*result, *failed_journal_result) ||
+     failed_journal_record->lifecycle != RunLifecycle::kCompleted ||
+     failed_journal_record->event_stream_complete != false ||
+     *failed_journal_stored != *failed_journal_result) {
     return false;
   }
 
@@ -221,7 +308,8 @@ auto TestMissingEnvironmentProducesFailedLifecycle() -> bool {
     return false;
   }
   AcceptanceRunExecutor executor{*environments};
-  RunService service{scenarios, experiments, runs, executor};
+  InMemoryRunEventJournal events;
+  RunService service{scenarios, experiments, runs, executor, events};
   if(!service.CreateRun(
          *run_id,
          ExperimentReference{experiment->experiment_id(),
@@ -233,6 +321,7 @@ auto TestMissingEnvironmentProducesFailedLifecycle() -> bool {
   return !executed && record &&
          executed.error().code == ErrorCode::kNotFound &&
          record->lifecycle == RunLifecycle::kFailed && record->failure &&
+         record->event_stream_complete == true &&
          record->failure->code == ErrorCode::kNotFound &&
          record->failure->message.starts_with("Environment asset missing:");
 }

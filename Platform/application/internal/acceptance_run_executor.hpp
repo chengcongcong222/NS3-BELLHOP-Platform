@@ -43,12 +43,20 @@ using namespace contracts;
 
 class RecordingTraceSink final : public ITraceSink {
  public:
+  explicit RecordingTraceSink(ITraceSink& downstream) noexcept
+      : downstream_(downstream) {}
+
   auto Emit(const TraceEvent& event) noexcept -> Status override {
     events.push_back(event);
+    const auto ignored = downstream_.get().Emit(event);
+    (void)ignored;
     return {};
   }
 
   std::vector<TraceEvent> events;
+
+ private:
+  std::reference_wrapper<ITraceSink> downstream_;
 };
 
 class FusionCenterEstimator final : public ILinkFeasibilityEstimator {
@@ -235,7 +243,8 @@ class AcceptanceRunExecutor final : public IRunExecutor {
   [[nodiscard]] auto Execute(
       const RunId& run_id,
       const ScenarioDefinition& scenario,
-      const ExperimentDefinition& experiment) const
+      const ExperimentDefinition& experiment,
+      contracts::ITraceSink& event_sink) const
       -> contracts::Result<RunResult> override {
     using namespace acceptance_run_executor_detail;
     auto asset_id = environment::internal::EnvironmentAssetId::Create(
@@ -317,7 +326,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         experiment.phy().quality_mode == RxQualityMode::kModeledBpskAwgn
             ? static_cast<const contracts::IRxPhy&>(*modeled_rx)
             : static_cast<const contracts::IRxPhy&>(deterministic_rx);
-    RecordingTraceSink trace;
+    RecordingTraceSink trace{event_sink};
     assembly::internal::ScenarioRuntime runtime{
         gateway,
         world,

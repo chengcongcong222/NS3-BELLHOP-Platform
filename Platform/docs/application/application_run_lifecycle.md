@@ -23,4 +23,6 @@ Errors remain distinguishable:
 
 `GetRun` is the lifecycle authority. `GetResult` succeeds only after a completed result has been published. `ScenarioRuntime` is never returned to callers.
 
+Run event recording is an independent best-effort observation path. Terminal records set `event_stream_complete` to true only when every typed Trace emission was appended; a journal failure sets it false but does not change Completed/Failed simulation lifecycle or formal result publication. Events successfully recorded before simulation failure remain replayable. Created/Running records use an unset diagnostic because their event stream is not terminal yet.
+
 Cancellation, queued workers, retry/recovery, checkpoints, persistent repositories and concurrent execution policy remain future design work. Terminal records are deliberately not reset in place.

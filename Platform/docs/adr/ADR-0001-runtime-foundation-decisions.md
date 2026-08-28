@@ -1,8 +1,8 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02 CLOSED
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Trace/Acceptance Scenario
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -588,6 +588,24 @@ Application domain 位于 `ScenarioRuntime` 与 assembly composition 之上。Fr
 P0 Run lifecycle 固定为 `Created -> Running -> Completed` 或 `Created -> Running -> Failed`。Completed/Failed 是 terminal，不允许同一 RunId retry/reset/re-execute。同步 `RunService` 提供 CreateRun、ExecuteRun、GetRun、GetResult；成功时 terminal record 与 RunResult 一起发布，失败时保留具体 ErrorCode 与 owned summary，不把 Scenario/Experiment/Environment missing、duplicate ID、invalid lifecycle 和 simulation/provider failure 合并成通用 “Run failed”。
 
 RunResult 只包含 application-owned run projection、optional acceptance summary、fusion summaries 与 node summaries，不泄漏 runtime/environment internal object。Acceptance preset adapter 保留既有 Acceptance4Node/Extended6Node config，并通过已注册 Environment asset 和现有 M1–M5/M8/feature workload 路径执行。HTTP/FastAPI、JSON、SSE、authentication、database persistence、cancel/retry 和 run-event retention 均留后续阶段；core TraceEvent 本阶段不修改。
+
+P0-S4-01 至此 CLOSED：Run 创建时捕获 exact immutable Experiment、Scenario 与 Environment identity/version；后续注册的新 version 不改变既有 Run 的执行输入。只有 Completed Run 可以发布正式 RunResult；Failed Run 保留具体 failure summary，但不得留下 formal result。Run repository 的状态迁移能力只对 RunService 开放，普通 caller 不能绕过 terminal lifecycle。
+
+### 2.47 Run-local event journal and replay cursor
+
+Application 将既有 typed `TraceEvent` 通过当前 Run 专属的 `RunEventSink` 包装为 `RunEventRecord`。Core `TraceEvent` 不增加 RunId、SSE cursor 或 application sequence；`RunEventSequence` 只属于单个 Run，从 1 开始并严格按 `ITraceSink::Emit` 调用顺序递增。不同 Run 各自从 1 开始，相同 simulation timestamp 的事件不得按时间重新排序。0 只表示 before-first-event cursor，不是已写入 record 的 sequence。
+
+`IRunEventJournal` 对普通调用者只公开 `ReadAfter` 与 `GetLatestSequence`。Append capability 是接口私有 mutation，仅由 RunService 构造的 RunEventSink 使用，因此 future API reader 不能伪造 record。P0 in-memory journal 在 append 时一次性固定 sequence；重复读取不生成新 identity。`ReadAfter(cursor, limit)` 只返回 `sequence > cursor` 的 ascending records，limit 必须位于显式 bounded range；cursor 等于 latest 返回空，cursor 大于 latest 明确返回 OutOfRange，禁止 silent reset。
+
+RunEventSequence 只属于成功写入 journal 的正式 record。Append 失败不消耗 sequence；success/fail/success 必须形成 1、2，而不是 1、3。Event-stream completeness 一旦因任意 append failure 变为 false 就保持 sticky，后续成功不得恢复。Sequence successor 使用 checked allocation；latest 为 `UINT64_MAX` 时下一 append 明确 Overflow，不得 wrap 到 0，且该 observation failure 仍不改变 simulation causality。
+
+Event recording 延续 S3-01 的 non-causal best-effort 原则。Journal append failure 不得改变 simulation state、event order、RunResult 或 Completed/Failed lifecycle；RunRecord 独立保存 event-stream completeness diagnostic。Simulation failure 前已经成功 append 的 records 不得删除，Completed 与 Failed Run 都可继续 replay。Events、formal RunResult 与 future snapshots 是三个独立读取资源：Result 不依赖 replay 重建，journal 不保存 WorldSnapshot，journal 不完整也不使正式 simulation result 失效。
+
+Journal 当前只保存 simulation Trace observations，不保存或推导 Run lifecycle transition。`RunRecord` 是 Created、Running、Completed、Failed 的唯一权威；event presence、absence 或最后一条 Trace kind 都不得替代 RunRecord。存在的 Run 在任意 lifecycle 均允许只读 ReadEvents：Created 通常为空，Running 返回当前成功写入的 prefix，Completed/Failed 支持 replay。
+
+P0-S4-02 不实现 HTTP、SSE socket、serialization、Last-Event-ID、database retention、authentication、cancel/retry 或 concurrent scheduler。Future transport 只能序列化既有 cursor/read DTO，不得通过 event read 创建 Run、推进 simulation time 或取得 mutable journal handle。
+
+P0-S4-02 至此 CLOSED：run-local successful-record sequence、bounded cursor replay、private append ownership、sticky completeness、overflow safety、terminal replay 与 Result/snapshot independence 已通过 OFF/ON 测试冻结。
 
 ## 3. 影响
 
