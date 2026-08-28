@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <limits>
 #include <type_traits>
 #include <variant>
 
@@ -62,7 +63,12 @@ auto TestTypedPayloadsAndKinds() -> bool {
                      TransmissionId{2},
                      PacketId{3},
                      NodeId{0},
-                     TraceReceptionDisposition::kRelayEnqueue});
+                     TraceReceptionDisposition::kRelayEnqueue,
+                     TraceRxQualitySummary{
+                         10.0,
+                         20.0,
+                         1.0e-5,
+                         TraceRxQualityEvidenceSource::kModeled}});
 
   return cycle && transmission && signal && no_arrival && reception &&
          cycle->kind() == TraceKind::kCycleCommit &&
@@ -70,6 +76,9 @@ auto TestTypedPayloadsAndKinds() -> bool {
          signal->kind() == TraceKind::kChannelOutcome &&
          no_arrival->kind() == TraceKind::kChannelOutcome &&
          reception->kind() == TraceKind::kReception &&
+         std::get<ReceptionTrace>(reception->payload()).quality &&
+         std::get<ReceptionTrace>(reception->payload())
+                 .quality->bit_error_rate == 1.0e-5 &&
          std::holds_alternative<TraceUnicastTransmissionTarget>(
              std::get<TransmissionTrace>(transmission->payload()).target) &&
          std::holds_alternative<TraceNoArrivalChannelOutcome>(
@@ -98,13 +107,40 @@ auto TestInvariantsAndNullSink() -> bool {
                      PacketId{3},
                      NodeId{4},
                      static_cast<TraceReceptionDisposition>(0)});
+  const auto bad_quality = TraceEvent::Create(
+      Seconds(2),
+      ReceptionTrace{
+          ReceptionId{5},
+          TransmissionId{2},
+          PacketId{3},
+          NodeId{4},
+          TraceReceptionDisposition::kLocalDelivery,
+          TraceRxQualitySummary{
+              0.0,
+              0.0,
+              std::numeric_limits<double>::quiet_NaN(),
+              TraceRxQualityEvidenceSource::kModeled}});
+  const auto bad_quality_source = TraceEvent::Create(
+      Seconds(2),
+      ReceptionTrace{
+          ReceptionId{5},
+          TransmissionId{2},
+          PacketId{3},
+          NodeId{4},
+          TraceReceptionDisposition::kLocalDelivery,
+          TraceRxQualitySummary{
+              0.0,
+              0.0,
+              0.0,
+              static_cast<TraceRxQualityEvidenceSource>(0)}});
   auto valid = TraceEvent::Create(
       Seconds(1),
       ChannelOutcomeTrace{TransmissionId{2},
                           NodeId{0},
                           TraceNoArrivalChannelOutcome{}});
   NullTraceSink sink;
-  return !bad_cycle && !bad_transmission && !bad_reception && valid &&
+  return !bad_cycle && !bad_transmission && !bad_reception && !bad_quality &&
+         !bad_quality_source && valid &&
          sink.Emit(*valid);
 }
 

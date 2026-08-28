@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <variant>
 
@@ -60,6 +61,22 @@ enum class TraceReceptionDisposition : std::uint8_t {
   kRelayEnqueue = 4,
 };
 
+enum class TraceRxQualityEvidenceSource : std::uint8_t {
+  kModeled = 1,
+  kMeasured = 2,
+  kExternal = 3,
+};
+
+struct TraceRxQualitySummary final {
+  double signal_to_noise_ratio_db;
+  double eb_n0_db;
+  double bit_error_rate;
+  TraceRxQualityEvidenceSource source;
+
+  constexpr auto operator==(const TraceRxQualitySummary&) const noexcept
+      -> bool = default;
+};
+
 struct CycleCommitTrace final {
   PlanningCycleId cycle_id;
   SnapshotVersion base_snapshot_version;
@@ -95,6 +112,7 @@ struct ReceptionTrace final {
   PacketId packet_id;
   NodeId receiver_node_id;
   TraceReceptionDisposition disposition;
+  std::optional<TraceRxQualitySummary> quality;
 
   constexpr auto operator==(const ReceptionTrace&) const noexcept
       -> bool = default;
@@ -178,8 +196,8 @@ inline auto TraceEvent::Create(SimTime occurred_at,
     }
   } else {
     kind = TraceKind::kReception;
-    const auto disposition =
-        std::get<ReceptionTrace>(payload).disposition;
+    const auto& reception = std::get<ReceptionTrace>(payload);
+    const auto disposition = reception.disposition;
     if(disposition != TraceReceptionDisposition::kNotDecoded &&
        disposition != TraceReceptionDisposition::kOverheard &&
        disposition != TraceReceptionDisposition::kLocalDelivery &&
@@ -187,6 +205,27 @@ inline auto TraceEvent::Create(SimTime occurred_at,
       return std::unexpected(
           Error{ErrorCode::kInvalidArgument,
                 "ReceptionTrace disposition is invalid"});
+    }
+    if(reception.quality) {
+      const auto& quality = *reception.quality;
+      if(!std::isfinite(quality.signal_to_noise_ratio_db) ||
+         !std::isfinite(quality.eb_n0_db) ||
+         !std::isfinite(quality.bit_error_rate) ||
+         quality.bit_error_rate < 0.0 || quality.bit_error_rate > 1.0) {
+        return std::unexpected(
+            Error{ErrorCode::kInvalidArgument,
+                  "ReceptionTrace quality summary is invalid"});
+      }
+      switch(quality.source) {
+        case TraceRxQualityEvidenceSource::kModeled:
+        case TraceRxQualityEvidenceSource::kMeasured:
+        case TraceRxQualityEvidenceSource::kExternal:
+          break;
+        default:
+          return std::unexpected(
+              Error{ErrorCode::kInvalidArgument,
+                    "ReceptionTrace quality source is invalid"});
+      }
     }
   }
   return TraceEvent{occurred_at, kind, std::move(payload)};

@@ -114,6 +114,71 @@ auto MakeTrace(std::size_t cycles,
   return events;
 }
 
+auto MakeBerTrace(std::size_t cycles,
+                  SimDuration cycle_duration,
+                  std::optional<double> bit_error_rate,
+                  bool no_arrival)
+    -> std::optional<std::vector<TraceEvent>> {
+  std::vector<TraceEvent> events;
+  if(!AppendTrace(
+         events,
+         At(0),
+         TransmissionTrace{TransmissionId{500},
+                           PacketId{600},
+                           NodeId{10},
+                           TraceUnicastTransmissionTarget{NodeId{99}},
+                           At(0),
+                           At(2'000'000'000)})) {
+    return std::nullopt;
+  }
+  const auto channel_outcome = no_arrival
+                                   ? TraceChannelOutcome{
+                                         TraceNoArrivalChannelOutcome{}}
+                                   : TraceChannelOutcome{
+                                         TraceSignalChannelOutcome{
+                                             SimDuration::Zero(), 70.0, 0}};
+  if(!AppendTrace(events,
+                  At(2'000'000'000),
+                  ChannelOutcomeTrace{
+                      TransmissionId{500}, NodeId{99}, channel_outcome})) {
+    return std::nullopt;
+  }
+  if(!no_arrival) {
+    const auto quality =
+        bit_error_rate
+            ? std::optional{TraceRxQualitySummary{
+                  -5.0,
+                  13.23908740944319,
+                  *bit_error_rate,
+                  TraceRxQualityEvidenceSource::kModeled}}
+            : std::nullopt;
+    if(!AppendTrace(events,
+                    At(2'000'000'000),
+                    ReceptionTrace{ReceptionId{700},
+                                   TransmissionId{500},
+                                   PacketId{600},
+                                   NodeId{99},
+                                   TraceReceptionDisposition::kLocalDelivery,
+                                   quality})) {
+      return std::nullopt;
+    }
+  }
+  for(std::size_t cycle = 0; cycle < cycles; ++cycle) {
+    const auto committed_at = At(
+        static_cast<std::int64_t>(cycle + 1) *
+        cycle_duration.nanoseconds());
+    if(!AppendTrace(events,
+                    committed_at,
+                    CycleCommitTrace{PlanningCycleId{cycle},
+                                     SnapshotVersion{cycle},
+                                     SnapshotVersion{cycle + 1},
+                                     committed_at})) {
+      return std::nullopt;
+    }
+  }
+  return events;
+}
+
 auto MakeFusionResult(std::uint64_t sequence,
                       std::int64_t started_ns,
                       std::int64_t completed_ns,
@@ -227,9 +292,54 @@ auto TestDeterministicGoldenProjectionAndReport() -> bool {
          report->fusion_period.status == AcceptanceMetricStatus::kPass &&
          report->bit_error_rate.status ==
              AcceptanceMetricStatus::kNotEvaluated &&
-         !report->bit_error_rate.measured_ber &&
+         report->bit_error_rate.required_target_attempts == 1 &&
+         report->bit_error_rate.evaluated_receptions == 0 &&
+         report->bit_error_rate.missing_evidence_count == 1 &&
+         !report->bit_error_rate.maximum_ber &&
          report->overall_status ==
              AcceptanceOverallStatus::kNotFullyEvaluated;
+}
+
+auto TestAcceptanceBerPassFailAndMissing() -> bool {
+  const auto make_report = [](std::optional<double> ber,
+                              bool no_arrival)
+      -> std::optional<AcceptanceRunReport> {
+    auto fixture = MakeFixture(
+        2,
+        false,
+        {MakeFusionResult(1, 0, 24'000'000'000, 6, 1)});
+    if(!fixture) return std::nullopt;
+    auto trace = MakeBerTrace(
+        2, fixture->config.communication_cycle_duration(), ber, no_arrival);
+    if(!trace) return std::nullopt;
+    fixture->trace = std::move(*trace);
+    const auto projection = BuildProjection(*fixture);
+    if(!projection) return std::nullopt;
+    return BuildAcceptanceRunReport(*projection);
+  };
+  const auto passing = make_report(1.0e-5, false);
+  const auto failing = make_report(1.0e-3, false);
+  const auto missing_quality = make_report(std::nullopt, false);
+  const auto no_arrival = make_report(std::nullopt, true);
+  return passing && failing && missing_quality && no_arrival &&
+         passing->bit_error_rate.status == AcceptanceMetricStatus::kPass &&
+         passing->bit_error_rate.evaluated_receptions == 1 &&
+         passing->bit_error_rate.maximum_ber == 1.0e-5 &&
+         passing->bit_error_rate.mean_ber == 1.0e-5 &&
+         passing->overall_status == AcceptanceOverallStatus::kPass &&
+         failing->bit_error_rate.status == AcceptanceMetricStatus::kFail &&
+         failing->bit_error_rate.maximum_ber == 1.0e-3 &&
+         failing->overall_status == AcceptanceOverallStatus::kFail &&
+         missing_quality->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         missing_quality->bit_error_rate.reason ==
+             "Incomplete auditable BER coverage." &&
+         missing_quality->overall_status ==
+             AcceptanceOverallStatus::kNotFullyEvaluated &&
+         no_arrival->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         no_arrival->bit_error_rate.evaluated_receptions == 0 &&
+         no_arrival->bit_error_rate.missing_evidence_count == 1;
 }
 
 auto TestMultiFusionAndLossProjection() -> bool {
@@ -301,7 +411,7 @@ auto TestFormatterSnapshot() -> bool {
       "Fusion: results=1, first_period=24.000000000 s, max_period=24.000000000 s\n"
       "NetworkNodeCount: measured=4, requirement=3..4, status=PASS, evidence=AcceptanceScenarioConfig\n"
       "CommunicationRate: configured=60 bit/s, effective=60 bit/s, requirement=60 bit/s, status=PASS, evidence=applied RateBasedTxPhy config\n"
-      "BitErrorRate: measured=unavailable, requirement<=0.0001, status=NOT_EVALUATED, evidence=Physical Rx provider does not expose auditable BER yet.\n"
+      "BitErrorRate: evaluated=0/1, missing=1, max=unavailable, mean=unavailable, requirement<=0.0001, sources=modeled:0/measured:0/external:0, status=NOT_EVALUATED, evidence=Incomplete auditable BER coverage.\n"
       "FeatureLevelFusion: measured=feature-level, requirement=feature-level, status=PASS, evidence=FusionResultStore workload\n"
       "BearingPointCount: measured_min=6, requirement>=5 per result, status=PASS, evidence=FusionResult.observation_count\n"
       "FusionPeriod: measured_first=24.000000000 s, measured_max=24.000000000 s, requirement<=180.000000000 s, status=PASS, evidence=FusionResult timestamps\n"
@@ -313,9 +423,10 @@ auto TestFormatterSnapshot() -> bool {
 
 auto main() -> int {
   if(!TestDeterministicGoldenProjectionAndReport()) return 1;
-  if(!TestMultiFusionAndLossProjection()) return 2;
-  if(!TestRateEvidenceComesFromAppliedPhy()) return 3;
-  if(!TestExtendedProfileHasProjectionButNoAcceptanceVerdict()) return 4;
-  if(!TestFormatterSnapshot()) return 5;
+  if(!TestAcceptanceBerPassFailAndMissing()) return 2;
+  if(!TestMultiFusionAndLossProjection()) return 3;
+  if(!TestRateEvidenceComesFromAppliedPhy()) return 4;
+  if(!TestExtendedProfileHasProjectionButNoAcceptanceVerdict()) return 5;
+  if(!TestFormatterSnapshot()) return 6;
   return EXIT_SUCCESS;
 }

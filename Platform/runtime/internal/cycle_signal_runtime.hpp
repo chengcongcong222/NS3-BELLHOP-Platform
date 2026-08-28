@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -233,6 +234,25 @@ inline auto CycleSignalRuntime::HandleSessionFinalize(
     }
     const auto reception = session->reception();
     const auto packet_id = session->desired_signal().emission().packet_id();
+    std::optional<contracts::TraceRxQualitySummary> trace_quality;
+    if(const auto& quality = session->decode_result().quality_evidence()) {
+      const auto source = [&quality] {
+        switch(quality->source()) {
+          case contracts::RxQualityEvidenceSource::kModeled:
+            return contracts::TraceRxQualityEvidenceSource::kModeled;
+          case contracts::RxQualityEvidenceSource::kMeasured:
+            return contracts::TraceRxQualityEvidenceSource::kMeasured;
+          case contracts::RxQualityEvidenceSource::kExternal:
+            return contracts::TraceRxQualityEvidenceSource::kExternal;
+        }
+        return contracts::TraceRxQualityEvidenceSource::kExternal;
+      }();
+      trace_quality = contracts::TraceRxQualitySummary{
+          quality->signal_to_noise_ratio_db(),
+          quality->eb_n0_db(),
+          quality->bit_error_rate(),
+          source};
+    }
     const auto trace_disposition = std::visit(
         [](const auto& value) {
           using Disposition = std::remove_cvref_t<decltype(value)>;
@@ -260,7 +280,8 @@ inline auto CycleSignalRuntime::HandleSessionFinalize(
                                   reception.transmission_id,
                                   packet_id,
                                   reception.receiver_node_id,
-                                  trace_disposition}));
+                                  trace_disposition,
+                                  trace_quality}));
     return {};
   }
   results_.Append(std::move(*session));

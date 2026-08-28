@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -29,6 +30,7 @@
 #include "internal/ns3_kernel_gateway.hpp"
 #include "internal/packet_queue_store.hpp"
 #include "internal/rate_based_tx_phy.hpp"
+#include "internal/scalar_ber_rx_phy.hpp"
 #include "internal/scenario_runtime.hpp"
 #include "internal/single_sink_star_topology_policy.hpp"
 #include "internal/structure_builder.hpp"
@@ -43,6 +45,8 @@ using namespace kernel::internal;
 using namespace planning::internal;
 using namespace runtime::internal;
 using namespace structure::internal;
+
+static_assert(kDetectionFeatureV1PayloadBytes * 8U == 120U);
 
 class RecordingTraceSink final : public ITraceSink {
  public:
@@ -127,6 +131,9 @@ class SelectiveChannel final : public IChannelFieldProvider {
 
 class ConstantNoise final : public INoiseFieldProvider {
  public:
+  explicit ConstantNoise(double noise_power_db = 45.0) noexcept
+      : noise_power_db_(noise_power_db) {}
+
   auto Query(const NoiseQuery& query) const
       -> Result<NoiseObservation> override {
     return NoiseObservation::Create(query.receiver_node_id(),
@@ -134,8 +141,11 @@ class ConstantNoise final : public INoiseFieldProvider {
                                     query.observed_until(),
                                     query.lower_frequency_hz(),
                                     query.upper_frequency_hz(),
-                                    45.0);
+                                    noise_power_db_);
   }
+
+ private:
+  double noise_power_db_;
 };
 
 class SelectiveRxPhy final : public IRxPhy {
@@ -171,6 +181,8 @@ struct RunOptions final {
   std::size_t cycle_count;
   std::optional<TransmissionId> no_arrival_transmission;
   std::optional<TransmissionId> not_decoded_transmission;
+  double noise_power_db{45.0};
+  bool observe_ber{true};
 };
 
 struct RunObservation final {
@@ -218,9 +230,15 @@ auto Execute(RunOptions options) -> Result<RunObservation> {
   AcceptancePlanner planner{*config};
   SelectiveChannel channel{options.no_arrival_transmission,
                            config->fusion_center_node_id()};
-  ConstantNoise noise;
+  ConstantNoise noise{options.noise_power_db};
   SelectiveRxPhy rx_phy{options.not_decoded_transmission,
                         config->fusion_center_node_id()};
+  auto ber_observer = phy::internal::ScalarBerRxPhyDecorator::Create(
+      rx_phy, config->communication_rate_bits_per_second());
+  if(!ber_observer) return std::unexpected(ber_observer.error());
+  const IRxPhy& configured_rx = options.observe_ber
+                                    ? static_cast<const IRxPhy&>(*ber_observer)
+                                    : static_cast<const IRxPhy&>(rx_phy);
   RecordingTraceSink trace;
   ScenarioRuntime runtime{gateway,
                           world,
@@ -232,7 +250,7 @@ auto Execute(RunOptions options) -> Result<RunObservation> {
                           *tx_phy,
                           channel,
                           noise,
-                          rx_phy,
+                          configured_rx,
                           PlanningCycleId{0},
                           &trace,
                           config->network_update_interval_cycles(),
@@ -325,6 +343,20 @@ auto HasReception(std::span<const TraceEvent> events,
       });
 }
 
+auto HasTargetReceptionQuality(std::span<const TraceEvent> events,
+                               TransmissionId transmission_id,
+                               NodeId receiver_node_id) -> bool {
+  return std::any_of(
+      events.begin(), events.end(), [&](const TraceEvent& event) {
+        const auto* reception =
+            std::get_if<ReceptionTrace>(&event.payload());
+        return reception != nullptr &&
+               reception->transmission_id == transmission_id &&
+               reception->receiver_node_id == receiver_node_id &&
+               reception->quality.has_value();
+      });
+}
+
 auto HasMatchingInputAndTransmission(
     const RunObservation& run) -> bool {
   const auto transmissions = TransmissionTraces(run.trace_events);
@@ -376,6 +408,8 @@ auto TestAcceptance4NodeGoldenTwoCycleFusion() -> bool {
   const auto run = Execute(RunOptions{
       AcceptanceScenarioProfile::kAcceptance4Node, 2, std::nullopt, std::nullopt});
   if(!run || run->fusion_results.size() != 1) return false;
+  const auto report = BuildAcceptanceRunReport(run->projection);
+  if(!report) return false;
   const auto& fusion = run->fusion_results.front();
   const auto first_sensor_first = std::find_if(
       run->generated_reports.begin(),
@@ -400,6 +434,14 @@ auto TestAcceptance4NodeGoldenTwoCycleFusion() -> bool {
          fusion.completed_at.nanoseconds() == 24'000'000'000 &&
          fusion.fusion_period.nanoseconds() == 24'000'000'000 &&
          fusion.meets_period_requirement && Accurate(fusion) &&
+         run->projection.target_ber_attempt_count() == 6 &&
+         run->projection.evaluated_target_reception_count() == 6 &&
+         run->projection.missing_target_ber_evidence_count() == 0 &&
+         run->projection.modeled_target_ber_count() == 6 &&
+         run->projection.maximum_target_ber() &&
+         *run->projection.maximum_target_ber() < 1.0e-4 &&
+         report->bit_error_rate.status == AcceptanceMetricStatus::kPass &&
+         report->overall_status == AcceptanceOverallStatus::kPass &&
          first_sensor_first != run->generated_reports.end() &&
          first_sensor_second != run->generated_reports.end() &&
          first_sensor_first->report.sensor_x_meters_quantized == 1'000 &&
@@ -463,6 +505,10 @@ auto TestNoArrivalAndNotDecodedDoNotEnterFusion() -> bool {
          projection->channel_no_arrival_count() == 1 &&
          projection->reception_count() == 44 &&
          projection->not_decoded_count() == 1 &&
+         projection->target_ber_attempt_count() == 15 &&
+         projection->evaluated_target_reception_count() == 14 &&
+         projection->missing_target_ber_evidence_count() == 1 &&
+         projection->modeled_target_ber_count() == 14 &&
          projection->fusion_result_count() == 2 &&
          projection->minimum_observation_count() == 6 &&
          projection->maximum_completed_fusion_period() ==
@@ -473,6 +519,8 @@ auto TestNoArrivalAndNotDecodedDoNotEnterFusion() -> bool {
              AcceptanceMetricStatus::kNotEvaluated &&
          report->overall_status ==
              AcceptanceOverallStatus::kNotFullyEvaluated &&
+         HasTargetReceptionQuality(
+             run->trace_events, TransmissionId{1'001}, NodeId{99}) &&
          node10_first != run->generated_reports.end() &&
          node10_second != run->generated_reports.end() &&
          node10_first->report.sensor_x_meters_quantized !=
@@ -508,7 +556,95 @@ auto TestAcceptance4NodeRecurringFusionWindows() -> bool {
              SimDuration::FromNanoseconds(24'000'000'000) &&
          report->bearing_point_count.status == AcceptanceMetricStatus::kPass &&
          report->fusion_period.status == AcceptanceMetricStatus::kPass &&
+         report->bit_error_rate.status == AcceptanceMetricStatus::kPass &&
+         report->overall_status == AcceptanceOverallStatus::kPass &&
          CountTrace(run->trace_events, TraceKind::kCycleCommit) == 4;
+}
+
+auto TestAcceptanceBerFailAndMissingCoverage() -> bool {
+  const auto failing = Execute(RunOptions{
+      AcceptanceScenarioProfile::kAcceptance4Node,
+      2,
+      std::nullopt,
+      std::nullopt,
+      55.0,
+      true});
+  const auto missing = Execute(RunOptions{
+      AcceptanceScenarioProfile::kAcceptance4Node,
+      2,
+      std::nullopt,
+      std::nullopt,
+      45.0,
+      false});
+  if(!failing || !missing) return false;
+  const auto failing_report = BuildAcceptanceRunReport(failing->projection);
+  const auto missing_report = BuildAcceptanceRunReport(missing->projection);
+  return failing_report && missing_report &&
+         failing->projection.maximum_target_ber() &&
+         *failing->projection.maximum_target_ber() > 1.0e-4 &&
+         failing_report->bit_error_rate.status ==
+             AcceptanceMetricStatus::kFail &&
+         failing_report->overall_status == AcceptanceOverallStatus::kFail &&
+         missing->projection.target_ber_attempt_count() == 6 &&
+         missing->projection.evaluated_target_reception_count() == 0 &&
+         missing->projection.missing_target_ber_evidence_count() == 6 &&
+         missing_report->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         missing_report->overall_status ==
+             AcceptanceOverallStatus::kNotFullyEvaluated;
+}
+
+auto TestQualityFailureMatchesNoQualityCausality() -> bool {
+  constexpr auto kQualityFailureNoise =
+      -std::numeric_limits<double>::max();
+  const auto failed_quality = Execute(RunOptions{
+      AcceptanceScenarioProfile::kAcceptance4Node,
+      2,
+      std::nullopt,
+      std::nullopt,
+      kQualityFailureNoise,
+      true});
+  const auto no_quality = Execute(RunOptions{
+      AcceptanceScenarioProfile::kAcceptance4Node,
+      2,
+      std::nullopt,
+      std::nullopt,
+      kQualityFailureNoise,
+      false});
+  if(!failed_quality || !no_quality) return false;
+  const auto failed_report =
+      BuildAcceptanceRunReport(failed_quality->projection);
+  const auto no_quality_report =
+      BuildAcceptanceRunReport(no_quality->projection);
+  return failed_report && no_quality_report &&
+         failed_quality->final_snapshot.version() ==
+             no_quality->final_snapshot.version() &&
+         failed_quality->final_snapshot.committed_at() ==
+             no_quality->final_snapshot.committed_at() &&
+         failed_quality->final_snapshot.nodes().size() ==
+             no_quality->final_snapshot.nodes().size() &&
+         std::equal(failed_quality->final_snapshot.nodes().begin(),
+                    failed_quality->final_snapshot.nodes().end(),
+                    no_quality->final_snapshot.nodes().begin()) &&
+         failed_quality->generated_reports == no_quality->generated_reports &&
+         failed_quality->fusion_results == no_quality->fusion_results &&
+         failed_quality->trace_events == no_quality->trace_events &&
+         failed_quality->delivery_count == no_quality->delivery_count &&
+         failed_quality->accepted_observation_count ==
+             no_quality->accepted_observation_count &&
+         failed_quality->not_decoded_count ==
+             no_quality->not_decoded_count &&
+         failed_quality->projection == no_quality->projection &&
+         failed_quality->projection.evaluated_target_reception_count() == 0 &&
+         failed_quality->projection.missing_target_ber_evidence_count() == 6 &&
+         failed_report->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         no_quality_report->bit_error_rate.status ==
+             AcceptanceMetricStatus::kNotEvaluated &&
+         failed_report->overall_status ==
+             AcceptanceOverallStatus::kNotFullyEvaluated &&
+         no_quality_report->overall_status ==
+             AcceptanceOverallStatus::kNotFullyEvaluated;
 }
 
 auto TestExtended6NodeOneCycleFusion() -> bool {
@@ -536,6 +672,8 @@ auto main() -> int {
   return TestAcceptance4NodeGoldenTwoCycleFusion() &&
                  TestAcceptance4NodeRecurringFusionWindows() &&
                  TestNoArrivalAndNotDecodedDoNotEnterFusion() &&
+                 TestAcceptanceBerFailAndMissingCoverage() &&
+                 TestQualityFailureMatchesNoQualityCausality() &&
                  TestExtended6NodeOneCycleFusion()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;

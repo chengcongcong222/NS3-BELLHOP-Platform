@@ -15,6 +15,7 @@
 #include <ns3_factory/contracts/noise.hpp>
 #include <ns3_factory/contracts/role.hpp>
 #include <ns3_factory/contracts/rx_phy.hpp>
+#include <ns3_factory/contracts/rx_quality.hpp>
 #include <ns3_factory/contracts/tx_phy.hpp>
 
 #include "internal/all_feasible_links_topology_policy.hpp"
@@ -202,10 +203,14 @@ class MockRxPhy final : public IRxPhy {
                   signal.receiver_node_id()) != not_decoded_receivers.end()
             ? DecodeOutcome::kNotDecoded
             : DecodeOutcome::kDecoded;
+    const auto quality = RxQualityEvidence::Create(
+        10.0, 20.0, 1.0e-6, RxQualityEvidenceSource::kModeled);
+    if(!quality) return std::unexpected(quality.error());
     return RxDecodeResult::Create(signal.transmission_id(),
                                   signal.emission().packet_id(),
                                   signal.receiver_node_id(),
-                                  outcome);
+                                  outcome,
+                                  *quality);
   }
 
   mutable std::size_t count{0};

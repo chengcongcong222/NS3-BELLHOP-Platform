@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -13,6 +14,7 @@
 #include <ns3_factory/contracts/channel.hpp>
 #include <ns3_factory/contracts/noise.hpp>
 #include <ns3_factory/contracts/rx_phy.hpp>
+#include <ns3_factory/contracts/trace.hpp>
 #include <ns3_factory/contracts/tx_phy.hpp>
 
 #include "internal/acoustic_field_channel_provider.hpp"
@@ -22,6 +24,7 @@
 #include "internal/import/bellhop_ascii_arrival_parser.hpp"
 #include "internal/import/bellhop_raw_arrival_bundle.hpp"
 #include "internal/import/bellhop_raw_arrival_normalizer.hpp"
+#include "internal/scalar_ber_rx_phy.hpp"
 #include "scenario_runtime_test_support.hpp"
 
 using namespace ns3_factory::assembly::internal;
@@ -87,6 +90,9 @@ class CountingChannelProvider final : public IChannelFieldProvider {
     if(outcome) {
       if(std::holds_alternative<ChannelFieldResponse>(*outcome)) {
         ++response_count;
+        aggregate_transmission_losses_db.push_back(
+            std::get<ChannelFieldResponse>(*outcome)
+                .aggregate_transmission_loss_db());
       } else {
         ++no_arrival_count;
       }
@@ -98,9 +104,20 @@ class CountingChannelProvider final : public IChannelFieldProvider {
   mutable std::size_t response_count{0U};
   mutable std::size_t no_arrival_count{0U};
   mutable std::vector<NodeId> receiver_ids;
+  mutable std::vector<double> aggregate_transmission_losses_db;
 
  private:
   std::reference_wrapper<const AcousticFieldChannelProvider> delegate_;
+};
+
+class RecordingTraceSink final : public ITraceSink {
+ public:
+  auto Emit(const TraceEvent& event) noexcept -> Status override {
+    events.push_back(event);
+    return {};
+  }
+
+  std::vector<TraceEvent> events;
 };
 
 class CountingNoise final : public INoiseFieldProvider {
@@ -282,6 +299,9 @@ auto TestRawImportPackageToScenarioRuntime() -> bool {
   CountingChannelProvider channel{*acoustic_provider};
   CountingNoise noise;
   CountingRx rx;
+  auto ber_rx = ScalarBerRxPhyDecorator::Create(rx, 60);
+  if(!ber_rx) return false;
+  RecordingTraceSink trace;
   ScenarioRuntime runtime{gateway,
                           world,
                           queues,
@@ -292,8 +312,9 @@ auto TestRawImportPackageToScenarioRuntime() -> bool {
                           tx_phy,
                           channel,
                           noise,
-                          rx,
-                          PlanningCycleId{0}};
+                          *ber_rx,
+                          PlanningCycleId{0},
+                          &trace};
   const auto packet = TestPacket();
   if(!queues.Enqueue(NodeId{0}, packet)) return false;
 
@@ -304,6 +325,27 @@ auto TestRawImportPackageToScenarioRuntime() -> bool {
   }
   const auto next_transmission = ids.NextTransmissionId();
   const auto next_reception = ids.NextReceptionId();
+  std::vector<TraceRxQualitySummary> quality_summaries;
+  for(const auto& event : trace.events) {
+    if(const auto* reception =
+           std::get_if<ReceptionTrace>(&event.payload());
+       reception != nullptr && reception->quality) {
+      quality_summaries.push_back(*reception->quality);
+    }
+  }
+  const auto quality_matches_bellhop_tl =
+      quality_summaries.size() == 2U &&
+      channel.aggregate_transmission_losses_db.size() == 2U &&
+      std::abs(quality_summaries[0].signal_to_noise_ratio_db -
+               (120.0 - channel.aggregate_transmission_losses_db[0] -
+                45.0)) < 1.0e-12 &&
+      std::abs(quality_summaries[1].signal_to_noise_ratio_db -
+               (120.0 - channel.aggregate_transmission_losses_db[1] -
+                45.0)) < 1.0e-12 &&
+      quality_summaries[0].source ==
+          TraceRxQualityEvidenceSource::kModeled &&
+      quality_summaries[1].source ==
+          TraceRxQualityEvidenceSource::kModeled;
   const auto valid =
       runtime.state() == ScenarioRuntimeState::kCompleted &&
       tx_phy.count == 1U && channel.query_count == 3U &&
@@ -315,6 +357,7 @@ auto TestRawImportPackageToScenarioRuntime() -> bool {
       noise.receiver_ids == std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
       rx.count == 2U &&
       rx.receiver_ids == std::vector<NodeId>{NodeId{1}, NodeId{3}} &&
+      quality_matches_bellhop_tl &&
       next_transmission && *next_transmission == TransmissionId{101} &&
       next_reception && *next_reception == ReceptionId{1'002} &&
       QueueHasOnly(queues, NodeId{1}, packet) &&

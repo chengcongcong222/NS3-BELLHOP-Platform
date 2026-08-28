@@ -2,12 +2,14 @@
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
 #include <ns3_factory/contracts/noise.hpp>
 #include <ns3_factory/contracts/receiver_window.hpp>
+#include <ns3_factory/contracts/rx_quality.hpp>
 
 namespace ns3_factory::contracts {
 
@@ -106,6 +108,13 @@ class RxDecodeResult final {
                                    DecodeOutcome outcome)
       -> Result<RxDecodeResult>;
 
+  [[nodiscard]] static auto Create(TransmissionId transmission_id,
+                                   PacketId packet_id,
+                                   NodeId receiver_node_id,
+                                   DecodeOutcome outcome,
+                                   RxQualityEvidence quality_evidence)
+      -> Result<RxDecodeResult>;
+
   [[nodiscard]] constexpr auto transmission_id() const noexcept
       -> TransmissionId {
     return transmission_id_;
@@ -123,22 +132,31 @@ class RxDecodeResult final {
     return outcome_;
   }
 
+  [[nodiscard]] constexpr auto quality_evidence() const noexcept
+      -> const std::optional<RxQualityEvidence>& {
+    return quality_evidence_;
+  }
+
   auto operator==(const RxDecodeResult&) const -> bool = default;
 
  private:
   constexpr RxDecodeResult(TransmissionId transmission_id,
                            PacketId packet_id,
                            NodeId receiver_node_id,
-                           DecodeOutcome outcome) noexcept
+                           DecodeOutcome outcome,
+                           std::optional<RxQualityEvidence> quality_evidence)
+      noexcept
       : transmission_id_(transmission_id),
         packet_id_(packet_id),
         receiver_node_id_(receiver_node_id),
-        outcome_(outcome) {}
+        outcome_(outcome),
+        quality_evidence_(std::move(quality_evidence)) {}
 
   TransmissionId transmission_id_;
   PacketId packet_id_;
   NodeId receiver_node_id_;
   DecodeOutcome outcome_;
+  std::optional<RxQualityEvidence> quality_evidence_;
 };
 
 inline auto RxDecodeResult::Create(TransmissionId transmission_id,
@@ -155,7 +173,27 @@ inline auto RxDecodeResult::Create(TransmissionId transmission_id,
   return RxDecodeResult{transmission_id,
                         packet_id,
                         receiver_node_id,
-                        outcome};
+                        outcome,
+                        std::nullopt};
+}
+
+inline auto RxDecodeResult::Create(
+    TransmissionId transmission_id,
+    PacketId packet_id,
+    NodeId receiver_node_id,
+    DecodeOutcome outcome,
+    RxQualityEvidence quality_evidence) -> Result<RxDecodeResult> {
+  if(outcome != DecodeOutcome::kDecoded &&
+     outcome != DecodeOutcome::kNotDecoded) {
+    return std::unexpected(
+        Error{ErrorCode::kInvalidArgument,
+              "RxDecodeResult contains an invalid DecodeOutcome"});
+  }
+  return RxDecodeResult{transmission_id,
+                        packet_id,
+                        receiver_node_id,
+                        outcome,
+                        std::move(quality_evidence)};
 }
 
 [[nodiscard]] inline auto ValidateRxDecodeResultIdentity(

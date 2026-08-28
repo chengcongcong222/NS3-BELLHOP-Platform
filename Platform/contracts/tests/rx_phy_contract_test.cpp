@@ -31,6 +31,8 @@ using ns3_factory::contracts::ReceiverWindow;
 using ns3_factory::contracts::Result;
 using ns3_factory::contracts::RxDecodeRequest;
 using ns3_factory::contracts::RxDecodeResult;
+using ns3_factory::contracts::RxQualityEvidence;
+using ns3_factory::contracts::RxQualityEvidenceSource;
 using ns3_factory::contracts::SimDuration;
 using ns3_factory::contracts::SimTime;
 using ns3_factory::contracts::TransmissionId;
@@ -62,6 +64,11 @@ concept HasSinr = requires(T value) { value.sinr_db; } ||
                   requires(const T value) { value.sinr_db(); };
 
 template <typename T>
+concept HasQualityEvidence = requires(const T value) {
+  value.quality_evidence();
+};
+
+template <typename T>
 concept HasSchedulerApi = requires { &T::Schedule; } ||
                           requires { &T::ScheduleAt; } ||
                           requires { &T::ScheduleAfter; };
@@ -81,11 +88,12 @@ static_assert(std::same_as<std::underlying_type_t<DecodeOutcome>,
 static_assert(static_cast<std::uint8_t>(DecodeOutcome::kDecoded) == 1);
 static_assert(static_cast<std::uint8_t>(DecodeOutcome::kNotDecoded) == 2);
 static_assert(!HasReceptionIdentity<RxDecodeResult>);
-// Optional packet diagnostics are deliberately not frozen in P0-S0-04B2B;
-// unavailable values therefore have no NaN sentinel representation.
+// Packet error rate and ad-hoc SNR/SINR fields remain outside RxDecodeResult;
+// quality is carried only by the validated optional evidence value.
 static_assert(!HasPacketErrorRate<RxDecodeResult>);
 static_assert(!HasSnr<RxDecodeResult>);
 static_assert(!HasSinr<RxDecodeResult>);
+static_assert(HasQualityEvidence<RxDecodeResult>);
 static_assert(!HasSchedulerApi<IRxPhy> && !HasCommitMethod<IRxPhy> &&
               !HasApplyMethod<IRxPhy>);
 static_assert(!HasSchedulerApi<INoiseFieldProvider> &&
@@ -465,6 +473,24 @@ auto main() -> int {
          desired->emission().packet_id(),
          desired->receiver_node_id(),
          static_cast<DecodeOutcome>(0))) {
+    return EXIT_FAILURE;
+  }
+  auto quality = RxQualityEvidence::Create(
+      10.0, 20.0, 1.0e-5, RxQualityEvidenceSource::kModeled);
+  auto quality_result = quality
+                            ? RxDecodeResult::Create(
+                                  desired->transmission_id(),
+                                  desired->emission().packet_id(),
+                                  desired->receiver_node_id(),
+                                  DecodeOutcome::kNotDecoded,
+                                  *quality)
+                            : Result<RxDecodeResult>{
+                                  std::unexpected(quality.error())};
+  if(!quality_result || !quality_result->quality_evidence() ||
+     quality_result->outcome() != DecodeOutcome::kNotDecoded ||
+     quality_result->quality_evidence()->source() !=
+         RxQualityEvidenceSource::kModeled ||
+     decode_result_a->quality_evidence()) {
     return EXIT_FAILURE;
   }
   auto wrong_transmission_result = RxDecodeResult::Create(

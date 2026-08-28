@@ -16,6 +16,7 @@ if(BUILD_TESTING)
       phy_channel
       receiver_window
       rx_phy
+      rx_quality
       protocol_cycle_plan
       structure
       link_feasibility

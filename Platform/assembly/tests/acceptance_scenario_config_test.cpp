@@ -6,6 +6,7 @@
 #include <ns3_factory/contracts/structure.hpp>
 #include <ns3_factory/contracts/topology.hpp>
 
+#include "internal/acceptance_feature.hpp"
 #include "internal/acceptance_scenario_config.hpp"
 #include "internal/composite_protocol_cycle_planner.hpp"
 #include "internal/configured_tdma_mac_planner.hpp"
@@ -53,6 +54,18 @@ auto TestStandardProfiles() -> bool {
          extended->sensor_node_ids().size() == 5 &&
          extended->communication_cycle_duration().nanoseconds() ==
              20'000'000'000;
+}
+
+auto TestAcceptanceFeatureRateConsistency() -> bool {
+  const auto acceptance = MakeAcceptance4NodeConfig();
+  if(!acceptance) return false;
+  constexpr auto kPayloadBits = kDetectionFeatureV1PayloadBytes * 8U;
+  const auto airtime_nanoseconds =
+      acceptance->maximum_packet_airtime().nanoseconds();
+  return kPayloadBits == 120U && airtime_nanoseconds == 2'000'000'000 &&
+         static_cast<std::uint64_t>(kPayloadBits) * 1'000'000'000ULL ==
+             acceptance->communication_rate_bits_per_second() *
+                 static_cast<std::uint64_t>(airtime_nanoseconds);
 }
 
 auto TestValidationFailures() -> bool {
@@ -149,7 +162,8 @@ auto TestExtendedScenarioPlanningValidation() -> bool {
 }  // namespace
 
 auto main() -> int {
-  return TestStandardProfiles() && TestValidationFailures() &&
+  return TestStandardProfiles() && TestAcceptanceFeatureRateConsistency() &&
+                 TestValidationFailures() &&
                  TestExtendedScenarioPlanningValidation()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;

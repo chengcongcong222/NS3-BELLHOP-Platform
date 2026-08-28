@@ -23,13 +23,19 @@ class RecordingTraceSink final : public ITraceSink {
 
 class AlwaysFailTraceSink final : public ITraceSink {
  public:
-  auto Emit(const TraceEvent&) noexcept -> Status override {
+  auto Emit(const TraceEvent& event) noexcept -> Status override {
     ++attempt_count;
+    if(const auto* reception =
+           std::get_if<ReceptionTrace>(&event.payload());
+       reception != nullptr && reception->quality) {
+      ++quality_reception_count;
+    }
     return std::unexpected(
         Error{ErrorCode::kUnavailable, "Injected trace sink failure"});
   }
 
   std::size_t attempt_count{0};
+  std::size_t quality_reception_count{0};
 };
 
 auto CountKind(const RecordingTraceSink& sink, TraceKind kind)
@@ -392,6 +398,7 @@ auto TestFailingSinkIsNonCausal() -> bool {
   const auto& baseline_snapshot = baseline->world.current_snapshot();
   const auto& failing_snapshot = failing->world.current_snapshot();
   return baseline_run && failing_run && failing_sink.attempt_count == 7 &&
+         failing_sink.quality_reception_count == 2 &&
          baseline_snapshot.version() == failing_snapshot.version() &&
          baseline_snapshot.committed_at() ==
              failing_snapshot.committed_at() &&

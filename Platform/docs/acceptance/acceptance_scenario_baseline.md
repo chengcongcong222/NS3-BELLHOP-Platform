@@ -6,7 +6,7 @@
 | --- | --- |
 | 通信原理演示网络：3～4 nodes | `Acceptance4Node`：3 个移动探测节点 + 1 个固定融合中心，是第三方验收基线 |
 | 通信速率：60 bit/s | `RateBasedTxPhy` 按 payload bytes × 8 计算 airtime；非整纳秒结果确定性向上取整 |
-| 通信误码率：BER ≤ 1e-4 | `ber_requirement = 1e-4` 作为场景约束保存；当前 Rx provider 不提供可审计 BER，正式状态为 `NotEvaluated` |
+| 通信误码率：BER ≤ 1e-4 | P0 scalar BPSK-AWGN observer 为每个正式 target reception 生成带来源的可审计 BER；完整覆盖时按 maximum BER 判定 |
 | 分布式探测：特征级融合 | `DetectionFeatureReportV1` 经正式网络路径送达并由 feature-level bearing solver 融合 |
 | 方位观测：≥ 5 points | 每个独立 `FusionResult` 从自身 canonical observation identities 统计，标准结果为 6 points |
 | 完整探测周期：≤ 180 s | 从每个 fusion window 首条 observation 到该结果 completion 计算；标准四节点正常窗口为 24 s |
@@ -57,7 +57,29 @@ Feature-level fusion 只使用每条成功业务 observation 自带的 sensor po
 
 `FusionResult` 是 run-level application output，不写入 `WorldSnapshot`。它保存 fusion sequence、第一条有效 observation 的 sample time、controlled `RUNTIME_DECISION` completion time、observation count、canonical observation identities、estimated target、fusion-center bearing、residual RMS 和 period requirement result。P0 fusion period 定义为：当前 fusion window 第一条有效 observation 的 `sample_time` 到 `FusionResult.completed_at`。成功形成结果时整个 active window 被 seal 并消费，后续 window 只能接收新的 identity，禁止 sliding-window reuse。Acceptance4Node 无丢包 golden run 每两个 12 s cycles 累计六点并形成一个独立结果；四周期 run 因而形成两个互不重叠、各 24 s 的结果。Extended6Node 是五 sensor、一个 20 s cycle 完成五点的项目扩展示范，不是第三方节点数硬指标。
 
-BER requirement `1e-4` 仍只作为 acceptance 配置约束保存。当前 decoded/not-decoded packet outcome 或 packet delivery ratio 都不是 physical BER；BER metric plumbing 与可信物理 BER source 继续留给后续 M5/metrics 阶段。
+## Receiver quality and modeled BER evidence
+
+P0 acceptance 在既有 deterministic `IRxPhy` 外包装独立的 scalar quality observer。Inner receiver 仍单独决定 `DecodeOutcome`；observer 只附加 `RxQualityEvidence`，绝不以 `1e-4` 验收阈值反向改变 decoded/not-decoded 网络因果结果。Packet delivery ratio、decode success ratio 与 no-arrival ratio 都不是 BER，也不得用于推导 BER。
+
+当前 evidence source 为 `Modeled`，模型明确限定为 coherent BPSK + AWGN。它先使用既有 `ComputeP0ScalarReceivedLevelDbRe1upa` 得到：
+
+`received_level_db = source_level_db - aggregate_transmission_loss_db`
+
+这里 aggregate transmission loss 已代表声场 Provider 的标量传播结果，因此不再应用 multipath gain。`NoiseObservation.equivalent_noise_power_db_re_1upa2` 已是 desired signal 完整时间区间和 occupied band 内的等效噪声功率，也不再按 bandwidth 二次积分。P0 中 dB re 1 uPa 的 pressure level 与相应 pressure-squared level 在 dB 数值上等价，所以：
+
+`SNR_dB = received_level_db - equivalent_noise_power_db`
+
+Occupied bandwidth 直接取 `TxEmission.bandwidth_hz()`；bit rate 是 observer 的显式配置，Acceptance 固定为 60 bit/s。中心频率 25 kHz 不重复进入该公式。由于噪声功率已覆盖整个 occupied band：
+
+`Eb/N0_dB = SNR_dB + 10 log10(bandwidth_hz / bit_rate_bps)`
+
+`BER = 0.5 erfc(sqrt(10^(Eb/N0_dB / 10)))`
+
+15-byte Detection Feature V1 是 120 payload bits，2 s Tx duration 与显式 60 bit/s 配置一致；该一致性由测试冻结，并不从任意 packet duration 反推通用 PHY rate。
+
+每条 evidence 显式区分 `Modeled`、`Measured` 与 `External` source。当前 P0 fixture 的 BER 是 modeled-physics simulation evidence，**不等于 measured hardware BER**。110 dB re 1 uPa @ 1 m 的 hardware reference/calibration 仍是 TBD；未来 full waveform receiver 或真实 BIN/hardware data 可以产生 Measured/External evidence，而无需改变报告所消费的 contract。
+
+`ChannelNoArrival` 没有 `ReceivedSignal`，因此没有 synthetic BER（既不填 0/1，也不用 infinity sentinel）。Signal 已到达但 `NotDecoded` 时，只要模型成功完成，仍可具有 BER evidence。当前 scalar model 只包含 desired signal 与 environmental noise；`ReceiverWindow` 含 overlapping signals 时，在 interference-aware SINR/BER 尚未实现前不生成 Modeled evidence。即使额外 quality calculation 因数值边界失败，inner `DecodeOutcome` 仍原样返回，只把 quality 留空。Quality 与 Trace sink 都是 non-causal 附加旁路，不改变 decode、queue、delivery、fusion 或 World commit。
 
 ## Run projection and acceptance report
 
@@ -72,8 +94,10 @@ BER requirement `1e-4` 仍只作为 acceptance 配置约束保存。当前 decod
 | Fusion count、first/latest summary | `FusionResultStore` |
 | Bearing points | each `FusionResult.observation_count` |
 | Fusion period | each `FusionResult.started_at/completed_at` and checked period |
-| BER | future auditable M5 Rx quality source（当前不存在） |
+| BER | 正式 current-hop target 的 `ReceptionTrace` optional quality summary（SNR、Eb/N0、BER、source） |
 
-第三方 `Acceptance4Node` report 对 NetworkNodeCount、CommunicationRate、FeatureLevelFusion、BearingPointCount 与 FusionPeriod 分别输出 `Pass`/`Fail`，BER 输出 `NotEvaluated`，原因固定为 physical Rx provider 尚未暴露可审计 BER。只要任何正式项是 `NotEvaluated`，overall 必须是 `NotFullyEvaluated`，绝不能显示 PASS。`Extended6Node` 只生成运行 projection，不生成 3～4 node 第三方 acceptance verdict。
+第三方 `Acceptance4Node` report 对 NetworkNodeCount、CommunicationRate、FeatureLevelFusion、BearingPointCount、FusionPeriod 与 BitErrorRate 分别输出 `Pass`/`Fail`/`NotEvaluated`。BER 只评价每条 unicast Transmission 的正式 current-hop target；共享信道中的 overheard reception 不进入验收样本。所有 target attempts 均有可审计 quality 时，报告 evaluated count、maximum/mean BER、source counts 与 requirement，并以 `maximum BER <= 1e-4` 判定 PASS；任一 maximum 超限即 FAIL。只要 target `ChannelNoArrival`、Reception 缺失或 provider 未给 quality，整次 BER 为 `NotEvaluated`，reason 固定为 `Incomplete auditable BER coverage.`，不得仅平均剩余样本后 PASS。
+
+Golden fixture 的所有正式 target receptions 都有 modeled BER 且 maximum 小于 `1e-4`，因此其余五项同时通过时 overall 为 `Pass`。高噪声 fixture 产生 BER `Fail` 并使 overall `Fail`；缺失 evidence fixture 产生 BER `NotEvaluated` 并使 overall `NotFullyEvaluated`。`Extended6Node` 仍只生成运行 projection，不生成 3～4 node 第三方 acceptance verdict。
 
 `NoArrival`、`NotDecoded`、`Overheard`、`LocalDelivery` 与 `RelayEnqueue` 是运行质量统计，可与融合指标同时呈现；packet delivery ratio、decode success ratio 或 no-arrival ratio 均不得替代 BER。Deterministic text formatter 只负责把 typed result 映射成无 ANSI、无 terminal-dependent 行为的展示文本，不进入 runtime contract 或因果路径。

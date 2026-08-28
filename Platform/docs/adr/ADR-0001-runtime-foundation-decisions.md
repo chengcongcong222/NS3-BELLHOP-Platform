@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3-03 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration，以及 P0-S3 Trace/Acceptance Scenario
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -561,7 +561,23 @@ Projection 从 Trace 分别统计 Transmission、signal/no-arrival ChannelOutcom
 
 第三方 acceptance metric status 固定支持 `Pass`、`Fail`、`NotEvaluated`，不得压缩为 bool。Acceptance4Node 正式评估 NetworkNodeCount、CommunicationRate、FeatureLevelFusion、BearingPointCount 与 FusionPeriod；bearing point 必须来自每个 `FusionResult.observation_count`，fusion period 必须来自每个结果的 checked timestamps，rate 必须来自实际 applied `RateBasedTxPhy` config。Extended6Node 只生成 projection，不生成 3～4 node 第三方 verdict。
 
-当前 Rx provider 没有 auditable BER 数值，因此 BitErrorRate 必须是 `NotEvaluated`，reason 为 physical Rx provider 尚未暴露可审计 BER。禁止从 packet delivery ratio、decode success ratio、NoArrival ratio 或其他 packet-level count 推导伪 BER。任何正式项为 `NotEvaluated` 时 overall 不得 PASS，固定为 `NotFullyEvaluated`（若另有失败项则为 `Fail`）。Human-readable formatter 只是 deterministic typed-result projection，不使用 ANSI 或 terminal-dependent formatting，也不进入因果路径。
+S3-04 阶段 Rx provider 尚无 auditable BER，因此该阶段 BitErrorRate 固定为 `NotEvaluated`；禁止从 packet delivery ratio、decode success ratio、NoArrival ratio 或其他 packet-level count 推导伪 BER。任何正式项为 `NotEvaluated` 时 overall 不得 PASS，固定为 `NotFullyEvaluated`（若另有失败项则为 `Fail`）。Human-readable formatter 只是 deterministic typed-result projection，不使用 ANSI 或 terminal-dependent formatting，也不进入因果路径。
+
+P0-S3-04 至此 CLOSED：run projection、typed metric status、deterministic formatter 与“packet-level ratio 不得冒充 BER”的边界已经 OFF/ON 测试冻结。
+
+### 2.45 Receiver physical quality evidence and acceptance BER
+
+`RxQualityEvidence` 是 standalone contracts value，保存 finite SNR dB、finite Eb/N0 dB、范围 `[0,1]` 的 BER，以及必须显式区分的 `Modeled`、`Measured`、`External` source。`RxDecodeResult` 以 optional evidence 做 additive extension，旧 provider 可继续只返回 identity 与 `DecodeOutcome`。Quality evidence 与 decode causality 必须分离：acceptance requirement `1e-4` 不是 decoder threshold，BER observer 不得据此改写 inner receiver 的 Decoded/NotDecoded outcome。
+
+P0 acceptance scalar provider 是现有 `IRxPhy` 的独立 decorator。它使用 `ComputeP0ScalarReceivedLevelDbRe1upa` 的 `source level - aggregate TL`，不得再次应用 PropagationPath gain；使用已覆盖 desired interval 和 occupied band 的 `NoiseObservation` equivalent noise power，不得再次按 bandwidth 积分。P0 中 dB re 1 uPa pressure level 与对应 pressure-squared level 的 dB 数值等价，因此 `SNR_dB = received_level_db - noise_power_db`。Occupied bandwidth 来自 `TxEmission`，bit rate 是显式配置，`Eb/N0_dB = SNR_dB + 10 log10(bandwidth/bit_rate)`，modeled BER 固定为 coherent BPSK-AWGN theoretical `0.5 erfc(sqrt(10^(Eb/N0_dB/10)))`。25 kHz carrier 不重复塞入公式；Acceptance 的 15-byte/120-bit feature、2 s Tx duration 与 60 bit/s 必须有 consistency test。
+
+`ReceptionTrace` 只增加 Trace 自有 optional quality summary，不嵌入完整 decode request、noise/window 或 PHY object。`ChannelNoArrival` 没有 ReceivedSignal，因而没有 BER evidence，禁止填 0、1、infinity 或其他 sentinel；Signal 到达但 NotDecoded 时可以具有正常 quality evidence。P0 scalar model 只在 `ReceiverWindow.overlapping_signals()` 为空时提供 Modeled evidence，因为当前计算只覆盖 desired signal 与 environmental noise；interference-aware SINR/BER 留待后续。Inner Decode 成功后，overlap 或额外 quality 数值计算失败只能产生相同 DecodeOutcome 加 empty quality，不得升级为 Decode Error。非法 bit-rate 等 provider 配置仍必须在 creation/config 阶段拒绝。Quality 与 Trace emission 都是 non-causal best-effort：有无 evidence 及 sink success/failure都不得改变 World、queue、delivery、decode、fusion 或 event outcome。
+
+Acceptance BER 只评价每条 unicast Transmission 的正式 current-hop target reception，overheard receiver 不计入。完整覆盖要求每个 target attempt 都存在 target signal reception 与 quality；完整时报告 evaluated count、maximum/mean BER 和 source counts，以 maximum target-link BER `<= 1e-4` 判定 Pass，任一超限判定 Fail。NoArrival、Reception 缺失或 provider 无 evidence 均使整次 BER `NotEvaluated`，reason 固定为 `Incomplete auditable BER coverage.`，禁止对剩余样本取平均后声明 Pass。
+
+当前 BPSK-AWGN 结果只可称为 Modeled BER，不是 Measured hardware BER；110 dB source-level hardware reference/calibration 仍为 TBD。未来 full waveform Rx 或实际 BIN/hardware provider 可改为生产 Measured/External evidence，但不得改变 acceptance report contract。Packet delivery、decode success 与 NoArrival ratio 始终不得推导 BER。
+
+P0-S3-05 至此 CLOSED：quality/decode 非因果分离、overlap evidence gate、target-link 完整覆盖与 modeled BER acceptance closure 已通过 OFF/ON 测试冻结。P0-S3 Trace/Acceptance Scenario 整体 CLOSED。
 
 ## 3. 影响
 

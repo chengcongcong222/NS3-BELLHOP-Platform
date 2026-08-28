@@ -144,6 +144,46 @@ class AcceptanceRunProjection final {
     return relay_enqueue_count_;
   }
 
+  [[nodiscard]] constexpr auto target_ber_attempt_count() const noexcept
+      -> std::size_t {
+    return target_ber_attempt_count_;
+  }
+
+  [[nodiscard]] constexpr auto evaluated_target_reception_count()
+      const noexcept -> std::size_t {
+    return evaluated_target_reception_count_;
+  }
+
+  [[nodiscard]] constexpr auto missing_target_ber_evidence_count()
+      const noexcept -> std::size_t {
+    return missing_target_ber_evidence_count_;
+  }
+
+  [[nodiscard]] constexpr auto maximum_target_ber() const noexcept
+      -> std::optional<double> {
+    return maximum_target_ber_;
+  }
+
+  [[nodiscard]] constexpr auto mean_target_ber() const noexcept
+      -> std::optional<double> {
+    return mean_target_ber_;
+  }
+
+  [[nodiscard]] constexpr auto modeled_target_ber_count() const noexcept
+      -> std::size_t {
+    return modeled_target_ber_count_;
+  }
+
+  [[nodiscard]] constexpr auto measured_target_ber_count() const noexcept
+      -> std::size_t {
+    return measured_target_ber_count_;
+  }
+
+  [[nodiscard]] constexpr auto external_target_ber_count() const noexcept
+      -> std::size_t {
+    return external_target_ber_count_;
+  }
+
   [[nodiscard]] constexpr auto fusion_result_count() const noexcept
       -> std::size_t {
     return fusion_result_count_;
@@ -212,6 +252,14 @@ class AcceptanceRunProjection final {
       std::size_t overheard_count,
       std::size_t local_delivery_count,
       std::size_t relay_enqueue_count,
+      std::size_t target_ber_attempt_count,
+      std::size_t evaluated_target_reception_count,
+      std::size_t missing_target_ber_evidence_count,
+      std::optional<double> maximum_target_ber,
+      std::optional<double> mean_target_ber,
+      std::size_t modeled_target_ber_count,
+      std::size_t measured_target_ber_count,
+      std::size_t external_target_ber_count,
       std::size_t fusion_result_count,
       std::optional<FusionResultSummary> first_fusion_result,
       std::optional<FusionResultSummary> latest_fusion_result,
@@ -239,6 +287,14 @@ class AcceptanceRunProjection final {
         overheard_count_(overheard_count),
         local_delivery_count_(local_delivery_count),
         relay_enqueue_count_(relay_enqueue_count),
+        target_ber_attempt_count_(target_ber_attempt_count),
+        evaluated_target_reception_count_(evaluated_target_reception_count),
+        missing_target_ber_evidence_count_(missing_target_ber_evidence_count),
+        maximum_target_ber_(maximum_target_ber),
+        mean_target_ber_(mean_target_ber),
+        modeled_target_ber_count_(modeled_target_ber_count),
+        measured_target_ber_count_(measured_target_ber_count),
+        external_target_ber_count_(external_target_ber_count),
         fusion_result_count_(fusion_result_count),
         first_fusion_result_(std::move(first_fusion_result)),
         latest_fusion_result_(std::move(latest_fusion_result)),
@@ -267,6 +323,14 @@ class AcceptanceRunProjection final {
   std::size_t overheard_count_;
   std::size_t local_delivery_count_;
   std::size_t relay_enqueue_count_;
+  std::size_t target_ber_attempt_count_;
+  std::size_t evaluated_target_reception_count_;
+  std::size_t missing_target_ber_evidence_count_;
+  std::optional<double> maximum_target_ber_;
+  std::optional<double> mean_target_ber_;
+  std::size_t modeled_target_ber_count_;
+  std::size_t measured_target_ber_count_;
+  std::size_t external_target_ber_count_;
   std::size_t fusion_result_count_;
   std::optional<FusionResultSummary> first_fusion_result_;
   std::optional<FusionResultSummary> latest_fusion_result_;
@@ -321,8 +385,15 @@ struct CommunicationRateAssessment final {
 };
 
 struct BitErrorRateAssessment final {
-  std::optional<double> measured_ber;
+  std::size_t required_target_attempts;
+  std::size_t evaluated_receptions;
+  std::size_t missing_evidence_count;
+  std::optional<double> maximum_ber;
+  std::optional<double> mean_ber;
   double required_maximum_ber;
+  std::size_t modeled_evidence_count;
+  std::size_t measured_evidence_count;
+  std::size_t external_evidence_count;
   AcceptanceMetricStatus status{AcceptanceMetricStatus::kNotEvaluated};
   AcceptanceEvidenceSource evidence{AcceptanceEvidenceSource::kPhysicalRxBer};
   std::string_view reason;
@@ -445,6 +516,15 @@ namespace acceptance_run_report_detail {
   return duration ? FormatDuration(*duration) : "unavailable";
 }
 
+[[nodiscard]] inline auto FormatOptionalBer(std::optional<double> value)
+    -> std::string {
+  if(!value) return "unavailable";
+  std::ostringstream output;
+  output.imbue(std::locale::classic());
+  output << std::scientific << std::setprecision(6) << *value;
+  return output.str();
+}
+
 }  // namespace acceptance_run_report_detail
 
 inline auto AcceptanceRunProjection::Build(
@@ -490,15 +570,32 @@ inline auto AcceptanceRunProjection::Build(
   auto overheard_count = std::size_t{0};
   auto local_delivery_count = std::size_t{0};
   auto relay_enqueue_count = std::size_t{0};
+  struct TargetBerAttempt final {
+    contracts::TransmissionId transmission_id;
+    contracts::NodeId target_node_id;
+    bool channel_outcome_seen{false};
+    bool signal_arrived{false};
+    bool reception_seen{false};
+    std::optional<contracts::TraceRxQualitySummary> quality;
+  };
+  std::vector<TargetBerAttempt> target_ber_attempts;
   std::optional<contracts::CycleCommitTrace> latest_commit;
   for(const auto& event : trace_events) {
     if(const auto* commit =
            std::get_if<contracts::CycleCommitTrace>(&event.payload())) {
       ++cycle_count;
       latest_commit = *commit;
-    } else if(std::holds_alternative<contracts::TransmissionTrace>(
-                  event.payload())) {
+    } else if(const auto* transmission =
+                  std::get_if<contracts::TransmissionTrace>(
+                      &event.payload())) {
       ++transmission_count;
+      if(const auto* unicast =
+             std::get_if<contracts::TraceUnicastTransmissionTarget>(
+                 &transmission->target)) {
+        target_ber_attempts.push_back(
+            TargetBerAttempt{transmission->transmission_id,
+                             unicast->node_id});
+      }
     } else if(const auto* channel =
                   std::get_if<contracts::ChannelOutcomeTrace>(
                       &event.payload())) {
@@ -527,6 +624,106 @@ inline auto AcceptanceRunProjection::Build(
       }
     }
   }
+  std::sort(target_ber_attempts.begin(),
+            target_ber_attempts.end(),
+            [](const TargetBerAttempt& lhs, const TargetBerAttempt& rhs) {
+              return lhs.transmission_id < rhs.transmission_id;
+            });
+  if(std::adjacent_find(
+         target_ber_attempts.begin(),
+         target_ber_attempts.end(),
+         [](const TargetBerAttempt& lhs, const TargetBerAttempt& rhs) {
+           return lhs.transmission_id == rhs.transmission_id;
+         }) != target_ber_attempts.end()) {
+    return std::unexpected(acceptance_run_report_detail::ValidationError(
+        "Trace contains duplicate unicast Transmission identity"));
+  }
+  const auto find_attempt = [&target_ber_attempts](
+                                contracts::TransmissionId transmission_id)
+      -> TargetBerAttempt* {
+    const auto position = std::lower_bound(
+        target_ber_attempts.begin(),
+        target_ber_attempts.end(),
+        transmission_id,
+        [](const TargetBerAttempt& attempt,
+           contracts::TransmissionId id) {
+          return attempt.transmission_id < id;
+        });
+    return position != target_ber_attempts.end() &&
+                   position->transmission_id == transmission_id
+               ? &*position
+               : nullptr;
+  };
+  for(const auto& event : trace_events) {
+    if(const auto* channel =
+           std::get_if<contracts::ChannelOutcomeTrace>(&event.payload())) {
+      auto* attempt = find_attempt(channel->transmission_id);
+      if(attempt != nullptr &&
+         channel->receiver_node_id == attempt->target_node_id) {
+        if(attempt->channel_outcome_seen) {
+          return std::unexpected(
+              acceptance_run_report_detail::ValidationError(
+                  "Trace contains duplicate target ChannelOutcome"));
+        }
+        attempt->channel_outcome_seen = true;
+        attempt->signal_arrived =
+            std::holds_alternative<contracts::TraceSignalChannelOutcome>(
+                channel->outcome);
+      }
+    } else if(const auto* reception =
+                  std::get_if<contracts::ReceptionTrace>(&event.payload())) {
+      auto* attempt = find_attempt(reception->transmission_id);
+      if(attempt != nullptr &&
+         reception->receiver_node_id == attempt->target_node_id) {
+        if(attempt->reception_seen) {
+          return std::unexpected(
+              acceptance_run_report_detail::ValidationError(
+                  "Trace contains duplicate target Reception"));
+        }
+        attempt->reception_seen = true;
+        attempt->quality = reception->quality;
+      }
+    }
+  }
+  auto evaluated_target_receptions = std::size_t{0};
+  auto missing_target_ber_evidence = std::size_t{0};
+  auto modeled_target_ber_count = std::size_t{0};
+  auto measured_target_ber_count = std::size_t{0};
+  auto external_target_ber_count = std::size_t{0};
+  std::optional<double> maximum_target_ber;
+  long double target_ber_sum = 0.0L;
+  for(const auto& attempt : target_ber_attempts) {
+    if(!attempt.channel_outcome_seen || !attempt.signal_arrived ||
+       !attempt.reception_seen || !attempt.quality) {
+      ++missing_target_ber_evidence;
+      continue;
+    }
+    ++evaluated_target_receptions;
+    maximum_target_ber =
+        maximum_target_ber
+            ? std::max(*maximum_target_ber,
+                       attempt.quality->bit_error_rate)
+            : attempt.quality->bit_error_rate;
+    target_ber_sum +=
+        static_cast<long double>(attempt.quality->bit_error_rate);
+    switch(attempt.quality->source) {
+      case contracts::TraceRxQualityEvidenceSource::kModeled:
+        ++modeled_target_ber_count;
+        break;
+      case contracts::TraceRxQualityEvidenceSource::kMeasured:
+        ++measured_target_ber_count;
+        break;
+      case contracts::TraceRxQualityEvidenceSource::kExternal:
+        ++external_target_ber_count;
+        break;
+    }
+  }
+  const auto mean_target_ber =
+      evaluated_target_receptions == 0
+          ? std::optional<double>{}
+          : std::optional<double>{static_cast<double>(
+                target_ber_sum /
+                static_cast<long double>(evaluated_target_receptions))};
   if(!latest_commit ||
      latest_commit->committed_snapshot_version != final_snapshot.version() ||
      latest_commit->committed_at != final_snapshot.committed_at()) {
@@ -599,6 +796,14 @@ inline auto AcceptanceRunProjection::Build(
       overheard_count,
       local_delivery_count,
       relay_enqueue_count,
+      target_ber_attempts.size(),
+      evaluated_target_receptions,
+      missing_target_ber_evidence,
+      maximum_target_ber,
+      mean_target_ber,
+      modeled_target_ber_count,
+      measured_target_ber_count,
+      external_target_ber_count,
       fusion_results.size(),
       first_fusion,
       latest_fusion,
@@ -640,10 +845,31 @@ inline auto BuildAcceptanceRunReport(
                   projection.required_maximum_fusion_period()
           ? AcceptanceMetricStatus::kPass
           : AcceptanceMetricStatus::kFail;
+  const auto complete_ber_coverage =
+      projection.target_ber_attempt_count() > 0 &&
+      projection.missing_target_ber_evidence_count() == 0 &&
+      projection.evaluated_target_reception_count() ==
+          projection.target_ber_attempt_count() &&
+      projection.maximum_target_ber() && projection.mean_target_ber();
+  const auto ber_status =
+      !complete_ber_coverage
+          ? AcceptanceMetricStatus::kNotEvaluated
+          : *projection.maximum_target_ber() <=
+                    projection.required_maximum_ber()
+                ? AcceptanceMetricStatus::kPass
+                : AcceptanceMetricStatus::kFail;
+  const auto ber_reason =
+      !complete_ber_coverage
+          ? std::string_view{"Incomplete auditable BER coverage."}
+          : ber_status == AcceptanceMetricStatus::kPass
+                ? std::string_view{
+                      "Complete auditable target-link BER coverage."}
+                : std::string_view{
+                      "Maximum target-link BER exceeds requirement."};
 
   const std::array statuses{node_status,
                             rate_status,
-                            AcceptanceMetricStatus::kNotEvaluated,
+                            ber_status,
                             fusion_level_status,
                             bearing_status,
                             period_status};
@@ -666,11 +892,18 @@ inline auto BuildAcceptanceRunReport(
           60,
           rate_status},
       BitErrorRateAssessment{
-          std::nullopt,
+          projection.target_ber_attempt_count(),
+          projection.evaluated_target_reception_count(),
+          projection.missing_target_ber_evidence_count(),
+          projection.maximum_target_ber(),
+          projection.mean_target_ber(),
           projection.required_maximum_ber(),
-          AcceptanceMetricStatus::kNotEvaluated,
+          projection.modeled_target_ber_count(),
+          projection.measured_target_ber_count(),
+          projection.external_target_ber_count(),
+          ber_status,
           AcceptanceEvidenceSource::kPhysicalRxBer,
-          "Physical Rx provider does not expose auditable BER yet."},
+          ber_reason},
       FeatureLevelFusionAssessment{projection.fusion_data_level(),
                                    FusionDataLevel::kFeatureLevel,
                                    fusion_level_status},
@@ -738,7 +971,21 @@ inline auto FormatAcceptanceRunReport(
          << " bit/s, requirement=60 bit/s, status="
          << StatusText(report.communication_rate.status)
          << ", evidence=applied RateBasedTxPhy config\n"
-         << "BitErrorRate: measured=unavailable, requirement<=0.0001, status="
+         << "BitErrorRate: evaluated="
+         << report.bit_error_rate.evaluated_receptions << '/'
+         << report.bit_error_rate.required_target_attempts
+         << ", missing=" << report.bit_error_rate.missing_evidence_count
+         << ", max="
+         << acceptance_run_report_detail::FormatOptionalBer(
+                report.bit_error_rate.maximum_ber)
+         << ", mean="
+         << acceptance_run_report_detail::FormatOptionalBer(
+                report.bit_error_rate.mean_ber)
+         << ", requirement<=0.0001, sources=modeled:"
+         << report.bit_error_rate.modeled_evidence_count
+         << "/measured:" << report.bit_error_rate.measured_evidence_count
+         << "/external:" << report.bit_error_rate.external_evidence_count
+         << ", status="
          << StatusText(report.bit_error_rate.status)
          << ", evidence=" << report.bit_error_rate.reason << '\n'
          << "FeatureLevelFusion: measured=feature-level, "
