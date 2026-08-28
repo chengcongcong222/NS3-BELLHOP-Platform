@@ -41,6 +41,7 @@ add_subdirectory(phy)
 add_subdirectory(environment)
 add_subdirectory(adapters)
 add_subdirectory(assembly)
+add_subdirectory(application)
 add_subdirectory(observability)
 add_subdirectory(algorithms)
 

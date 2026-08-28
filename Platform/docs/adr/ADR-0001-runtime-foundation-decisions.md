@@ -579,6 +579,16 @@ Acceptance BER 只评价每条 unicast Transmission 的正式 current-hop target
 
 P0-S3-05 至此 CLOSED：quality/decode 非因果分离、overlap evidence gate、target-link 完整覆盖与 modeled BER acceptance closure 已通过 OFF/ON 测试冻结。P0-S3 Trace/Acceptance Scenario 整体 CLOSED。
 
+### 2.46 Application run domain and frontend-facing boundary
+
+Application domain 位于 `ScenarioRuntime` 与 assembly composition 之上。Frontend 或未来 HTTP adapter 只能调用 application service 和消费 application DTO，不得直接持有 `ScenarioRuntime`、`CycleWorkingState`、`ProtocolKnowledgeStore`、`ProtocolCyclePlan`、TransmissionRecordStore 或 Environment package path。Environment 继续由既有 validated `EnvironmentAssetRepository` 管理；Scenario 只捕获稳定 asset identity/format version。
+
+`ScenarioId`、`ExperimentId`、`RunId` 是互不兼容的 caller-provided validated string strong types，不复用通信/规划 ID，也不接受 filesystem path grammar。ScenarioDefinition 与 ExperimentDefinition 是带显式非零 version 的 immutable value；Run 创建时捕获 exact Experiment、Scenario、Environment identity/version。RunId 只标识应用资源，不得参与 simulation communication ID allocation、event ordering、provider calculation、业务 packet generation 或其他因果输入；相同 definitions、asset、seed/config 必须得到相同 simulation result。
+
+P0 Run lifecycle 固定为 `Created -> Running -> Completed` 或 `Created -> Running -> Failed`。Completed/Failed 是 terminal，不允许同一 RunId retry/reset/re-execute。同步 `RunService` 提供 CreateRun、ExecuteRun、GetRun、GetResult；成功时 terminal record 与 RunResult 一起发布，失败时保留具体 ErrorCode 与 owned summary，不把 Scenario/Experiment/Environment missing、duplicate ID、invalid lifecycle 和 simulation/provider failure 合并成通用 “Run failed”。
+
+RunResult 只包含 application-owned run projection、optional acceptance summary、fusion summaries 与 node summaries，不泄漏 runtime/environment internal object。Acceptance preset adapter 保留既有 Acceptance4Node/Extended6Node config，并通过已注册 Environment asset 和现有 M1–M5/M8/feature workload 路径执行。HTTP/FastAPI、JSON、SSE、authentication、database persistence、cancel/retry 和 run-event retention 均留后续阶段；core TraceEvent 本阶段不修改。
+
 ## 3. 影响
 
 ### 3.1 正向影响
