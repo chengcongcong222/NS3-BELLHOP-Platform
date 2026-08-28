@@ -5,12 +5,13 @@
 ```text
 Frontend
   → future HTTP/API adapter
-  → application RunService and repositories
-  → application acceptance/runtime executor
+  → future backend worker manager (control plane)
+  → out-of-process C++ simulation worker (execution plane)
+  → application RunService and production executor
   → ScenarioRuntime
 ```
 
-The frontend never calls runtime internals directly. HTTP, FastAPI, JSON, an SSE socket, authentication and database persistence are not part of P0-S4-02.
+The frontend never calls runtime internals directly, and the future FastAPI process does not host ns-3. HTTP, FastAPI implementation, JSON, an SSE socket, authentication and database persistence are not part of P0-S4-03.
 
 ## Stable read models
 

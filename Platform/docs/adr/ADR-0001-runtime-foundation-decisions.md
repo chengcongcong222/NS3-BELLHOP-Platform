@@ -607,6 +607,18 @@ P0-S4-02 不实现 HTTP、SSE socket、serialization、Last-Event-ID、database 
 
 P0-S4-02 至此 CLOSED：run-local successful-record sequence、bounded cursor replay、private append ownership、sticky completeness、overflow safety、terminal replay 与 Result/snapshot independence 已通过 OFF/ON 测试冻结。
 
+### 2.48 Out-of-process simulation worker boundary
+
+P0 后端目标架构固定为 control plane 与 execution plane 分离：未来 FastAPI 只负责 API/resource validation、authorization 与 worker process management，不在其主进程加载或运行 ns-3；每个 C++ `platform_sim_worker` 进程只执行一个 Run，并继续通过 `RunService -> production executor -> ScenarioRuntime -> ns-3` 正式路径运行。Worker 不复制 ScenarioRuntime，不建立第二套 scheduler、clock 或 simulation lifecycle。
+
+每个 worker process 独占自己的 ns-3 Simulator lifecycle。Run 完成或失败后进程退出；后续 Run 由新进程从独立 time zero 与空 Simulator state 开始。该边界隔离 simulation/provider failure 及未来 native crash，不等于本阶段已经实现 cancel、retry、crash recovery、parallel run 或 multi-run scheduler。
+
+Worker backend bridge 使用 codec-independent typed variant，明确区分 WorkerStarted、保持原 RunId/RunEventSequence/Trace payload order 的 WorkerRunEvent、携带 authoritative Completed RunRecord 与 formal RunResult 的 WorkerCompleted，以及携带具体 Error/optional terminal record 的 WorkerFailed。RunService 继续是 event sequence 生成权威；worker、future FastAPI 与 SSE adapter 都不得重编号。Run lifecycle、events 与 result 是独立输出，RunRecord 仍是 lifecycle 唯一权威。
+
+Process exit 0 只表示 simulation/worker 正常 Completed；process/protocol/simulation failure 使用非零。Acceptance metric verdict Fail 是成功生成的业务结果，不是 process failure，因此仍 exit 0。RunId 继续只作为 application/bridge identity，不进入 simulation causality；相同 definition、asset、seed/config 在 direct RunService 与 worker boundary 必须产生相同 simulation summaries 与 Trace payload order。
+
+仓库当前没有获批 JSON library 或既有 IPC codec。跨进程序列化只能位于 worker/backend adapter，禁止把 JSON 引入 contracts、runtime、planning 或 PHY，也禁止手写通用 JSON parser。nlohmann-json、Boost.JSON 或 binary framing 等方案必须后续评审 schema/version、malformed input、framing、size limit 与依赖交付后再选择；P0-S4-03 只实现 typed in-process protocol 与 codec-independent process isolation smoke，不冻结 HTTP/SSE transport。
+
 ## 3. 影响
 
 ### 3.1 正向影响
