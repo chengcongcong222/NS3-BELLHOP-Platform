@@ -23,6 +23,15 @@ target_link_libraries(platform_build_smoke_test PRIVATE Platform::contracts)
 
 add_test(NAME platform_build_smoke_test COMMAND platform_build_smoke_test)
 
+add_test(
+  NAME platform_json_dependency_isolation_test
+  COMMAND
+    "${CMAKE_COMMAND}"
+    -DPLATFORM_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+    -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/json_dependency_isolation.cmake"
+)
+
 if(PLATFORM_NS3_AVAILABLE)
   add_executable(
     platform_ns3_signal_lifecycle_integration_test

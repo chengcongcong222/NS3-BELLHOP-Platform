@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <variant>
 
@@ -12,6 +14,27 @@ enum class WorkerExitCode : int {
   kCompleted = 0,
   kProtocolFailure = 2,
   kExecutionFailure = 3,
+};
+
+enum class WorkerFailureCategory : std::uint8_t {
+  kProtocol = 1,
+  kComposition = 2,
+  kSimulation = 3,
+};
+
+struct StartRunCommand final {
+  application::RunId run_id;
+  application::ScenarioId scenario_id;
+  application::ExperimentId experiment_id;
+  application::ResourceVersion definition_version;
+  application::EnvironmentReference environment;
+  application::AcceptanceProfile profile;
+  std::size_t simulation_cycle_count;
+  application::RxQualityMode quality_mode;
+  double equivalent_noise_power_db_re_1upa2;
+  std::uint64_t deterministic_seed;
+
+  auto operator==(const StartRunCommand&) const -> bool = default;
 };
 
 struct WorkerStarted final {
@@ -34,7 +57,8 @@ struct WorkerCompleted final {
 };
 
 struct WorkerFailed final {
-  application::RunId run_id;
+  std::optional<application::RunId> run_id;
+  WorkerFailureCategory category;
   contracts::Error error;
   std::optional<application::RunRecord> run;
 

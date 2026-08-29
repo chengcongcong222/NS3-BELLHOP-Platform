@@ -1,6 +1,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -14,6 +15,7 @@
 
 #include <ns3_factory/application/repositories.hpp>
 #include <ns3_factory/application/run_service.hpp>
+#include <ns3_factory/worker/adapter/process_controller.hpp>
 #include <ns3_factory/worker/protocol.hpp>
 
 #include "internal/acceptance_run_executor.hpp"
@@ -29,6 +31,7 @@ using namespace application;
 using namespace contracts;
 using namespace environment::internal;
 using namespace worker;
+using namespace worker::adapter;
 using namespace worker::internal;
 
 class TemporaryRepositoryRoot final {
@@ -70,6 +73,23 @@ class RecordingWorkerSink final : public IWorkerMessageSink {
   }
 
   std::vector<WorkerMessage> messages;
+};
+
+class RecordingEventConsumer final : public IWorkerEventConsumer {
+ public:
+  auto OnRunEvent(const RunEventRecord& event) noexcept
+      -> Status override {
+    try {
+      events.push_back(event);
+      return {};
+    } catch(...) {
+      return std::unexpected(
+          Error{ErrorCode::kUnavailable,
+                "Worker event consumer recording failed"});
+    }
+  }
+
+  std::vector<RunEventRecord> events;
 };
 
 enum class SinkFailurePoint {
@@ -471,6 +491,124 @@ auto TestIndependentWorkerProcesses(
              static_cast<int>(WorkerExitCode::kProtocolFailure);
 }
 
+auto MakeWireCommand(const AcceptanceWorkerRequest& request)
+    -> StartRunCommand {
+  return StartRunCommand{request.run_id,
+                         request.scenario_id,
+                         request.experiment_id,
+                         request.definition_version,
+                         request.environment,
+                         request.profile,
+                         request.simulation_cycle_count,
+                         request.quality_mode,
+                         request.equivalent_noise_power_db_re_1upa2,
+                         request.deterministic_seed};
+}
+
+auto TestWireProcessController(
+    const std::filesystem::path& repository_root,
+    const EnvironmentAssetRepository& environments,
+    std::string_view asset_id) -> bool {
+  auto request = MakeRequest("wire-process-run", std::string{asset_id});
+  auto direct_id = RunId::Create("wire-process-direct");
+  if(!request || !direct_id) return false;
+  auto direct = ExecuteDirect(environments, *request, std::move(*direct_id));
+  if(!direct) return false;
+
+  WorkerProcessController controller{PLATFORM_SIM_WORKER_PATH,
+                                     repository_root};
+  RecordingEventConsumer events;
+  auto result = controller.Run(MakeWireCommand(*request), events);
+  if(!result) std::cerr << "wire success: " << result.error().message << '\n';
+  if(!result || controller.state() != WorkerProcessState::kCompleted ||
+     result->exit_code != 0 || !result->completed || result->failed ||
+     result->completed->run.lifecycle != RunLifecycle::kCompleted ||
+     !result->completed->run.event_stream_complete.value_or(false) ||
+     !SameSimulationResult(result->completed->result, direct->first) ||
+     !SameEventPayloadOrder(events.events, direct->second) ||
+     events.events.empty() || events.events.front().sequence.value() != 1U) {
+    return false;
+  }
+
+  auto verdict_request =
+      MakeRequest("wire-verdict-fail", std::string{asset_id}, 180.0);
+  if(!verdict_request) return false;
+  WorkerProcessController verdict_controller{PLATFORM_SIM_WORKER_PATH,
+                                             repository_root};
+  RecordingEventConsumer verdict_events;
+  auto verdict = verdict_controller.Run(MakeWireCommand(*verdict_request),
+                                        verdict_events);
+  if(!verdict) std::cerr << "wire verdict: " << verdict.error().message << '\n';
+  if(!verdict || verdict_controller.state() !=
+                       WorkerProcessState::kCompleted ||
+     !verdict->completed || verdict->exit_code != 0 ||
+     !verdict->completed->result.acceptance_report ||
+     verdict->completed->result.acceptance_report->overall !=
+         OverallStatus::kFail) {
+    return false;
+  }
+
+  auto failed_request = MakeRequest("wire-simulation-fail",
+                                    "missing-asset");
+  if(!failed_request) return false;
+  WorkerProcessController failed_controller{PLATFORM_SIM_WORKER_PATH,
+                                            repository_root};
+  RecordingEventConsumer failed_events;
+  auto failed = failed_controller.Run(MakeWireCommand(*failed_request),
+                                      failed_events);
+  if(!failed) std::cerr << "wire expected failure: " << failed.error().message << '\n';
+  if(!failed || failed_controller.state() != WorkerProcessState::kFailed ||
+     failed->exit_code == 0 || failed->completed || !failed->failed ||
+     failed->failed->category != WorkerFailureCategory::kSimulation) {
+    return false;
+  }
+
+  WorkerProcessController crash_controller{
+      PLATFORM_WORKER_CRASH_FIXTURE_PATH, repository_root};
+  RecordingEventConsumer crash_events;
+  const auto crashed =
+      crash_controller.Run(MakeWireCommand(*request), crash_events);
+  WorkerProcessController eof_controller{
+      PLATFORM_WORKER_EOF_FIXTURE_PATH, repository_root};
+  RecordingEventConsumer eof_events;
+  const auto premature_eof =
+      eof_controller.Run(MakeWireCommand(*request), eof_events);
+  WorkerProcessController failed_zero_controller{
+      PLATFORM_WORKER_FAILED_EXIT_ZERO_FIXTURE_PATH, repository_root};
+  RecordingEventConsumer failed_zero_events;
+  const auto failed_zero = failed_zero_controller.Run(
+      MakeWireCommand(*request), failed_zero_events);
+  WorkerProcessController completed_nonzero_controller{
+      PLATFORM_WORKER_COMPLETED_NONZERO_FIXTURE_PATH, repository_root};
+  RecordingEventConsumer completed_nonzero_events;
+  const auto completed_nonzero = completed_nonzero_controller.Run(
+      MakeWireCommand(*request), completed_nonzero_events);
+  if(crashed || crash_controller.state() != WorkerProcessState::kFailed ||
+     premature_eof ||
+     eof_controller.state() != WorkerProcessState::kFailed ||
+     failed_zero ||
+     failed_zero_controller.state() != WorkerProcessState::kFailed ||
+     completed_nonzero ||
+     completed_nonzero_controller.state() != WorkerProcessState::kFailed) {
+    return false;
+  }
+
+  auto second_request = MakeRequest("wire-process-run-two",
+                                    std::string{asset_id});
+  if(!second_request) return false;
+  WorkerProcessController second_controller{PLATFORM_SIM_WORKER_PATH,
+                                            repository_root};
+  RecordingEventConsumer second_events;
+  auto second = second_controller.Run(MakeWireCommand(*second_request),
+                                      second_events);
+  return second && second->completed && !second_events.events.empty() &&
+         second_events.events.front().sequence.value() == 1U &&
+         second->completed->result.projection.simulation_started_at ==
+             SimTime::Zero() &&
+         SameSimulationResult(result->completed->result,
+                              second->completed->result);
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -483,15 +621,24 @@ auto main() -> int {
      !environments->Register(*asset_id, *asset, *provenance)) {
     return EXIT_FAILURE;
   }
-  return TestTypedBridgeAndDirectEquivalence(*environments,
-                                             asset_id->value()) &&
-                 TestVerdictFailureIsWorkerSuccess(*environments,
-                                                   asset_id->value()) &&
-                 TestSimulationFailureIsIsolated(*environments) &&
-                 TestBridgeFailureIsNoncausal(*environments,
-                                              asset_id->value()) &&
-                 TestIndependentWorkerProcesses(temporary.path(),
-                                                asset_id->value())
+  const auto typed = TestTypedBridgeAndDirectEquivalence(
+      *environments, asset_id->value());
+  const auto verdict = TestVerdictFailureIsWorkerSuccess(
+      *environments, asset_id->value());
+  const auto isolated = TestSimulationFailureIsIsolated(*environments);
+  const auto bridge = TestBridgeFailureIsNoncausal(
+      *environments, asset_id->value());
+  const auto wire = TestWireProcessController(
+      temporary.path(), *environments, asset_id->value());
+  const auto processes = TestIndependentWorkerProcesses(
+      temporary.path(), asset_id->value());
+  if(!typed) std::cerr << "typed bridge failed\n";
+  if(!verdict) std::cerr << "verdict failed\n";
+  if(!isolated) std::cerr << "isolation failed\n";
+  if(!bridge) std::cerr << "bridge failure gate failed\n";
+  if(!wire) std::cerr << "wire controller failed\n";
+  if(!processes) std::cerr << "process smoke failed\n";
+  return typed && verdict && isolated && bridge && wire && processes
              ? EXIT_SUCCESS
              : EXIT_FAILURE;
 }

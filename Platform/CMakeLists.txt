@@ -32,6 +32,7 @@ set(
 
 platform_probe_ns3()
 
+add_subdirectory(third_party)
 add_subdirectory(contracts)
 add_subdirectory(kernel)
 add_subdirectory(runtime)

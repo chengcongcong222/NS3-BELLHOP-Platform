@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -618,6 +618,20 @@ Worker backend bridge 使用 codec-independent typed variant，明确区分 Work
 Process exit 0 只表示 simulation/worker 正常 Completed；process/protocol/simulation failure 使用非零。Acceptance metric verdict Fail 是成功生成的业务结果，不是 process failure，因此仍 exit 0。RunId 继续只作为 application/bridge identity，不进入 simulation causality；相同 definition、asset、seed/config 在 direct RunService 与 worker boundary 必须产生相同 simulation summaries 与 Trace payload order。
 
 仓库当前没有获批 JSON library 或既有 IPC codec。跨进程序列化只能位于 worker/backend adapter，禁止把 JSON 引入 contracts、runtime、planning 或 PHY，也禁止手写通用 JSON parser。nlohmann-json、Boost.JSON 或 binary framing 等方案必须后续评审 schema/version、malformed input、framing、size limit 与依赖交付后再选择；P0-S4-03 只实现 typed in-process protocol 与 codec-independent process isolation smoke，不冻结 HTTP/SSE transport。
+
+P0-S4-03 至此 CLOSED：one-Run-per-process、独立 ns-3 time-zero lifecycle、typed bridge、terminal cardinality、Acceptance verdict/process-exit 分离、direct/worker equivalence，以及 non-causal bridge failure gate 已通过 OFF/ON 测试冻结。
+
+### 2.49 Worker wire protocol 与 backend process controller
+
+P0-S4-04 固定 stdin command/stdout message 的 newline-delimited JSON schema v1；stderr 只允许 human diagnostics。正式模式每行恰好一个 JSON object，每条 command/message 都携带 `schema_version=1` 和显式 `type`。Command、message、RunEvent 与 terminal result 继续映射既有 typed model；JSON 只属于 `worker/codec` 与 `worker/adapter`，不得进入 contracts、application domain、kernel、runtime、structure、planning、PHY 或 environment。
+
+所有 strong numeric identity、ResourceVersion、RunEventSequence、计数值和 simulation nanoseconds 在 wire 上统一使用 canonical decimal string，避免 JavaScript Number 精度成为权威表示；schema version 与布尔值仍使用其自然 JSON scalar。仿真时间只以 integer nanoseconds 表达，不使用 floating seconds。RunEventSequence 保持 RunService 生成值且不重编号，并冻结为 future SSE event id 的来源，但本阶段不实现 SSE。
+
+JSON 实现固定为仓库内离线 vendored `nlohmann/json v3.12.0`，只通过局部 `Platform::third_party_nlohmann_json` target 暴露给 worker codec。版本、官方 release URL、archive SHA-256 和 MIT license provenance 保存在 `Platform/third_party`；configure/build/test 不允许联网获取依赖或搜索系统安装副本。
+
+Wire framing 的 input line 上限为 1 MiB，output message 上限为 4 MiB。Invalid JSON、missing/unknown schema、unknown type、missing/unknown field、非法 typed ID、非 canonical/out-of-range decimal 和 oversized frame 必须显式失败。Worker terminal 固定为 `Started -> RunEvent* -> exactly one Completed|Failed`；Completed 必须携带 authoritative RunRecord、formal RunResult 与 event completeness，不能从最后一个 event 推导。
+
+Backend `WorkerProcessController` 是未来 FastAPI 可复用但不依赖 HTTP 的 OS process owner。其 NotStarted/Starting/Running/Completed/Failed 与 RunLifecycle 是不同状态机；它负责 spawn、command write、bounded message read、event callback、wait 和 terminal/exit consistency。Completed+exit0 与 Failed+nonzero 才是有效组合；terminal 前 EOF、signal crash、malformed stdout、pipe failure、Completed+nonzero、Failed+exit0 均为 process/protocol failure。FastAPI control plane 仍不得加载 ns-3；C++ worker execution plane 仍是唯一 simulation owner。
 
 ## 3. 影响
 

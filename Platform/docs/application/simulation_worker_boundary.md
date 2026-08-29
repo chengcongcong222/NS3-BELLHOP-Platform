@@ -49,10 +49,8 @@ platform_sim_worker <repository-root> <environment-asset-id> <run-id> <pass|verd
 
 The repository root is worker process configuration, not a domain resource ID and is never exposed through application DTOs. This CLI is an isolation smoke interface, not the future public API or a general serialization format.
 
-## Serialization audit
+## Serialization evolution
 
-The formal repository currently has no approved JSON dependency or existing worker/IPC codec. No nlohmann-json, Boost.JSON, RapidJSON, jsoncpp or simdjson integration was found. P0-S4-03 therefore does not hand-write a general JSON parser and does not introduce JSON into contracts, runtime, planning or PHY.
-
-Future reviewed options include a worker-adapter-only dependency on `nlohmann_json` for a compact DTO codec or `Boost.JSON` if Boost becomes an approved platform dependency. The selection must freeze schema/versioning, malformed-input behavior, framing, payload limits and dependency delivery before implementation. Binary framing and OS IPC remain alternative decisions. Until then, process smoke uses validated positional fixture arguments and process exit only; typed bridge behavior is tested without a codec.
+P0-S4-03 deliberately closed without choosing a wire codec. P0-S4-04 later approved an offline vendored `nlohmann/json v3.12.0` dependency restricted to `worker/codec` and `worker/adapter`; the original positional CLI remains only a compatibility smoke path. The formal process contract is documented in `worker_wire_protocol.md`.
 
 HTTP, SSE framing, database storage, authentication, cancellation, retry, crash recovery and concurrent scheduling remain future work.

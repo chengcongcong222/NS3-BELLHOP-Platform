@@ -96,6 +96,7 @@ class SimulationWorker final {
     auto definitions = MakeAcceptanceWorkerDefinitions(request);
     if(!definitions) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kComposition,
                          definitions.error(),
                          std::nullopt,
                          output);
@@ -109,6 +110,7 @@ class SimulationWorker final {
            scenarios.Register(definitions->scenario);
        !registered) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kComposition,
                          registered.error(),
                          std::nullopt,
                          output);
@@ -117,6 +119,7 @@ class SimulationWorker final {
            experiments.Register(definitions->experiment);
        !registered) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kComposition,
                          registered.error(),
                          std::nullopt,
                          output);
@@ -131,6 +134,7 @@ class SimulationWorker final {
     const auto created = service.CreateRun(request.run_id, reference);
     if(!created) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kComposition,
                          created.error(),
                          std::nullopt,
                          output);
@@ -140,6 +144,7 @@ class SimulationWorker final {
     const auto record = service.GetRun(request.run_id);
     if(!record) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kSimulation,
                          record.error(),
                          std::nullopt,
                          output);
@@ -147,6 +152,7 @@ class SimulationWorker final {
     auto collected_events = CollectEvents(service, request.run_id);
     if(!collected_events) {
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kSimulation,
                          collected_events.error(),
                          *record,
                          output);
@@ -161,6 +167,7 @@ class SimulationWorker final {
         return emitted;
       }
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kSimulation,
                          executed.error(),
                          *record,
                          output);
@@ -176,6 +183,7 @@ class SimulationWorker final {
         return emitted;
       }
       return EmitFailure(request.run_id,
+                         WorkerFailureCategory::kSimulation,
                          result.error(),
                          *record,
                          output);
@@ -222,11 +230,12 @@ class SimulationWorker final {
 
   [[nodiscard]] static auto EmitFailure(
       const application::RunId& run_id,
+      WorkerFailureCategory category,
       contracts::Error error,
       std::optional<application::RunRecord> run,
       IWorkerMessageSink& output) -> contracts::Status {
     const auto emitted = output.Emit(
-        WorkerFailed{run_id, error, std::move(run)});
+        WorkerFailed{run_id, category, error, std::move(run)});
     if(!emitted) return std::unexpected(emitted.error());
     return std::unexpected(std::move(error));
   }
