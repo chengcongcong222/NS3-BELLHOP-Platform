@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03、P0-S4-04、P0-S4-05 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -632,6 +632,51 @@ JSON 实现固定为仓库内离线 vendored `nlohmann/json v3.12.0`，只通过
 Wire framing 的 input line 上限为 1 MiB，output message 上限为 4 MiB。Invalid JSON、missing/unknown schema、unknown type、missing/unknown field、非法 typed ID、非 canonical/out-of-range decimal 和 oversized frame 必须显式失败。Worker terminal 固定为 `Started -> RunEvent* -> exactly one Completed|Failed`；Completed 必须携带 authoritative RunRecord、formal RunResult 与 event completeness，不能从最后一个 event 推导。
 
 Backend `WorkerProcessController` 是未来 FastAPI 可复用但不依赖 HTTP 的 OS process owner。其 NotStarted/Starting/Running/Completed/Failed 与 RunLifecycle 是不同状态机；它负责 spawn、command write、bounded message read、event callback、wait 和 terminal/exit consistency。Completed+exit0 与 Failed+nonzero 才是有效组合；terminal 前 EOF、signal crash、malformed stdout、pipe failure、Completed+nonzero、Failed+exit0 均为 process/protocol failure。FastAPI control plane 仍不得加载 ns-3；C++ worker execution plane 仍是唯一 simulation owner。
+
+### 2.50 FastAPI Run control plane 与 Python worker gateway
+
+P0-S4-05 FastAPI backend 是纯 control/API plane。它通过 Python
+`asyncio.create_subprocess_exec` 直接、非 shell 地启动一个
+`platform_sim_worker`，不调用 C++ WorkerProcessController，也不加载 ns-3。
+Python gateway 消费与 C++ 完全相同的 schema v1 NDJSON typed model；所有 strong
+numeric identity/version/count/sequence/time 在 HTTP 与 wire 上继续使用 canonical
+decimal string，simulation nanoseconds 不转为 floating seconds。
+
+POST `/runs` 只暴露 Acceptance4Node preset 的显式执行参数，并由 backend 生成
+opaque RunId；RunId 仍不进入仿真因果输入。P0 明确采用 single-active Run，第二个
+并发创建请求返回 BackendBusy。Run catalog、events 与 results 全部 in-memory；backend
+restart 会丢失这些 control-plane 资源，不引入 database、retry、cancel 或 generic
+scheduler。
+
+RunRecord lifecycle 仍是 Created/Running/Completed/Failed 的唯一权威。Event 数量和
+最后一条 Trace 不得推导 terminal state。WorkerCompleted+exit0 才发布 formal result；
+WorkerFailed+nonzero、premature EOF、malformed stdout、signal crash 与 terminal/exit
+mismatch 都形成明确失败。Acceptance verdict Fail 仍是成功 Completed Run。Worker
+stderr 只进入 backend diagnostics，不作为 wire input，也不原样暴露为 HTTP error。
+
+SSE `/runs/{run_id}/events` 使用原始 RunEventSequence decimal string 作为 `id`，不重新
+编号。`Last-Event-ID=0` 表示 before-first；cursor 必须 canonical、非负且不超过当前
+latest。订阅在同一 catalog condition 下读取 backlog 并等待 live append，因此
+replay/live 边界不丢失、不重复。Completed/Failed Run replay 完已知事件后关闭；Failed
+lifecycle 仍通过 GET Run 查询。
+
+Python baseline 固定为 CPython 3.12.3，FastAPI/Pydantic/Uvicorn 和测试依赖采用仓库内
+original wheelhouse、全量 exact versions 与 SHA-256 lock。configure/build/test 只用
+`pip --no-index --require-hashes`，不访问 PyPI，也不修改系统 Python 环境。
+
+HTTP request cancellation、SSE disconnect 与 browser reconnect 是纯 observation-plane
+行为，不得终止 worker、改变 Run lifecycle 或影响 simulation result；P0 不提供用户
+Cancel API。FastAPI application shutdown 则必须通过 lifespan 关闭 catalog，终止并 reap
+Python gateway 拥有的所有 active child process，不得遗留 orphan worker。
+
+WorkerCompleted 到达时仍是 provisional terminal observation。只有 stdout framing 完整结束、
+child 已被 reap、exit status 为 0 且 terminal/protocol consistency 全部通过后，catalog 才能
+原子发布 Completed lifecycle 和 formal Result；检查完成前 GET Result 必须保持 RunNotReady。
+Acceptance verdict Fail 继续是该正常 Completed 路径中的业务结果。
+
+P0-S4-05 至此 CLOSED：client-disconnect non-causality、SSE reconnect/replay、backend
+shutdown child ownership、terminal publication atomicity、single-active Run、volatile catalog
+与 control/execution plane 分离已通过 OFF/ON、Python 和真实 worker integration 测试冻结。
 
 ## 3. 影响
 

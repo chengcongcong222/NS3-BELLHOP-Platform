@@ -1,0 +1,24 @@
+[project]
+name = "ns3-bellhop-platform-backend"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = [
+  "fastapi==0.141.1",
+  "pydantic==2.13.5",
+  "uvicorn==0.52.4",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx==0.28.1",
+  "pytest==9.1.1",
+]
+
+[tool.ns3_factory]
+python-baseline = "CPython 3.12.3"
+lock-file = "requirements.lock"
+offline-wheelhouse = "../third_party/python_wheels/wheels"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]

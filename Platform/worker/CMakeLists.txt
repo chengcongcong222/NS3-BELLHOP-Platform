@@ -63,6 +63,26 @@ if(BUILD_TESTING)
     NAME platform_worker_json_codec_test
     COMMAND platform_worker_json_codec_test
   )
+  add_executable(
+    platform_worker_wire_golden_fixture
+    tests/worker_wire_golden_fixture.cpp
+  )
+  target_link_libraries(
+    platform_worker_wire_golden_fixture
+    PRIVATE Platform::worker_json_codec
+  )
+  add_executable(
+    platform_worker_test_asset_builder
+    tests/worker_test_asset_builder.cpp
+  )
+  target_include_directories(
+    platform_worker_test_asset_builder
+    PRIVATE "${PROJECT_SOURCE_DIR}/environment"
+  )
+  target_link_libraries(
+    platform_worker_test_asset_builder
+    PRIVATE Platform::environment
+  )
 endif()
 
 if(PLATFORM_NS3_AVAILABLE)

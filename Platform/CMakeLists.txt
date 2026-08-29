@@ -44,6 +44,7 @@ add_subdirectory(adapters)
 add_subdirectory(assembly)
 add_subdirectory(application)
 add_subdirectory(worker)
+add_subdirectory(backend)
 add_subdirectory(observability)
 add_subdirectory(algorithms)
 
