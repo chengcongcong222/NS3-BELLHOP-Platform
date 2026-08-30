@@ -10,18 +10,25 @@ import httpx
 import pytest
 
 from ns3_factory_backend.api import BackendSettings, create_app
-from ns3_factory_backend.gateway import WorkerGateway, WorkerProtocolFailure
+from ns3_factory_backend.gateway import (
+    WorkerGateway,
+    WorkerGatewayResult,
+    WorkerProtocolFailure,
+)
 
-from helpers import completed, event, failure_result, started, success_result
+from helpers import (
+    completed,
+    event,
+    failure_result,
+    resource_catalog,
+    started,
+    success_result,
+)
 
 
 REQUEST = {
-    "environment_asset_id": "backend-field-v1",
-    "environment_format_version": "1",
-    "simulation_cycle_count": "2",
-    "rx_quality_mode": "ModeledBpskAwgn",
-    "equivalent_noise_power_db_re_1upa2": 45.0,
-    "deterministic_seed": "19",
+    "experiment_id": "acceptance4-experiment",
+    "experiment_version": "1",
 }
 
 
@@ -54,11 +61,30 @@ class BrokenGateway:
         raise WorkerProtocolFailure("malformed worker stdout")
 
 
+class MismatchedCompletedGateway:
+    async def run(self, command, callback):
+        terminal = completed(command.run_id, "Pass")
+        terminal = terminal.model_copy(
+            update={
+                "run": terminal.run.model_copy(
+                    update={"experiment_id": "other-experiment"}
+                )
+            }
+        )
+        return WorkerGatewayResult(
+            exit_code=0,
+            completed=terminal,
+            failed=None,
+            stderr_diagnostics="fixture diagnostic",
+        )
+
+
 async def _client(gateway, run_id: str = "run-api-1"):
     app = create_app(
         BackendSettings(Path("/missing/worker"), Path("/missing/assets")),
         gateway=gateway,
         id_factory=lambda: run_id,
+        resource_catalog=resource_catalog(),
     )
     return app, httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -280,6 +306,24 @@ def test_protocol_failure_maps_to_failed_run_and_owned_code() -> None:
     asyncio.run(run())
 
 
+def test_identity_mismatch_fails_run_and_withholds_formal_result() -> None:
+    async def run() -> None:
+        _app, client = await _client(
+            MismatchedCompletedGateway(), "run-identity-mismatch"
+        )
+        async with client:
+            created = await client.post("/runs", json=REQUEST)
+            assert created.status_code == 201
+            terminal = await _wait_terminal(client, "run-identity-mismatch")
+            assert terminal["lifecycle"] == "Failed"
+            assert terminal["failure"]["code"] == "WorkerProtocolFailure"
+            result = await client.get("/runs/run-identity-mismatch/results")
+            assert result.status_code == 409
+            assert result.json()["error"]["code"] == "RunFailed"
+
+    asyncio.run(run())
+
+
 def test_health_and_restart_semantics_are_explicit() -> None:
     async def run() -> None:
         first_gateway = ControlledGateway()
@@ -321,6 +365,7 @@ def test_sse_disconnect_is_non_causal_and_reconnect_replays_exact_result(
             BackendSettings(executable, tmp_path),
             gateway=gateway,
             id_factory=lambda: run_id,
+            resource_catalog=resource_catalog(),
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -343,7 +388,10 @@ def test_sse_disconnect_is_non_causal_and_reconnect_replays_exact_result(
             assert replay.text.count("id: 2\n") == 1
             result = await client.get(f"/runs/{run_id}/results")
             assert result.status_code == 200
-            assert result.json() == completed(run_id).result.model_dump(mode="json")
+            assert result.json()["projection"] == completed(
+                run_id
+            ).result.projection.model_dump(mode="json")
+            assert result.json()["experiment_id"] == "acceptance4-experiment"
 
     asyncio.run(run())
 
@@ -361,6 +409,7 @@ def test_completed_message_is_not_published_until_exit_zero(tmp_path: Path) -> N
             BackendSettings(executable, tmp_path),
             gateway=gateway,
             id_factory=lambda: run_id,
+            resource_catalog=resource_catalog(),
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -402,6 +451,7 @@ def test_application_shutdown_terminates_and_reaps_worker(tmp_path: Path) -> Non
             BackendSettings(executable, tmp_path),
             gateway=gateway,
             id_factory=lambda: run_id,
+            resource_catalog=resource_catalog(),
         )
 
         async with app.router.lifespan_context(app):

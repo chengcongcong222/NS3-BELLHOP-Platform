@@ -678,6 +678,41 @@ P0-S4-05 至此 CLOSED：client-disconnect non-causality、SSE reconnect/replay�
 shutdown child ownership、terminal publication atomicity、single-active Run、volatile catalog
 与 control/execution plane 分离已通过 OFF/ON、Python 和真实 worker integration 测试冻结。
 
+### 2.51 Environment / Scenario / Experiment resource catalog
+
+P0-S4-06 建立 `Environment -> Scenario -> Experiment -> Run -> Result` 的只读资源链。
+Environment 存在性和 metadata 继续由 C++ `EnvironmentAssetRepository` 权威验证；Scenario
+与 Experiment 继续由 C++ application domain 及既有 Acceptance preset 权威构造。位于
+worker adapter 边界的窄 C++ resource-catalog adapter 只投影 backend schema v1 document，
+Python 只负责严格 HTTP DTO、immutable index 与 version resolution，不解析资产 package，
+不重新定义仿真 domain。
+
+Environment API 只暴露 logical EnvironmentAssetId、显式 format/version、provenance summary、
+coordinate/axes summary、cell/no-arrival count、checksum 与 validation state；禁止泄漏 repository
+root、absolute/internal package path 或 filename identity。Scenario/Experiment 发布版本不可覆盖，
+P0 只提供预注册 read catalog，不提供 PUT/create/delete。所有 list 固定按 ID、version 排序，
+不得依赖 filesystem enumeration 或 dict insertion order。
+
+正式 POST `/runs` 只接受 ExperimentId/version。Backend 必须先解析
+`Experiment -> Scenario -> Environment` 全链，再构造既有 StartRunCommand。Run 创建时捕获
+三层 identity/version；后续 catalog 新版本不得改变既有 Run，Run 与 Result read model 均返回
+captured references。schema v1 当前使用一个 definition_version，故 P0 preset 要求 Scenario 与
+Experiment version 对齐；不匹配必须 InvalidReference，不得静默选择其他版本。
+
+Resource API 延续 canonical decimal string web policy，并区分 EnvironmentNotFound、
+ScenarioNotFound、ScenarioVersionNotFound、ExperimentNotFound、ExperimentVersionNotFound 与
+InvalidReference。P0-S4-06 不引入 database、authentication、generic persistence、Bellhop
+subprocess 或 arbitrary scenario editor。
+
+Backend startup 必须将 C++ adapter 的完整 document 作为一个不可分割 snapshot 校验：metadata、
+identity/version 唯一性以及 Scenario→Environment、Experiment→Scenario 全部引用通过后才能原子发布
+deterministic index；任一坏项导致 startup fail，禁止 partial publish。P0 snapshot 在 backend process
+lifetime 内不可变，不提供 hot reload；新内容需未来显式 refresh 设计或 backend restart。
+
+WorkerCompleted 必须与 Run 创建时捕获的 RunId、ExperimentId/version、ScenarioId/version 和
+Environment identity/version 完全一致。任何 mismatch 即 WorkerProtocolFailure，Run 进入 Failed，
+即使 child exit 0 且 acceptance Pass 也不得发布 formal Result。
+
 ## 3. 影响
 
 ### 3.1 正向影响

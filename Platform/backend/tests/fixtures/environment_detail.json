@@ -1,0 +1,26 @@
+{
+  "asset_format_version": "1",
+  "axes": {
+    "frequency": {"count": "1", "maximum": 25000.0, "minimum": 25000.0, "unit": "Hz"},
+    "horizontal_range": {"count": "1", "maximum": 0.0, "minimum": 0.0, "unit": "m"},
+    "receiver_depth": {"count": "1", "maximum": 0.0, "minimum": 0.0, "unit": "m"},
+    "source_depth": {"count": "1", "maximum": 0.0, "minimum": 0.0, "unit": "m"}
+  },
+  "cell_count": "1",
+  "checksum": {"algorithm": "FNV1A64", "value": "0000000000000001"},
+  "coordinate_frame": {"surface_z_meters": 0.0, "vertical_axis": "PositiveUp"},
+  "environment_asset_id": "backend-field-v1",
+  "format": "NS3_FACTORY_ACOUSTIC_FIELD",
+  "no_arrival_cell_count": "0",
+  "package_format_version": "1",
+  "payload_bytes": "1",
+  "provenance": {
+    "created_by_build_version": "test",
+    "normalization_policy_version": "",
+    "producer": "Manual",
+    "raw_source_logical_name": "",
+    "source_description": "typed test fixture"
+  },
+  "signal_cell_count": "1",
+  "validation_state": "Valid"
+}

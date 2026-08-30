@@ -19,17 +19,22 @@ from .catalog import (
     RunSnapshot,
 )
 from .gateway import WorkerGateway
+from .resources import (
+    EnvironmentResource,
+    ExperimentResource,
+    ResourceCatalog,
+    ResourceCatalogConfigurationError,
+    ResourceCatalogError,
+    ScenarioResource,
+)
 from .wire import (
-    Environment,
-    EnvironmentAssetId,
-    Execution,
-    FiniteFloat,
-    PositiveUInt32Decimal,
     PositiveUIntDecimal,
-    Preset,
+    AcceptanceReport,
+    FusionResult,
+    NodeResult,
+    RunProjection,
     RunResult,
-    StartRunCommand,
-    UIntDecimal,
+    StableId,
 )
 
 
@@ -37,6 +42,8 @@ from .wire import (
 class BackendSettings:
     worker_executable: Path
     environment_repository_root: Path
+    resource_catalog_adapter: Path | None = None
+    acceptance_environment_asset_id: str = "backend-field-v1"
 
 
 class HttpModel(BaseModel):
@@ -44,12 +51,8 @@ class HttpModel(BaseModel):
 
 
 class CreateRunRequest(HttpModel):
-    environment_asset_id: EnvironmentAssetId
-    environment_format_version: PositiveUInt32Decimal
-    simulation_cycle_count: PositiveUIntDecimal
-    rx_quality_mode: Literal["None", "ModeledBpskAwgn"]
-    equivalent_noise_power_db_re_1upa2: FiniteFloat
-    deterministic_seed: UIntDecimal
+    experiment_id: StableId
+    experiment_version: PositiveUIntDecimal
 
 
 class FailureResource(HttpModel):
@@ -59,6 +62,12 @@ class FailureResource(HttpModel):
 
 class RunResource(HttpModel):
     run_id: str
+    experiment_id: str
+    experiment_version: str
+    scenario_id: str
+    scenario_version: str
+    environment_asset_id: str
+    environment_format_version: str
     lifecycle: Literal["Created", "Running", "Completed", "Failed"]
     simulation_started_at_ns: str | None
     simulation_ended_at_ns: str | None
@@ -71,6 +80,20 @@ class HealthResource(HttpModel):
     status: Literal["ok", "degraded"]
     backend_alive: Literal[True]
     worker_executable_ready: bool
+
+
+class RunResultResource(HttpModel):
+    run_id: str
+    experiment_id: str
+    experiment_version: str
+    scenario_id: str
+    scenario_version: str
+    environment_asset_id: str
+    environment_format_version: str
+    projection: RunProjection
+    acceptance_report: AcceptanceReport | None
+    fusion_results: list[FusionResult]
+    nodes: list[NodeResult]
 
 
 class ApiErrorResource(HttpModel):
@@ -91,6 +114,12 @@ _ERROR_STATUS = {
     "BackendBusy": status.HTTP_409_CONFLICT,
     "WorkerProtocolFailure": status.HTTP_502_BAD_GATEWAY,
     "WorkerProcessFailure": status.HTTP_502_BAD_GATEWAY,
+    "EnvironmentNotFound": status.HTTP_404_NOT_FOUND,
+    "ScenarioNotFound": status.HTTP_404_NOT_FOUND,
+    "ScenarioVersionNotFound": status.HTTP_404_NOT_FOUND,
+    "ExperimentNotFound": status.HTTP_404_NOT_FOUND,
+    "ExperimentVersionNotFound": status.HTTP_404_NOT_FOUND,
+    "InvalidReference": status.HTTP_409_CONFLICT,
 }
 
 
@@ -111,6 +140,12 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
         )
     return RunResource(
         run_id=snapshot.run_id,
+        experiment_id=snapshot.experiment_id,
+        experiment_version=snapshot.experiment_version,
+        scenario_id=snapshot.scenario_id,
+        scenario_version=snapshot.scenario_version,
+        environment_asset_id=snapshot.environment_asset_id,
+        environment_format_version=snapshot.environment_format_version,
         lifecycle=snapshot.lifecycle,
         simulation_started_at_ns=(
             terminal.simulation_started_at_ns if terminal else None
@@ -148,16 +183,44 @@ def _cursor(text: str | None) -> int:
     return value
 
 
+def _resource_version(text: str) -> str:
+    if (
+        not text
+        or not text.isascii()
+        or not text.isdecimal()
+        or text == "0"
+        or (len(text) > 1 and text[0] == "0")
+        or int(text) > (1 << 64) - 1
+    ):
+        raise CatalogError(
+            "InvalidRequest", "Resource version must be canonical positive decimal."
+        )
+    return text
+
+
 def create_app(
     settings: BackendSettings,
     *,
     gateway: object | None = None,
     id_factory: Callable[[], str] | None = None,
+    resource_catalog: ResourceCatalog | None = None,
 ) -> FastAPI:
     selected_gateway = gateway or WorkerGateway(
         settings.worker_executable, settings.environment_repository_root
     )
     catalog = InMemoryRunCatalog(selected_gateway, id_factory=id_factory)
+    selected_resources = resource_catalog
+    if selected_resources is None and settings.resource_catalog_adapter is None:
+        raise ResourceCatalogConfigurationError(
+            "resource catalog adapter must be configured"
+        )
+    if selected_resources is None:
+        assert settings.resource_catalog_adapter is not None
+        selected_resources = ResourceCatalog.from_adapter(
+            settings.resource_catalog_adapter,
+            settings.environment_repository_root,
+            settings.acceptance_environment_asset_id,
+        )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -170,6 +233,7 @@ def create_app(
         title="NS3-BELLHOP Platform Run API", version="1", lifespan=lifespan
     )
     app.state.catalog = catalog
+    app.state.resource_catalog = selected_resources
 
     @app.exception_handler(CatalogError)
     async def catalog_error_handler(
@@ -184,6 +248,12 @@ def create_app(
         return _error_response(
             "InvalidRequest", "The request does not match the P0 Run API schema."
         )
+
+    @app.exception_handler(ResourceCatalogError)
+    async def resource_error_handler(
+        _request: Request, error: ResourceCatalogError
+    ) -> JSONResponse:
+        return _error_response(error.code, str(error))
 
     @app.get("/health", response_model=HealthResource)
     async def health() -> HealthResource:
@@ -203,38 +273,70 @@ def create_app(
         status_code=status.HTTP_201_CREATED,
     )
     async def create_run(request: CreateRunRequest) -> RunResource:
-        def command(run_id: str) -> StartRunCommand:
-            return StartRunCommand(
-                run_id=run_id,
-                preset=Preset(
-                    scenario_id="acceptance4-scenario",
-                    experiment_id="acceptance4-experiment",
-                    definition_version="1",
-                    acceptance_profile="Acceptance4Node",
-                ),
-                environment=Environment(
-                    asset_id=request.environment_asset_id,
-                    asset_format_version=request.environment_format_version,
-                ),
-                execution=Execution(
-                    simulation_cycle_count=request.simulation_cycle_count,
-                    rx_quality_mode=request.rx_quality_mode,
-                    equivalent_noise_power_db_re_1upa2=(
-                        request.equivalent_noise_power_db_re_1upa2
-                    ),
-                    deterministic_seed=request.deterministic_seed,
-                ),
+        def command(run_id: str):
+            return selected_resources.resolve_command(
+                run_id, request.experiment_id, request.experiment_version
             )
 
         return _run_resource(await catalog.create(command))
+
+    @app.get("/environments", response_model=list[EnvironmentResource])
+    async def list_environments() -> tuple[EnvironmentResource, ...]:
+        return selected_resources.list_environments()
+
+    @app.get("/environments/{environment_id}", response_model=EnvironmentResource)
+    async def get_environment(environment_id: str) -> EnvironmentResource:
+        return selected_resources.get_environment(environment_id)
+
+    @app.get("/scenarios", response_model=list[ScenarioResource])
+    async def list_scenarios() -> tuple[ScenarioResource, ...]:
+        return selected_resources.list_scenarios()
+
+    @app.get(
+        "/scenarios/{scenario_id}/versions/{version}",
+        response_model=ScenarioResource,
+    )
+    async def get_scenario(scenario_id: str, version: str) -> ScenarioResource:
+        return selected_resources.get_scenario(
+            scenario_id, _resource_version(version)
+        )
+
+    @app.get("/experiments", response_model=list[ExperimentResource])
+    async def list_experiments() -> tuple[ExperimentResource, ...]:
+        return selected_resources.list_experiments()
+
+    @app.get(
+        "/experiments/{experiment_id}/versions/{version}",
+        response_model=ExperimentResource,
+    )
+    async def get_experiment(
+        experiment_id: str, version: str
+    ) -> ExperimentResource:
+        return selected_resources.get_experiment(
+            experiment_id, _resource_version(version)
+        )
 
     @app.get("/runs/{run_id}", response_model=RunResource)
     async def get_run(run_id: str) -> RunResource:
         return _run_resource(await catalog.get(run_id))
 
-    @app.get("/runs/{run_id}/results", response_model=RunResult)
-    async def get_results(run_id: str) -> RunResult:
-        return await catalog.get_result(run_id)
+    @app.get("/runs/{run_id}/results", response_model=RunResultResource)
+    async def get_results(run_id: str) -> RunResultResource:
+        result: RunResult = await catalog.get_result(run_id)
+        snapshot = await catalog.get(run_id)
+        return RunResultResource(
+            run_id=result.run_id,
+            experiment_id=snapshot.experiment_id,
+            experiment_version=snapshot.experiment_version,
+            scenario_id=snapshot.scenario_id,
+            scenario_version=snapshot.scenario_version,
+            environment_asset_id=snapshot.environment_asset_id,
+            environment_format_version=snapshot.environment_format_version,
+            projection=result.projection,
+            acceptance_report=result.acceptance_report,
+            fusion_results=result.fusion_results,
+            nodes=result.nodes,
+        )
 
     @app.get("/runs/{run_id}/events")
     async def get_events(

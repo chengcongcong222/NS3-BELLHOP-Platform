@@ -25,7 +25,13 @@ def test_acceptance4_node_runs_through_http_and_cpp_worker(tmp_path: Path) -> No
         subprocess.run([builder, repository], check=True)
 
         app = create_app(
-            BackendSettings(worker, repository),
+            BackendSettings(
+                worker,
+                repository,
+                resource_catalog_adapter=Path(
+                    os.environ["PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH"]
+                ),
+            ),
             id_factory=lambda: "http-acceptance4-run",
         )
         async with httpx.AsyncClient(
@@ -36,12 +42,8 @@ def test_acceptance4_node_runs_through_http_and_cpp_worker(tmp_path: Path) -> No
             created = await client.post(
                 "/runs",
                 json={
-                    "environment_asset_id": "backend-field-v1",
-                    "environment_format_version": "1",
-                    "simulation_cycle_count": "2",
-                    "rx_quality_mode": "ModeledBpskAwgn",
-                    "equivalent_noise_power_db_re_1upa2": 45.0,
-                    "deterministic_seed": "19",
+                    "experiment_id": "acceptance4-experiment",
+                    "experiment_version": "1",
                 },
             )
             assert created.status_code == 201
@@ -61,6 +63,12 @@ def test_acceptance4_node_runs_through_http_and_cpp_worker(tmp_path: Path) -> No
             assert result.status_code == 200
             body = result.json()
             assert body["run_id"] == "http-acceptance4-run"
+            assert body["experiment_id"] == "acceptance4-experiment"
+            assert body["experiment_version"] == "1"
+            assert body["scenario_id"] == "acceptance4-scenario"
+            assert body["scenario_version"] == "1"
+            assert body["environment_asset_id"] == "backend-field-v1"
+            assert body["environment_format_version"] == "1"
             assert body["projection"]["node_count"] == "4"
             assert body["projection"]["cycle_count"] == "2"
 

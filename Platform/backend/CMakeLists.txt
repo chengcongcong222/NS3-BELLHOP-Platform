@@ -63,12 +63,13 @@ if(BUILD_TESTING)
       "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/src"
       "PYTHONDONTWRITEBYTECODE=1"
       "PLATFORM_WORKER_WIRE_GOLDEN_FIXTURE_PATH=$<TARGET_FILE:platform_worker_wire_golden_fixture>"
+      "PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH=$<TARGET_FILE:platform_resource_catalog_adapter>"
+      "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH=$<TARGET_FILE:platform_worker_test_asset_builder>"
   )
   if(PLATFORM_NS3_AVAILABLE)
     list(
       APPEND PLATFORM_BACKEND_TEST_ENVIRONMENT
       "PLATFORM_SIM_WORKER_PATH=$<TARGET_FILE:platform_sim_worker>"
-      "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH=$<TARGET_FILE:platform_worker_test_asset_builder>"
     )
   endif()
   set_tests_properties(

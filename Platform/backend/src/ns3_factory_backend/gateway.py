@@ -35,6 +35,23 @@ class WorkerProcessFailure(GatewayFailure):
     code = "WorkerProcessFailure"
 
 
+def completed_matches_command(
+    completed: WorkerCompleted, command: StartRunCommand
+) -> bool:
+    run = completed.run
+    return (
+        run.run_id == command.run_id
+        and completed.result.run_id == command.run_id
+        and run.experiment_id == command.preset.experiment_id
+        and run.experiment_version == command.preset.definition_version
+        and run.scenario_id == command.preset.scenario_id
+        and run.scenario_version == command.preset.definition_version
+        and run.environment_asset_id == command.environment.asset_id
+        and run.environment_format_version
+        == command.environment.asset_format_version
+    )
+
+
 GatewayObservation = WorkerStarted | WorkerRunEvent
 ObservationCallback = Callable[
     [GatewayObservation], Awaitable[None] | None
@@ -174,8 +191,7 @@ class WorkerGateway:
                 elif isinstance(message, WorkerCompleted):
                     if (
                         not saw_started
-                        or message.run.run_id != command.run_id
-                        or message.result.run_id != command.run_id
+                        or not completed_matches_command(message, command)
                     ):
                         raise WorkerProtocolFailure(
                             "WorkerCompleted identity is invalid"

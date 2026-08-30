@@ -1,0 +1,43 @@
+{
+  "acceptance_report": {
+    "bearing_point_count": "Pass",
+    "ber_reason": "",
+    "bit_error_rate": "Pass",
+    "communication_rate": "Pass",
+    "evaluated_target_receptions": "1",
+    "feature_level_fusion": "Pass",
+    "fusion_period": "Pass",
+    "maximum_ber": 0.00001,
+    "maximum_fusion_period_ns": "1",
+    "mean_ber": 0.00001,
+    "minimum_bearing_points": "5",
+    "missing_ber_evidence_count": "0",
+    "network_node_count": "Pass",
+    "overall": "Pass",
+    "required_maximum_ber": 0.0001,
+    "required_maximum_fusion_period_ns": "24000000000",
+    "required_minimum_bearing_points": "5"
+  },
+  "environment_asset_id": "backend-field-v1",
+  "environment_format_version": "1",
+  "experiment_id": "acceptance4-experiment",
+  "experiment_version": "1",
+  "fusion_results": [],
+  "nodes": [],
+  "projection": {
+    "channel_no_arrival_count": "0",
+    "channel_signal_count": "1",
+    "cycle_count": "2",
+    "final_snapshot_version": "1",
+    "local_delivery_count": "1",
+    "node_count": "4",
+    "reception_count": "1",
+    "simulation_duration_ns": "1",
+    "simulation_ended_at_ns": "1",
+    "simulation_started_at_ns": "0",
+    "transmission_count": "1"
+  },
+  "run_id": "resource-run",
+  "scenario_id": "acceptance4-scenario",
+  "scenario_version": "1"
+}

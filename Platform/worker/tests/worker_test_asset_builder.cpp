@@ -34,15 +34,21 @@ auto MakeAsset() -> contracts::Result<AcousticFieldAsset> {
 }  // namespace
 
 auto main(int argc, char** argv) -> int {
-  if(argc != 2) return EXIT_FAILURE;
+  if(argc != 2 && argc != 3) return EXIT_FAILURE;
   const std::filesystem::path root{argv[1]};
   std::error_code error;
-  if(!std::filesystem::create_directory(root, error) || error) {
+  if(!std::filesystem::exists(root, error) &&
+     !std::filesystem::create_directory(root, error)) {
     std::cerr << "cannot create test asset repository\n";
     return EXIT_FAILURE;
   }
+  if(error || !std::filesystem::is_directory(root, error) || error) {
+    std::cerr << "invalid test asset repository\n";
+    return EXIT_FAILURE;
+  }
   auto repository = EnvironmentAssetRepository::Open(root);
-  auto id = EnvironmentAssetId::Create("backend-field-v1");
+  auto id = EnvironmentAssetId::Create(
+      argc == 3 ? argv[2] : "backend-field-v1");
   auto asset = MakeAsset();
   auto provenance = EnvironmentAssetPackageProvenance::Create(
       EnvironmentAssetProducerType::kManual,

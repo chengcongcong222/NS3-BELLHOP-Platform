@@ -6,7 +6,13 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from .gateway import GatewayFailure, ObservationCallback, WorkerGatewayResult
+from .gateway import (
+    GatewayFailure,
+    ObservationCallback,
+    WorkerGatewayResult,
+    WorkerProtocolFailure,
+    completed_matches_command,
+)
 from .wire import (
     RunRecord,
     RunResult,
@@ -35,6 +41,12 @@ class BackendFailure:
 @dataclass(frozen=True)
 class RunSnapshot:
     run_id: str
+    experiment_id: str
+    experiment_version: str
+    scenario_id: str
+    scenario_version: str
+    environment_asset_id: str
+    environment_format_version: str
     lifecycle: str
     event_stream_complete: bool | None
     failure: BackendFailure | None
@@ -191,6 +203,10 @@ class InMemoryRunCatalog:
             async with self._condition:
                 entry.stderr_diagnostics = outcome.stderr_diagnostics
                 if outcome.completed is not None:
+                    if not completed_matches_command(outcome.completed, entry.command):
+                        raise WorkerProtocolFailure(
+                            "WorkerCompleted identity does not match captured Run inputs"
+                        )
                     entry.lifecycle = "Completed"
                     entry.terminal_run = outcome.completed.run
                     entry.result = outcome.completed.result
@@ -243,6 +259,14 @@ class InMemoryRunCatalog:
         )
         return RunSnapshot(
             run_id=entry.command.run_id,
+            experiment_id=entry.command.preset.experiment_id,
+            experiment_version=entry.command.preset.definition_version,
+            scenario_id=entry.command.preset.scenario_id,
+            scenario_version=entry.command.preset.definition_version,
+            environment_asset_id=entry.command.environment.asset_id,
+            environment_format_version=(
+                entry.command.environment.asset_format_version
+            ),
             lifecycle=entry.lifecycle,
             event_stream_complete=complete,
             failure=entry.failure,

@@ -1,0 +1,22 @@
+{
+  "environment": {"asset_format_version": "1", "environment_asset_id": "backend-field-v1"},
+  "fusion_center_node_id": "99",
+  "mobility": {"model": "ConstantVelocity"},
+  "name": "Acceptance 4-Node Scenario",
+  "nodes": [
+    {
+      "can_receive": true,
+      "can_transmit": false,
+      "duplex_mode": "HalfDuplex",
+      "initial_position": {"x_meters": 0.0, "y_meters": 0.0, "z_meters": -8.0},
+      "initial_velocity": {
+        "x_meters_per_second": 0.0,
+        "y_meters_per_second": 0.0,
+        "z_meters_per_second": 0.0
+      },
+      "node_id": "99"
+    }
+  ],
+  "scenario_id": "acceptance4-scenario",
+  "version": "1"
+}

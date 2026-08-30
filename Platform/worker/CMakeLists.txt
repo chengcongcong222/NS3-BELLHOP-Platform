@@ -38,6 +38,26 @@ target_link_libraries(
   PUBLIC Platform::worker Platform::worker_json_codec
 )
 
+add_executable(
+  platform_resource_catalog_adapter
+  adapter/resource_catalog_adapter.cpp
+)
+target_include_directories(
+  platform_resource_catalog_adapter
+  PRIVATE
+    "${PROJECT_SOURCE_DIR}/application"
+    "${PROJECT_SOURCE_DIR}/assembly"
+    "${PROJECT_SOURCE_DIR}/environment"
+)
+target_link_libraries(
+  platform_resource_catalog_adapter
+  PRIVATE
+    Platform::application
+    Platform::assembly
+    Platform::environment
+    Platform::third_party_nlohmann_json
+)
+
 if(BUILD_TESTING)
   add_executable(
     platform_worker_json_dependency_test

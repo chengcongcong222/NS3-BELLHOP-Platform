@@ -15,16 +15,20 @@ returned verbatim as an HTTP error body.
 ## P0 API
 
 - `GET /health` checks backend liveness and worker executable availability.
-- `POST /runs` creates an Acceptance4Node Run and immediately returns 201.
+- `POST /runs` resolves an immutable Experiment version, creates its Run and
+  immediately returns 201.
 - `GET /runs/{run_id}` returns authoritative control-plane lifecycle.
 - `GET /runs/{run_id}/results` is available only for Completed Runs.
 - `GET /runs/{run_id}/events` streams replayable SSE records.
 
-The backend generates `run-<opaque>` RunIds. The request exposes only the
-validated environment reference, cycle count, Rx quality mode, equivalent
-noise power and deterministic seed. Scenario/experiment preset identity is
-fixed to Acceptance4Node inside the adapter; generic Platform internals are
-not serialized into a second public configuration schema.
+The backend generates `run-<opaque>` RunIds. The request exposes only
+`experiment_id` and `experiment_version`. The resource catalog resolves the
+captured Experiment -> Scenario -> Environment chain and then constructs the
+existing schema-v1 worker command. Generic Platform internals are not
+serialized into a second public configuration schema.
+
+Environment, Scenario and Experiment read endpoints and their immutable
+version semantics are documented in `backend_resource_catalog.md`.
 
 All identities, versions, counts, event sequences and integer nanoseconds are
 JSON decimal strings in both HTTP and worker wire representations. JavaScript

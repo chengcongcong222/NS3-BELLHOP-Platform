@@ -5,6 +5,7 @@ import json
 from collections.abc import Iterable
 
 from ns3_factory_backend.gateway import WorkerGatewayResult
+from ns3_factory_backend.resources import ResourceCatalog, ResourceCatalogDocument
 from ns3_factory_backend.wire import (
     WorkerCompleted,
     WorkerFailed,
@@ -163,4 +164,135 @@ def failure_result(run_id: str) -> WorkerGatewayResult:
         completed=None,
         failed=failed(run_id),
         stderr_diagnostics="fixture diagnostic",
+    )
+
+
+def resource_catalog() -> ResourceCatalog:
+    return ResourceCatalog(
+        ResourceCatalogDocument.model_validate(
+            {
+                "schema_version": 1,
+                "environments": [
+                    {
+                        "environment_asset_id": "backend-field-v1",
+                        "format": "NS3_FACTORY_ACOUSTIC_FIELD",
+                        "package_format_version": "1",
+                        "asset_format_version": "1",
+                        "provenance": {
+                            "producer": "Manual",
+                            "created_by_build_version": "test",
+                            "source_description": "typed test fixture",
+                            "raw_source_logical_name": "",
+                            "normalization_policy_version": "",
+                        },
+                        "coordinate_frame": {
+                            "surface_z_meters": 0.0,
+                            "vertical_axis": "PositiveUp",
+                        },
+                        "axes": {
+                            "frequency": {
+                                "unit": "Hz",
+                                "count": "1",
+                                "minimum": 25000.0,
+                                "maximum": 25000.0,
+                            },
+                            "source_depth": {
+                                "unit": "m",
+                                "count": "1",
+                                "minimum": 0.0,
+                                "maximum": 0.0,
+                            },
+                            "receiver_depth": {
+                                "unit": "m",
+                                "count": "1",
+                                "minimum": 0.0,
+                                "maximum": 0.0,
+                            },
+                            "horizontal_range": {
+                                "unit": "m",
+                                "count": "1",
+                                "minimum": 0.0,
+                                "maximum": 0.0,
+                            },
+                        },
+                        "cell_count": "1",
+                        "signal_cell_count": "1",
+                        "no_arrival_cell_count": "0",
+                        "payload_bytes": "1",
+                        "checksum": {
+                            "algorithm": "FNV1A64",
+                            "value": "0000000000000001",
+                        },
+                        "validation_state": "Valid",
+                    }
+                ],
+                "scenarios": [
+                    {
+                        "scenario_id": "acceptance4-scenario",
+                        "version": "1",
+                        "name": "Acceptance 4-Node Scenario",
+                        "nodes": [
+                            {
+                                "node_id": "99",
+                                "can_transmit": False,
+                                "can_receive": True,
+                                "duplex_mode": "HalfDuplex",
+                                "initial_position": {
+                                    "x_meters": 0.0,
+                                    "y_meters": 0.0,
+                                    "z_meters": -8.0,
+                                },
+                                "initial_velocity": {
+                                    "x_meters_per_second": 0.0,
+                                    "y_meters_per_second": 0.0,
+                                    "z_meters_per_second": 0.0,
+                                },
+                            }
+                        ],
+                        "environment": {
+                            "environment_asset_id": "backend-field-v1",
+                            "asset_format_version": "1",
+                        },
+                        "mobility": {"model": "ConstantVelocity"},
+                        "fusion_center_node_id": "99",
+                    }
+                ],
+                "experiments": [
+                    {
+                        "experiment_id": "acceptance4-experiment",
+                        "version": "1",
+                        "name": "Acceptance 4-Node Experiment",
+                        "scenario": {
+                            "scenario_id": "acceptance4-scenario",
+                            "version": "1",
+                        },
+                        "routing": {"mode": "DirectToFusionCenter"},
+                        "mac": {
+                            "mode": "Tdma",
+                            "slot_duration_ns": "4000000000",
+                            "guard_interval_ns": "2000000000",
+                        },
+                        "phy": {
+                            "bit_rate_bits_per_second": "60",
+                            "center_frequency_hz": 25000.0,
+                            "occupied_bandwidth_hz": 4000.0,
+                            "source_level_db_re_1upa_at_1m": 110.0,
+                            "equivalent_noise_power_db_re_1upa2": 45.0,
+                            "rx_quality_mode": "ModeledBpskAwgn",
+                        },
+                        "fusion": {
+                            "workload": "AcceptanceBearingFusion",
+                            "acceptance_profile": "Acceptance4Node",
+                            "minimum_bearing_points": "5",
+                            "maximum_fusion_period_ns": "180000000000",
+                            "maximum_ber": 0.0001,
+                        },
+                        "network_update_interval_cycles": "10",
+                        "simulation_cycle_count": "2",
+                        "deterministic_seed": "19",
+                    }
+                ],
+            },
+            strict=False,
+        )
     )

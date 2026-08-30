@@ -1,0 +1,15 @@
+{
+  "environment_asset_id": "backend-field-v1",
+  "environment_format_version": "1",
+  "event_stream_complete": true,
+  "experiment_id": "acceptance4-experiment",
+  "experiment_version": "1",
+  "failure": null,
+  "final_snapshot_version": "1",
+  "lifecycle": "Completed",
+  "run_id": "resource-run",
+  "scenario_id": "acceptance4-scenario",
+  "scenario_version": "1",
+  "simulation_ended_at_ns": "1",
+  "simulation_started_at_ns": "0"
+}

@@ -1,0 +1,26 @@
+{
+  "deterministic_seed": "19",
+  "experiment_id": "acceptance4-experiment",
+  "fusion": {
+    "acceptance_profile": "Acceptance4Node",
+    "maximum_ber": 0.0001,
+    "maximum_fusion_period_ns": "180000000000",
+    "minimum_bearing_points": "5",
+    "workload": "AcceptanceBearingFusion"
+  },
+  "mac": {"guard_interval_ns": "2000000000", "mode": "Tdma", "slot_duration_ns": "4000000000"},
+  "name": "Acceptance 4-Node Experiment",
+  "network_update_interval_cycles": "10",
+  "phy": {
+    "bit_rate_bits_per_second": "60",
+    "center_frequency_hz": 25000.0,
+    "equivalent_noise_power_db_re_1upa2": 45.0,
+    "occupied_bandwidth_hz": 4000.0,
+    "rx_quality_mode": "ModeledBpskAwgn",
+    "source_level_db_re_1upa_at_1m": 110.0
+  },
+  "routing": {"mode": "DirectToFusionCenter"},
+  "scenario": {"scenario_id": "acceptance4-scenario", "version": "1"},
+  "simulation_cycle_count": "2",
+  "version": "1"
+}

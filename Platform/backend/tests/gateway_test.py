@@ -31,7 +31,9 @@ def _command(run_id: str) -> StartRunCommand:
             definition_version="1",
             acceptance_profile="Acceptance4Node",
         ),
-        environment=Environment(asset_id="asset-v1", asset_format_version="1"),
+        environment=Environment(
+            asset_id="backend-field-v1", asset_format_version="1"
+        ),
         execution=Execution(
             simulation_cycle_count="2",
             rx_quality_mode="None",
@@ -83,6 +85,39 @@ def test_gateway_completed_sequence_and_stderr_capture(tmp_path: Path) -> None:
             "WorkerRunEvent",
         ]
         assert "human diagnostic only" in result.stderr_diagnostics
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("experiment_id", "other-experiment"),
+        ("experiment_version", "2"),
+        ("scenario_id", "other-scenario"),
+        ("scenario_version", "2"),
+        ("environment_asset_id", "other-asset"),
+        ("environment_format_version", "2"),
+    ],
+)
+def test_gateway_rejects_completed_resource_identity_mismatch(
+    tmp_path: Path, field: str, value: str
+) -> None:
+    async def run() -> None:
+        run_id = f"gateway-identity-{field}"
+        terminal = completed(run_id).model_copy(
+            update={
+                "run": completed(run_id).run.model_copy(update={field: value})
+            }
+        )
+        executable = _worker(
+            tmp_path,
+            [_json(started(run_id)), _json(terminal)],
+        )
+        with pytest.raises(WorkerProtocolFailure):
+            await WorkerGateway(executable, tmp_path).run(
+                _command(run_id), lambda _message: None
+            )
 
     asyncio.run(run())
 
