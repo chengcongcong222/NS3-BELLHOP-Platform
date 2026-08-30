@@ -2,14 +2,16 @@
 
 ## Status and source boundary
 
-This document is the formal architecture baseline for the future Platform
-frontend. It uses the read-only legacy audit at commit
+This document is the formal architecture baseline for the Platform frontend.
+It uses the read-only legacy audit at commit
 `c2de48601ab077eafdedf0dd25324be4db6358c1` as product-discovery evidence.
 Legacy source and DTOs are reference material only; they are not a starting
 implementation and must not be copied into production.
 
-The future application root is `Platform/frontend/`. This phase does not
-create a React application or select/install dependencies.
+P0-S4-07 establishes the application root at `Platform/frontend/` with exact,
+offline-supplied React, TypeScript, Vite, React Router, TanStack Query, Vitest,
+Testing Library and jsdom versions. The dependency closure is locked by
+`package-lock.json`; the runtime and registry artifacts are repository-local.
 
 ## Top-level object model
 
@@ -59,9 +61,19 @@ The UI may request repository metadata or initiate an offline import workflow,
 but a live channel query never performs filesystem or frontend I/O. The UI
 must distinguish no physical arrival from load/coverage/provider errors.
 
-## Deferred implementation choices
+## P0-S4-07 implementation boundary
 
-React component structure, authentication, generated API clients, deployment,
-accessibility implementation details and final visual design remain future
-work. The state and route boundaries in this baseline must be preserved when
-those choices are made.
+- Route components consume Backend HTTP DTOs only through `src/api/client.ts`.
+- TanStack Query owns Environment, Scenario, Experiment, Run and Result server
+  state; no mixed global domain store is introduced.
+- `RunEventProjection` owns a disposable SSE projection. Its cursor is the
+  backend `RunEventSequence`, retained as a canonical decimal string and used
+  with `BigInt` only for exact comparisons.
+- Published Environment, Scenario and Experiment views are read-only. The only
+  mutation is `POST /runs` with captured Experiment identity/version.
+- The frontend never imports worker NDJSON, `WorkerCompleted`, C++ internal
+  types or legacy frontend DTOs.
+
+Authentication, generated API clients, deployment, resource editors, advanced
+visualizations, accessibility hardening and final visual design remain future
+work. The state and route boundaries in this baseline must be preserved.

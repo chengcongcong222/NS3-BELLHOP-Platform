@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03、P0-S4-04、P0-S4-05 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03、P0-S4-04、P0-S4-05、P0-S4-06、P0-S4-07 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -712,6 +712,37 @@ lifetime 内不可变，不提供 hot reload；新内容需未来显式 refresh 
 WorkerCompleted 必须与 Run 创建时捕获的 RunId、ExperimentId/version、ScenarioId/version 和
 Environment identity/version 完全一致。任何 mismatch 即 WorkerProtocolFailure，Run 进入 Failed，
 即使 child exit 0 且 acceptance Pass 也不得发布 formal Result。
+
+P0-S4-06 至此 CLOSED：完整 resource snapshot 校验与原子 publication、process-lifetime immutable
+catalog、exact version resolution、Run captured resource chain，以及 worker/backend terminal identity
+attestation 已通过 OFF/ON、Python 与真实 worker integration 测试冻结。
+
+### 2.52 Frontend V2 foundation and authoritative resource views
+
+P0-S4-07 Frontend 位于独立 `Platform/frontend` application root，不复制 legacy StudioPage、mixed
+DTO 或 global runtime store。正式栈固定为 repository-supplied Node.js v24.20.0/npm 11.19.0、React、
+TypeScript、Vite、React Router、TanStack Query、Vitest、Testing Library 与 jsdom 的 exact locked
+versions；Node release archive 和完整 npm artifact cache 均在仓库内供应，正式 `npm ci`、build 与
+test 必须在 offline mode 成功，不搜索系统 Node 或联网下载。
+
+Environment、Scenario、Experiment、Run 与 Result 都是 backend-authoritative server state，由统一
+typed API client 和 TanStack Query 管理，禁止复制到大型 global UI store。Route component 不得散落
+fetch，不得理解 worker NDJSON、WorkerCompleted 或 C++ internal types。P0-S4-07 资源页只读，唯一
+mutation 是以 exact ExperimentId/version POST 创建 Run；浏览器不得重新提交 PHY/MAC/runtime config。
+
+GET `/runs` 是 Run catalog 权威，GET `/results` 只列出具有 atomically published formal Result 的
+Completed Run。SSE event id 直接使用 backend RunEventSequence canonical decimal string；Frontend
+不生成第二套 sequence。重复 id 去重，gap/malformed payload 必须进入 ProtocolFailure，browser
+native reconnect 保持 observation-only。所有 protocol decimal ID/count/nanoseconds 在 domain model
+继续保存为 string，只允许用 BigInt 做 exact ordering/arithmetic，不得经 JavaScript Number 保存。
+
+P0-S4-07 不实现 Scenario/Experiment editor、browser-only fake save、cancel、authentication、database、
+complex acoustic animation 或 advanced comparison。ns-3 3.47 只作为固定产品/build metadata 展示，
+且继续明确“ns-3 为平台唯一仿真时钟和事件调度器”；Frontend 不参与 simulation causality。
+
+P0-S4-07 至此 CLOSED：SSE projection/lifecycle authority 分离、SSE failure non-authority、backend
+acceptance verdict 原样呈现且不在浏览器重算、typed API boundary、offline dependency closure 与完整
+resource/Run/Result route 已通过 frontend、Backend Python 及 C++ OFF/ON 门禁冻结。
 
 ## 3. 影响
 

@@ -79,6 +79,17 @@ class MismatchedCompletedGateway:
         )
 
 
+class SequencedTerminalGateway:
+    def __init__(self, outcomes: list[tuple[str, str]]) -> None:
+        self.outcomes = iter(outcomes)
+
+    async def run(self, command, _callback):
+        kind, overall = next(self.outcomes)
+        if kind == "failed":
+            return failure_result(command.run_id)
+        return success_result(command.run_id, overall)
+
+
 async def _client(gateway, run_id: str = "run-api-1"):
     app = create_app(
         BackendSettings(Path("/missing/worker"), Path("/missing/assets")),
@@ -346,6 +357,56 @@ def test_health_and_restart_semantics_are_explicit() -> None:
             missing = await second.get("/runs/volatile-run")
             assert missing.status_code == 404
             assert missing.json()["error"]["code"] == "NotFound"
+
+    asyncio.run(run())
+
+
+def test_run_and_result_catalogs_are_authoritative_and_stably_sorted() -> None:
+    async def run() -> None:
+        ids = iter(["z-run", "m-run", "a-run"])
+        gateway = SequencedTerminalGateway(
+            [("completed", "Pass"), ("failed", "Pass"), ("completed", "Fail")]
+        )
+        app = create_app(
+            BackendSettings(Path("/missing/worker"), Path("/missing/assets")),
+            gateway=gateway,
+            id_factory=lambda: next(ids),
+            resource_catalog=resource_catalog(),
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            for run_id in ["z-run", "m-run", "a-run"]:
+                created = await client.post("/runs", json=REQUEST)
+                assert created.status_code == 201
+                await _wait_terminal(client, run_id)
+
+            runs = await client.get("/runs")
+            assert runs.status_code == 200
+            assert [item["run_id"] for item in runs.json()] == [
+                "a-run",
+                "m-run",
+                "z-run",
+            ]
+            assert [item["result_available"] for item in runs.json()] == [
+                True,
+                False,
+                True,
+            ]
+            assert runs.json()[1]["failure"]["code"] == "RunFailed"
+
+            results = await client.get("/results")
+            assert results.status_code == 200
+            assert [item["run_id"] for item in results.json()] == [
+                "a-run",
+                "z-run",
+            ]
+            assert [item["acceptance_overall"] for item in results.json()] == [
+                "Fail",
+                "Pass",
+            ]
+            assert all(item["simulation_duration_ns"] == "1" for item in results.json())
+            assert all(item["fusion_result_count"] == "0" for item in results.json())
 
     asyncio.run(run())
 

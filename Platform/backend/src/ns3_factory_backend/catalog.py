@@ -51,6 +51,13 @@ class RunSnapshot:
     event_stream_complete: bool | None
     failure: BackendFailure | None
     terminal_run: RunRecord | None
+    result_available: bool
+
+
+@dataclass(frozen=True)
+class FormalResultSnapshot:
+    run: RunSnapshot
+    result: RunResult
 
 
 @dataclass
@@ -122,6 +129,21 @@ class InMemoryRunCatalog:
                 raise CatalogError("RunFailed", "The Run did not produce a result.")
             assert entry.result is not None
             return entry.result
+
+    async def list_runs(self) -> tuple[RunSnapshot, ...]:
+        async with self._condition:
+            return tuple(
+                self._snapshot(entry)
+                for run_id, entry in sorted(self._entries.items())
+            )
+
+    async def list_results(self) -> tuple[FormalResultSnapshot, ...]:
+        async with self._condition:
+            return tuple(
+                FormalResultSnapshot(self._snapshot(entry), entry.result)
+                for run_id, entry in sorted(self._entries.items())
+                if entry.lifecycle == "Completed" and entry.result is not None
+            )
 
     async def shutdown(self) -> None:
         """Stop accepting work and release every active worker owned by the app."""
@@ -271,4 +293,7 @@ class InMemoryRunCatalog:
             event_stream_complete=complete,
             failure=entry.failure,
             terminal_run=entry.terminal_run,
+            result_available=(
+                entry.lifecycle == "Completed" and entry.result is not None
+            ),
         )

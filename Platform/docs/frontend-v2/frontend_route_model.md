@@ -5,15 +5,15 @@
 | Route | Owned resource/view | Mutation boundary |
 |---|---|---|
 | `/` | Overview | Read-only summaries and navigation |
-| `/environments` | Environment catalog | Starts explicit import/register workflows; registered items remain immutable |
+| `/environments` | Environment catalog | Read-only in P0-S4-07 |
 | `/environments/:assetId` | Environment detail | Read-only validated package metadata, axes, coverage and provenance |
-| `/scenarios` | Scenario catalog | Create a draft or choose a version |
-| `/scenarios/:scenarioId/edit` | Scenario Editor | Edits one draft: nodes, capabilities, geometry and environment binding |
-| `/experiments` | Experiment catalog | Create and validate experiment configurations |
-| `/experiments/:experimentId` | Experiment Editor/detail | Edits an eligible revision; binds an immutable scenario version |
-| `/runs` | Run catalog | Creates a Run from a validated experiment; filters lifecycle state |
-| `/runs/:runId` | Run Monitor | Read-only events/snapshots/progress, plus explicit supported commands |
-| `/results` | Result catalog/comparison | Selects completed or active Run projections for read-only comparison |
+| `/scenarios` | Scenario catalog | Read-only version catalog |
+| `/scenarios/:scenarioId/versions/:version` | Scenario detail | Read-only immutable version |
+| `/experiments` | Experiment catalog | Read-only version catalog |
+| `/experiments/:experimentId/versions/:version` | Experiment detail | Read-only detail and explicit Run creation |
+| `/runs` | Authoritative Run catalog | Read-only lifecycle/result availability |
+| `/runs/:runId` | Run Monitor | Read-only Run, SSE events and progress |
+| `/results` | Formal Result catalog | Completed Runs with atomically published results only |
 | `/results/:runId` | Result analysis | Read-only analysis for the named Run |
 
 `assetId`, `scenarioId`, `experimentId` and `runId` are domain identities, not
@@ -30,7 +30,11 @@ not-found state separately from transport failure.
 - Results may link to captured Environment, Scenario and Experiment versions,
   but do not edit those resources.
 
-## Legacy route disposition
+## Deferred editor routes and legacy disposition
+
+Scenario and Experiment editor routes are not registered in P0-S4-07. Future
+editor work must use explicit draft/publish semantics and cannot simulate a
+save in browser-only state.
 
 The legacy `/studio`, `/config`, `/monitor` and `/results` routes all rendered
 one large component. They are not aliases in the v2 model. Existing bookmarks

@@ -11,11 +11,11 @@
 
 ## Server-state direction
 
-TanStack Query is the preferred future server-state layer because the legacy
-frontend had page-specific `fetch` calls with no cache/invalidation model. This
-phase does not install it. Any eventual alternative must still provide stable
-query keys by resource ID/version, explicit invalidation after mutations,
-loading/error/not-found separation and request cancellation.
+TanStack Query is the P0-S4-07 server-state layer because the legacy frontend
+had page-specific `fetch` calls with no cache/invalidation model. Query keys
+include resource identity/version, and the Run catalog is invalidated after a
+successful Run creation. The typed API boundary preserves loading, protocol,
+transport and not-found outcomes separately.
 
 ## Draft policy
 
@@ -37,9 +37,11 @@ Zustand may be retained for small UI/draft/playback domains, but each domain
 uses a separate store and API. The legacy `studioRuntimeStore` mix of selected
 entities, run lifecycle, logs, timer, events and playback must not be migrated.
 
-SSE records are appended to a Run projection keyed by `RunId` and server event
-identity/cursor. The projection is disposable and recoverable from
-`GET /runs/:id/events` and snapshots; it is never a second source of truth.
+SSE records are appended to a Run projection keyed by `RunId` and the server
+`RunEventSequence`. Duplicate sequence values are ignored, a gap enters an
+explicit protocol-error state, and native `EventSource` reconnect behavior is
+used. The projection is disposable and recoverable from
+`GET /runs/:id/events`; it is never a second source of truth.
 
 ## Determinism and units
 

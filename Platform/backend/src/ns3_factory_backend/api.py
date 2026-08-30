@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict
 from .catalog import (
     BackendFailure,
     CatalogError,
+    FormalResultSnapshot,
     InMemoryRunCatalog,
     RunSnapshot,
 )
@@ -31,10 +32,13 @@ from .wire import (
     PositiveUIntDecimal,
     AcceptanceReport,
     FusionResult,
+    Int64Decimal,
     NodeResult,
+    OverallStatus,
     RunProjection,
     RunResult,
     StableId,
+    UIntDecimal,
 )
 
 
@@ -76,6 +80,20 @@ class RunResource(HttpModel):
     failure: FailureResource | None
 
 
+class RunSummaryResource(HttpModel):
+    run_id: StableId
+    experiment_id: StableId
+    experiment_version: PositiveUIntDecimal
+    scenario_id: StableId
+    scenario_version: PositiveUIntDecimal
+    environment_asset_id: str
+    environment_format_version: str
+    lifecycle: Literal["Created", "Running", "Completed", "Failed"]
+    event_stream_complete: bool | None
+    result_available: bool
+    failure: FailureResource | None
+
+
 class HealthResource(HttpModel):
     status: Literal["ok", "degraded"]
     backend_alive: Literal[True]
@@ -94,6 +112,19 @@ class RunResultResource(HttpModel):
     acceptance_report: AcceptanceReport | None
     fusion_results: list[FusionResult]
     nodes: list[NodeResult]
+
+
+class ResultSummaryResource(HttpModel):
+    run_id: StableId
+    experiment_id: StableId
+    experiment_version: PositiveUIntDecimal
+    scenario_id: StableId
+    scenario_version: PositiveUIntDecimal
+    environment_asset_id: str
+    environment_format_version: str
+    acceptance_overall: OverallStatus | None
+    simulation_duration_ns: Int64Decimal
+    fusion_result_count: UIntDecimal
 
 
 class ApiErrorResource(HttpModel):
@@ -162,6 +193,43 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
             if failure is not None
             else None
         ),
+    )
+
+
+def _run_summary(snapshot: RunSnapshot) -> RunSummaryResource:
+    failure = snapshot.failure
+    return RunSummaryResource(
+        run_id=snapshot.run_id,
+        experiment_id=snapshot.experiment_id,
+        experiment_version=snapshot.experiment_version,
+        scenario_id=snapshot.scenario_id,
+        scenario_version=snapshot.scenario_version,
+        environment_asset_id=snapshot.environment_asset_id,
+        environment_format_version=snapshot.environment_format_version,
+        lifecycle=snapshot.lifecycle,
+        event_stream_complete=snapshot.event_stream_complete,
+        result_available=snapshot.result_available,
+        failure=(
+            FailureResource(code=failure.code, message=failure.message)
+            if failure is not None
+            else None
+        ),
+    )
+
+
+def _result_summary(snapshot: FormalResultSnapshot) -> ResultSummaryResource:
+    report = snapshot.result.acceptance_report
+    return ResultSummaryResource(
+        run_id=snapshot.run.run_id,
+        experiment_id=snapshot.run.experiment_id,
+        experiment_version=snapshot.run.experiment_version,
+        scenario_id=snapshot.run.scenario_id,
+        scenario_version=snapshot.run.scenario_version,
+        environment_asset_id=snapshot.run.environment_asset_id,
+        environment_format_version=snapshot.run.environment_format_version,
+        acceptance_overall=report.overall if report is not None else None,
+        simulation_duration_ns=snapshot.result.projection.simulation_duration_ns,
+        fusion_result_count=str(len(snapshot.result.fusion_results)),
     )
 
 
@@ -319,6 +387,16 @@ def create_app(
     @app.get("/runs/{run_id}", response_model=RunResource)
     async def get_run(run_id: str) -> RunResource:
         return _run_resource(await catalog.get(run_id))
+
+    @app.get("/runs", response_model=list[RunSummaryResource])
+    async def list_runs() -> tuple[RunSummaryResource, ...]:
+        return tuple(_run_summary(item) for item in await catalog.list_runs())
+
+    @app.get("/results", response_model=list[ResultSummaryResource])
+    async def list_results() -> tuple[ResultSummaryResource, ...]:
+        return tuple(
+            _result_summary(item) for item in await catalog.list_results()
+        )
 
     @app.get("/runs/{run_id}/results", response_model=RunResultResource)
     async def get_results(run_id: str) -> RunResultResource:

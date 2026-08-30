@@ -36,7 +36,7 @@ Content-Type: application/json
 
 {
   "experiment_id": "...",
-  "experiment_version": 3
+  "experiment_version": "3"
 }
 ```
 
@@ -50,15 +50,18 @@ execute-and-stream response.
 ```text
 GET /runs/:id
 GET /runs/:id/events       -> text/event-stream (SSE)
-GET /runs/:id/snapshots
 GET /runs/:id/results
+GET /runs
+GET /results
 ```
 
-The Run resource is authoritative for lifecycle. SSE transports ordered Run
+The Run resource is authoritative for lifecycle and `GET /runs` is the
+authoritative catalog; browser session history is not. `GET /results` lists
+only Completed Runs with a formally published result. Both catalog endpoints
+return deterministic stable ordering. SSE transports ordered Run
 events and includes a stable event ID/cursor so reconnect and deduplication do
 not depend on arrival timing. Malformed or unknown records surface as protocol
-errors; they are not silently ignored. Snapshots and results are independently
-fetchable resources so a client can reconstruct a projection after reconnect.
+errors; they are not silently ignored. Results are independently fetchable.
 
 `GET /runs/:id/events` may stream current events and/or resume from an explicit
 cursor according to the eventual backend contract. It must not create a Run or
@@ -77,7 +80,8 @@ runtime semantics are approved.
 
 ## Error and compatibility requirements
 
-HTTP status and response error bodies must preserve a stable machine-readable
-code plus owned message. Unknown schema/format versions are rejected, not
-silently coerced. API versioning, authentication, pagination limits and SSE
-retention are still TBD and require separate review before implementation.
+HTTP status and response error bodies preserve a stable machine-readable code
+plus owned message. The frontend distinguishes NotFound, BackendBusy,
+RunNotReady, RunFailed, worker protocol failure and unavailable transport.
+Unknown schema/format versions are rejected, not silently coerced. API
+versioning, authentication, pagination limits and SSE retention remain TBD.

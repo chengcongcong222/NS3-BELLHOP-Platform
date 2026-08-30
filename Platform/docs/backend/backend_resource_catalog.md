@@ -32,6 +32,8 @@ or filename identity. An Environment is identified only by
 - `GET /scenarios/{scenario_id}/versions/{version}`
 - `GET /experiments`
 - `GET /experiments/{experiment_id}/versions/{version}`
+- `GET /runs`
+- `GET /results`
 
 Lists are sorted by ID and then version. They do not depend on filesystem or
 dictionary insertion order. Published Scenario and Experiment versions are
@@ -45,6 +47,14 @@ is resolved, and only then is the deterministic index made available to HTTP
 handlers. There is no partial catalog and no P0 hot reload. Newly supplied
 catalog content becomes visible only after a future explicit refresh design or
 a backend process restart.
+
+The two frontend-readiness catalogs are also process-local read models.
+`GET /runs` returns every known Run summary, including captured resources,
+lifecycle, event completeness, formal-result availability and owned failure.
+`GET /results` returns only Completed Runs with an atomically published formal
+Result, summarized by acceptance status, exact simulation duration and fusion
+result count. Both lists are sorted by RunId and neither relies on browser
+session history as an authority.
 
 ## Run resolution
 
