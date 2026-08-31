@@ -7,8 +7,11 @@ export interface RunProjectionState {
   latestSimulationTimeNs: DecimalString | null;
   transmissionCount: DecimalString;
   channelOutcomeCount: DecimalString;
+  channelSignalCount: DecimalString;
+  channelNoArrivalCount: DecimalString;
   receptionCount: DecimalString;
   cycleCommitCount: DecimalString;
+  timeline: readonly RunEventDto[];
 }
 
 export const emptyProjection: RunProjectionState = {
@@ -17,8 +20,11 @@ export const emptyProjection: RunProjectionState = {
   latestSimulationTimeNs: null,
   transmissionCount: "0",
   channelOutcomeCount: "0",
+  channelSignalCount: "0",
+  channelNoArrivalCount: "0",
   receptionCount: "0",
   cycleCommitCount: "0",
+  timeline: [],
 };
 
 type ProjectionListener = (projection: RunProjectionState) => void;
@@ -97,14 +103,23 @@ export class RunEventProjection {
         eventCount: (BigInt(this.state.eventCount) + 1n).toString(),
         latestSequence: event.lastEventId,
         latestSimulationTimeNs: parsed.trace.occurred_at_ns,
+        timeline: [...this.state.timeline, parsed],
       };
-      const field = {
-        Transmission: "transmissionCount",
-        ChannelOutcome: "channelOutcomeCount",
-        Reception: "receptionCount",
-        CycleCommit: "cycleCommitCount",
-      }[parsed.trace.kind] as keyof RunProjectionState;
-      next[field] = (BigInt(next[field] ?? "0") + 1n).toString();
+      if (parsed.trace.kind === "Transmission") {
+        next.transmissionCount = (BigInt(next.transmissionCount) + 1n).toString();
+      } else if (parsed.trace.kind === "ChannelOutcome") {
+        next.channelOutcomeCount = (BigInt(next.channelOutcomeCount) + 1n).toString();
+      } else if (parsed.trace.kind === "Reception") {
+        next.receptionCount = (BigInt(next.receptionCount) + 1n).toString();
+      } else {
+        next.cycleCommitCount = (BigInt(next.cycleCommitCount) + 1n).toString();
+      }
+      if (parsed.trace.kind === "ChannelOutcome") {
+        const outcomeField = parsed.trace.payload.outcome.type === "Signal"
+          ? "channelSignalCount"
+          : "channelNoArrivalCount";
+        next[outcomeField] = (BigInt(next[outcomeField]) + 1n).toString();
+      }
       this.state = next;
       this.onProjection(next);
     } catch {
@@ -128,14 +143,62 @@ function isRunEvent(value: unknown): value is RunEventDto {
   }
   if (typeof record.trace !== "object" || record.trace === null) return false;
   const trace = record.trace as Record<string, unknown>;
-  return (
-    typeof trace.occurred_at_ns === "string" &&
-    isInt64(trace.occurred_at_ns) &&
-    ["Transmission", "ChannelOutcome", "Reception", "CycleCommit"].includes(
-      String(trace.kind),
-    ) &&
-    typeof trace.payload === "object" &&
-    trace.payload !== null &&
-    !Array.isArray(trace.payload)
-  );
+  if (typeof trace.occurred_at_ns !== "string" || !isInt64(trace.occurred_at_ns)) {
+    return false;
+  }
+  if (!isObject(trace.payload)) return false;
+  if (trace.kind === "CycleCommit") return isCycleCommit(trace.payload);
+  if (trace.kind === "Transmission") return isTransmission(trace.payload);
+  if (trace.kind === "ChannelOutcome") return isChannelOutcome(trace.payload);
+  if (trace.kind === "Reception") return isReception(trace.payload);
+  return false;
+}
+
+const canonicalUnsigned = /^(0|[1-9][0-9]*)$/;
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const isUnsigned = (value: unknown): value is string =>
+  typeof value === "string" && canonicalUnsigned.test(value) && BigInt(value) <= (1n << 64n) - 1n;
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+function isCycleCommit(payload: Record<string, unknown>): boolean {
+  return isUnsigned(payload.cycle_id) &&
+    isUnsigned(payload.base_snapshot_version) &&
+    isUnsigned(payload.committed_snapshot_version) &&
+    typeof payload.committed_at_ns === "string" && isInt64(payload.committed_at_ns);
+}
+
+function isTransmission(payload: Record<string, unknown>): boolean {
+  if (!isUnsigned(payload.transmission_id) || !isUnsigned(payload.packet_id) ||
+      !isUnsigned(payload.sender_node_id) || !isObject(payload.target) ||
+      typeof payload.started_at_ns !== "string" || !isInt64(payload.started_at_ns) ||
+      typeof payload.ended_at_ns !== "string" || !isInt64(payload.ended_at_ns)) return false;
+  return payload.target.type === "Broadcast" ||
+    (payload.target.type === "Unicast" && isUnsigned(payload.target.node_id));
+}
+
+function isChannelOutcome(payload: Record<string, unknown>): boolean {
+  if (!isUnsigned(payload.transmission_id) || !isUnsigned(payload.receiver_node_id) ||
+      !isObject(payload.outcome)) return false;
+  if (payload.outcome.type === "NoArrival") return true;
+  return payload.outcome.type === "Signal" &&
+    typeof payload.outcome.first_arrival_delay_ns === "string" &&
+    isInt64(payload.outcome.first_arrival_delay_ns) &&
+    isFiniteNumber(payload.outcome.aggregate_transmission_loss_db) &&
+    isUnsigned(payload.outcome.path_count);
+}
+
+function isReception(payload: Record<string, unknown>): boolean {
+  if (!isUnsigned(payload.reception_id) || !isUnsigned(payload.transmission_id) ||
+      !isUnsigned(payload.packet_id) || !isUnsigned(payload.receiver_node_id) ||
+      !["NotDecoded", "Overheard", "LocalDelivery", "RelayEnqueue"].includes(String(payload.disposition))) {
+    return false;
+  }
+  if (payload.quality === null) return true;
+  return isObject(payload.quality) &&
+    isFiniteNumber(payload.quality.signal_to_noise_ratio_db) &&
+    isFiniteNumber(payload.quality.eb_n0_db) &&
+    isFiniteNumber(payload.quality.bit_error_rate) &&
+    ["Modeled", "Measured", "External"].includes(String(payload.quality.source));
 }

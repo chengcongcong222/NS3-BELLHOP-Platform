@@ -61,6 +61,7 @@ const run = ((value: unknown): value is RunDto =>
 const runSummary = ((value: unknown): value is RunSummaryDto =>
   isObject(value) &&
   run(value) &&
+  isString(value.catalog_sequence) &&
   typeof (value as unknown as Record<string, unknown>).result_available ===
     "boolean") as Validator<RunSummaryDto>;
 const result = ((value: unknown): value is ResultDto =>
@@ -70,6 +71,7 @@ const result = ((value: unknown): value is ResultDto =>
   isString(value.projection.simulation_duration_ns)) as Validator<ResultDto>;
 const resultSummary = ((value: unknown): value is ResultSummaryDto =>
   isObject(value) &&
+  isString(value.catalog_sequence) &&
   isString(value.run_id) &&
   isString(value.simulation_duration_ns) &&
   isString(value.fusion_result_count)) as Validator<ResultSummaryDto>;

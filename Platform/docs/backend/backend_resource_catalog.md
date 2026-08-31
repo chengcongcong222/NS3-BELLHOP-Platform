@@ -53,8 +53,11 @@ The two frontend-readiness catalogs are also process-local read models.
 lifecycle, event completeness, formal-result availability and owned failure.
 `GET /results` returns only Completed Runs with an atomically published formal
 Result, summarized by acceptance status, exact simulation duration and fusion
-result count. Both lists are sorted by RunId and neither relies on browser
-session history as an authority.
+result count. Both lists are ordered by the backend-assigned, canonical decimal
+`catalog_sequence`, which records process-local Run creation order and lets a
+client identify the latest known Run/Result without interpreting a random
+RunId. This read-model ordinal does not enter worker input, simulation time or
+runtime causality. Neither list relies on browser session history as authority.
 
 ## Run resolution
 

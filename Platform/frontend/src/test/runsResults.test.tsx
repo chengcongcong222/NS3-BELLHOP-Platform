@@ -1,6 +1,8 @@
 import { act, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { experiment, result, resultSummary, run, runSummary } from "./fixtures";
+import { acceptance4Result, acceptance4Run } from "./acceptance4Golden";
 import { installApi, renderRoute } from "./render";
 
 describe("authoritative Run and Result views", () => {
@@ -45,7 +47,12 @@ describe("authoritative Run and Result views", () => {
           trace: {
             occurred_at_ns: "1",
             kind: "CycleCommit",
-            payload: {},
+            payload: {
+              cycle_id: "0",
+              base_snapshot_version: "0",
+              committed_snapshot_version: "1",
+              committed_at_ns: "1",
+            },
           },
         }),
       } as MessageEvent<string>);
@@ -57,6 +64,43 @@ describe("authoritative Run and Result views", () => {
     expect(screen.getByText("后端连接不可用")).toBeTruthy();
   });
 
+  it("renders Signal and NoArrival from formal ChannelOutcome events", async () => {
+    class ControlledEventSource {
+      static current: ControlledEventSource | null = null;
+      listener: ((event: MessageEvent<string>) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      constructor(_url: string) { ControlledEventSource.current = this; }
+      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+      close() {}
+      emit(sequence: string, trace: object) {
+        this.listener?.({ lastEventId: sequence, data: JSON.stringify({ run_id: run.run_id, sequence, trace }) } as MessageEvent<string>);
+      }
+    }
+    vi.stubGlobal("EventSource", ControlledEventSource);
+    installApi({ [`/runs/${run.run_id}`]: { body: { ...run, lifecycle: "Running", event_stream_complete: false } } });
+    renderRoute(`/runs/${run.run_id}`);
+    await screen.findByText("Running");
+    await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
+    act(() => {
+      ControlledEventSource.current?.emit("1", {
+        occurred_at_ns: "20",
+        kind: "Transmission",
+        payload: { transmission_id: "7", packet_id: "3", sender_node_id: "0", target: { type: "Broadcast" }, started_at_ns: "20", ended_at_ns: "30" },
+      });
+      ControlledEventSource.current?.emit("2", {
+        occurred_at_ns: "10",
+        kind: "ChannelOutcome",
+        payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } },
+      });
+    });
+    expect(screen.getByText("Formal NoArrival trace")).toBeTruthy();
+    expect(screen.getByText("Tx 7 → N2")).toBeTruthy();
+    expect(screen.getAllByText("0.00000001 s (10 ns)")).toHaveLength(2);
+    const sequenceCells = screen.getAllByRole("cell").filter((cell) => ["1", "2"].includes(cell.textContent ?? ""));
+    expect(sequenceCells[0].textContent).toBe("1");
+    expect(sequenceCells.some((cell) => cell.textContent === "2")).toBe(true);
+  });
+
   it("renders Result catalog and PASS detail without losing large integers", async () => {
     const large = "900719925474099312345";
     installApi({
@@ -65,12 +109,12 @@ describe("authoritative Run and Result views", () => {
       [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
     });
     const catalog = renderRoute("/results");
-    expect(await screen.findByText(`${large} ns`)).toBeTruthy();
+    expect(await screen.findByText(`900719925474.099312345 s (${large} ns)`)).toBeTruthy();
     catalog.unmount();
     renderRoute(`/results/${result.run_id}`);
     expect((await screen.findAllByText("Pass")).length).toBeGreaterThan(0);
-    expect(screen.getByText(`${large} ns`)).toBeTruthy();
-    expect(await screen.findByText(/不是硬件测量/)).toBeTruthy();
+    expect(screen.getByText(`900719925474.099312345 s (${large} ns)`)).toBeTruthy();
+    expect(await screen.findByText(/不是硬件实测/)).toBeTruthy();
   });
 
   it("renders acceptance Fail and BER NotEvaluated distinctly", async () => {
@@ -82,6 +126,7 @@ describe("authoritative Run and Result views", () => {
         bit_error_rate: "NotEvaluated",
         maximum_ber: null,
         mean_ber: null,
+        ber_reason: "No target Reception contained BER quality evidence.",
       },
     };
     installApi({
@@ -89,9 +134,10 @@ describe("authoritative Run and Result views", () => {
       [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: { ...experiment, phy: { ...experiment.phy, rx_quality_mode: "None" } } },
     });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("Fail")).toBeTruthy();
+    expect((await screen.findAllByText("Fail")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("NotEvaluated").length).toBeGreaterThan(0);
-    expect(screen.getByText(/未提供 BER evidence/)).toBeTruthy();
+    expect(screen.getByText(/未配置 BER quality model/)).toBeTruthy();
+    expect(screen.getByText("No target Reception contained BER quality evidence.")).toBeTruthy();
   });
 
   it("renders contradictory backend acceptance verdicts without recomputation", async () => {
@@ -123,10 +169,58 @@ describe("authoritative Run and Result views", () => {
       },
     });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("1 bit/s")).toBeTruthy();
-    expect(screen.getByText("0.9 / 0.8")).toBeTruthy();
-    expect(screen.getByText("999999999999 ns")).toBeTruthy();
+    expect((await screen.findAllByText("1 bit/s")).length).toBeGreaterThan(0);
+    expect(screen.getByText(/max 0.9（无量纲） · mean 0.8/)).toBeTruthy();
+    expect(screen.getAllByText("999.999999999 s (999999999999 ns)")).toHaveLength(2);
     expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
     expect(screen.queryByText("Fail")).toBeNull();
+  });
+
+  it("renders the fixed Acceptance4Node golden screen and resource traceability", async () => {
+    installApi({
+      [`/runs/${acceptance4Result.run_id}/results`]: { body: acceptance4Result },
+      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
+    });
+    renderRoute(`/results/${acceptance4Result.run_id}`);
+    expect(await screen.findByText("Acceptance4Node · 第三方验收基准")).toBeTruthy();
+    expect(screen.getAllByText("4 nodes").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("60 bit/s").length).toBeGreaterThan(0);
+    expect(screen.getByText("5 points")).toBeTruthy();
+    expect(screen.getAllByText("Pass").length).toBeGreaterThanOrEqual(7);
+    expect(screen.getAllByText("120 s (120000000000 ns)").length).toBeGreaterThan(0);
+    expect(screen.getByText(/仿真模型 BER.*不是硬件实测/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: acceptance4Result.run_id }).getAttribute("href")).toBe(`/runs/${acceptance4Result.run_id}`);
+    expect(screen.getByRole("link", { name: new RegExp(experiment.experiment_id) })).toBeTruthy();
+    expect(document.body.textContent).not.toContain("NotDecoded");
+  });
+
+  it("keeps Extended6Node Result outside the Acceptance4Node baseline", async () => {
+    const extendedExperiment = {
+      ...experiment,
+      fusion: { ...experiment.fusion, acceptance_profile: "Extended6Node" },
+    };
+    installApi({
+      [`/runs/${result.run_id}/results`]: { body: { ...result, acceptance_report: null } },
+      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: extendedExperiment },
+    });
+    renderRoute(`/results/${result.run_id}`);
+    expect(await screen.findByText("Extended6Node · 扩展示例（非第三方验收）")).toBeTruthy();
+    expect(screen.getByText("Extended6Node 仅为扩展示例，不混入 Acceptance4Node 第三方验收要求。")).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "Requirement" })).toBeNull();
+  });
+
+  it("supports the complete Experiment to Run to Result to Acceptance demo path", async () => {
+    installApi({
+      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
+      "POST /runs": { body: acceptance4Run },
+      [`/runs/${acceptance4Run.run_id}`]: { body: acceptance4Run },
+      [`/runs/${acceptance4Run.run_id}/results`]: { body: acceptance4Result },
+    });
+    renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
+    await userEvent.click(await screen.findByRole("button", { name: "Run this experiment" }));
+    expect(await screen.findByText(`Run Monitor · ${acceptance4Run.run_id}`)).toBeTruthy();
+    await userEvent.click(screen.getByRole("link", { name: "查看正式 Result 与 Acceptance" }));
+    expect(await screen.findByText("Acceptance evidence")).toBeTruthy();
+    expect(screen.getByText("Frontend does not recompute this verdict")).toBeTruthy();
   });
 });

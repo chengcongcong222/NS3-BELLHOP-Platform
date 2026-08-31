@@ -1,6 +1,6 @@
 # ADR-0001：Runtime Foundation Decisions
 
-- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01、P0-S4-02、P0-S4-03、P0-S4-04、P0-S4-05、P0-S4-06、P0-S4-07 CLOSED
+- 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01 至 P0-S4-08 CLOSED；P0-S4 CLOSED
 - 日期：2026-08-17
 - 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
@@ -743,6 +743,30 @@ complex acoustic animation 或 advanced comparison。ns-3 3.47 只作为固定�
 P0-S4-07 至此 CLOSED：SSE projection/lifecycle authority 分离、SSE failure non-authority、backend
 acceptance verdict 原样呈现且不在浏览器重算、typed API boundary、offline dependency closure 与完整
 resource/Run/Result route 已通过 frontend、Backend Python 及 C++ OFF/ON 门禁冻结。
+
+### 2.53 Acceptance demo and read-only visualization boundary
+
+P0-S4-08 只扩展 application/backend read model 与 Frontend visualization，不修改 M1-M8、worker
+command、runtime causality 或正式 acceptance 计算。Backend Run/Result summaries 增加 process-local
+`catalog_sequence` canonical decimal string，按 Run 创建顺序发布；该 ordinal 只用于目录“最近一次”
+投影，不进入仿真时间、worker input 或正式 Result。
+
+Scenario topology 只画 Scenario DTO 提供的 initial position/velocity、fusion-center identity 与
+Environment binding，不补画实时轨迹或 DTO 未提供的 protocol role。Run lifecycle 与 event completeness
+只来自 Run resource；SSE 按 RunEventSequence 原序投影 CycleCommit、Transmission、ChannelOutcome 与
+Reception，transport failure 不改变 Run 状态。Channel Signal/NoArrival 只按正式 ChannelOutcome trace
+分别计数和展示；Result DTO 未提供的 aggregate 禁止由浏览器推导。
+
+Acceptance4Node 是第三方验收基准，Extended6Node 必须显示为扩展示例。Result 页 requirement、actual、
+evidence/source、reason 与 verdict 分栏展示，但所有 Pass/Fail/NotEvaluated/overall 均逐字来自 Backend
+AcceptanceReport。Modeled BER 明确为仿真模型证据而非硬件实测；Measured/External 仅在正式 DTO 提供时
+可显示。Fusion 图只使用 FusionResult estimate/time/count，不根据 target truth 或 fixture 补造 bearing
+observation。所有 ns/count/ID 继续以 string 保存，并仅通过 BigInt 做精确格式化。
+
+P0-S4-08 至此 CLOSED：ns-3 display provenance 已统一归属正式 product metadata，Run/SSE 与
+Acceptance authority gate、初始 topology/FusionResult 数据边界、Acceptance4Node/Extended6Node
+语义隔离及全量 Frontend、Backend、OFF/ON 门禁均已通过。由此 P0-S4 Application Boundary 正式
+CLOSED；后续交付与验收证据封装进入 P0-S5，不回改 P0-S4 的 simulation causality。
 
 ## 3. 影响
 

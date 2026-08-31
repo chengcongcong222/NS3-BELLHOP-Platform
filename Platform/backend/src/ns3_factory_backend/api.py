@@ -81,6 +81,7 @@ class RunResource(HttpModel):
 
 
 class RunSummaryResource(HttpModel):
+    catalog_sequence: PositiveUIntDecimal
     run_id: StableId
     experiment_id: StableId
     experiment_version: PositiveUIntDecimal
@@ -115,6 +116,7 @@ class RunResultResource(HttpModel):
 
 
 class ResultSummaryResource(HttpModel):
+    catalog_sequence: PositiveUIntDecimal
     run_id: StableId
     experiment_id: StableId
     experiment_version: PositiveUIntDecimal
@@ -199,6 +201,7 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
 def _run_summary(snapshot: RunSnapshot) -> RunSummaryResource:
     failure = snapshot.failure
     return RunSummaryResource(
+        catalog_sequence=str(snapshot.catalog_sequence),
         run_id=snapshot.run_id,
         experiment_id=snapshot.experiment_id,
         experiment_version=snapshot.experiment_version,
@@ -220,6 +223,7 @@ def _run_summary(snapshot: RunSnapshot) -> RunSummaryResource:
 def _result_summary(snapshot: FormalResultSnapshot) -> ResultSummaryResource:
     report = snapshot.result.acceptance_report
     return ResultSummaryResource(
+        catalog_sequence=str(snapshot.run.catalog_sequence),
         run_id=snapshot.run.run_id,
         experiment_id=snapshot.run.experiment_id,
         experiment_version=snapshot.run.experiment_version,

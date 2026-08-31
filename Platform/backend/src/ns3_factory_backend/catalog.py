@@ -40,6 +40,7 @@ class BackendFailure:
 
 @dataclass(frozen=True)
 class RunSnapshot:
+    catalog_sequence: int
     run_id: str
     experiment_id: str
     experiment_version: str
@@ -63,6 +64,7 @@ class FormalResultSnapshot:
 @dataclass
 class _RunEntry:
     command: StartRunCommand
+    catalog_sequence: int
     lifecycle: str = "Created"
     events: list[WorkerRunEvent] = field(default_factory=list)
     result: RunResult | None = None
@@ -91,6 +93,7 @@ class InMemoryRunCatalog:
             lambda: f"run-{uuid.uuid4().hex}"
         )
         self._entries: dict[str, _RunEntry] = {}
+        self._next_catalog_sequence = 1
         self._active_run_id: str | None = None
         self._condition = asyncio.Condition()
 
@@ -107,7 +110,11 @@ class InMemoryRunCatalog:
             if run_id in self._entries:
                 raise CatalogError("AlreadyExists", "Generated RunId already exists.")
             command = command_factory(run_id)
-            entry = _RunEntry(command=command)
+            entry = _RunEntry(
+                command=command,
+                catalog_sequence=self._next_catalog_sequence,
+            )
+            self._next_catalog_sequence += 1
             self._entries[run_id] = entry
             self._active_run_id = run_id
             created = self._snapshot(entry)
@@ -134,14 +141,14 @@ class InMemoryRunCatalog:
         async with self._condition:
             return tuple(
                 self._snapshot(entry)
-                for run_id, entry in sorted(self._entries.items())
+                for entry in self._entries.values()
             )
 
     async def list_results(self) -> tuple[FormalResultSnapshot, ...]:
         async with self._condition:
             return tuple(
                 FormalResultSnapshot(self._snapshot(entry), entry.result)
-                for run_id, entry in sorted(self._entries.items())
+                for entry in self._entries.values()
                 if entry.lifecycle == "Completed" and entry.result is not None
             )
 
@@ -280,6 +287,7 @@ class InMemoryRunCatalog:
             else None
         )
         return RunSnapshot(
+            catalog_sequence=entry.catalog_sequence,
             run_id=entry.command.run_id,
             experiment_id=entry.command.preset.experiment_id,
             experiment_version=entry.command.preset.definition_version,

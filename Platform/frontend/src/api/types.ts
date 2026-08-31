@@ -118,6 +118,7 @@ export interface RunDto {
 }
 
 export interface RunSummaryDto {
+  catalog_sequence: DecimalString;
   run_id: string;
   experiment_id: string;
   experiment_version: DecimalString;
@@ -192,6 +193,7 @@ export interface ResultDto {
 }
 
 export interface ResultSummaryDto {
+  catalog_sequence: DecimalString;
   run_id: string;
   experiment_id: string;
   experiment_version: DecimalString;
@@ -204,12 +206,75 @@ export interface ResultSummaryDto {
   fusion_result_count: DecimalString;
 }
 
+export interface CycleCommitTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "CycleCommit";
+  payload: {
+    cycle_id: DecimalString;
+    base_snapshot_version: DecimalString;
+    committed_snapshot_version: DecimalString;
+    committed_at_ns: DecimalString;
+  };
+}
+
+export interface TransmissionTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "Transmission";
+  payload: {
+    transmission_id: DecimalString;
+    packet_id: DecimalString;
+    sender_node_id: DecimalString;
+    target:
+      | { type: "Unicast"; node_id: DecimalString }
+      | { type: "Broadcast" };
+    started_at_ns: DecimalString;
+    ended_at_ns: DecimalString;
+  };
+}
+
+export interface ChannelOutcomeTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "ChannelOutcome";
+  payload: {
+    transmission_id: DecimalString;
+    receiver_node_id: DecimalString;
+    outcome:
+      | {
+          type: "Signal";
+          first_arrival_delay_ns: DecimalString;
+          aggregate_transmission_loss_db: number;
+          path_count: DecimalString;
+        }
+      | { type: "NoArrival" };
+  };
+}
+
+export interface ReceptionTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "Reception";
+  payload: {
+    reception_id: DecimalString;
+    transmission_id: DecimalString;
+    packet_id: DecimalString;
+    receiver_node_id: DecimalString;
+    disposition: "NotDecoded" | "Overheard" | "LocalDelivery" | "RelayEnqueue";
+    quality: {
+      signal_to_noise_ratio_db: number;
+      eb_n0_db: number;
+      bit_error_rate: number;
+      source: "Modeled" | "Measured" | "External";
+    } | null;
+  };
+}
+
+export type TraceEventDto =
+  | CycleCommitTraceDto
+  | TransmissionTraceDto
+  | ChannelOutcomeTraceDto
+  | ReceptionTraceDto;
+
 export interface RunEventDto {
   run_id: string;
   sequence: DecimalString;
-  trace: {
-    occurred_at_ns: DecimalString;
-    kind: "Transmission" | "ChannelOutcome" | "Reception" | "CycleCommit";
-    payload: unknown;
-  };
+  trace: TraceEventDto;
 }

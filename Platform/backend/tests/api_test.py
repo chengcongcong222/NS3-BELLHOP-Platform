@@ -361,7 +361,7 @@ def test_health_and_restart_semantics_are_explicit() -> None:
     asyncio.run(run())
 
 
-def test_run_and_result_catalogs_are_authoritative_and_stably_sorted() -> None:
+def test_run_and_result_catalogs_are_authoritative_and_creation_ordered() -> None:
     async def run() -> None:
         ids = iter(["z-run", "m-run", "a-run"])
         gateway = SequencedTerminalGateway(
@@ -384,9 +384,14 @@ def test_run_and_result_catalogs_are_authoritative_and_stably_sorted() -> None:
             runs = await client.get("/runs")
             assert runs.status_code == 200
             assert [item["run_id"] for item in runs.json()] == [
-                "a-run",
-                "m-run",
                 "z-run",
+                "m-run",
+                "a-run",
+            ]
+            assert [item["catalog_sequence"] for item in runs.json()] == [
+                "1",
+                "2",
+                "3",
             ]
             assert [item["result_available"] for item in runs.json()] == [
                 True,
@@ -398,12 +403,16 @@ def test_run_and_result_catalogs_are_authoritative_and_stably_sorted() -> None:
             results = await client.get("/results")
             assert results.status_code == 200
             assert [item["run_id"] for item in results.json()] == [
-                "a-run",
                 "z-run",
+                "a-run",
+            ]
+            assert [item["catalog_sequence"] for item in results.json()] == [
+                "1",
+                "3",
             ]
             assert [item["acceptance_overall"] for item in results.json()] == [
-                "Fail",
                 "Pass",
+                "Fail",
             ]
             assert all(item["simulation_duration_ns"] == "1" for item in results.json())
             assert all(item["fusion_result_count"] == "0" for item in results.json())

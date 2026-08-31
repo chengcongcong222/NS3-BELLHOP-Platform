@@ -1,6 +1,7 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { ApiFailure } from "../api/client";
+import { PRODUCT_METADATA } from "../productMetadata";
 
 export function AppShell({ children }: PropsWithChildren) {
   const links = [
@@ -15,10 +16,10 @@ export function AppShell({ children }: PropsWithChildren) {
     <div className="app-shell">
       <header>
         <div>
-          <strong>NS3-BELLHOP Platform</strong>
+          <strong>{PRODUCT_METADATA.platformName}</strong>
           <span>水声网络数字孪生</span>
         </div>
-        <div className="engine">Simulation Engine: ns-3 3.47</div>
+        <div className="engine">Simulation Engine: {PRODUCT_METADATA.simulationEngineDisplay}</div>
       </header>
       <nav aria-label="主导航">
         {links.map(([to, label]) => (
@@ -28,7 +29,7 @@ export function AppShell({ children }: PropsWithChildren) {
         ))}
       </nav>
       <main>{children}</main>
-      <footer>ns-3 为平台唯一仿真时钟和事件调度器</footer>
+      <footer>{PRODUCT_METADATA.footerAuthority}</footer>
     </div>
   );
 }

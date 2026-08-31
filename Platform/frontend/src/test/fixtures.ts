@@ -19,6 +19,7 @@ export const experiment = experimentFixture as ExperimentDto;
 export const run = runFixture as RunDto;
 export const result = resultFixture as ResultDto;
 export const runSummary: RunSummaryDto = {
+  catalog_sequence: "1",
   run_id: run.run_id,
   experiment_id: run.experiment_id,
   experiment_version: run.experiment_version,
@@ -32,6 +33,7 @@ export const runSummary: RunSummaryDto = {
   failure: null,
 };
 export const resultSummary: ResultSummaryDto = {
+  catalog_sequence: "1",
   run_id: result.run_id,
   experiment_id: result.experiment_id,
   experiment_version: result.experiment_version,

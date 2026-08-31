@@ -8,9 +8,33 @@ class Source implements EventSourceLike {
   addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
   close() { this.closed = true; }
   emit(sequence: string, kind = "Transmission", time = sequence) {
+    const payload = kind === "Transmission" ? {
+      transmission_id: sequence,
+      packet_id: "1",
+      sender_node_id: "0",
+      target: { type: "Broadcast" },
+      started_at_ns: time,
+      ended_at_ns: time,
+    } : kind === "ChannelOutcome" ? {
+      transmission_id: "1",
+      receiver_node_id: "2",
+      outcome: { type: "NoArrival" },
+    } : kind === "Reception" ? {
+      reception_id: sequence,
+      transmission_id: "1",
+      packet_id: "1",
+      receiver_node_id: "2",
+      disposition: "LocalDelivery",
+      quality: null,
+    } : {
+      cycle_id: sequence,
+      base_snapshot_version: "0",
+      committed_snapshot_version: "1",
+      committed_at_ns: time,
+    };
     this.listener?.({
       lastEventId: sequence,
-      data: JSON.stringify({ run_id: "run", sequence, trace: { occurred_at_ns: time, kind, payload: {} } }),
+      data: JSON.stringify({ run_id: "run", sequence, trace: { occurred_at_ns: time, kind, payload } }),
     } as MessageEvent<string>);
   }
 }
@@ -48,6 +72,20 @@ describe("RunEventSequence projection", () => {
     source.emit("2");
     expect(source.closed).toBe(true);
     expect(failure.mock.calls[0][0].kind).toBe("ProtocolFailure");
+  });
+
+  it("keeps timeline in RunEventSequence order and projects NoArrival explicitly", () => {
+    const source = new Source();
+    const projections = vi.fn();
+    const stream = new RunEventProjection("/events", projections, vi.fn(), () => source);
+    stream.connect();
+    source.emit("1", "Transmission", "9007199254740991");
+    source.emit("2", "ChannelOutcome", "9007199254740990");
+    const state = projections.mock.calls.at(-1)?.[0];
+    expect(state.timeline.map((event: { sequence: string }) => event.sequence)).toEqual(["1", "2"]);
+    expect(state.latestSimulationTimeNs).toBe("9007199254740990");
+    expect(state.channelSignalCount).toBe("0");
+    expect(state.channelNoArrivalCount).toBe("1");
   });
 
   it("rejects malformed event payloads and out-of-range simulation time", () => {

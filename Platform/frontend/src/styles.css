@@ -54,11 +54,32 @@ td { font-size: 0.87rem; }
 .status-running { color: #1e5b84; border-color: #8eb5cf; background: #eff7fc; }
 .version-row { display: grid; gap: 0.2rem; padding: 0.55rem 0; border-top: 1px solid #e7edef; }
 .version-row span { color: #6c7e84; font-size: 0.8rem; }
+.action-panel, .profile-banner { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.action-panel p { margin: 0.35rem 0 0; color: #647980; }
+.profile-banner { margin-bottom: 1rem; padding: 0.8rem 1rem; color: #294b55; background: #eef4f5; border-left: 4px solid #d3a936; }
+.profile-banner span { color: #60757c; font-size: 0.82rem; }
+.topology-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(13rem, 1fr); gap: 1rem; align-items: stretch; }
+.topology-plot, .fusion-plot { width: 100%; min-width: 520px; background: #fbfdfd; }
+.plot-frame { fill: #fbfdfd; stroke: #cedadd; }
+.plot-axis { stroke: #9db0b5; stroke-width: 1; }
+.plot-label, .node-label { fill: #49636b; font: 12px ui-monospace, monospace; }
+.node-fusion { fill: #d3a936; stroke: #755f1b; stroke-width: 2; }
+.node-participant { fill: #4c8290; stroke: #1d5260; stroke-width: 2; }
+.node-motion { fill: none; stroke: #a3453d; stroke-width: 2; }
+.fusion-estimate { fill: #075e73; stroke: white; stroke-width: 2; }
+.topology-legend { display: grid; align-content: center; gap: 0.75rem; color: #48616a; }
+.topology-legend span { display: flex; align-items: center; gap: 0.45rem; }
+.topology-legend i { width: 0.8rem; height: 0.8rem; display: inline-block; border-radius: 50%; }
+.legend-fusion { background: #d3a936; }
+.legend-node { background: #4c8290; }
+.topology-legend small, .data-boundary { color: #6c7e84; line-height: 1.5; }
+.data-boundary { padding-top: 0.8rem; border-top: 1px solid #e2e9eb; font-size: 0.78rem; }
 
 @media (max-width: 760px) {
   header, .page-header { align-items: flex-start; flex-direction: column; }
   .page-header > p { text-align: left; }
-  .card-grid, .two-column, .inline-fields { grid-template-columns: 1fr; }
+  .card-grid, .two-column, .inline-fields, .topology-layout { grid-template-columns: 1fr; }
+  .action-panel, .profile-banner { align-items: flex-start; flex-direction: column; }
   main { width: min(100% - 1rem, 1240px); }
   header, nav, footer { padding-left: 1rem; padding-right: 1rem; }
 }
