@@ -68,7 +68,11 @@ class BackendSettings:
     source_revision: str = "unavailable"
     build_configuration: str = "ns3-on"
     platform_version: str = "0.1.0"
-    frontend_release: str = "p0-s5-02"
+    frontend_release: str = "p0-s5-03"
+    release_id: str = "P0-S5-03"
+    build_target: str = "linux-x86_64"
+    reference_environment_asset_id: str = "reference-shallow-water-v1"
+    reference_environment_checksum: str = "fb64e543f9042c52"
     frontend_origin: str = "http://127.0.0.1:4173"
 
 
@@ -332,6 +336,10 @@ def create_app(
         build_configuration=settings.build_configuration,
         platform_version=settings.platform_version,
         frontend_release=settings.frontend_release,
+        release_id=settings.release_id,
+        build_target=settings.build_target,
+        reference_environment_asset_id=settings.reference_environment_asset_id,
+        reference_environment_checksum=settings.reference_environment_checksum,
     )
     run_manifests: dict[str, RunManifest] = {}
 

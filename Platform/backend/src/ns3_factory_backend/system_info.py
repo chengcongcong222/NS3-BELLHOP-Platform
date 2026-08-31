@@ -33,6 +33,10 @@ class SystemInfo(MetadataModel):
     platform_name: str
     platform_version: str
     product_baseline: str
+    release_id: str
+    build_target: str
+    reference_environment_asset_id: str
+    reference_environment_checksum: str
     build: BuildMetadata
     simulation: SimulationMetadata
     interfaces: InterfaceMetadata
@@ -45,11 +49,19 @@ def make_system_info(
     build_configuration: str,
     platform_version: str,
     frontend_release: str,
+    release_id: str,
+    build_target: str,
+    reference_environment_asset_id: str,
+    reference_environment_checksum: str,
 ) -> SystemInfo:
     return SystemInfo(
         platform_name="NS3-BELLHOP Platform",
         platform_version=platform_version,
-        product_baseline="P0-S5-02",
+        product_baseline="P0-S5-03",
+        release_id=release_id,
+        build_target=build_target,
+        reference_environment_asset_id=reference_environment_asset_id,
+        reference_environment_checksum=reference_environment_checksum,
         build=BuildMetadata(
             source_revision=source_revision,
             configuration=build_configuration,

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ns3-bellhop-platform:release-manifest:1",
+  "title": "NS3-BELLHOP Platform ReleaseManifest",
+  "type": "object",
+  "required": ["schema_version", "release_id", "source_revision", "build_target", "reference_environment", "acceptance_baseline"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "release_id": {"const": "P0-S5-03"},
+    "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "build_target": {"const": "linux-x86_64"},
+    "reference_environment": {"type": "object"},
+    "acceptance_baseline": {"type": "object"}
+  },
+  "additionalProperties": true
+}

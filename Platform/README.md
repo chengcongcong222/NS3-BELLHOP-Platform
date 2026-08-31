@@ -59,3 +59,24 @@ See [acceptance_baseline.md](docs/acceptance/acceptance_baseline.md),
 [ReferenceShallowWaterV1](docs/environment/reference_shallow_water_v1.md),
 [acceptance_evidence.md](docs/delivery/acceptance_evidence.md), and
 [BUILDING.md](BUILDING.md).
+
+## Formal offline release bundle
+
+P0-S5-03 is built only from a clean committed revision. The canonical builder
+performs an ns-3 ON Release build and test, builds the frontend from the
+repository-supplied npm cache, assembles the locked Python wheelhouse and
+reference environment, audits binary dependencies, and emits a deterministic
+archive plus SHA-256 sidecar:
+
+```sh
+python3 Platform/release/build_release.py \
+  --ns3-prefix "$HOME/.local/ns3/3.47" \
+  --work-dir /path/to/new-release-work \
+  --output-dir /path/to/new-release-output
+```
+
+The archive is self-contained except for its documented Linux x86_64,
+CPython 3.12, and external ns-3.47 runtime prerequisites. It does not fetch
+dependencies at build or runtime. See
+[release_reproduction.md](docs/release/release_reproduction.md) for the
+reproduction and acceptance procedure.

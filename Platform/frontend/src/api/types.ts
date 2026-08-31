@@ -211,6 +211,10 @@ export interface SystemInfoDto {
   platform_name: string;
   platform_version: string;
   product_baseline: string;
+  release_id: string;
+  build_target: string;
+  reference_environment_asset_id: string;
+  reference_environment_checksum: string;
   build: { source_revision: string; configuration: string; cxx_standard: string };
   simulation: { engine: string; version: string; time_authority: string; scheduler_authority: string; scheduling_gateway: string };
   interfaces: { api_schema_version: string; worker_wire_schema_version: string; acceptance_evidence_schema_version: string; frontend_release: string };

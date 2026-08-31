@@ -36,7 +36,17 @@ app = create_app(
         ),
         platform_version=os.environ.get("PLATFORM_VERSION", "0.1.0"),
         frontend_release=os.environ.get(
-            "PLATFORM_FRONTEND_RELEASE", "p0-s5-02"
+            "PLATFORM_FRONTEND_RELEASE", "p0-s5-03"
+        ),
+        release_id=os.environ.get("PLATFORM_RELEASE_ID", "P0-S5-03"),
+        build_target=os.environ.get("PLATFORM_BUILD_TARGET", "linux-x86_64"),
+        reference_environment_asset_id=os.environ.get(
+            "PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ID",
+            "reference-shallow-water-v1",
+        ),
+        reference_environment_checksum=os.environ.get(
+            "PLATFORM_REFERENCE_ENVIRONMENT_CHECKSUM",
+            "fb64e543f9042c52",
         ),
         frontend_origin=os.environ.get(
             "PLATFORM_FRONTEND_ORIGIN", "http://127.0.0.1:4173"

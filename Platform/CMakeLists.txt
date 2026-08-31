@@ -45,6 +45,7 @@ add_subdirectory(assembly)
 add_subdirectory(application)
 add_subdirectory(worker)
 add_subdirectory(backend)
+add_subdirectory(release)
 add_subdirectory(observability)
 add_subdirectory(algorithms)
 

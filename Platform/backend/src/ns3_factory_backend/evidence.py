@@ -176,6 +176,7 @@ def render_evidence_text(bundle: AcceptanceEvidenceBundle) -> str:
         "NS3-BELLHOP Acceptance Evidence Bundle",
         f"Run: {bundle.run.run_id}",
         f"Baseline: {bundle.baseline.baseline_id} v{bundle.baseline.baseline_version}",
+        f"Release: {bundle.manifest.system.release_id}",
         f"Source revision: {bundle.manifest.system.build.source_revision}",
         f"Engine: {bundle.manifest.system.simulation.engine} {bundle.manifest.system.simulation.version}",
         f"Overall: {report.overall}",
