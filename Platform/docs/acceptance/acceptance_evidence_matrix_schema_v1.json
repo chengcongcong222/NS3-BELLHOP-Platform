@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ns3-bellhop-platform:acceptance-evidence-matrix:1",
+  "title": "Acceptance Evidence Matrix",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "baseline",
+    "release",
+    "policies",
+    "hard_requirements",
+    "golden_run",
+    "evidence_hierarchy",
+    "repository_targets"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "baseline": {
+      "type": "object",
+      "required": ["baseline_id", "baseline_version", "authority"],
+      "properties": {
+        "baseline_id": {"const": "Acceptance4Node"},
+        "baseline_version": {"type": "string"},
+        "authority": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "release": {"type": "object"},
+    "policies": {"type": "object"},
+    "hard_requirements": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["id", "requirement", "current_actual", "verdict_path", "actual_paths", "ui_location", "backend_source", "test_references", "evidence_type", "limitation"],
+        "additionalProperties": false
+      }
+    },
+    "golden_run": {"type": "object"},
+    "evidence_hierarchy": {"type": "array", "minItems": 5, "maxItems": 5},
+    "repository_targets": {"type": "array", "minItems": 1}
+  },
+  "additionalProperties": false
+}

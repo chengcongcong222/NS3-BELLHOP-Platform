@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "baseline_id": "Acceptance4Node",
+    "baseline_version": "1",
+    "authority": "Platform/acceptance/acceptance4_baseline_v1.json"
+  },
+  "release": {
+    "release_id": "P0-S5-03",
+    "source_revision": "a44a2b3a4cd88c37445c800193114c5f00841ded",
+    "build_target": "linux-x86_64",
+    "archive_filename": "ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz",
+    "archive_sha256": "318c26b421be211b981a349394971c6b28e3fbe6730c4ee8ca44218c5df0955c"
+  },
+  "policies": {
+    "verdict_authority": "AcceptanceEvidence.acceptance_report",
+    "ui_role": "read-only-presentation",
+    "matrix_role": "field-mapping-only-no-recomputation",
+    "extended6node_classification": "engineering-extension-not-third-party-acceptance"
+  },
+  "hard_requirements": [
+    {
+      "id": "network_node_count",
+      "requirement": "3-4 nodes",
+      "current_actual": "4 nodes",
+      "verdict_path": "acceptance_report.network_node_count",
+      "actual_paths": ["projection.node_count", "manifest.scenario.nodes"],
+      "ui_location": "Result > Acceptance evidence > Network nodes",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_run_report_test", "platform_ns3_acceptance_scenario_integration_test"],
+      "evidence_type": "simulation-result-and-captured-configuration",
+      "limitation": "Acceptance4Node is the formal 4-node baseline; Extended6Node is not a third-party acceptance profile."
+    },
+    {
+      "id": "communication_rate",
+      "requirement": "60 bit/s",
+      "current_actual": "60 bit/s",
+      "verdict_path": "acceptance_report.communication_rate",
+      "actual_paths": ["manifest.experiment.phy.bit_rate_bits_per_second"],
+      "ui_location": "Result > Acceptance evidence > Communication rate",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_run_report_test", "platform_ns3_acceptance_scenario_integration_test"],
+      "evidence_type": "captured-simulation-configuration",
+      "limitation": "This is the applied simulation PHY rate, not a hardware modem measurement."
+    },
+    {
+      "id": "bit_error_rate",
+      "requirement": "BER <= 1e-4",
+      "current_actual": "maximum 0.0; mean 0.0",
+      "verdict_path": "acceptance_report.bit_error_rate",
+      "actual_paths": ["acceptance_report.maximum_ber", "acceptance_report.mean_ber", "semantics.ber_evidence_source", "semantics.ber_interpretation"],
+      "ui_location": "Result > Acceptance evidence > BER",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_run_report_test", "platform_phy_scalar_ber_rx_phy_test", "Platform/frontend/src/test/runsResults.test.tsx"],
+      "evidence_type": "Modeled",
+      "limitation": "Bellhop-derived propagation plus in-band noise and simplified BPSK/AWGN receive model; 0.0 may be the floating-point representation floor and is not hardware BER."
+    },
+    {
+      "id": "feature_level_fusion",
+      "requirement": "feature-level fusion required",
+      "current_actual": "AcceptanceBearingFusion with formal FusionResult",
+      "verdict_path": "acceptance_report.feature_level_fusion",
+      "actual_paths": ["manifest.experiment.fusion.workload", "fusion_results"],
+      "ui_location": "Result > Acceptance evidence > Feature-level fusion",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_feature_test", "platform_ns3_acceptance_fusion_integration_test"],
+      "evidence_type": "application-simulation-result",
+      "limitation": "Fusion consumes delivered feature reports, not raw waveform or hardware samples."
+    },
+    {
+      "id": "bearing_point_count",
+      "requirement": "bearing observations >= 5",
+      "current_actual": "6 bearing observations",
+      "verdict_path": "acceptance_report.bearing_point_count",
+      "actual_paths": ["acceptance_report.minimum_bearing_points", "fusion_results[].observation_count"],
+      "ui_location": "Result > Acceptance evidence > Bearing points",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_feature_test", "platform_ns3_acceptance_fusion_integration_test"],
+      "evidence_type": "application-simulation-result",
+      "limitation": "Five observations are not five nodes; identities include sender and observation sequence."
+    },
+    {
+      "id": "fusion_period",
+      "requirement": "fusion period <= 180 s",
+      "current_actual": "24 s",
+      "verdict_path": "acceptance_report.fusion_period",
+      "actual_paths": ["acceptance_report.maximum_fusion_period_ns", "fusion_results[].fusion_period_ns"],
+      "ui_location": "Result > Acceptance evidence > Fusion period",
+      "backend_source": "Platform/assembly/internal/acceptance_run_report.hpp",
+      "test_references": ["platform_assembly_acceptance_run_report_test", "platform_ns3_acceptance_fusion_integration_test"],
+      "evidence_type": "application-simulation-result",
+      "limitation": "24 s is baseline-specific expected output, not a permanent third-party threshold."
+    }
+  ],
+  "golden_run": {
+    "identity": {
+      "release_id": "P0-S5-03",
+      "experiment_id": "acceptance4-experiment",
+      "experiment_version": "1",
+      "scenario_id": "acceptance4-scenario",
+      "scenario_version": "1",
+      "environment_asset_id": "reference-shallow-water-v1",
+      "environment_checksum": "fb64e543f9042c52",
+      "deterministic_seed": "0"
+    },
+    "expected": {
+      "node_count": "4",
+      "communication_rate_bits_per_second": "60",
+      "transmission_count": "6",
+      "channel_signal_count": "18",
+      "reception_count": "18",
+      "local_delivery_count": "6",
+      "bearing_observation_count": "6",
+      "fusion_period_ns": "24000000000",
+      "overall": "Pass",
+      "ber_source": "Modeled"
+    },
+    "normalized_hashes": {
+      "result_sha256": "ba69baecf2b03dc3778ace39e9cdfbc0acbbfa93bf71f966e59c8604a6e27e59",
+      "fusion_sha256": "7708e79ee2a9e9b821f347bb8fdf693c0e6573f3f3300acfd2c1a16917a25fd6",
+      "trace_sha256": "6968f4c31bf652761870484e85b1c5345e6c4708f4eef437834a5b3f1048e671",
+      "acceptance_report_sha256": "4a1b889db48a9fafcced8fb27b9c82e99803279e723e08511fd9d7c5ed1cb598"
+    }
+  },
+  "evidence_hierarchy": [
+    "Level 1: third-party acceptance requirements",
+    "Level 2: formal release identity",
+    "Level 3: captured Run configuration",
+    "Level 4: simulation and result evidence",
+    "Level 5: UI presentation"
+  ],
+  "repository_targets": [
+    "Platform/acceptance/acceptance4_baseline_v1.json",
+    "Platform/assembly/internal/acceptance_run_report.hpp",
+    "Platform/backend/src/ns3_factory_backend/evidence.py",
+    "Platform/backend/src/ns3_factory_backend/system_info.py",
+    "Platform/environment/assets/reference_shallow_water_v1/golden_metadata.json",
+    "Platform/environment/assets/reference_shallow_water_v1/validation_report.json",
+    "Platform/frontend/src/features/pages.tsx",
+    "Platform/kernel/internal/ns3_kernel_gateway.hpp"
+  ]
+}

@@ -244,7 +244,7 @@ function AcceptanceEvidence({ report, result, experiment }: {
   const rows = [
     {
       metric: "Network nodes",
-      requirement: "4 nodes（Acceptance4Node）",
+      requirement: "3–4 nodes（third-party requirement）",
       actual: `${result.projection.node_count} nodes`,
       verdict: report.network_node_count,
       evidence: "Formal Result projection.node_count",

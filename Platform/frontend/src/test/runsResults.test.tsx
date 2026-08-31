@@ -183,6 +183,7 @@ describe("authoritative Run and Result views", () => {
     });
     renderRoute(`/results/${acceptance4Result.run_id}`);
     expect(await screen.findByText("Acceptance4Node · 第三方验收基准")).toBeTruthy();
+    expect(screen.getByText("3–4 nodes（third-party requirement）")).toBeTruthy();
     expect(screen.getAllByText("4 nodes").length).toBeGreaterThan(0);
     expect(screen.getAllByText("60 bit/s").length).toBeGreaterThan(0);
     expect(screen.getByText("5 points")).toBeTruthy();
