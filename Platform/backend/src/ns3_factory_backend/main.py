@@ -17,7 +17,8 @@ app = create_app(
         ),
         resource_catalog_adapter=(Path(_catalog_adapter) if _catalog_adapter else None),
         acceptance_environment_asset_id=os.environ.get(
-            "PLATFORM_ACCEPTANCE_ENVIRONMENT_ASSET_ID", "backend-field-v1"
+            "PLATFORM_ACCEPTANCE_ENVIRONMENT_ASSET_ID",
+            "reference-shallow-water-v1",
         ),
         acceptance_baseline_path=Path(
             os.environ.get(
@@ -35,7 +36,7 @@ app = create_app(
         ),
         platform_version=os.environ.get("PLATFORM_VERSION", "0.1.0"),
         frontend_release=os.environ.get(
-            "PLATFORM_FRONTEND_RELEASE", "p0-s5-01"
+            "PLATFORM_FRONTEND_RELEASE", "p0-s5-02"
         ),
         frontend_origin=os.environ.get(
             "PLATFORM_FRONTEND_ORIGIN", "http://127.0.0.1:4173"

@@ -243,7 +243,10 @@ export interface AcceptanceEvidenceDto {
   nodes: ResultDto["nodes"];
   semantics: {
     verdict_origin: "BackendAcceptanceReport";
+    environment_evidence: "Reference / modeled";
+    propagation_evidence: "Bellhop-derived";
     ber_evidence_source: "Modeled" | "NotEvaluated";
+    ber_interpretation: string;
     no_arrival: string;
     not_decoded: string;
     aggregate_policy: string;

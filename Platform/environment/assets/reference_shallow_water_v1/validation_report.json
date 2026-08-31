@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "asset_id": "reference-shallow-water-v1",
+  "validation_date": "2026-08-31",
+  "state": "Valid",
+  "source": {
+    "metadata": "Pass",
+    "ssp_monotonic_finite": "Pass",
+    "ssp_depth_coverage_m": [0.0, 175.0],
+    "bathymetry_monotonic_finite": "Pass",
+    "bathymetry_range_coverage_m": [0.0, 10000.0],
+    "bathymetry_depth_range_m": [102.0, 110.0]
+  },
+  "field": {
+    "frequency_hz": 25000.0,
+    "source_depth_coverage_m": [8.0, 75.0],
+    "receiver_depth_coverage_m": [8.0, 75.0],
+    "horizontal_range_coverage_m": [0.0, 2500.0],
+    "cell_count": 650,
+    "signal_cell_count": 625,
+    "no_arrival_cell_count": 25,
+    "payload_checksum_fnv1a64": "fb64e543f9042c52",
+    "deterministic_rebuild": "Pass",
+    "repository_round_trip": "Pass",
+    "immutable_duplicate_publish_rejected": "Pass"
+  },
+  "representative_queries": [
+    {"source_depth_m": 60.0, "receiver_depth_m": 8.0, "range_m": 100.0, "outcome": "Signal", "transmission_loss_db": 38.3132, "first_arrival_delay_ns": 73590875, "path_count": 10},
+    {"source_depth_m": 60.0, "receiver_depth_m": 8.0, "range_m": 800.0, "outcome": "Signal", "transmission_loss_db": 51.9755, "first_arrival_delay_ns": 523228765, "path_count": 8},
+    {"source_depth_m": 60.0, "receiver_depth_m": 8.0, "range_m": 1000.0, "outcome": "Signal", "transmission_loss_db": 52.5742, "first_arrival_delay_ns": 653415382, "path_count": 9},
+    {"source_depth_m": 60.0, "receiver_depth_m": 8.0, "range_m": 2500.0, "outcome": "Signal", "transmission_loss_db": 60.7414, "first_arrival_delay_ns": 1636379360, "path_count": 18},
+    {"source_depth_m": 8.0, "receiver_depth_m": 8.0, "range_m": 0.0, "outcome": "NoArrival"}
+  ],
+  "acceptance4_reference_run": {
+    "lifecycle": "Completed",
+    "overall": "Pass",
+    "node_count": 4,
+    "communication_rate_bits_per_second": 60,
+    "channel_signal_count": 18,
+    "channel_no_arrival_count": 0,
+    "maximum_ber": 0.0,
+    "ber_evidence_source": "Modeled",
+    "minimum_bearing_points": 6,
+    "maximum_fusion_period_ns": 24000000000
+  },
+  "acceptance4_previous_demo_fixture_comparison": {
+    "classification": "manual deterministic test fixture, not the reference environment",
+    "overall": "Pass",
+    "channel_signal_count": 18,
+    "channel_no_arrival_count": 0,
+    "maximum_ber": 4.197185787189236e-11,
+    "minimum_bearing_points": 6,
+    "maximum_fusion_period_ns": 24000000000
+  }
+}

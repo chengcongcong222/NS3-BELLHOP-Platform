@@ -1,0 +1,15 @@
+{
+  "asset_id": "reference-shallow-water-v1",
+  "package_format": "NS3_FACTORY_ACOUSTIC_FIELD",
+  "package_format_version": 1,
+  "asset_format_version": 1,
+  "frequency_hz": [25000.0],
+  "source_depth_m": {"minimum": 8.0, "maximum": 75.0, "count": 5},
+  "receiver_depth_m": {"minimum": 8.0, "maximum": 75.0, "count": 5},
+  "horizontal_range_m": {"minimum": 0.0, "maximum": 2500.0, "count": 26},
+  "cell_count": 650,
+  "signal_cell_count": 625,
+  "no_arrival_cell_count": 25,
+  "payload_bytes": 231056,
+  "payload_checksum": {"algorithm": "FNV1A64", "value": "fb64e543f9042c52"}
+}

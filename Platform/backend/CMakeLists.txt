@@ -65,6 +65,8 @@ if(BUILD_TESTING)
       "PLATFORM_WORKER_WIRE_GOLDEN_FIXTURE_PATH=$<TARGET_FILE:platform_worker_wire_golden_fixture>"
       "PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH=$<TARGET_FILE:platform_resource_catalog_adapter>"
       "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH=$<TARGET_FILE:platform_worker_test_asset_builder>"
+      "PLATFORM_REFERENCE_ENVIRONMENT_BUILDER_PATH=$<TARGET_FILE:platform_reference_environment_builder>"
+      "PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT=${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1"
   )
   if(PLATFORM_NS3_AVAILABLE)
     list(

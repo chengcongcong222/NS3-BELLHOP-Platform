@@ -21,7 +21,7 @@
     "source_level_scope": "simulation-only-hardware-calibration-tbd",
     "tdma_guard_interval_ns": "2000000000",
     "network_update_interval_cycles": "10",
-    "environment_description": "shallow-water",
+    "environment_description": "ReferenceShallowWaterV1 reference/proxy modeled environment",
     "nominal_sensor_speed_kilometers_per_hour": 5.0,
     "approximate_average_range_meters": 1000.0
   },

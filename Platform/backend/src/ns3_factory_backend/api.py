@@ -68,7 +68,7 @@ class BackendSettings:
     source_revision: str = "unavailable"
     build_configuration: str = "ns3-on"
     platform_version: str = "0.1.0"
-    frontend_release: str = "p0-s5-01"
+    frontend_release: str = "p0-s5-02"
     frontend_origin: str = "http://127.0.0.1:4173"
 
 

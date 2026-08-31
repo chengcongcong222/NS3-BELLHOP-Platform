@@ -72,7 +72,10 @@ class CapturedRun(EvidenceModel):
 
 class EvidenceSemantics(EvidenceModel):
     verdict_origin: Literal["BackendAcceptanceReport"]
+    environment_evidence: Literal["Reference / modeled"]
+    propagation_evidence: Literal["Bellhop-derived"]
     ber_evidence_source: Literal["Modeled", "NotEvaluated"]
+    ber_interpretation: str
     no_arrival: str
     not_decoded: str
     aggregate_policy: str
@@ -151,7 +154,15 @@ def make_evidence(
         nodes=tuple(result.nodes),
         semantics=EvidenceSemantics(
             verdict_origin="BackendAcceptanceReport",
+            environment_evidence="Reference / modeled",
+            propagation_evidence="Bellhop-derived",
             ber_evidence_source=source,
+            ber_interpretation=(
+                "A modeled numerical result, not a hardware measurement; at high SNR "
+                "the computed double may reach the floating-point representation floor."
+                if source == "Modeled"
+                else "No BER model result was available; no BER value is inferred."
+            ),
             no_arrival="Valid channel query with no physical arrival; no Reception exists.",
             not_decoded="A physical arrival reached Rx processing but was not decoded.",
             aggregate_policy="No unsupported aggregate is inferred from other counters.",
@@ -171,6 +182,9 @@ def render_evidence_text(bundle: AcceptanceEvidenceBundle) -> str:
         f"Network node count: {report.network_node_count}",
         f"Communication rate: {report.communication_rate}",
         f"Bit error rate: {report.bit_error_rate} ({bundle.semantics.ber_evidence_source})",
+        f"BER interpretation: {bundle.semantics.ber_interpretation}",
+        f"Environment evidence: {bundle.semantics.environment_evidence}",
+        f"Propagation: {bundle.semantics.propagation_evidence}",
         f"Feature-level fusion: {report.feature_level_fusion}",
         f"Bearing point count: {report.bearing_point_count}",
         f"Fusion period: {report.fusion_period}",

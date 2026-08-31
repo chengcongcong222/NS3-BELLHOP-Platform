@@ -5,6 +5,10 @@ P0-S5 demo is `Acceptance4Node`: three moving sensor nodes and one fixed fusion
 center. `Extended6Node` is an extension and is not part of the third-party
 acceptance baseline.
 
+The one-command demo uses the immutable `reference-shallow-water-v1` asset: a
+public-data reference/proxy shallow-water environment with a Bellhop-derived
+25 kHz field. It is modeled simulation evidence, not field-measured evidence.
+
 ## Offline preparation and one-command launch
 
 All Python wheels, Node.js and npm artifacts are repository supplied. ns-3.47
@@ -52,5 +56,6 @@ acceptance metric is a completed experiment outcome, not a backend/system
 failure. `NoArrival` and `NotDecoded` remain distinct.
 
 See [acceptance_baseline.md](docs/acceptance/acceptance_baseline.md),
+[ReferenceShallowWaterV1](docs/environment/reference_shallow_water_v1.md),
 [acceptance_evidence.md](docs/delivery/acceptance_evidence.md), and
 [BUILDING.md](BUILDING.md).

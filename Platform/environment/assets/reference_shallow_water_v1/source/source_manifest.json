@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "reference_name": "ReferenceShallowWaterV1",
+  "classification": "reference/proxy modeled environment; not a project field measurement",
+  "proxy_region": "northwestern South China Sea",
+  "proxy_origin": {"latitude_deg": 18.0, "longitude_deg": 110.0},
+  "time_reference": {"month": 4, "season": "spring", "kind": "climatology"},
+  "retrieval_date": "2026-04-15",
+  "platform_introduction_date": "2026-08-31",
+  "sound_speed_profile": {
+    "path": "ssp.csv",
+    "sha256": "38047e51156615bdf6e3e6d1d2cac1731106dacf6581bd6538b372187250a69b",
+    "source_artifact": {
+      "logical_name": "0414-3_source_month-04_n18p000_e110p000.csv",
+      "sha256": "a336c2cad0f6681257744aa1f079af1bf125a5ee49d37895aa333ddd79385034"
+    },
+    "source_dataset": "World Ocean Atlas 2023 monthly one-degree temperature and salinity",
+    "source_version": "WOA23, month 04, 1 degree",
+    "nearest_grid": {"latitude_deg": 17.5, "longitude_deg": 109.5},
+    "selection": {
+      "requested_coordinate": {"latitude_deg": 18.0, "longitude_deg": 110.0},
+      "grid_policy": "nearest WOA23 one-degree cell center",
+      "month_index": 4,
+      "variables": ["temperature", "salinity"]
+    },
+    "source_files": [
+      {"name": "woa23_decav_t04_01.nc", "sha256": "1c2ef79123d4cfd62f77705a7d44195a9bb0b369d5ab5bf5f871f824182f94f3"},
+      {"name": "woa23_decav_s04_01.nc", "sha256": "2e1c46417a1574a7254cb9cebf115acff3b502b62f5f957f0b85b7912b445af5"}
+    ],
+    "source_url": "https://www.ncei.noaa.gov/access/world-ocean-atlas-2023/",
+    "usage": "NOAA public data; cite World Ocean Atlas 2023",
+    "normalization": {
+      "recipe_version": "reference-ssp-normalization-v1",
+      "recipe": "select finite collocated April temperature/salinity values at 17.5N 109.5E; derive sound speed using the retained legacy preparation result; emit depth_m,sound_speed_mps as LF UTF-8 CSV without undocumented tuning",
+      "output_sha256": "38047e51156615bdf6e3e6d1d2cac1731106dacf6581bd6538b372187250a69b"
+    }
+  },
+  "bathymetry": {
+    "path": "bathymetry.json",
+    "sha256": "0222574f86d363ca53fa77ec93c6036de376d987bddf0062d5006e9bd8f71668",
+    "source_artifact": {
+      "logical_name": "0414-3_source_month-04_n18p000_e110p000.json",
+      "sha256": "0f878d4224c06b22d35fb0dc8e4b32b2f75ad990ee9440a033834b6fdf39966a"
+    },
+    "source_dataset": "GEBCO 2020 Grid",
+    "source_version": "GEBCO_2020, 15 arc-second",
+    "selection": {
+      "origin": {"latitude_deg": 18.0, "longitude_deg": 110.0},
+      "bearing_degrees": 90.0,
+      "range_minimum_m": 0.0,
+      "range_maximum_m": 10000.0,
+      "sample_spacing_m": 250.0,
+      "sample_count": 41,
+      "variable": "elevation"
+    },
+    "sampling": "eastward 90 degree transect, 0-10000 m, 250 m spacing",
+    "source_url": "https://www.gebco.net/data-products/gridded-bathymetry-data/gebco-2020",
+    "usage_terms_url": "https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use",
+    "usage": "public-domain bathymetric data with attribution; not for navigation",
+    "normalization": {
+      "recipe_version": "reference-bathymetry-normalization-v1",
+      "recipe": "retain the verified eastward 41-sample transect; convert source elevation to positive-down depth_m; emit range_m/depth_m arrays as canonical UTF-8 JSON",
+      "output_sha256": "0222574f86d363ca53fa77ec93c6036de376d987bddf0062d5006e9bd8f71668"
+    }
+  },
+  "pipeline": {
+    "bellhop_config_path": "../bellhop/config.json",
+    "normalizer_version": "bellhop-raw-arrival-normalizer-v1",
+    "final_asset_id": "reference-shallow-water-v1",
+    "final_canonical_checksum": {"algorithm": "FNV1A64", "value": "fb64e543f9042c52"}
+  }
+}

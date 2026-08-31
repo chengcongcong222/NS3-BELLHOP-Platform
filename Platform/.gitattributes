@@ -1,0 +1,5 @@
+# Bellhop output is provenance-bearing input. Preserve bytes and exempt the
+# generator's significant fixed-format padding from generic patch whitespace checks.
+environment/assets/reference_shallow_water_v1/bellhop/*.arr whitespace=-trailing-space
+environment/assets/reference_shallow_water_v1/bellhop/*.prt whitespace=-trailing-space
+environment/assets/reference_shallow_water_v1/bellhop/*_ssp.csv whitespace=cr-at-eol

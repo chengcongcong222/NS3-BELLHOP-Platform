@@ -23,20 +23,46 @@ describe("real resource routes", () => {
   });
 
   it("renders Environment catalog and detail", async () => {
+    const referenceEnvironment = {
+      ...environment,
+      environment_asset_id: "reference-shallow-water-v1",
+      cell_count: "650",
+      signal_cell_count: "625",
+      no_arrival_cell_count: "25",
+      payload_bytes: "231056",
+      checksum: { algorithm: "FNV1A64", value: "fb64e543f9042c52" },
+      provenance: {
+        producer: "BellhopRawImport",
+        created_by_build_version: "P0-S5-02",
+        source_description: "Reference/proxy modeled environment; Bellhop-derived, not field-measured",
+        raw_source_logical_name: "reference_shallow_water_v1.arr",
+        normalization_policy_version: "bellhop-raw-arrival-normalizer-v1",
+      },
+      axes: {
+        ...environment.axes,
+        horizontal_range: { unit: "m", count: "26", minimum: 0, maximum: 2500 },
+        source_depth: { unit: "m", count: "5", minimum: 8, maximum: 75 },
+        receiver_depth: { unit: "m", count: "5", minimum: 8, maximum: 75 },
+      },
+    } as typeof environment;
     installApi({
-      "/environments": { body: [environment] },
-      [`/environments/${environment.environment_asset_id}`]: { body: environment },
+      "/environments": { body: [referenceEnvironment] },
+      [`/environments/${referenceEnvironment.environment_asset_id}`]: { body: referenceEnvironment },
     });
     const catalog = renderRoute("/environments");
-    expect(await screen.findByText(environment.environment_asset_id)).toBeTruthy();
+    expect(await screen.findByText(referenceEnvironment.environment_asset_id)).toBeTruthy();
     catalog.unmount();
-    renderRoute(`/environments/${environment.environment_asset_id}`);
+    renderRoute(`/environments/${referenceEnvironment.environment_asset_id}`);
     expect(
       await screen.findByText((_content, element) =>
         element?.tagName === "DD" &&
-        element.textContent?.includes(environment.checksum.value) === true,
+        element.textContent?.includes(referenceEnvironment.checksum.value) === true,
       ),
     ).toBeTruthy();
+    expect(screen.getByText(/total.*Signal.*NoArrival/)).toBeTruthy();
+    expect(screen.getByText("Raw logical source")).toBeTruthy();
+    expect(screen.getByText("reference_shallow_water_v1.arr")).toBeTruthy();
+    expect(screen.getByText(/Reference\/proxy modeled environment/)).toBeTruthy();
     expect(document.body.textContent).not.toContain("/home/");
   });
 

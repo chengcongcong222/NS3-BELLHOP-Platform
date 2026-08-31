@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "asset_id": "reference-shallow-water-v1",
+  "title": "Reference Shallow Water V1 - South China Sea proxy",
+  "frequency_hz": 25000.0,
+  "source_depth_m": [8.0, 55.0, 60.0, 65.0, 75.0],
+  "receiver_depth_m": [8.0, 55.0, 60.0, 65.0, 75.0],
+  "horizontal_range_m": {
+    "minimum": 0.0,
+    "maximum": 2500.0,
+    "count": 26,
+    "spacing": "linear"
+  },
+  "nominal_water_depth_m": 110.0,
+  "surface_boundary": "vacuum, flat",
+  "bottom_boundary": "acousto-elastic half-space with bathymetry file",
+  "bottom_sound_speed_m_per_s": 1600.0,
+  "bottom_density_g_per_cm3": 1.8,
+  "bottom_attenuation_db_per_wavelength": 0.8,
+  "run_type": "A",
+  "beam_type": "geometric hat beams in Cartesian coordinates",
+  "requested_beam_count": 0,
+  "computed_beam_count": 12500,
+  "launch_angle_degrees": [-80.0, 80.0],
+  "receiver_range_unit_in_arrival_file": "m",
+  "ssp_interpolation": "Bellhop cubic spline; source profile clipped with linear interpolation at 110 m",
+  "bathymetry_interpolation": "linear",
+  "coordinate_frame": {
+    "surface_z_meters": 0.0,
+    "vertical_axis": "PositiveUp"
+  },
+  "bellhop": {
+    "implementation": "bellhopcxx 2D CPU",
+    "upstream": "https://github.com/A-New-BellHope/bellhopcuda",
+    "source_commit": "b396d40ba49c2f349258b9687cfae8ff8323828f",
+    "executable_sha256": "09ae115c19e352f15b0e4b932201960e7fa64a6d8858b59aaaad06df2c4ff0cd",
+    "command": "bellhopcxx2d -1 reference_shallow_water_v1"
+  },
+  "execution": {
+    "date": "2026-08-31",
+    "host_role": "offline asset preparation only",
+    "determinism_check": "two consecutive executions produced identical ASCII arrival SHA-256"
+  },
+  "files": {
+    "environment_sha256": "7da5df3d6f50e4c963fd4bcba6989e052a9648ca3f9b745d5e1d3905cb6781ba",
+    "bathymetry_sha256": "51c0f5b87bfa469727f7858e34e846636bb82ee4b38641efc0a6bd5bd1faeb49",
+    "altimetry_sha256": "dfed9995938f6f46ae05a6cd7d831f9427211a9c3e801a0f6cbc3939c438fcfb",
+    "normalized_ssp_sha256": "aabf85bf7e991e1a3b8fbc1514c290a6a031c40feab096d57548a99adf229b58",
+    "arrival_sha256": "b13232e6cd47c5f4e6e70e05685d85bdd138adfe3888870c30f8dcf0b35826a3",
+    "print_log_sha256": "af221418dfa83e1899445e8eb9ebb8e1d6b0f290de0a9a844e9b191206eb87a5"
+  },
+  "normalization_policy_version": "bellhop-raw-arrival-normalizer-v1"
+}

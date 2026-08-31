@@ -14,6 +14,11 @@ second threshold set.
 | Bearing points | at least 5 | Backend report and formal FusionResult records |
 | Fusion period | at most 180 s | Backend report and formal FusionResult time fields |
 
+A modeled BER value of `0.0` is retained exactly as produced by the backend.
+It is not a hardware measurement or proof of absolute zero errors; at high SNR
+the double-precision model result may reach the floating-point representation
+floor.
+
 The formal topology is three moving sensor nodes and one fixed fusion center.
 `Extended6Node` is an engineering extension, not the third-party baseline.
 
@@ -22,6 +27,14 @@ Demo parameters are deliberately separate: 25 kHz center frequency, 110 dB re
 cycles, shallow-water field, nominal speed near 5 km/h and average initial
 horizontal range near 1 km. Hardware source-level reference/calibration remains
 TBD; 110 dB must not be presented as measured hardware evidence.
+
+The formal delivery launcher resolves this demo to immutable asset
+`reference-shallow-water-v1`, checksum FNV1A64 `fb64e543f9042c52`. It is a
+WOA23/GEBCO 2020 **reference/proxy modeled environment**, and propagation is
+Bellhop-derived. Neither the environment nor modeled BER is field-measured
+evidence. The environment is a simulation basis, not a third-party hard
+acceptance threshold and not an acceptance-fit target. See
+[`reference_shallow_water_v1.md`](../environment/reference_shallow_water_v1.md).
 
 The ns-3 ON build and `/system/info` identify ns-3 3.47. `ns3::Simulator` is
 the sole simulation-clock and event-scheduling authority; M1 /

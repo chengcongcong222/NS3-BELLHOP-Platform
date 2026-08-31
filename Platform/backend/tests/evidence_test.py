@@ -58,7 +58,7 @@ def test_system_info_is_formal_and_has_no_filesystem_paths() -> None:
             response = await client.get("/system/info")
             assert response.status_code == 200
             body = response.json()
-            assert body["product_baseline"] == "P0-S5-01"
+            assert body["product_baseline"] == "P0-S5-02"
             assert body["build"]["source_revision"] == "test-revision"
             assert body["build"]["cxx_standard"] == "23"
             assert body["simulation"] == {
@@ -92,7 +92,11 @@ def test_evidence_is_captured_read_only_and_byte_deterministic() -> None:
             assert body["manifest"]["environment"]["checksum"]["value"]
             assert body["acceptance_report"]["overall"] == "Pass"
             assert body["semantics"]["verdict_origin"] == "BackendAcceptanceReport"
+            assert body["semantics"]["environment_evidence"] == "Reference / modeled"
+            assert body["semantics"]["propagation_evidence"] == "Bellhop-derived"
             assert body["semantics"]["ber_evidence_source"] == "Modeled"
+            assert "not a hardware measurement" in body["semantics"]["ber_interpretation"]
+            assert "floating-point representation floor" in body["semantics"]["ber_interpretation"]
             assert "no Reception" in body["semantics"]["no_arrival"]
             assert "not decoded" in body["semantics"]["not_decoded"]
             assert body["baseline"]["hard_requirements"] == {
@@ -109,6 +113,9 @@ def test_evidence_is_captured_read_only_and_byte_deterministic() -> None:
             )
             assert text.status_code == 200
             assert "Overall: Pass" in text.text
+            assert "Environment evidence: Reference / modeled" in text.text
+            assert "Propagation: Bellhop-derived" in text.text
+            assert "not a hardware measurement" in text.text
             assert "no acceptance metric is recomputed" in text.text
 
     asyncio.run(run())

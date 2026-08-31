@@ -13,7 +13,9 @@ log_dir="${state_dir}/logs"
 
 worker="${build_dir}/worker/platform_sim_worker"
 adapter="${build_dir}/worker/platform_resource_catalog_adapter"
-asset_builder="${build_dir}/worker/platform_worker_test_asset_builder"
+asset_builder="${build_dir}/environment/platform_reference_environment_builder"
+reference_environment_assets="${platform_root}/environment/assets/reference_shallow_water_v1"
+acceptance_environment_asset_id="reference-shallow-water-v1"
 backend_python="${build_dir}/backend/venv/bin/python"
 npm="${platform_root}/frontend/scripts/npm.sh"
 
@@ -32,6 +34,7 @@ preflight() {
     --platform-root "${platform_root}" \
     --build-dir "${build_dir}" \
     --environment-repository "${environment_repository}" \
+    --acceptance-environment-asset-id "${acceptance_environment_asset_id}" \
     --backend-port "${backend_port}" \
     --frontend-port "${frontend_port}"
 }
@@ -53,7 +56,7 @@ prepare() {
     VITE_API_BASE_URL="http://127.0.0.1:${backend_port}" "${npm}" run build
   )
   mkdir -p "${environment_repository}"
-  "${asset_builder}" "${environment_repository}"
+  "${asset_builder}" "${reference_environment_assets}" "${environment_repository}"
   preflight
 }
 
@@ -75,6 +78,7 @@ start() {
   PLATFORM_ENVIRONMENT_REPOSITORY="${environment_repository}" \
   PLATFORM_RESOURCE_CATALOG_ADAPTER="${adapter}" \
   PLATFORM_ACCEPTANCE_BASELINE="${platform_root}/acceptance/acceptance4_baseline_v1.json" \
+  PLATFORM_ACCEPTANCE_ENVIRONMENT_ASSET_ID="${acceptance_environment_asset_id}" \
   PLATFORM_SOURCE_REVISION="${source_revision}" \
   PLATFORM_BUILD_CONFIGURATION="ns3-on-offline-demo" \
   PLATFORM_FRONTEND_ORIGIN="http://127.0.0.1:${frontend_port}" \

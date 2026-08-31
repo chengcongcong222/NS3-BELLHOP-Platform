@@ -6,7 +6,43 @@ target_include_directories(
 )
 target_link_libraries(platform_environment INTERFACE Platform::contracts)
 
+add_executable(
+  platform_reference_environment_builder
+  tools/reference_environment_builder.cpp
+)
+target_link_libraries(
+  platform_reference_environment_builder
+  PRIVATE Platform::environment
+)
+
 if(BUILD_TESTING)
+  find_package(Python3 3.12.3 EXACT COMPONENTS Interpreter REQUIRED)
+
+  add_executable(
+    platform_environment_reference_asset_test
+    tests/reference_environment_asset_test.cpp
+  )
+  target_link_libraries(
+    platform_environment_reference_asset_test
+    PRIVATE Platform::environment
+  )
+  target_compile_definitions(
+    platform_environment_reference_asset_test
+    PRIVATE
+      PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets/reference_shallow_water_v1"
+  )
+  add_test(
+    NAME platform_environment_reference_asset_test
+    COMMAND platform_environment_reference_asset_test
+  )
+  add_test(
+    NAME platform_environment_reference_source_test
+    COMMAND
+      "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/reference_environment_source_test.py"
+      "${CMAKE_CURRENT_SOURCE_DIR}/assets/reference_shallow_water_v1"
+  )
+
   add_executable(
     platform_environment_acoustic_field_asset_test
     tests/acoustic_field_asset_test.cpp

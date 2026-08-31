@@ -48,6 +48,10 @@ def main() -> None:
     parser.add_argument("--platform-root", type=Path, required=True)
     parser.add_argument("--build-dir", type=Path, required=True)
     parser.add_argument("--environment-repository", type=Path, required=True)
+    parser.add_argument(
+        "--acceptance-environment-asset-id",
+        default="reference-shallow-water-v1",
+    )
     parser.add_argument("--backend-port", type=int, default=8000)
     parser.add_argument("--frontend-port", type=int, default=4173)
     args = parser.parse_args()
@@ -121,7 +125,7 @@ def main() -> None:
         fail("NODE_VERSION", f"expected v24.20.0, got {node_version}")
 
     catalog = run(
-        [str(adapter), str(repository), "backend-field-v1"],
+        [str(adapter), str(repository), args.acceptance_environment_asset_id],
         "ENVIRONMENT_VALIDATION",
     )
     try:

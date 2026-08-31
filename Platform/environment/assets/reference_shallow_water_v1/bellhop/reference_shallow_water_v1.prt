@@ -1,0 +1,135 @@
+bellhopcxx
+
+bellhopcxx- Reference Shallow Water V1 - South China Sea proxy
+ frequency =  2.5000e+04 Hz
+Dummy parameter NMedia = 1
+
+    Spline approximation to SSP
+    Attenuation units: dB/wavelength
+    VACUUM
+
+  Depth =   1.10e+02  m
+
+Sound speed profile:
+      z         alphaR      betaR     rho        alphaI     betaI
+     (m)         (m/s)      (m/s)   (g/cm^3)      (m/s)     (m/s)
+0.00e+00 1.54e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+5.00e+00 1.54e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+1.00e+01 1.54e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+1.50e+01 1.54e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+2.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+2.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+3.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+3.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+4.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+4.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+5.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+5.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+6.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+6.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+7.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+7.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+8.00e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+8.50e+01 1.53e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+9.00e+01 1.52e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+9.50e+01 1.52e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+1.00e+02 1.52e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+1.10e+02 1.52e+03 0.00e+00 1.00e+00 0.0000e+00 0.0000e+00
+
+ RMS roughness =  0.000e+00
+    Bathymetry file selected
+    ACOUSTO-ELASTIC half-space
+  1.10e+02   1.60e+03   1.80e+00 8.00e-01 0.0000e+00 0.0000e+00
+
+__________________________________________________________________________
+
+   Number of Source   z-coordinates, Sz = 5
+   Source   z-coordinates, Sz (m)
+     8.000000e+00   5.500000e+01   6.000000e+01   6.500000e+01   7.500000e+01 
+   
+
+
+__________________________________________________________________________
+
+   Number of Receiver z-coordinates, Rz = 5
+   Receiver z-coordinates, Rz (m)
+     8.000000e+00   5.500000e+01   6.000000e+01   6.500000e+01   7.500000e+01 
+   
+
+
+__________________________________________________________________________
+
+   Number of Receiver r-coordinates, Rr = 26
+   Receiver r-coordinates, Rr (km)
+     0.000000e+00   1.000000e-01   2.000000e-01   3.000000e-01   4.000000e-01 
+     5.000000e-01   6.000000e-01   7.000000e-01   8.000000e-01   9.000000e-01 
+   ...   2.500000e+00
+
+
+Arrivals calculation, ASCII  file output
+Geometric hat beams in Cartesian coordinates
+Point source (cylindrical coordinates)
+Rectilinear receiver grid: Receivers at Rr[:] x Rz[:]
+__________________________________________________________________________
+
+   Number of beams in elevation   = 12500
+   Beam take-off angles (degrees)
+ -8.000000e+01  -7.998720e+01  -7.997440e+01  -7.996160e+01  -7.994880e+01 
+ -7.993599e+01  -7.992319e+01  -7.991039e+01  -7.989759e+01  -7.988479e+01 
+...   8.000000e+01
+
+__________________________________________________________________________
+
+
+ Step length,       deltas =  1.1000e+01 m
+
+Maximum ray depth, Box.y  =  1.1000e+02 m
+Maximum ray range, Box.x  =  2.5000e+00km
+
+Geometric hat beams
+No beam shift in effect
+
+
+ Step length,       deltas = 1.1000e+01 m (automatically selected)
+Piecewise linear interpolation
+Number of altimetry points = 2
+Short format (altimetry only)
+
+ Range (km)  Depth (m)
+__________________________________________________________________________
+
+Using bottom-bathymetry file
+Piecewise linear interpolation
+Number of bathymetry points = 43
+Short format (bathymetry only)
+
+ Range (km)  Depth (m)
+0.000e+00 1.020e+02
+2.500e-01 1.020e+02
+5.000e-01 1.020e+02
+7.500e-01 1.020e+02
+1.000e+00 1.030e+02
+1.250e+00 1.030e+02
+1.500e+00 1.030e+02
+1.750e+00 1.030e+02
+2.000e+00 1.030e+02
+2.250e+00 1.040e+02
+2.500e+00 1.040e+02
+2.750e+00 1.040e+02
+3.000e+00 1.040e+02
+3.250e+00 1.040e+02
+3.500e+00 1.040e+02
+3.750e+00 1.050e+02
+4.000e+00 1.060e+02
+4.250e+00 1.060e+02
+4.500e+00 1.070e+02
+4.750e+00 1.070e+02
+1.000e+01 1.050e+02
+Number of source beam pattern points 2
+
+ Angle (degrees)  Power (dB)
+-1.800e+02 0.000e+00
+1.800e+02 0.000e+00
+
+
+( Maximum # of arrivals = 164017 )

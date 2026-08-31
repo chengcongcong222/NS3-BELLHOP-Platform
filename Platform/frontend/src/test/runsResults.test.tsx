@@ -189,6 +189,9 @@ describe("authoritative Run and Result views", () => {
     expect(screen.getAllByText("Pass").length).toBeGreaterThanOrEqual(7);
     expect(screen.getAllByText("120 s (120000000000 ns)").length).toBeGreaterThan(0);
     expect(screen.getByText(/仿真模型 BER.*不是硬件实测/)).toBeTruthy();
+    expect(screen.getByText(/浮点数值表示下限/)).toBeTruthy();
+    expect(await screen.findByText("Reference / modeled")).toBeTruthy();
+    expect(screen.getByText("Bellhop-derived")).toBeTruthy();
     expect(screen.getByRole("link", { name: acceptance4Result.run_id }).getAttribute("href")).toBe(`/runs/${acceptance4Result.run_id}`);
     expect(screen.getByRole("link", { name: new RegExp(experiment.experiment_id) })).toBeTruthy();
     expect(document.body.textContent).not.toContain("NotDecoded");
