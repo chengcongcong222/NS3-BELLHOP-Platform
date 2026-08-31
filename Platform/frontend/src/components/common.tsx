@@ -1,9 +1,12 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 import { ApiFailure } from "../api/client";
+import { queries } from "../api/queries";
 import { PRODUCT_METADATA } from "../productMetadata";
 
 export function AppShell({ children }: PropsWithChildren) {
+  const system = useQuery(queries.systemInfo());
   const links = [
     ["/", "概览"],
     ["/environments", "环境"],
@@ -16,10 +19,10 @@ export function AppShell({ children }: PropsWithChildren) {
     <div className="app-shell">
       <header>
         <div>
-          <strong>{PRODUCT_METADATA.platformName}</strong>
+          <strong>{system.data?.platform_name ?? PRODUCT_METADATA.platformName}</strong>
           <span>水声网络数字孪生</span>
         </div>
-        <div className="engine">Simulation Engine: {PRODUCT_METADATA.simulationEngineDisplay}</div>
+        <div className="engine">Simulation Engine: {system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</div>
       </header>
       <nav aria-label="主导航">
         {links.map(([to, label]) => (
@@ -29,7 +32,11 @@ export function AppShell({ children }: PropsWithChildren) {
         ))}
       </nav>
       <main>{children}</main>
-      <footer>{PRODUCT_METADATA.footerAuthority}</footer>
+      <footer>
+        {system.data
+          ? `${system.data.simulation.time_authority} clock · ${system.data.simulation.scheduler_authority} scheduler · ${system.data.simulation.scheduling_gateway} · ${system.data.product_baseline}`
+          : `${PRODUCT_METADATA.footerAuthority} · ${PRODUCT_METADATA.schedulingGateway}`}
+      </footer>
     </div>
   );
 }

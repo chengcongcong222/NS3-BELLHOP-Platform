@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 from contextlib import asynccontextmanager
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, Header, Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict
 
 from .catalog import (
@@ -20,6 +21,14 @@ from .catalog import (
     RunSnapshot,
 )
 from .gateway import WorkerGateway
+from .evidence import (
+    AcceptanceEvidenceBundle,
+    RunManifest,
+    load_acceptance_baseline,
+    make_evidence,
+    make_manifest,
+    render_evidence_text,
+)
 from .resources import (
     EnvironmentResource,
     ExperimentResource,
@@ -40,6 +49,7 @@ from .wire import (
     StableId,
     UIntDecimal,
 )
+from .system_info import SystemInfo, make_system_info
 
 
 @dataclass(frozen=True)
@@ -48,6 +58,18 @@ class BackendSettings:
     environment_repository_root: Path
     resource_catalog_adapter: Path | None = None
     acceptance_environment_asset_id: str = "backend-field-v1"
+    acceptance_baseline_path: Path = field(
+        default_factory=lambda: (
+            Path(__file__).resolve().parents[3]
+            / "acceptance"
+            / "acceptance4_baseline_v1.json"
+        )
+    )
+    source_revision: str = "unavailable"
+    build_configuration: str = "ns3-on"
+    platform_version: str = "0.1.0"
+    frontend_release: str = "p0-s5-01"
+    frontend_origin: str = "http://127.0.0.1:4173"
 
 
 class HttpModel(BaseModel):
@@ -99,6 +121,14 @@ class HealthResource(HttpModel):
     status: Literal["ok", "degraded"]
     backend_alive: Literal[True]
     worker_executable_ready: bool
+
+
+class ReadinessResource(HttpModel):
+    status: Literal["ready", "not-ready"]
+    backend_alive: Literal[True]
+    worker_executable_ready: bool
+    resource_catalog_ready: bool
+    acceptance_baseline_ready: bool
 
 
 class RunResultResource(HttpModel):
@@ -153,6 +183,7 @@ _ERROR_STATUS = {
     "ExperimentNotFound": status.HTTP_404_NOT_FOUND,
     "ExperimentVersionNotFound": status.HTTP_404_NOT_FOUND,
     "InvalidReference": status.HTTP_409_CONFLICT,
+    "EvidenceUnavailable": status.HTTP_409_CONFLICT,
 }
 
 
@@ -293,6 +324,16 @@ def create_app(
             settings.environment_repository_root,
             settings.acceptance_environment_asset_id,
         )
+    acceptance_baseline = load_acceptance_baseline(
+        settings.acceptance_baseline_path
+    )
+    system_info = make_system_info(
+        source_revision=settings.source_revision,
+        build_configuration=settings.build_configuration,
+        platform_version=settings.platform_version,
+        frontend_release=settings.frontend_release,
+    )
+    run_manifests: dict[str, RunManifest] = {}
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -304,8 +345,17 @@ def create_app(
     app = FastAPI(
         title="NS3-BELLHOP Platform Run API", version="1", lifespan=lifespan
     )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.frontend_origin],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", "Last-Event-ID"],
+    )
     app.state.catalog = catalog
     app.state.resource_catalog = selected_resources
+    app.state.system_info = system_info
+    app.state.acceptance_baseline = acceptance_baseline
+    app.state.run_manifests = run_manifests
 
     @app.exception_handler(CatalogError)
     async def catalog_error_handler(
@@ -339,18 +389,51 @@ def create_app(
             worker_executable_ready=ready,
         )
 
+    @app.get("/ready", response_model=ReadinessResource)
+    async def readiness() -> ReadinessResource:
+        worker_ready = (
+            settings.worker_executable.is_file()
+            and os.access(settings.worker_executable, os.X_OK)
+        )
+        ready = worker_ready and bool(selected_resources.list_experiments())
+        return ReadinessResource(
+            status="ready" if ready else "not-ready",
+            backend_alive=True,
+            worker_executable_ready=worker_ready,
+            resource_catalog_ready=bool(selected_resources.list_experiments()),
+            acceptance_baseline_ready=True,
+        )
+
+    @app.get("/system/info", response_model=SystemInfo)
+    async def get_system_info() -> SystemInfo:
+        return system_info
+
     @app.post(
         "/runs",
         response_model=RunResource,
         status_code=status.HTTP_201_CREATED,
     )
     async def create_run(request: CreateRunRequest) -> RunResource:
+        experiment = selected_resources.get_experiment(
+            request.experiment_id, request.experiment_version
+        )
+        scenario = selected_resources.get_scenario(
+            experiment.scenario.scenario_id, experiment.scenario.version
+        )
+        environment = selected_resources.get_environment(
+            scenario.environment.environment_asset_id
+        )
+
         def command(run_id: str):
             return selected_resources.resolve_command(
                 run_id, request.experiment_id, request.experiment_version
             )
 
-        return _run_resource(await catalog.create(command))
+        snapshot = await catalog.create(command)
+        run_manifests[snapshot.run_id] = make_manifest(
+            snapshot.run_id, system_info, environment, scenario, experiment
+        )
+        return _run_resource(snapshot)
 
     @app.get("/environments", response_model=list[EnvironmentResource])
     async def list_environments() -> tuple[EnvironmentResource, ...]:
@@ -418,6 +501,43 @@ def create_app(
             acceptance_report=result.acceptance_report,
             fusion_results=result.fusion_results,
             nodes=result.nodes,
+        )
+
+    async def evidence_for(run_id: str) -> AcceptanceEvidenceBundle:
+        result = await catalog.get_result(run_id)
+        snapshot = await catalog.get(run_id)
+        manifest = run_manifests.get(run_id)
+        if manifest is None:
+            raise CatalogError(
+                "EvidenceUnavailable", "The captured RunManifest is unavailable."
+            )
+        try:
+            return make_evidence(
+                acceptance_baseline, manifest, snapshot, result
+            )
+        except ValueError as error:
+            raise CatalogError("EvidenceUnavailable", str(error)) from error
+
+    @app.get(
+        "/runs/{run_id}/acceptance-evidence",
+        response_model=AcceptanceEvidenceBundle,
+    )
+    async def get_acceptance_evidence(
+        run_id: str,
+    ) -> AcceptanceEvidenceBundle:
+        return await evidence_for(run_id)
+
+    @app.get("/runs/{run_id}/acceptance-evidence.txt")
+    async def get_acceptance_evidence_text(run_id: str) -> PlainTextResponse:
+        bundle = await evidence_for(run_id)
+        return PlainTextResponse(
+            render_evidence_text(bundle),
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{run_id}-acceptance-evidence.txt"'
+                )
+            },
         )
 
     @app.get("/runs/{run_id}/events")

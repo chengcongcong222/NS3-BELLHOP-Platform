@@ -7,13 +7,28 @@ from pathlib import Path
 PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = PLATFORM_ROOT / "backend"
 BACKEND_SOURCE = BACKEND_ROOT / "src"
+GENERATED_DIRECTORY_NAMES = {
+    ".runtime",
+    ".tools",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+}
 
 
 def test_fastapi_stack_is_local_to_backend() -> None:
     forbidden = re.compile(r"^\s*(from|import)\s+(fastapi|pydantic|uvicorn)\b", re.M)
     violations = []
     for source in PLATFORM_ROOT.rglob("*.py"):
-        if BACKEND_ROOT in source.parents or "third_party" in source.parts:
+        relative_parts = source.relative_to(PLATFORM_ROOT).parts
+        if (
+            BACKEND_ROOT in source.parents
+            or "third_party" in relative_parts
+            or GENERATED_DIRECTORY_NAMES.intersection(relative_parts)
+        ):
             continue
         if forbidden.search(source.read_text()):
             violations.append(source.relative_to(PLATFORM_ROOT).as_posix())

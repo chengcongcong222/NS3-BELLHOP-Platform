@@ -1,4 +1,5 @@
 import type {
+  AcceptanceEvidenceDto,
   EnvironmentDto,
   ExperimentDto,
   ResultDto,
@@ -6,6 +7,7 @@ import type {
   RunDto,
   RunSummaryDto,
   ScenarioDto,
+  SystemInfoDto,
 } from "./types";
 
 export type ApiFailureKind =
@@ -74,7 +76,20 @@ const resultSummary = ((value: unknown): value is ResultSummaryDto =>
   isString(value.catalog_sequence) &&
   isString(value.run_id) &&
   isString(value.simulation_duration_ns) &&
-  isString(value.fusion_result_count)) as Validator<ResultSummaryDto>;
+    isString(value.fusion_result_count)) as Validator<ResultSummaryDto>;
+const systemInfo = ((value: unknown): value is SystemInfoDto =>
+  isObject(value) && isString(value.platform_name) &&
+  isString(value.product_baseline) && isObject(value.build) &&
+  isString(value.build.source_revision) && isObject(value.simulation) &&
+  isString(value.simulation.engine) && isString(value.simulation.version) &&
+  isString(value.simulation.time_authority) &&
+  isString(value.simulation.scheduler_authority) &&
+  isString(value.simulation.scheduling_gateway)) as Validator<SystemInfoDto>;
+const acceptanceEvidence = ((value: unknown): value is AcceptanceEvidenceDto =>
+  isObject(value) && value.immutable_snapshot === true &&
+  isObject(value.baseline) && isObject(value.manifest) &&
+  isObject(value.acceptance_report) && isObject(value.semantics) &&
+  value.semantics.verdict_origin === "BackendAcceptanceReport") as Validator<AcceptanceEvidenceDto>;
 
 function failureKind(code: string, status: number): ApiFailureKind {
   if (status === 404 || code.endsWith("NotFound") || code === "NotFound") {
@@ -167,6 +182,11 @@ export class ApiClient {
   listResults = () => this.request("/results", isArrayOf(resultSummary));
   getResult = (runId: string) =>
     this.request(`/runs/${encodeURIComponent(runId)}/results`, result);
+  getSystemInfo = () => this.request("/system/info", systemInfo);
+  getAcceptanceEvidence = (runId: string) =>
+    this.request(`/runs/${encodeURIComponent(runId)}/acceptance-evidence`, acceptanceEvidence);
+  acceptanceEvidenceTextUrl = (runId: string) =>
+    this.url(`/runs/${encodeURIComponent(runId)}/acceptance-evidence.txt`);
 }
 
 export const apiClient = new ApiClient();

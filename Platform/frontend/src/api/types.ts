@@ -206,6 +206,50 @@ export interface ResultSummaryDto {
   fusion_result_count: DecimalString;
 }
 
+export interface SystemInfoDto {
+  schema_version: number;
+  platform_name: string;
+  platform_version: string;
+  product_baseline: string;
+  build: { source_revision: string; configuration: string; cxx_standard: string };
+  simulation: { engine: string; version: string; time_authority: string; scheduler_authority: string; scheduling_gateway: string };
+  interfaces: { api_schema_version: string; worker_wire_schema_version: string; acceptance_evidence_schema_version: string; frontend_release: string };
+  runtime_mode: string;
+}
+
+export interface AcceptanceEvidenceDto {
+  schema_version: 1;
+  immutable_snapshot: true;
+  baseline: {
+    baseline_id: "Acceptance4Node";
+    baseline_version: string;
+    classification: string;
+    hard_requirements: {
+      network_node_count_minimum: string;
+      network_node_count_maximum: string;
+      communication_rate_bits_per_second: string;
+      maximum_bit_error_rate: number;
+      feature_level_fusion_required: boolean;
+      minimum_bearing_points: string;
+      maximum_fusion_period_ns: string;
+    };
+    demo_parameters: Record<string, unknown>;
+  };
+  manifest: { run_id: string; system: SystemInfoDto; environment: EnvironmentDto; scenario: ScenarioDto; experiment: ExperimentDto };
+  run: { run_id: string; lifecycle: Lifecycle; event_stream_complete: boolean };
+  projection: ResultDto["projection"];
+  acceptance_report: AcceptanceReportDto;
+  fusion_results: ResultDto["fusion_results"];
+  nodes: ResultDto["nodes"];
+  semantics: {
+    verdict_origin: "BackendAcceptanceReport";
+    ber_evidence_source: "Modeled" | "NotEvaluated";
+    no_arrival: string;
+    not_decoded: string;
+    aggregate_policy: string;
+  };
+}
+
 export interface CycleCommitTraceDto {
   occurred_at_ns: DecimalString;
   kind: "CycleCommit";

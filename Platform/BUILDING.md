@@ -58,3 +58,11 @@ When ns-3.47 is unavailable, configuration remains possible, the ns-3 smoke targ
 - No Platform target links the legacy `src/main.cpp` or legacy runtime objects.
 
 The exact compiler patch version and CI provider remain TBD. The frozen P0 baseline is Ubuntu 24.04, GCC, CMake, Ninja, C++23, and ns-3.47; Platform does not install or download ns-3.
+
+## Integrated demo delivery
+
+For the formal offline preparation, preflight, one-command launch and owned
+shutdown workflow, use `scripts/platform_demo.sh` as documented in
+`README.md`. This wrapper still drives the same CMake/CTest build and requires
+an explicit `PLATFORM_NS3_PREFIX`; it does not introduce another build system
+or download dependencies.

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "baseline_id": "Acceptance4Node",
+  "baseline_version": "1",
+  "classification": "third-party-acceptance-baseline",
+  "hard_requirements": {
+    "network_node_count_minimum": "3",
+    "network_node_count_maximum": "4",
+    "communication_rate_bits_per_second": "60",
+    "maximum_bit_error_rate": 0.0001,
+    "feature_level_fusion_required": true,
+    "minimum_bearing_points": "5",
+    "maximum_fusion_period_ns": "180000000000"
+  },
+  "demo_parameters": {
+    "network_node_count": "4",
+    "moving_sensor_node_count": "3",
+    "fixed_fusion_center_count": "1",
+    "center_frequency_hz": 25000.0,
+    "source_level_db_re_1upa_at_1m": 110.0,
+    "source_level_scope": "simulation-only-hardware-calibration-tbd",
+    "tdma_guard_interval_ns": "2000000000",
+    "network_update_interval_cycles": "10",
+    "environment_description": "shallow-water",
+    "nominal_sensor_speed_kilometers_per_hour": 5.0,
+    "approximate_average_range_meters": 1000.0
+  },
+  "extensions": {
+    "Extended6Node": "demonstration-extension-not-third-party-acceptance"
+  }
+}

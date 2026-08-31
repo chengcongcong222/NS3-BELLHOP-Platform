@@ -4,6 +4,7 @@ import resultFixture from "../../../backend/tests/fixtures/result_detail.json";
 import runFixture from "../../../backend/tests/fixtures/run_detail.json";
 import scenarioFixture from "../../../backend/tests/fixtures/scenario_detail.json";
 import type {
+  AcceptanceEvidenceDto,
   EnvironmentDto,
   ExperimentDto,
   ResultDto,
@@ -11,6 +12,7 @@ import type {
   RunDto,
   RunSummaryDto,
   ScenarioDto,
+  SystemInfoDto,
 } from "../api/types";
 
 export const environment = environmentFixture as EnvironmentDto;
@@ -44,4 +46,46 @@ export const resultSummary: ResultSummaryDto = {
   acceptance_overall: result.acceptance_report?.overall ?? null,
   simulation_duration_ns: result.projection.simulation_duration_ns,
   fusion_result_count: String(result.fusion_results.length),
+};
+export const systemInfo: SystemInfoDto = {
+  schema_version: 1,
+  platform_name: "NS3-BELLHOP Platform",
+  platform_version: "0.1.0",
+  product_baseline: "P0-S5-01",
+  build: { source_revision: "test-revision", configuration: "test", cxx_standard: "23" },
+  simulation: { engine: "ns-3", version: "3.47", time_authority: "ns3::Simulator", scheduler_authority: "ns3::Simulator", scheduling_gateway: "M1 / Ns3KernelGateway" },
+  interfaces: { api_schema_version: "1", worker_wire_schema_version: "1", acceptance_evidence_schema_version: "1", frontend_release: "test" },
+  runtime_mode: "test",
+};
+export const acceptanceEvidence: AcceptanceEvidenceDto = {
+  schema_version: 1,
+  immutable_snapshot: true,
+  baseline: {
+    baseline_id: "Acceptance4Node",
+    baseline_version: "1",
+    classification: "third-party-acceptance-baseline",
+    hard_requirements: {
+      network_node_count_minimum: "3",
+      network_node_count_maximum: "4",
+      communication_rate_bits_per_second: "60",
+      maximum_bit_error_rate: 0.0001,
+      feature_level_fusion_required: true,
+      minimum_bearing_points: "5",
+      maximum_fusion_period_ns: "180000000000",
+    },
+    demo_parameters: {},
+  },
+  manifest: { run_id: result.run_id, system: systemInfo, environment, scenario, experiment },
+  run: { run_id: result.run_id, lifecycle: "Completed", event_stream_complete: true },
+  projection: result.projection,
+  acceptance_report: result.acceptance_report!,
+  fusion_results: result.fusion_results,
+  nodes: result.nodes,
+  semantics: {
+    verdict_origin: "BackendAcceptanceReport",
+    ber_evidence_source: "Modeled",
+    no_arrival: "No physical arrival; no Reception exists.",
+    not_decoded: "Arrival was not decoded.",
+    aggregate_policy: "No unsupported aggregate is inferred.",
+  },
 };

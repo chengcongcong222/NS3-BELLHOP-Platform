@@ -2,7 +2,7 @@
 
 - 状态：Accepted / Frozen for P0；P0-S3、P0-S4-01 至 P0-S4-08 CLOSED；P0-S4 CLOSED
 - 日期：2026-08-17
-- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario，以及 P0-S4 Application Boundary
+- 适用范围：P0-S0 Contracts Freeze、P0-S1 Core Closed Loop、P0-S2 Cross-Module Provider Integration、P0-S3 Trace/Acceptance Scenario、P0-S4 Application Boundary，以及 P0-S5 Integrated Demo Delivery
 - 依据：`NS3-BELLHOP_P0.4_软件架构与开发实施设计基线.docx` 与第一轮旧系统审计结论
 
 ## 1. 背景
@@ -279,7 +279,7 @@ Receiver processing 按 window、receiver position projection、noise query/vali
 
 ### 2.20 ns-3 EventDispatcher 与 P0 signal lifecycle
 
-ns-3 是 Platform 唯一在线 simulation-time 与 event authority。只有 kernel/M1 的 `Ns3KernelGateway` 可以读取 `ns3::Simulator::Now()`、执行 Platform 强类型时间与 `ns3::Time` 的 checked integer-nanosecond conversion，以及调用 ns-3 schedule/run/stop/destroy。Runtime event handlers 只接收 `SimTime` 和普通 C++ callback，不拥有 clock、Advance/Tick 或第二套 scheduler。
+`ns3::Simulator` 是 Platform 唯一在线 simulation clock authority 与 event scheduling authority。只有 kernel/M1 的 `Ns3KernelGateway` 可以读取 `ns3::Simulator::Now()`、执行 Platform 强类型时间与 `ns3::Time` 的 checked integer-nanosecond conversion，以及调用 ns-3 schedule/run/stop/destroy；M1 / `Ns3KernelGateway` 只是 Platform 侧唯一的 ns-3 scheduling access gateway，不是最终 scheduler authority。Runtime event handlers 只接收 `SimTime` 和普通 C++ callback，不拥有 clock、Advance/Tick 或第二套 scheduler。
 
 Platform event key 由 `SimTime + EventPhase + instance-owned monotonic EventSequenceId` 组成。同一 timestamp 由 dispatcher 的单个 ns-3 callback 按 key 显式派发，phase 固定为 SESSION_FINALIZE=10、SIGNAL_ARRIVAL=20、INPUT_READY=30、RUNTIME_DECISION=40、TX_START=50、CYCLE_CLOSE=90；不得依赖 ns-3 偶然 insertion order。Callback 在执行中创建同 timestamp event 时，phase 必须严格晚于当前已执行 phase，否则返回 `kFailedPrecondition`。
 
@@ -767,6 +767,31 @@ P0-S4-08 至此 CLOSED：ns-3 display provenance 已统一归属正式 product m
 Acceptance authority gate、初始 topology/FusionResult 数据边界、Acceptance4Node/Extended6Node
 语义隔离及全量 Frontend、Backend、OFF/ON 门禁均已通过。由此 P0-S4 Application Boundary 正式
 CLOSED；后续交付与验收证据封装进入 P0-S5，不回改 P0-S4 的 simulation causality。
+
+### 2.54 Integrated demo, manifest and acceptance evidence boundary
+
+P0-S5-01 的正式第三方验收基线是 Acceptance4Node：3 个移动 sensor 与 1 个固定 fusion center；
+Extended6Node 只作为扩展示例。硬要求由版本化 machine-readable JSON 单点定义：3–4 nodes、60 bit/s、
+BER 不高于 1e-4、必须 feature-level fusion、不少于 5 个 bearing points、fusion period 不高于 180 s。
+25 kHz、simulation-only 110 dB re 1 µPa @ 1 m、2 s guard、每 10 cycle 更新、浅海、约 5 km/h 与约
+1 km 是 demo parameters，不得升级为额外第三方硬要求；hardware source-level calibration 保持 TBD。
+
+Run 创建时 backend 冻结 exact Environment/Scenario/Experiment resource 与 SystemInfo 为 RunManifest。
+AcceptanceEvidenceBundle 只复制 captured manifest、terminal Run、formal Result/AcceptanceReport 与正式
+projection/fusion/node records；不得重算 acceptance metric、修复矛盾 verdict 或从其他 counter 猜缺失
+aggregate。Acceptance Fail 是 Completed Run 的业务证据，不是 system failure。NoArrival 表示不存在物理
+arrival/Reception，NotDecoded 表示 signal 已到达 Rx pipeline 但解码失败，两者禁止合并。
+
+SystemInfo 是 backend 发布的正式 platform/build/engine/schema/frontend/runtime metadata。ns-3 3.47、
+C++23、`ns3::Simulator` 唯一 simulation clock/event scheduling authority、M1 / `Ns3KernelGateway`
+唯一 Platform-side scheduling access gateway 与 build source revision 由 unified metadata 提供；unknown 显式写为
+unavailable，frontend 不猜测。P0 evidence 只区分 Modeled 与 NotEvaluated BER；Measured/External 仍必须
+来自未来正式 DTO。
+
+交付脚本只能使用 repository-supplied Python/Node/npm offline closure 和 caller 显式指定的 ns-3.47
+prefix，不得联网获取依赖或保存 developer absolute path。Launcher 负责 preflight、独立 backend/frontend
+日志、PID ownership、readiness、start/stop/restart 与失败清理。P0 catalog/evidence 仍 process-local；
+durable persistence、authentication、hardware calibration 与 production service supervision 保持 TBD。
 
 ## 3. 影响
 

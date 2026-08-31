@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
 
 export const queries = {
+  systemInfo: () => queryOptions({ queryKey: ["system-info"], queryFn: apiClient.getSystemInfo, staleTime: Infinity }),
   environments: () => queryOptions({ queryKey: ["environments"], queryFn: apiClient.listEnvironments }),
   environment: (id: string) =>
     queryOptions({ queryKey: ["environments", id], queryFn: () => apiClient.getEnvironment(id) }),
@@ -15,4 +16,5 @@ export const queries = {
   run: (id: string) => queryOptions({ queryKey: ["runs", id], queryFn: () => apiClient.getRun(id) }),
   results: () => queryOptions({ queryKey: ["results"], queryFn: apiClient.listResults }),
   result: (id: string) => queryOptions({ queryKey: ["results", id], queryFn: () => apiClient.getResult(id) }),
+  acceptanceEvidence: (id: string) => queryOptions({ queryKey: ["acceptance-evidence", id], queryFn: () => apiClient.getAcceptanceEvidence(id) }),
 };
