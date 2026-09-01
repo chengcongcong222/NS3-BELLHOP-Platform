@@ -199,6 +199,7 @@ def main(platform: Path) -> None:
     assert "final acceptance-aligned release" in report_source
 
     demo = read(docs / "acceptance_demo_script.md")
+    assert demo.startswith("# P0-S5-05 Acceptance Demonstration Script")
     headings = re.findall(r"^## (\d+)\. ", demo, flags=re.MULTILINE)
     assert headings == [str(number) for number in range(1, 15)]
     for label in (
@@ -225,6 +226,8 @@ def main(platform: Path) -> None:
     screenshot = read(docs / "screenshot_manifest.md")
     assert screenshot.count("| SS-") == 11
     assert "/system/info" in screenshot
+    presentation = read(docs / "acceptance_presentation_baseline.md")
+    assert presentation.startswith("# P0-S5-05 Acceptance Presentation Baseline")
 
     # No generator is used in S5-04. The machine document is version-controlled;
     # repeated canonical serialization of the same input must be byte-identical.

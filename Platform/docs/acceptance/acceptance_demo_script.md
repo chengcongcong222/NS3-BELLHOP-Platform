@@ -1,4 +1,4 @@
-# P0-S5-04 Acceptance Demonstration Script
+# P0-S5-05 Acceptance Demonstration Script
 
 目标时长 5–10 分钟。操作对象是正式 P0-S5-05 Linux x86_64 archive。该交付包在满足
 ns-3.47 运行前提后，可在离线环境完成准备、启动、仿真、结果查看与验收证据导出。
