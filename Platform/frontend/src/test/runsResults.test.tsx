@@ -17,7 +17,8 @@ describe("authoritative Run and Result views", () => {
   it("renders a basic Run monitor with captured identities", async () => {
     installApi({ [`/runs/${run.run_id}`]: { body: run } });
     renderRoute(`/runs/${run.run_id}`);
-    expect(await screen.findByText(`仿真运行控制台 · ${run.run_id}`)).toBeTruthy();
+    expect(await screen.findByText("网络运行画布")).toBeTruthy();
+    expect(document.body.textContent).toContain(run.run_id);
     expect(screen.getAllByText(experiment.name).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(new RegExp(run.environment_asset_id))).toBeTruthy();
   });
@@ -60,7 +61,7 @@ describe("authoritative Run and Result views", () => {
     });
     expect(screen.getByText("Running")).toBeTruthy();
     expect(screen.queryByText("Completed")).toBeNull();
-    expect(screen.getAllByText("1", { selector: ".metric-card strong" })).toHaveLength(2);
+    expect(document.querySelector(".metrics-hierarchy")?.textContent).toContain("1完成周期1已记录事件");
     expect(screen.getByText("后端连接不可用")).toBeTruthy();
   });
 
@@ -94,9 +95,38 @@ describe("authoritative Run and Result views", () => {
       });
     });
     expect(screen.getByText("节点 2 未获得有效声学到达")).toBeTruthy();
-    expect(screen.getByText(/N0 → N2 · NoArrival/)).toBeTruthy();
+    expect(screen.getAllByText(/无有效到达/).length).toBeGreaterThan(0);
+    expect(document.querySelector(".link-inspector")?.textContent).toContain("N0");
+    expect(document.querySelector(".link-inspector")?.textContent).toContain("N2");
     expect(screen.getAllByText("0.00000001 s (10 ns)").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("序列 2")).toBeTruthy();
+  });
+
+  it("replays completed formal events without changing Run lifecycle", async () => {
+    class ControlledEventSource {
+      static current: ControlledEventSource | null = null;
+      listener: ((event: MessageEvent<string>) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      constructor(_url: string) { ControlledEventSource.current = this; }
+      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+      close() {}
+      emit(sequence: string, trace: object) { this.listener?.({ lastEventId: sequence, data: JSON.stringify({ run_id: run.run_id, sequence, trace }) } as MessageEvent<string>); }
+    }
+    vi.stubGlobal("EventSource", ControlledEventSource);
+    installApi({ [`/runs/${run.run_id}`]: { body: run } });
+    renderRoute(`/runs/${run.run_id}`);
+    await screen.findByText("Completed");
+    await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
+    act(() => {
+      ControlledEventSource.current?.emit("1", { occurred_at_ns: "20", kind: "Transmission", payload: { transmission_id: "7", packet_id: "3", sender_node_id: "0", target: { type: "Unicast", node_id: "2" }, started_at_ns: "20", ended_at_ns: "30" } });
+      ControlledEventSource.current?.emit("2", { occurred_at_ns: "30", kind: "ChannelOutcome", payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } } });
+    });
+    const slider = screen.getByLabelText("事件回放位置") as HTMLInputElement;
+    expect(slider.value).toBe("2");
+    await userEvent.click(screen.getByRole("button", { name: /节点 0 开始发送/ }));
+    expect(slider.value).toBe("1");
+    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(document.querySelector(".run-topology")?.classList.contains("phase-transmission")).toBe(true);
   });
 
   it("renders Result catalog and PASS detail without losing large integers", async () => {
@@ -180,7 +210,7 @@ describe("authoritative Run and Result views", () => {
       [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
     });
     renderRoute(`/results/${acceptance4Result.run_id}`);
-    expect(await screen.findByText("Acceptance4Node · 第三方验收基准")).toBeTruthy();
+    expect(await screen.findByText(/Acceptance4Node · 第三方验收/)).toBeTruthy();
     expect(screen.getByText("3–4 nodes（third-party requirement）")).toBeTruthy();
     expect(screen.getAllByText("4 nodes").length).toBeGreaterThan(0);
     expect(screen.getAllByText("60 bit/s").length).toBeGreaterThan(0);
@@ -219,9 +249,10 @@ describe("authoritative Run and Result views", () => {
     });
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
     await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
-    expect(await screen.findByText(`仿真运行控制台 · ${acceptance4Run.run_id}`)).toBeTruthy();
-    await userEvent.click(screen.getByRole("link", { name: "查看仿真结果" }));
-    expect(await screen.findByText("Acceptance evidence")).toBeTruthy();
+    expect(await screen.findByText("网络运行画布")).toBeTruthy();
+    expect(document.body.textContent).toContain(acceptance4Run.run_id);
+    await userEvent.click(screen.getByRole("link", { name: "查看结果 →" }));
+    expect(await screen.findByText(/Acceptance4Node · 第三方验收/)).toBeTruthy();
     expect(screen.getByText("Frontend does not recompute this verdict")).toBeTruthy();
   });
 });

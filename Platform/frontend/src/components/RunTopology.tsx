@@ -1,37 +1,18 @@
 import type { ScenarioDto } from "../api/types";
+import type { ActivityLink } from "../domain/runAnalytics";
 
-interface ActiveLink { sender: string | null; receiver: string; outcome: string }
+interface Props { scenario: ScenarioDto; active: ActivityLink | null; selectedNodeId?: string | null; onSelectNode?: (nodeId: string) => void }
 
-export function RunTopology({ scenario, active }: { scenario: ScenarioDto; active: ActiveLink | null }) {
-  const xs = scenario.nodes.map((node) => node.initial_position.x_meters);
-  const ys = scenario.nodes.map((node) => node.initial_position.y_meters);
-  const minX = Math.min(...xs); const maxX = Math.max(...xs);
-  const minY = Math.min(...ys); const maxY = Math.max(...ys);
-  const point = (x: number, y: number) => ({
-    x: 50 + ((x - minX) / Math.max(maxX - minX, 1)) * 500,
-    y: 285 - ((y - minY) / Math.max(maxY - minY, 1)) * 235,
-  });
-  const sender = scenario.nodes.find((node) => node.node_id === active?.sender);
-  const receiver = scenario.nodes.find((node) => node.node_id === active?.receiver);
-  return (
-    <svg className="run-topology" viewBox="0 0 600 330" role="img" aria-label="运行通信拓扑">
-      <defs><marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto" viewBox="0 0 12 10"><path d="M0 0L12 5L0 10Z" /></marker></defs>
-      <rect x="1" y="1" width="598" height="328" rx="8" className="plot-frame" />
-      {sender && receiver && <line
-        x1={point(sender.initial_position.x_meters, sender.initial_position.y_meters).x}
-        y1={point(sender.initial_position.x_meters, sender.initial_position.y_meters).y}
-        x2={point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).x}
-        y2={point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).y}
-        className={active?.outcome === "NoArrival" ? "active-link failed" : "active-link"}
-        markerEnd="url(#arrow)"
-      />}
-      {scenario.nodes.map((node) => {
-        const p = point(node.initial_position.x_meters, node.initial_position.y_meters);
-        const role = node.node_id === active?.sender ? "发送" : node.node_id === active?.receiver
-          ? active.outcome === "NoArrival" ? "无有效到达" : "接收" : "";
-        return <g key={node.node_id} transform={`translate(${p.x} ${p.y})`}><circle r="15" className={node.node_id === active?.sender ? "run-node sender" : node.node_id === active?.receiver ? "run-node receiver" : "run-node"} /><text x="20" y="4" className="node-label">N{node.node_id}</text>{role && <text x="20" y="21" className="activity-label">{role}</text>}</g>;
-      })}
-      <text x="20" y="315" className="plot-label">正式 Scenario 初始几何；仅用 Run events 高亮通信，不按浏览器时间推演节点运动。</text>
-    </svg>
-  );
+export function RunTopology({ scenario, active, selectedNodeId, onSelectNode }: Props) {
+  const xs = scenario.nodes.map((node) => node.initial_position.x_meters); const ys = scenario.nodes.map((node) => node.initial_position.y_meters);
+  const minX = Math.min(...xs); const maxX = Math.max(...xs); const minY = Math.min(...ys); const maxY = Math.max(...ys);
+  const point = (x: number, y: number) => ({ x: 65 + ((x - minX) / Math.max(maxX - minX, 1)) * 510, y: 330 - ((y - minY) / Math.max(maxY - minY, 1)) * 260 });
+  const sender = scenario.nodes.find((node) => node.node_id === active?.sender); const receiver = scenario.nodes.find((node) => node.node_id === active?.receiver);
+  return <svg className={`run-topology phase-${active?.phase.toLowerCase() ?? "idle"}`} viewBox="0 0 640 390" role="img" aria-label="运行通信拓扑">
+    <defs><pattern id="run-grid" width="64" height="52" patternUnits="userSpaceOnUse"><path d="M64 0H0V52" className="grid-line" /></pattern><marker id="run-arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto" viewBox="0 0 12 10"><path d="M0 0L12 5L0 10Z" /></marker></defs>
+    <rect x="1" y="1" width="638" height="388" className="run-water" /><rect x="25" y="28" width="590" height="330" fill="url(#run-grid)" className="workspace-boundary" /><text x="36" y="50" className="plot-label">场景几何 · X/Y 平面</text>
+    {sender && receiver && active && <g className="active-link-group"><line x1={point(sender.initial_position.x_meters, sender.initial_position.y_meters).x} y1={point(sender.initial_position.x_meters, sender.initial_position.y_meters).y} x2={point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).x} y2={point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).y} className={`active-link ${active.phase.toLowerCase()}`} markerEnd="url(#run-arrow)" /><text x={(point(sender.initial_position.x_meters, sender.initial_position.y_meters).x + point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).x) / 2} y={(point(sender.initial_position.x_meters, sender.initial_position.y_meters).y + point(receiver.initial_position.x_meters, receiver.initial_position.y_meters).y) / 2 - 10} className="link-state-label">{active.outcome}</text></g>}
+    {scenario.nodes.map((node) => { const p = point(node.initial_position.x_meters, node.initial_position.y_meters); const role = node.node_id === active?.sender ? "发送端" : node.node_id === active?.receiver ? active.phase === "NoArrival" ? "未到达" : active.phase === "Reception" ? "接收处理" : "信号到达" : ""; return <g key={node.node_id} transform={`translate(${p.x} ${p.y})`} className="run-node-group" onClick={() => onSelectNode?.(node.node_id)} role={onSelectNode ? "button" : undefined} tabIndex={onSelectNode ? 0 : undefined}><circle r="27" className={node.node_id === selectedNodeId ? "run-node-selection" : "run-node-selection hidden"} /><circle r="17" className={node.node_id === active?.sender ? "run-node sender" : node.node_id === active?.receiver ? `run-node receiver ${active?.phase.toLowerCase()}` : "run-node"} /><text x="23" y="3" className="node-label">N{node.node_id}</text><text x="23" y="19" className="activity-label">{role || `${Math.abs(node.initial_position.z_meters)} m 深`}</text></g>; })}
+    <g className="run-legend" transform="translate(32 370)"><circle r="5" className="legend-sending" /><text x="10">发送</text><circle cx="72" r="5" className="legend-signal" /><text x="82">传播/到达</text><circle cx="180" r="5" className="legend-reception" /><text x="190">接收</text><circle cx="260" r="5" className="legend-noarrival" /><text x="270">NoArrival</text></g>
+  </svg>;
 }

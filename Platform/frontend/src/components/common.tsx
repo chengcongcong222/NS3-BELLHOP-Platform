@@ -1,44 +1,56 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { ApiFailure } from "../api/client";
 import { queries } from "../api/queries";
 import { PRODUCT_METADATA } from "../productMetadata";
 
 export function AppShell({ children }: PropsWithChildren) {
   const system = useQuery(queries.systemInfo());
+  const location = useLocation();
   const links = [
-    ["/", "工作台"],
-    ["/cases", "案例中心"],
-    ["/environments", "环境建设"],
-    ["/scenarios", "场景设计"],
-    ["/experiments", "实验配置"],
-    ["/runs", "仿真运行"],
-    ["/results", "结果分析"],
-    ["/resources", "资源管理"],
-    ["/system", "系统信息"],
+    ["/", "⌂", "工作台"],
+    ["/cases", "▤", "案例中心"],
+    ["/environments", "≈", "环境建设"],
+    ["/scenarios", "⌖", "场景设计"],
+    ["/experiments", "⚙", "实验配置"],
+    ["/runs", "▶", "仿真运行"],
+    ["/results", "⌁", "结果分析"],
+    ["/resources", "▦", "资源管理"],
+    ["/system", "i", "系统信息"],
   ];
+  const workspaceSection = location.pathname.startsWith("/workspace/environment") ? "/environments"
+    : location.pathname.startsWith("/workspace/scenario") ? "/scenarios"
+    : location.pathname.startsWith("/workspace/experiment") ? "/experiments" : null;
+  const active = links.find(([to]) => to === (workspaceSection ?? (to === "/" && location.pathname === "/" ? "/" : location.pathname.split("/").slice(0, 2).join("/")))) ?? links[0];
   return (
     <div className="app-shell">
       <header className="product-header">
-        <div>
+        <div className="product-mark">
+          <span className="product-monogram">N3</span>
+          <div>
           <strong>{system.data?.platform_name ?? PRODUCT_METADATA.platformName}</strong>
           <span>水声网络仿真工作台</span>
+          </div>
         </div>
-        <div className="engine">Simulation Engine: {system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</div>
+        <div className="shell-context"><span>当前模块</span><strong>{active[2]}</strong></div>
+        <div className="engine"><i className={system.data ? "service-online" : "service-pending"} />{system.data ? "仿真服务已连接" : "正在连接仿真服务"}<small>{system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</small></div>
       </header>
       <nav aria-label="主导航">
-        {links.map(([to, label]) => (
-          <NavLink key={to} to={to} end={to === "/"}>
-            {label}
+        <span className="nav-section">仿真工作流</span>
+        {links.slice(0, 7).map(([to, icon, label]) => (
+          <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => isActive || to === workspaceSection ? "active" : undefined}>
+            <b>{icon}</b><span>{label}</span>
           </NavLink>
         ))}
+        <span className="nav-section nav-secondary">平台</span>
+        {links.slice(7).map(([to, icon, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? "active" : undefined}><b>{icon}</b><span>{label}</span></NavLink>)}
       </nav>
       <main>{children}</main>
       <footer>
-        {system.data
-          ? `${system.data.simulation.time_authority} clock · ${system.data.simulation.scheduler_authority} scheduler · ${system.data.simulation.scheduling_gateway} · ${system.data.product_baseline}`
-          : `${PRODUCT_METADATA.footerAuthority} · ${PRODUCT_METADATA.schedulingGateway}`}
+        <span><i className={system.data ? "service-online" : "service-pending"} />{system.data ? "系统就绪" : "连接中"}</span>
+        <span>{active[2]}</span>
+        <span className="footer-technical">{system.data ? `${system.data.simulation.time_authority} · ${system.data.simulation.scheduler_authority} · ${system.data.product_baseline}` : `${PRODUCT_METADATA.footerAuthority} · ${PRODUCT_METADATA.schedulingGateway}`}</span>
       </footer>
     </div>
   );

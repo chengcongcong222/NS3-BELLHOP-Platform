@@ -1,19 +1,6 @@
 import type { EnvironmentDto } from "../api/types";
 import type { EnvironmentDraft } from "../domain/workspace";
 
-function polyline(points: Array<{ x: number; y: number }>, width: number, height: number): string {
-  if (!points.length) return "";
-  const xs = points.map((point) => point.x);
-  const ys = points.map((point) => point.y);
-  const minX = Math.min(...xs); const maxX = Math.max(...xs);
-  const minY = Math.min(...ys); const maxY = Math.max(...ys);
-  return points.map((point) => {
-    const x = 44 + ((point.x - minX) / Math.max(maxX - minX, 1)) * (width - 72);
-    const y = 24 + ((point.y - minY) / Math.max(maxY - minY, 1)) * (height - 54);
-    return `${x},${y}`;
-  }).join(" ");
-}
-
 export function PublishedEnvironmentProfile({ environment }: { environment: EnvironmentDto }) {
   const total = BigInt(environment.cell_count);
   const noArrival = BigInt(environment.no_arrival_cell_count);
@@ -28,7 +15,8 @@ export function PublishedEnvironmentProfile({ environment }: { environment: Envi
         <line x1="40" y1="28" x2="660" y2="28" className="surface-line" />
         <text x="44" y="20">海面 · 0 m</text><text x="44" y="258">覆盖深度 {depth} m</text>
         <text x="485" y="258">水平距离 {environment.axes.horizontal_range.maximum} m</text>
-        <g transform="translate(105 94)"><circle r="8" className="source-marker" /><path d="M15 -20 Q95 0 175 32 M15 0 Q95 22 175 52 M15 20 Q95 43 175 70" className="acoustic-rays" /></g>
+        <rect x="70" y="52" width="560" height="132" className="coverage-field" />
+        <text x="350" y="122" textAnchor="middle" className="coverage-label">AcousticFieldAsset 覆盖范围</text>
       </svg>
       <div className="visual-facts">
         <strong>{environment.axes.frequency.minimum / 1000} kHz</strong><span>正式资产工作频率</span>
@@ -41,12 +29,13 @@ export function PublishedEnvironmentProfile({ environment }: { environment: Envi
 }
 
 export function DraftEnvironmentProfile({ draft }: { draft: EnvironmentDraft }) {
-  const ssp = draft.soundSpeedProfile.map((point) => ({ x: point.speedMetersPerSecond, y: point.depthMeters }));
-  const bathymetry = draft.bathymetry.map((point) => ({ x: point.rangeMeters, y: point.depthMeters }));
+  const speeds = draft.soundSpeedProfile.map((point) => point.speedMetersPerSecond); const minimumSpeed = Math.min(...speeds); const maximumSpeed = Math.max(...speeds);
+  const ssp = draft.soundSpeedProfile.map((point) => `${44 + ((point.speedMetersPerSecond - minimumSpeed) / Math.max(maximumSpeed - minimumSpeed, 1)) * 288},${24 + Math.min(1, point.depthMeters / Math.max(draft.maximumDepthMeters, 1)) * 206}`).join(" ");
+  const bathymetry = draft.bathymetry.map((point) => `${44 + Math.min(1, point.rangeMeters / Math.max(draft.maximumRangeMeters, 1)) * 288},${24 + Math.min(1, point.depthMeters / Math.max(draft.maximumDepthMeters, 1)) * 206}`).join(" ");
   return (
     <div className="profile-pair">
-      <figure><figcaption>声速剖面（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿声速剖面"><rect x="1" y="1" width="358" height="258" className="plot-frame" /><polyline points={polyline(ssp, 360, 260)} className="profile-line" /><text x="210" y="248">声速 m/s</text><text x="10" y="20">深度 m ↓</text></svg></figure>
-      <figure><figcaption>海底地形（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿海底地形"><rect x="1" y="1" width="358" height="258" className="plot-frame" /><polyline points={polyline(bathymetry, 360, 260)} className="bathymetry-line" /><text x="230" y="248">水平距离 m</text><text x="10" y="20">深度 m ↓</text></svg></figure>
+      <figure><figcaption>声速剖面（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿声速剖面"><rect x="1" y="1" width="358" height="258" className="plot-frame" /><polyline points={ssp} className="profile-line" /><text x="210" y="248">声速 m/s</text><text x="10" y="20">深度 m ↓</text></svg></figure>
+      <figure><figcaption>海底地形（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿海底地形"><rect x="1" y="1" width="358" height="258" className="plot-frame" /><polyline points={bathymetry} className="bathymetry-line" /><text x="230" y="248">水平距离 m</text><text x="10" y="20">深度 m ↓</text></svg></figure>
     </div>
   );
 }

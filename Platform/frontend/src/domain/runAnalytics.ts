@@ -47,10 +47,39 @@ export function cumulativeTrends(events: readonly RunEventDto[]) {
   return { transmissions, receptions, cycles, ber, delay, loss };
 }
 
-export function latestActiveLink(events: readonly RunEventDto[]) {
+export interface ActivityLink {
+  sender: string | null;
+  receiver: string | null;
+  outcome: string;
+  phase: "Transmission" | "Signal" | "NoArrival" | "Reception";
+  transmissionId: string;
+}
+
+export function latestActiveLink(events: readonly RunEventDto[]): ActivityLink | null {
   const senders = new Map<string, string>();
   for (const event of events) if (event.trace.kind === "Transmission") senders.set(event.trace.payload.transmission_id, event.trace.payload.sender_node_id);
-  const latest = [...events].reverse().find((event) => event.trace.kind === "ChannelOutcome" || event.trace.kind === "Reception");
-  if (!latest || (latest.trace.kind !== "ChannelOutcome" && latest.trace.kind !== "Reception")) return null;
-  return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: latest.trace.kind === "ChannelOutcome" ? latest.trace.payload.outcome.type : latest.trace.payload.disposition };
+  const latest = events.at(-1);
+  if (!latest) return null;
+  if (latest.trace.kind === "Transmission") {
+    const receiver = latest.trace.payload.target.type === "Unicast" ? latest.trace.payload.target.node_id : null;
+    return { sender: latest.trace.payload.sender_node_id, receiver, outcome: receiver ? "发送开始" : "广播发送", phase: "Transmission", transmissionId: latest.trace.payload.transmission_id };
+  }
+  if (latest.trace.kind === "ChannelOutcome") {
+    const phase = latest.trace.payload.outcome.type === "NoArrival" ? "NoArrival" : "Signal";
+    return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: phase === "Signal" ? "信号到达" : "无有效到达", phase, transmissionId: latest.trace.payload.transmission_id };
+  }
+  if (latest.trace.kind === "Reception") return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: latest.trace.payload.disposition, phase: "Reception", transmissionId: latest.trace.payload.transmission_id };
+  return null;
+}
+
+export function projectionCounts(events: readonly RunEventDto[]) {
+  let transmissions = 0; let signals = 0; let noArrivals = 0; let receptions = 0; let cycles = 0;
+  for (const event of events) {
+    if (event.trace.kind === "Transmission") transmissions += 1;
+    if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "Signal") signals += 1;
+    if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "NoArrival") noArrivals += 1;
+    if (event.trace.kind === "Reception") receptions += 1;
+    if (event.trace.kind === "CycleCommit") cycles += 1;
+  }
+  return { transmissions, signals, noArrivals, receptions, cycles };
 }
