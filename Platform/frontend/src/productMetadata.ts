@@ -1,5 +1,5 @@
 export const PRODUCT_METADATA = Object.freeze({
-  baseline: "P0-S5-03",
+  baseline: "P0-S5-05",
   platformName: "NS3-BELLHOP Platform",
   simulationEngine: "ns-3",
   ns3Version: "3.47",

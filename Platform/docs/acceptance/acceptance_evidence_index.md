@@ -3,7 +3,7 @@
 | Question | Primary evidence | Supporting evidence |
 | --- | --- | --- |
 | 哪个软件版本？ | release `MANIFEST.json`: `release_id`, `source_revision`, `build_target` | `/system/info`; archive `.sha256` |
-| Archive 是否完整？ | archive sidecar SHA-256 `318c26b421be211b981a349394971c6b28e3fbe6730c4ee8ca44218c5df0955c` | release `SHA256SUMS`; `release_inventory.json` |
+| Archive 是否完整？ | archive sidecar SHA-256 `@ARCHIVE_SHA256@` | release `SHA256SUMS`; `release_inventory.json` |
 | 验收阈值是什么？ | `Platform/acceptance/acceptance4_baseline_v1.json` | `acceptance_evidence_matrix.json` |
 | Run 实际用了什么？ | `AcceptanceEvidence.manifest` | Run detail、Experiment/Scenario/Environment resource APIs |
 | 六项 verdict 从哪里来？ | `AcceptanceEvidence.acceptance_report` | formal Result `acceptance_report`; `acceptance_run_report.hpp` tests |
@@ -12,7 +12,7 @@
 | BER 性质是什么？ | `semantics.ber_evidence_source=Modeled` 和 `ber_interpretation` | scalar BER PHY test、Acceptance report test |
 | ns-3 是否真实执行？ | `/system/info` authorities + Worker ELF dependency | kernel gateway、kernel/dispatcher/signal lifecycle/Acceptance ns-3 ON tests |
 | 结果是否可重复？ | normalized hashes in `acceptance_evidence_matrix.json` | three Golden Run comparison and two-build archive SHA equality |
-| 演示是否完整走通？ | `acceptance_dry_run_record.md` | 14-step script and operator error rehearsal |
+| 演示是否完整走通？ | handoff `final_release_record.md` | 14-step script and operator error rehearsal |
 | 如何下载证据？ | `/runs/{run_id}/acceptance-evidence` | `/runs/{run_id}/acceptance-evidence.txt` and Result download action |
 
 ## Repository evidence targets

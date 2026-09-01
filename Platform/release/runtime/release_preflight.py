@@ -51,7 +51,7 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
     validate_platform(platform.system(), platform.machine())
-    if manifest["release_id"] != "P0-S5-03" or manifest["build_target"] != "linux-x86_64":
+    if manifest["release_id"] != "P0-S5-05" or manifest["build_target"] != "linux-x86_64":
         fail("MANIFEST_IDENTITY", "unexpected release identity")
 
     ns3_prefix_text = os.environ.get("PLATFORM_NS3_PREFIX", "")

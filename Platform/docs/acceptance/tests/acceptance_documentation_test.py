@@ -48,11 +48,11 @@ def main(platform: Path) -> None:
         "authority": "Platform/acceptance/acceptance4_baseline_v1.json",
     }
     assert matrix["release"] == {
-        "release_id": "P0-S5-03",
-        "source_revision": "a44a2b3a4cd88c37445c800193114c5f00841ded",
+        "release_id": "P0-S5-05",
+        "source_revision": "@SOURCE_REVISION@",
         "build_target": "linux-x86_64",
-        "archive_filename": "ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz",
-        "archive_sha256": "318c26b421be211b981a349394971c6b28e3fbe6730c4ee8ca44218c5df0955c",
+        "archive_filename": "ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz",
+        "archive_sha256": "@ARCHIVE_SHA256@",
     }
     assert matrix["policies"]["verdict_authority"] == "AcceptanceEvidence.acceptance_report"
     assert matrix["policies"]["matrix_role"] == "field-mapping-only-no-recomputation"
@@ -90,7 +90,7 @@ def main(platform: Path) -> None:
 
     golden = matrix["golden_run"]
     assert golden["identity"] == {
-        "release_id": "P0-S5-03",
+        "release_id": "P0-S5-05",
         "experiment_id": "acceptance4-experiment",
         "experiment_version": "1",
         "scenario_id": "acceptance4-scenario",
@@ -125,6 +125,9 @@ def main(platform: Path) -> None:
         "acceptance_evidence_matrix.md",
         "acceptance_presentation_baseline.md",
         "acceptance_q_and_a.md",
+        "final_acceptance_presentation_source.md",
+        "final_acceptance_report_source.md",
+        "manual_screenshot_capture.md",
         "screenshot_manifest.md",
     )
     combined = "\n".join(read(docs / name) for name in required_docs)
@@ -151,6 +154,21 @@ def main(platform: Path) -> None:
     assert "Windows native" in combined
     assert "Extended6Node" in combined and "工程扩展" in combined
 
+    # Contextual claim lint: exact affirmative forms are forbidden in final
+    # acceptance sources. Q&A and warning sections use distinct negated wording.
+    for prohibited_affirmative in (
+        "Requirement: 5 nodes",
+        "5 bearing points = 5 nodes",
+        "hardware BER passed",
+        "measured BER = 0",
+        "real-site environment",
+        "real measured sound field",
+        "real-time Bellhop",
+        "hardware source level verified",
+    ):
+        assert prohibited_affirmative not in combined
+    assert not re.search(r"(?<![0-9])60\s*kbps(?![0-9])", combined, flags=re.IGNORECASE)
+
     architecture = read(docs / "acceptance_architecture.md")
     for evidence in (
         "Simulator::Now",
@@ -166,6 +184,19 @@ def main(platform: Path) -> None:
     ):
         assert evidence in architecture
     assert "Environment 不标记为 M6" in architecture
+    for required_claim in (
+        "ns-3 discrete-event simulation kernel",
+        "ns3::Simulator",
+        "M1 / Ns3KernelGateway",
+    ):
+        assert required_claim in combined
+    assert "M1 is scheduler authority" not in combined
+    assert "Platform has another scheduler" not in combined
+
+    historical = read(platform / "docs/release/p0_s5_03_historical_release.md")
+    report_source = read(docs / "final_acceptance_report_source.md")
+    assert "first canonical offline runtime release" in historical
+    assert "final acceptance-aligned release" in report_source
 
     demo = read(docs / "acceptance_demo_script.md")
     headings = re.findall(r"^## (\d+)\. ", demo, flags=re.MULTILINE)

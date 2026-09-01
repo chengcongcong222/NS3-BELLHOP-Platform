@@ -1,11 +1,11 @@
 # P0-S5-04 Acceptance Demonstration Script
 
-目标时长 5–10 分钟。操作对象是正式 P0-S5-03 Linux x86_64 archive。该交付包在满足
+目标时长 5–10 分钟。操作对象是正式 P0-S5-05 Linux x86_64 archive。该交付包在满足
 ns-3.47 运行前提后，可在离线环境完成准备、启动、仿真、结果查看与验收证据导出。
 
 ## 1. Verify archive SHA-256
 
-- **Operator action:** `sha256sum -c ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz.sha256`。
+- **Operator action:** `sha256sum -c ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz.sha256`。
 - **Expected screen:** archive `OK`。
 - **What to say:** 正式 identity 是 release ID、source revision、archive filename 和 checksum；artifact publication 是后续交付动作，当前不声称已发布 GitHub Release。
 - **Evidence to point at:** sidecar checksum 与 `MANIFEST.json`。
@@ -102,7 +102,7 @@ ns-3.47 运行前提后，可在离线环境完成准备、启动、仿真、结
 ## 13. Show system/ns-3 info
 
 - **Operator action:** 访问 `http://127.0.0.1:8000/system/info`。
-- **Expected screen:** P0-S5-03、source SHA、linux-x86_64、ns-3 3.47、两个 `ns3::Simulator` authority、M1 gateway、Reference identity。
+- **Expected screen:** P0-S5-05、source SHA、linux-x86_64、ns-3 3.47、两个 `ns3::Simulator` authority、M1 gateway、Reference identity。
 - **What to say:** external prerequisite 不等于未使用 ns-3；实际 Worker 链接并执行 ns-3.47。
 - **Evidence to point at:** system/info and `binary_dependencies.json`。
 - **Possible expert question:** “为何不修改 ns-3 源码？” **Approved answer:** Platform 通过稳定 gateway 组合领域模块，保留 ns-3 内核权威并避免维护 fork。

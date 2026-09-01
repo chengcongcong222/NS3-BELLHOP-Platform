@@ -6,11 +6,11 @@
     "authority": "Platform/acceptance/acceptance4_baseline_v1.json"
   },
   "release": {
-    "release_id": "P0-S5-03",
-    "source_revision": "a44a2b3a4cd88c37445c800193114c5f00841ded",
+    "release_id": "P0-S5-05",
+    "source_revision": "@SOURCE_REVISION@",
     "build_target": "linux-x86_64",
-    "archive_filename": "ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz",
-    "archive_sha256": "318c26b421be211b981a349394971c6b28e3fbe6730c4ee8ca44218c5df0955c"
+    "archive_filename": "ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz",
+    "archive_sha256": "@ARCHIVE_SHA256@"
   },
   "policies": {
     "verdict_authority": "AcceptanceEvidence.acceptance_report",
@@ -94,7 +94,7 @@
   ],
   "golden_run": {
     "identity": {
-      "release_id": "P0-S5-03",
+      "release_id": "P0-S5-05",
       "experiment_id": "acceptance4-experiment",
       "experiment_version": "1",
       "scenario_id": "acceptance4-scenario",

@@ -1,9 +1,9 @@
-# NS3-BELLHOP Platform P0-S5-03
+# NS3-BELLHOP Platform P0-S5-05
 
 Formal Linux x86_64 offline delivery for Acceptance4Node using the
 ReferenceShallowWaterV1 Bellhop-derived acoustic field.
 
-- Release: `P0-S5-03`
+- Release: `P0-S5-05`
 - Source revision: `@SOURCE_REVISION@`
 - Runtime prerequisite: CPython 3.12 and an ns-3.47 prefix
 - Reference asset: `reference-shallow-water-v1`

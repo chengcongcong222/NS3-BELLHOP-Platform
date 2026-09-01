@@ -1,6 +1,6 @@
 # Acceptance Screenshot Manifest
 
-当前仓库没有正式浏览器截图工具，本阶段不引入新自动化依赖。后续截图必须使用同一 P0-S5-03
+当前环境没有可用的系统浏览器/正式截图工具，本阶段不向产品引入大型浏览器依赖。截图必须使用同一 P0-S5-05
 Golden demonstration state，并避免展示开发路径、浏览器个人信息或临时 RunId 作为基线 identity。
 
 | ID | Route | Screen purpose | Required visible fields | Capture state |
@@ -15,6 +15,6 @@ Golden demonstration state，并避免展示开发路径、浏览器个人信息
 | SS-08 | `/results/{run_id}` | Acceptance table | six requirement/actual/verdict/evidence/reason rows | Acceptance4Node evidence loaded |
 | SS-09 | `/results/{run_id}` | Fusion result | FusionResult plot/table、6 observations、24 s period | Golden Result available |
 | SS-10 | `/results/{run_id}` | Evidence download/info | environment/propagation/BER semantics、download action、source revision | evidence loaded |
-| SS-11 | `/system/info` | System info | P0-S5-03、source SHA、linux-x86_64、ns-3 3.47、authorities、M1 gateway、AssetId/checksum | backend ready |
+| SS-11 | `/system/info` | System info | P0-S5-05、source SHA、linux-x86_64、ns-3 3.47、authorities、M1 gateway、AssetId/checksum | backend ready |
 
 截图只用于 Level 5 UI presentation。正式字段证据仍来自 backend Result/AcceptanceEvidence。

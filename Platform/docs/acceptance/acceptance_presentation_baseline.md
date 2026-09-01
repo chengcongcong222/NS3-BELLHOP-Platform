@@ -5,11 +5,10 @@
 ## Platform and release
 
 - Platform：以 **ns-3 discrete-event simulation kernel** 为唯一 simulation clock/event scheduling authority 的水声网络数字孪生平台。
-- Release：`P0-S5-03`，source revision
-  `a44a2b3a4cd88c37445c800193114c5f00841ded`，Linux x86_64。
-- Archive：`ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz`，SHA-256
-  `318c26b421be211b981a349394971c6b28e3fbe6730c4ee8ca44218c5df0955c`。
-- 正式措辞：P0-S5-03 交付包在满足 ns-3.47 运行前提后，可在离线环境完成准备、启动、
+- Release：`P0-S5-05`，source revision `@SOURCE_REVISION@`，Linux x86_64。
+- Archive：`ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz`，SHA-256
+  `@ARCHIVE_SHA256@`。
+- 正式措辞：P0-S5-05 交付包在满足 ns-3.47 运行前提后，可在离线环境完成准备、启动、
   仿真、结果查看与验收证据导出。
 
 ## Architecture statement
@@ -48,7 +47,7 @@ model。`0.0` 可能表示达到浮点数值表示下限，不是硬件实测结
 
 ## Golden demonstration run
 
-Identity：P0-S5-03 + `acceptance4-experiment` v1 + `acceptance4-scenario` v1 +
+Identity：P0-S5-05 + `acceptance4-experiment` v1 + `acceptance4-scenario` v1 +
 Reference asset/checksum + deterministic seed/config；RunId 不属于 Golden identity。
 
 Baseline-specific output：4 nodes、6 transmissions、18 Signal、18 Reception、6 local deliveries、

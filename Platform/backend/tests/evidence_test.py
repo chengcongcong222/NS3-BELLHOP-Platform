@@ -58,8 +58,8 @@ def test_system_info_is_formal_and_has_no_filesystem_paths() -> None:
             response = await client.get("/system/info")
             assert response.status_code == 200
             body = response.json()
-            assert body["product_baseline"] == "P0-S5-03"
-            assert body["release_id"] == "P0-S5-03"
+            assert body["product_baseline"] == "P0-S5-05"
+            assert body["release_id"] == "P0-S5-05"
             assert body["build_target"] == "linux-x86_64"
             assert body["reference_environment_asset_id"] == "reference-shallow-water-v1"
             assert body["reference_environment_checksum"] == "fb64e543f9042c52"
@@ -94,7 +94,7 @@ def test_evidence_is_captured_read_only_and_byte_deterministic() -> None:
             assert body["manifest"]["run_id"] == "evidence-run"
             assert body["manifest"]["experiment"]["version"] == "1"
             assert body["manifest"]["environment"]["checksum"]["value"]
-            assert body["manifest"]["system"]["release_id"] == "P0-S5-03"
+            assert body["manifest"]["system"]["release_id"] == "P0-S5-05"
             assert body["acceptance_report"]["overall"] == "Pass"
             assert body["semantics"]["verdict_origin"] == "BackendAcceptanceReport"
             assert body["semantics"]["environment_evidence"] == "Reference / modeled"
@@ -118,7 +118,7 @@ def test_evidence_is_captured_read_only_and_byte_deterministic() -> None:
             )
             assert text.status_code == 200
             assert "Overall: Pass" in text.text
-            assert "Release: P0-S5-03" in text.text
+            assert "Release: P0-S5-05" in text.text
             assert "Environment evidence: Reference / modeled" in text.text
             assert "Propagation: Bellhop-derived" in text.text
             assert "not a hardware measurement" in text.text

@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main(root: Path, temporary: Path) -> None:
     schema = json.loads((root / "release_manifest_schema_v1.json").read_text())
-    assert schema["properties"]["release_id"]["const"] == "P0-S5-03"
+    assert schema["properties"]["release_id"]["const"] == "P0-S5-05"
     assert schema["properties"]["build_target"]["const"] == "linux-x86_64"
     builder = (root / "build_release.py").read_text()
     launcher = (root / "runtime/release.sh").read_text()
@@ -20,6 +20,13 @@ def main(root: Path, temporary: Path) -> None:
     assert '"status", "--porcelain"' in builder
     assert "clean committed source tree" in builder
     assert '"--sort=name"' in builder and '"gzip", "-n", "-9"' in builder
+    assert 'RELEASE_ID = "P0-S5-05"' in builder
+    assert 'HANDOFF_ROOT = "acceptance-handoff-p0-s5-05"' in builder
+    assert "handoff_bundle_test.py" in builder
+    handoff_template = (root / "HANDOFF_README.template.md").read_text()
+    assert "not a second runtime distribution" in handoff_template
+    assert "@SOURCE_REVISION@" in handoff_template
+    assert "@ARCHIVE_SHA256@" in handoff_template
     assert "PLATFORM_NS3_PREFIX" in launcher and "PLATFORM_NS3_PREFIX" in preflight
     assert "Linux" in preflight and "x86_64" in preflight
     for command in ("prepare", "preflight", "start", "status", "restart", "stop"):

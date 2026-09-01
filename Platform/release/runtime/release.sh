@@ -74,7 +74,7 @@ start() {
   PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ID="$(manifest_value reference_environment.asset_id)" \
   PLATFORM_REFERENCE_ENVIRONMENT_CHECKSUM="$(manifest_value reference_environment.checksum.value)" \
   PLATFORM_BUILD_CONFIGURATION="formal-release-linux-x86_64" \
-  PLATFORM_FRONTEND_RELEASE="p0-s5-03" \
+  PLATFORM_FRONTEND_RELEASE="p0-s5-05" \
   PLATFORM_FRONTEND_ORIGIN="http://127.0.0.1:${frontend_port}" \
     nohup setsid "${python}" -m uvicorn ns3_factory_backend.main:app \
       --host 127.0.0.1 --port "${backend_port}" >"${log_dir}/backend.log" 2>&1 &

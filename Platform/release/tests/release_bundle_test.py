@@ -9,7 +9,7 @@ from pathlib import Path
 def main(root: Path, expected_revision: str) -> None:
     manifest = json.loads((root / "MANIFEST.json").read_text())
     assert manifest["schema_version"] == 1
-    assert manifest["release_id"] == "P0-S5-03"
+    assert manifest["release_id"] == "P0-S5-05"
     assert manifest["source_revision"] == expected_revision
     assert manifest["build_target"] == "linux-x86_64"
     assert manifest["reference_environment"] == {
@@ -45,6 +45,11 @@ def main(root: Path, expected_revision: str) -> None:
         "assets/environment-repository/reference-shallow-water-v1/field.bin",
         "assets/environment-repository/reference-shallow-water-v1/manifest.txt",
         "docs/acceptance_runbook.md", "licenses/THIRD_PARTY_NOTICES.md",
+        "docs/acceptance/acceptance_evidence_matrix.json",
+        "docs/acceptance/acceptance_demo_script.md",
+        "docs/acceptance/final_acceptance_presentation_source.md",
+        "docs/acceptance/final_acceptance_report_source.md",
+        "docs/acceptance/manual_screenshot_capture.md",
     ]
     for relative in required:
         assert (root / relative).is_file(), relative
@@ -57,6 +62,18 @@ def main(root: Path, expected_revision: str) -> None:
             text = path.read_text(errors="ignore")
             assert "/home/ccc" not in text, path
             assert "working-tree@" not in text, path
+            assert "@SOURCE_REVISION@" not in text, path
+            assert "@ARCHIVE_SHA256@" not in text, path
+    matrix = json.loads((root / "docs/acceptance/acceptance_evidence_matrix.json").read_text())
+    assert matrix["release"]["release_id"] == "P0-S5-05"
+    assert matrix["release"]["source_revision"] == expected_revision
+    assert matrix["release"]["archive_sha256"] == "provided-by-adjacent-archive-sidecar"
+    frontend_javascript = "\n".join(
+        path.read_text(encoding="utf-8", errors="ignore")
+        for path in sorted((root / "frontend").rglob("*.js"))
+    )
+    assert "3–4 nodes" in frontend_javascript
+    assert "4 nodes（Acceptance4Node）" not in frontend_javascript
     verify = subprocess.run(
         [sys.executable, str(root / "scripts/verify_checksums.py")],
         capture_output=True,

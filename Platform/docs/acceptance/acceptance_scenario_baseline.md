@@ -22,7 +22,7 @@
 - `Acceptance4Node` communication cycle 为 3 slots × 4 s = 12 s；`Extended6Node` 为 5 slots × 4 s = 20 s。
 - `NetworkUpdateIntervalCycles = 10`。每个 PlanningCycle 仍是一个 communication cycle，并且每周期 Commit；M3 structure 与 applied M4 schedule 只在周期 1、11、21……更新，M4 candidate 仍每周期计算。
 - Acoustic configuration：center frequency 25 kHz、source level 110 dB、occupied bandwidth 4 kHz、environment depth 75 m（标准允许范围 50～100 m）。`AcceptanceScenarioConfig::TxPhyConfig()` 把该值直接写入 `RateBasedTxPhyConfig::source_level_db_re_1upa_at_1m`，随后由 `RateBasedTxPhy` 写入同单位的 `TxEmission` 字段，因此 P0 acceptance simulation 明确暂按 **110 dB re 1 uPa @ 1 m** 解释。Hardware source-level reference/calibration 仍等待 communication-device parameter confirmation；此 fixture 解释不替代后续硬件标定。
-- `EnvironmentAssetId` 已在场景中保留；正式 P0-S5-03 demo 由 release launcher 解析为不可变
+- `EnvironmentAssetId` 已在场景中保留；正式 P0-S5-05 demo 由 release launcher 解析为不可变
   `reference-shallow-water-v1`（FNV1A64 `fb64e543f9042c52`）。未来站点资产仍可通过相同
   contract 接入，无需修改 runtime hot path，但站点实测水文当前是 TBD。
 

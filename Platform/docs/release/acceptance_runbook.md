@@ -1,4 +1,4 @@
-# P0-S5-03 Acceptance Runbook
+# P0-S5-05 Acceptance Runbook
 
 This procedure is for the canonical Linux x86_64 release. WSL2 may run the
 Linux package, but this is not a Windows-native release. Prerequisites are
@@ -7,7 +7,7 @@ not required.
 
 ## STEP 1 — Verify the archive
 
-Run `sha256sum -c ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz.sha256`.
+Run `sha256sum -c ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz.sha256`.
 
 ## STEP 2 — Extract
 

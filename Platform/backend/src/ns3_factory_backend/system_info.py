@@ -57,7 +57,7 @@ def make_system_info(
     return SystemInfo(
         platform_name="NS3-BELLHOP Platform",
         platform_version=platform_version,
-        product_baseline="P0-S5-03",
+        product_baseline="P0-S5-05",
         release_id=release_id,
         build_target=build_target,
         reference_environment_asset_id=reference_environment_asset_id,

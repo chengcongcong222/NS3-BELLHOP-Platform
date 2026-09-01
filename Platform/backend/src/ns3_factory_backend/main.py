@@ -36,9 +36,9 @@ app = create_app(
         ),
         platform_version=os.environ.get("PLATFORM_VERSION", "0.1.0"),
         frontend_release=os.environ.get(
-            "PLATFORM_FRONTEND_RELEASE", "p0-s5-03"
+            "PLATFORM_FRONTEND_RELEASE", "p0-s5-05"
         ),
-        release_id=os.environ.get("PLATFORM_RELEASE_ID", "P0-S5-03"),
+        release_id=os.environ.get("PLATFORM_RELEASE_ID", "P0-S5-05"),
         build_target=os.environ.get("PLATFORM_BUILD_TARGET", "linux-x86_64"),
         reference_environment_asset_id=os.environ.get(
             "PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ID",

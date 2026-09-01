@@ -62,7 +62,7 @@ See [acceptance_baseline.md](docs/acceptance/acceptance_baseline.md),
 
 ## Formal offline release bundle
 
-P0-S5-03 is built only from a clean committed revision. The canonical builder
+P0-S5-05 is built only from a clean committed revision. The canonical builder
 performs an ns-3 ON Release build and test, builds the frontend from the
 repository-supplied npm cache, assembles the locked Python wheelhouse and
 reference environment, audits binary dependencies, and emits a deterministic

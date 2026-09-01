@@ -1,6 +1,6 @@
-# P0-S5-03 Acceptance Handoff
+# P0-S5-05 Acceptance Handoff
 
-- Canonical archive: `ns3-bellhop-platform-p0-s5-03-linux-x86_64.tar.gz`
+- Canonical archive: `ns3-bellhop-platform-p0-s5-05-linux-x86_64.tar.gz`
 - Integrity: verify its adjacent `.sha256`, then run `./release.sh verify`
 - Runtime prerequisite: Linux x86_64, CPython 3.12, ns-3.47 prefix
 - Start: `PLATFORM_NS3_PREFIX=/path/to/ns-3.47 ./release.sh prepare`, then
