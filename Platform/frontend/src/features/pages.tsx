@@ -19,6 +19,7 @@ import {
   Status,
 } from "../components/common";
 import { ScenarioTopology } from "../components/ScenarioTopology";
+import { PublishedEnvironmentProfile } from "../components/EnvironmentProfile";
 import { formatBer, formatFrequency, formatNanoseconds } from "../domain/format";
 import { PRODUCT_METADATA } from "../productMetadata";
 
@@ -80,7 +81,8 @@ export function EnvironmentCatalogPage() {
   if (query.isPending || query.error) return state;
   return (
     <>
-      <PageHeader title="Environment Catalog" detail="已验证声学资产、覆盖与 provenance。" />
+      <PageHeader title="声学环境" detail="浏览已发布声学场资产，或进入工作区建设新的离线环境。" />
+      <div className="catalog-actions"><Link className="button-link" to="/workspace/environment">建设新环境</Link><span>已发布资产不可变；编辑在 Draft 工作区进行。</span></div>
       {!query.data.length ? <EmptyState>暂无环境资产</EmptyState> : (
         <div className="card-grid">{query.data.map((item) => (
           <article className="panel" key={item.environment_asset_id}>
@@ -101,7 +103,8 @@ export function EnvironmentDetailPage() {
   const item = query.data;
   return (
     <>
-      <PageHeader title={item.environment_asset_id} detail="Environment 只读详情；路径和 package identity 不属于 HTTP DTO。" />
+      <PageHeader title={item.environment_asset_id} detail="已发布声学环境：覆盖范围、传播场完整性与数据来源。" />
+      <section className="panel"><div className="panel-title"><h2>环境剖面与传播场覆盖</h2><Link to={`/workspace/environment?source=${encodeURIComponent(item.environment_asset_id)}`}>基于此环境创建草稿</Link></div><PublishedEnvironmentProfile environment={item} /></section>
       <section className="two-column">
         <article className="panel"><h2>资产</h2><dl><Field label="格式">{item.format}</Field><Field label="Package version">{item.package_format_version}</Field><Field label="Asset version">{item.asset_format_version}</Field><Field label="Cells">{item.cell_count} total · {item.signal_cell_count} Signal · {item.no_arrival_cell_count} NoArrival</Field><Field label="Checksum">{item.checksum.algorithm} · {item.checksum.value}</Field><Field label="Payload bytes">{item.payload_bytes}</Field></dl></article>
         <article className="panel"><h2>Provenance</h2><dl><Field label="Producer">{item.provenance.producer}</Field><Field label="Build">{item.provenance.created_by_build_version}</Field><Field label="Source">{item.provenance.source_description || "—"}</Field><Field label="Raw logical source">{item.provenance.raw_source_logical_name || "—"}</Field><Field label="Normalization">{item.provenance.normalization_policy_version || "—"}</Field></dl></article>
@@ -122,7 +125,7 @@ export function ScenarioCatalogPage() {
   for (const scenario of query.data) {
     groups.set(scenario.scenario_id, [...(groups.get(scenario.scenario_id) ?? []), scenario]);
   }
-  return <><PageHeader title="Scenario Catalog" detail="发布版本不可变；本阶段只读。" /><div className="card-grid">{[...groups.entries()].map(([id, versions]) => <article className="panel" key={id}><div className="panel-title"><strong>{id}</strong><span>latest v{latestVersions(versions)}</span></div>{versions.map((item) => <div className="version-row" key={item.version}><Link to={`/scenarios/${id}/versions/${item.version}`}>v{item.version} · {item.name}</Link><span>{item.nodes.length} nodes · {item.environment.environment_asset_id}</span></div>)}</article>)}</div></>;
+  return <><PageHeader title="节点场景" detail="查看已发布场景版本，或在二维工作区布设节点、深度与运动参数。" /><div className="catalog-actions"><Link className="button-link" to="/workspace/scenario">设计新场景</Link><span>已发布版本不可变；新设计保存在本机草稿。</span></div><div className="card-grid">{[...groups.entries()].map(([id, versions]) => <article className="panel" key={id}><div className="panel-title"><strong>{id}</strong><span>最新 v{latestVersions(versions)}</span></div>{versions.map((item) => <div className="version-row" key={item.version}><Link to={`/scenarios/${id}/versions/${item.version}`}>v{item.version} · {item.name}</Link><span>{item.nodes.length} 个节点 · {item.environment.environment_asset_id}</span></div>)}</article>)}</div></>;
 }
 
 export function ScenarioDetailPage() {
@@ -137,7 +140,7 @@ export function ScenarioDetailPage() {
 export function ExperimentCatalogPage() {
   const query = useQuery(queries.experiments());
   if (query.isPending || query.error) return <QueryState query={query} />;
-  return <><PageHeader title="Experiment Catalog" detail="配置版本绑定精确 Scenario，并可创建真实 Run。" /><div className="card-grid">{query.data.map((item) => <article className="panel" key={`${item.experiment_id}:${item.version}`}><div className="panel-title"><Link to={`/experiments/${item.experiment_id}/versions/${item.version}`}>{item.name}</Link><span>v{item.version}</span></div><dl><Field label="Profile">{item.fusion.acceptance_profile === "Acceptance4Node" ? "Acceptance4Node · 第三方验收基准" : "Extended6Node · 扩展示例（非第三方验收）"}</Field><Field label="Scenario">{item.scenario.scenario_id} · v{item.scenario.version}</Field><Field label="Routing / MAC">{item.routing.mode} / {item.mac.mode}</Field><Field label="PHY">{item.phy.bit_rate_bits_per_second} bit/s · {item.phy.rx_quality_mode}</Field><Field label="Cycles">{item.simulation_cycle_count}</Field></dl></article>)}</div></>;
+  return <><PageHeader title="网络实验" detail="选择已发布实验直接运行，或在工作区配置网络、通信和仿真参数。" /><div className="catalog-actions"><Link className="button-link" to="/workspace/experiment">配置新实验</Link><span>真实 Run 只能由已发布 Experiment version 创建。</span></div><div className="card-grid">{query.data.map((item) => <article className="panel" key={`${item.experiment_id}:${item.version}`}><div className="panel-title"><Link to={`/experiments/${item.experiment_id}/versions/${item.version}`}>{item.name}</Link><span>v{item.version}</span></div><dl><Field label="用途">{item.fusion.acceptance_profile === "Acceptance4Node" ? "Acceptance4Node · 第三方验收基准" : "Extended6Node · 扩展示例（非第三方验收）"}</Field><Field label="节点场景">{item.scenario.scenario_id} · v{item.scenario.version}</Field><Field label="路由 / 信道接入">{item.routing.mode} / {item.mac.mode}</Field><Field label="通信配置">{item.phy.bit_rate_bits_per_second} bit/s · {item.phy.rx_quality_mode}</Field><Field label="仿真周期">{item.simulation_cycle_count}</Field></dl></article>)}</div></>;
 }
 
 function RunExperimentButton({ experiment }: { experiment: ExperimentDto }) {
@@ -150,7 +153,7 @@ function RunExperimentButton({ experiment }: { experiment: ExperimentDto }) {
       navigate(`/runs/${run.run_id}`);
     },
   });
-  return <div><button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? "正在创建…" : "Run this experiment"}</button>{mutation.error && <ErrorState error={mutation.error} />}</div>;
+  return <div><button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? "正在创建真实运行…" : "开始仿真"}</button>{mutation.error && <ErrorState error={mutation.error} />}</div>;
 }
 
 export function ExperimentDetailPage() {
@@ -166,7 +169,7 @@ export function ExperimentDetailPage() {
 export function RunCatalogPage() {
   const query = useQuery({ ...queries.runs(), refetchInterval: 1000 });
   if (query.isPending || query.error) return <QueryState query={query} />;
-  return <><PageHeader title="Run Catalog" detail="后端 in-memory Run catalog 是权威来源。" />{!query.data.length ? <EmptyState>暂无 Run</EmptyState> : <section className="panel"><table><thead><tr><th>RunId</th><th>Experiment</th><th>Lifecycle</th><th>Result</th><th>Failure</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td><Link to={`/runs/${item.run_id}`}>{item.run_id}</Link></td><td>{item.experiment_id} · v{item.experiment_version}</td><td><Status value={item.lifecycle} /></td><td>{item.result_available ? <Link to={`/results/${item.run_id}`}>Available</Link> : "—"}</td><td>{item.failure ? `${item.failure.code}: ${item.failure.message}` : "—"}</td></tr>)}</tbody></table></section>}</>;
+  return <><PageHeader title="仿真运行" detail="查看真实 Run 生命周期，进入运行控制台观察正式仿真时间、通信拓扑和事件趋势。" />{!query.data.length ? <EmptyState>暂无仿真运行，请从案例或已发布实验开始。</EmptyState> : <section className="panel"><table><thead><tr><th>运行标识</th><th>实验</th><th>状态</th><th>正式结果</th><th>失败原因</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td><Link to={`/runs/${item.run_id}`}>{item.run_id}</Link></td><td>{item.experiment_id} · v{item.experiment_version}</td><td><Status value={item.lifecycle} /></td><td>{item.result_available ? <Link to={`/results/${item.run_id}`}>查看结果</Link> : "—"}</td><td>{item.failure ? `${item.failure.code}: ${item.failure.message}` : "—"}</td></tr>)}</tbody></table></section>}</>;
 }
 
 function eventIdentity(event: RunEventDto): string {
@@ -230,7 +233,7 @@ export function RunMonitorPage() {
 export function ResultCatalogPage() {
   const query = useQuery(queries.results());
   if (query.isPending || query.error) return <QueryState query={query} />;
-  return <><PageHeader title="Result Catalog" detail="仅包含已原子发布 formal Result 的 Completed Run。" />{!query.data.length ? <EmptyState>暂无正式 Result</EmptyState> : <section className="panel"><table><thead><tr><th>Order</th><th>RunId</th><th>Acceptance</th><th>Duration</th><th>Fusion results</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td>#{item.catalog_sequence}</td><td><Link to={`/results/${item.run_id}`}>{item.run_id}</Link></td><td><Status value={item.acceptance_overall ?? "NotFullyEvaluated"} /></td><td>{formatNanoseconds(item.simulation_duration_ns)}</td><td>{item.fusion_result_count}</td></tr>)}</tbody></table></section>}</>;
+  return <><PageHeader title="仿真结果" detail="分析已原子发布的正式结果；通用网络与信道结果优先，验收结论仅在对应实验中出现。" />{!query.data.length ? <EmptyState>暂无正式仿真结果</EmptyState> : <section className="panel"><table><thead><tr><th>顺序</th><th>仿真运行</th><th>验收附加状态</th><th>仿真时长</th><th>融合结果</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td>#{item.catalog_sequence}</td><td><Link to={`/results/${item.run_id}`}>{item.run_id}</Link></td><td>{item.acceptance_overall ? <Status value={item.acceptance_overall} /> : "未定义验收 profile"}</td><td>{formatNanoseconds(item.simulation_duration_ns)}</td><td>{item.fusion_result_count}</td></tr>)}</tbody></table></section>}</>;
 }
 
 function AcceptanceEvidence({ report, result, experiment }: {

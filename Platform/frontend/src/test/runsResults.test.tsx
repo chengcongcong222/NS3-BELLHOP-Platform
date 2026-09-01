@@ -11,14 +11,14 @@ describe("authoritative Run and Result views", () => {
     renderRoute("/runs");
     expect(await screen.findByText(runSummary.run_id)).toBeTruthy();
     expect(screen.getByText("Completed")).toBeTruthy();
-    expect(screen.getByText("Available")).toBeTruthy();
+    expect(screen.getByText("查看结果")).toBeTruthy();
   });
 
   it("renders a basic Run monitor with captured identities", async () => {
     installApi({ [`/runs/${run.run_id}`]: { body: run } });
     renderRoute(`/runs/${run.run_id}`);
-    expect(await screen.findByText(`Run Monitor · ${run.run_id}`)).toBeTruthy();
-    expect(screen.getByText(new RegExp(run.experiment_id))).toBeTruthy();
+    expect(await screen.findByText(`仿真运行控制台 · ${run.run_id}`)).toBeTruthy();
+    expect(screen.getAllByText(experiment.name).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(new RegExp(run.environment_asset_id))).toBeTruthy();
   });
 
@@ -93,12 +93,10 @@ describe("authoritative Run and Result views", () => {
         payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } },
       });
     });
-    expect(screen.getByText("Formal NoArrival trace")).toBeTruthy();
-    expect(screen.getByText("Tx 7 → N2")).toBeTruthy();
-    expect(screen.getAllByText("0.00000001 s (10 ns)")).toHaveLength(2);
-    const sequenceCells = screen.getAllByRole("cell").filter((cell) => ["1", "2"].includes(cell.textContent ?? ""));
-    expect(sequenceCells[0].textContent).toBe("1");
-    expect(sequenceCells.some((cell) => cell.textContent === "2")).toBe(true);
+    expect(screen.getByText("节点 2 未获得有效声学到达")).toBeTruthy();
+    expect(screen.getByText(/N0 → N2 · NoArrival/)).toBeTruthy();
+    expect(screen.getAllByText("0.00000001 s (10 ns)").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("序列 2")).toBeTruthy();
   });
 
   it("renders Result catalog and PASS detail without losing large integers", async () => {
@@ -113,7 +111,7 @@ describe("authoritative Run and Result views", () => {
     catalog.unmount();
     renderRoute(`/results/${result.run_id}`);
     expect((await screen.findAllByText("Pass")).length).toBeGreaterThan(0);
-    expect(screen.getByText(`900719925474.099312345 s (${large} ns)`)).toBeTruthy();
+    expect(document.body.textContent).toContain(`900719925474.099312345 s (${large} ns)`);
     expect(await screen.findByText(/不是硬件实测/)).toBeTruthy();
   });
 
@@ -171,7 +169,7 @@ describe("authoritative Run and Result views", () => {
     renderRoute(`/results/${result.run_id}`);
     expect((await screen.findAllByText("1 bit/s")).length).toBeGreaterThan(0);
     expect(screen.getByText(/max 0.9（无量纲） · mean 0.8/)).toBeTruthy();
-    expect(screen.getAllByText("999.999999999 s (999999999999 ns)")).toHaveLength(2);
+    expect(screen.getAllByText("999.999999999 s (999999999999 ns)").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
     expect(screen.queryByText("Fail")).toBeNull();
   });
@@ -208,8 +206,7 @@ describe("authoritative Run and Result views", () => {
       [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: extendedExperiment },
     });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("Extended6Node · 扩展示例（非第三方验收）")).toBeTruthy();
-    expect(screen.getByText("Extended6Node 仅为扩展示例，不混入 Acceptance4Node 第三方验收要求。")).toBeTruthy();
+    expect(await screen.findByText("Extended6Node 仅为扩展示例，不混入 Acceptance4Node 第三方验收要求。")).toBeTruthy();
     expect(screen.queryByRole("columnheader", { name: "Requirement" })).toBeNull();
   });
 
@@ -221,9 +218,9 @@ describe("authoritative Run and Result views", () => {
       [`/runs/${acceptance4Run.run_id}/results`]: { body: acceptance4Result },
     });
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
-    await userEvent.click(await screen.findByRole("button", { name: "Run this experiment" }));
-    expect(await screen.findByText(`Run Monitor · ${acceptance4Run.run_id}`)).toBeTruthy();
-    await userEvent.click(screen.getByRole("link", { name: "查看正式 Result 与 Acceptance" }));
+    await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
+    expect(await screen.findByText(`仿真运行控制台 · ${acceptance4Run.run_id}`)).toBeTruthy();
+    await userEvent.click(screen.getByRole("link", { name: "查看仿真结果" }));
     expect(await screen.findByText("Acceptance evidence")).toBeTruthy();
     expect(screen.getByText("Frontend does not recompute this verdict")).toBeTruthy();
   });

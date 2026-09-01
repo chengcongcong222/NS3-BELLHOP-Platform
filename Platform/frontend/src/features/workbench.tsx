@@ -1,0 +1,117 @@
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { apiClient } from "../api/client";
+import { queries } from "../api/queries";
+import type { ExperimentDto, ScenarioDto } from "../api/types";
+import { PublishedEnvironmentProfile, DraftEnvironmentProfile } from "../components/EnvironmentProfile";
+import { EmptyState, ErrorState, Field, LoadingState, MetricCard, PageHeader, Status } from "../components/common";
+import { ScenarioDesigner } from "../components/ScenarioDesigner";
+import { composeCases } from "../domain/cases";
+import { formatFrequency, formatNanoseconds } from "../domain/format";
+import {
+  deleteDraft, experimentDraftFrom, loadDrafts, newEnvironmentDraft, saveDraft,
+  scenarioDraftFrom, validateDraft, type EnvironmentDraft, type ExperimentDraft,
+  type ScenarioDraft, type WorkspaceDraft,
+} from "../domain/workspace";
+
+function useCatalog() {
+  const environments = useQuery(queries.environments());
+  const scenarios = useQuery(queries.scenarios());
+  const experiments = useQuery(queries.experiments());
+  const pending = environments.isPending || scenarios.isPending || experiments.isPending;
+  const error = environments.error || scenarios.error || experiments.error;
+  return {
+    environments: { ...environments, data: environments.data ?? [] },
+    scenarios: { ...scenarios, data: scenarios.data ?? [] },
+    experiments: { ...experiments, data: experiments.data ?? [] },
+    pending,
+    error,
+    cases: composeCases(environments.data ?? [], scenarios.data ?? [], experiments.data ?? []),
+  };
+}
+
+function useDrafts() {
+  const [drafts, setDrafts] = useState<WorkspaceDraft[]>(() => loadDrafts());
+  useEffect(() => { const sync = () => setDrafts(loadDrafts()); window.addEventListener("workbench-drafts-changed", sync); return () => window.removeEventListener("workbench-drafts-changed", sync); }, []);
+  return drafts;
+}
+
+function CaseCard({ item, compact = false }: { item: ReturnType<typeof composeCases>[number]; compact?: boolean }) {
+  return <article className={`case-card ${compact ? "compact" : ""}`}><div className="case-art"><span>{item.classification}</span><div className="sonar-rings" /></div><div className="case-body"><p className="eyebrow">SIMULATION CASE</p><h2><Link to={`/cases/${item.id}`}>{item.title}</Link></h2><p>{item.summary}</p><div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="case-meta"><span>{item.scenario.nodes.length} 个节点</span><span>{item.environment.axes.horizontal_range.maximum / 1000} km 覆盖</span><span>{item.experiment.simulation_cycle_count} 个周期</span></div><Link className="text-action" to={`/cases/${item.id}`}>查看案例与运行 →</Link></div></article>;
+}
+
+export function WorkbenchPage() {
+  const catalog = useCatalog(); const runs = useQuery(queries.runs()); const results = useQuery(queries.results()); const drafts = useDrafts();
+  if (catalog.pending || runs.isPending || results.isPending) return <LoadingState />;
+  if (catalog.error || runs.error || results.error) return <ErrorState error={catalog.error || runs.error || results.error} />;
+  const recentRun = runs.data.at(-1); const recentResult = results.data.at(-1);
+  return <><section className="hero"><div><p className="eyebrow">UNDERWATER NETWORK SIMULATION WORKBENCH</p><h1>水声网络数字孪生仿真工作台</h1><p>建设声学环境、布设水下节点、配置网络实验，并沿正式 ns-3 仿真时间观察通信与融合结果。</p><div className="hero-actions"><Link className="primary-action" to="/workspace/scenario">新建仿真</Link><Link className="secondary-action" to="/cases">从案例开始</Link></div></div><div className="hero-system"><span className="pulse" />仿真服务已连接<strong>正式资源 {catalog.environments.data?.length ?? 0} 个环境 · {catalog.scenarios.data?.length ?? 0} 个场景</strong><small>编辑工作保存在本机草稿；正式发布资源保持不可变。</small></div></section><section className="workflow-strip" aria-label="仿真工作流">{[["01", "建设环境", "声速、地形与离线传播场", "/environments"], ["02", "设计场景", "节点、运动与空间关系", "/scenarios"], ["03", "配置实验", "网络、通信与仿真参数", "/experiments"], ["04", "运行与分析", "通信过程、统计与结果", "/runs"]].map(([index, title, detail, to]) => <Link to={to} key={index}><b>{index}</b><span><strong>{title}</strong><small>{detail}</small></span></Link>)}</section><div className="section-heading"><div><p className="eyebrow">QUICK START</p><h2>推荐案例</h2></div><Link to="/cases">查看全部案例</Link></div><div className="case-grid">{catalog.cases.slice(0, 2).map((item) => <CaseCard key={item.id} item={item} compact />)}</div><section className="workbench-lower"><article className="panel recent-panel"><div className="panel-title"><h2>最近仿真</h2><Link to="/runs">全部运行</Link></div>{recentRun ? <><div className="run-line"><span className="run-orb" /><div><strong>{catalog.cases.find((item) => item.experiment.experiment_id === recentRun.experiment_id)?.title ?? recentRun.experiment_id}</strong><small>{recentRun.run_id}</small></div><Status value={recentRun.lifecycle} /></div><div className="recent-actions"><Link to={`/runs/${recentRun.run_id}`}>打开运行控制台</Link>{recentResult && <Link to={`/results/${recentResult.run_id}`}>查看最近结果</Link>}</div></> : <EmptyState>还没有仿真运行，从案例开始即可创建真实 Run。</EmptyState>}</article><article className="panel"><div className="panel-title"><h2>我的工作区</h2><Link to="/resources">管理资源</Link></div><div className="draft-summary"><strong>{drafts.length}</strong><span>个本机草稿</span></div><p className="muted">草稿用于安全试验与派生，不会覆盖已发布资源。</p><div className="button-row"><Link to="/workspace/environment">新建环境</Link><Link to="/workspace/scenario">设计场景</Link><Link to="/workspace/experiment">配置实验</Link></div></article></section><section className="resource-stats"><span>资源概况</span><MetricCard label="声学环境" value={catalog.environments.data?.length ?? 0} /><MetricCard label="场景版本" value={catalog.scenarios.data?.length ?? 0} /><MetricCard label="实验配置" value={catalog.experiments.data?.length ?? 0} /><MetricCard label="正式结果" value={results.data.length} /></section></>;
+}
+
+export function CaseCatalogPage() {
+  const catalog = useCatalog(); if (catalog.pending) return <LoadingState />; if (catalog.error) return <ErrorState error={catalog.error} />;
+  return <><PageHeader title="案例中心" detail="案例把声学环境、节点场景和实验配置组织成可理解、可直接运行的科研任务。" /><div className="case-grid">{catalog.cases.map((item) => <CaseCard key={item.id} item={item} />)}</div></>;
+}
+
+function StartCaseButton({ experiment }: { experiment: ExperimentDto }) {
+  const navigate = useNavigate(); const client = useQueryClient(); const mutation = useMutation({ mutationFn: () => apiClient.createRun(experiment.experiment_id, experiment.version), onSuccess: async (run) => { await client.invalidateQueries({ queryKey: ["runs"] }); navigate(`/runs/${run.run_id}`); } });
+  return <><button type="button" onClick={() => mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending ? "正在创建真实运行…" : "运行默认实验"}</button>{mutation.error && <ErrorState error={mutation.error} />}</>;
+}
+
+export function CaseDetailPage() {
+  const { caseId } = useParams(); const catalog = useCatalog(); const navigate = useNavigate();
+  if (catalog.pending) return <LoadingState />; if (catalog.error) return <ErrorState error={catalog.error} />;
+  const item = catalog.cases.find((candidate) => candidate.id === caseId); if (!item) return <EmptyState>案例不存在或其正式资源组合不完整。</EmptyState>;
+  return <><section className="case-hero"><div><Link to="/cases">← 案例中心</Link><p className="eyebrow">{item.classification}</p><h1>{item.title}</h1><p>{item.summary}</p><div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="hero-actions"><StartCaseButton experiment={item.experiment} /><button type="button" className="secondary-button" onClick={() => { const draft = experimentDraftFrom(item.experiment); saveDraft(draft); navigate(`/workspace/experiment?draft=${encodeURIComponent(draft.id)}`); }}>基于此案例创建实验</button></div></div><PublishedEnvironmentProfile environment={item.environment} /></section><section className="journey-panel"><h2>这个案例将如何执行</h2><div className="journey"><div><b>1</b><strong>参考环境</strong><Link to={`/environments/${item.environment.environment_asset_id}`}>{item.environment.environment_asset_id}</Link></div><div><b>2</b><strong>节点场景</strong><Link to={`/scenarios/${item.scenario.scenario_id}/versions/${item.scenario.version}`}>{item.scenario.nodes.length} 节点空间布设</Link></div><div><b>3</b><strong>网络实验</strong><Link to={`/experiments/${item.experiment.experiment_id}/versions/${item.experiment.version}`}>{item.experiment.routing.mode} · {item.experiment.mac.mode}</Link></div><div><b>4</b><strong>运行与结果</strong><span>正式事件投影与分析</span></div></div></section><section className="two-column"><article className="panel"><h2>场景一览</h2><dl><Field label="节点规模">{item.scenario.nodes.length} 个</Field><Field label="融合中心">N{item.scenario.fusion_center_node_id}</Field><Field label="运动模型">{item.scenario.mobility.model}</Field><Field label="活动范围">{item.environment.axes.horizontal_range.maximum} m</Field></dl></article><article className="panel"><h2>实验一览</h2><dl><Field label="路由策略">{item.experiment.routing.mode}</Field><Field label="信道接入">{item.experiment.mac.mode}</Field><Field label="通信速率">{item.experiment.phy.bit_rate_bits_per_second} bit/s</Field><Field label="工作频率">{formatFrequency(item.experiment.phy.center_frequency_hz)}</Field><Field label="仿真周期">{item.experiment.simulation_cycle_count}</Field></dl></article></section><details className="technical-details"><summary>技术详情</summary><dl><Field label="Environment identity">{item.environment.environment_asset_id} · v{item.environment.asset_format_version}</Field><Field label="Scenario identity">{item.scenario.scenario_id} · v{item.scenario.version}</Field><Field label="Experiment identity">{item.experiment.experiment_id} · v{item.experiment.version}</Field></dl></details></>;
+}
+
+function DraftActions({ draft, onSaved }: { draft: WorkspaceDraft; onSaved: () => void }) {
+  const issues = validateDraft(draft);
+  return <div className="draft-actions"><div>{issues.length ? <span className="validation-bad">尚有 {issues.length} 项需要修正：{issues.join("；")}</span> : <span className="validation-good">✓ 草稿校验通过</span>}<small>发布接口尚未提供，因此本页不会伪造“已发布”。</small></div><button type="button" disabled={issues.length > 0} onClick={() => { saveDraft({ ...draft, updatedAt: new Date().toISOString() }); onSaved(); }}>保存到本机工作区</button></div>;
+}
+
+export function EnvironmentWorkspacePage() {
+  const [params] = useSearchParams(); const environments = useQuery(queries.environments()); const existing = loadDrafts().find((item): item is EnvironmentDraft => item.kind === "environment" && item.id === params.get("draft")); const source = environments.data?.find((item) => item.environment_asset_id === params.get("source"));
+  const [draft, setDraft] = useState<EnvironmentDraft>(() => existing ?? newEnvironmentDraft()); const [saved, setSaved] = useState(false);
+  useEffect(() => { if (source && !existing) setDraft(newEnvironmentDraft(source)); }, [source?.environment_asset_id]);
+  if (environments.isPending) return <LoadingState />; if (environments.error) return <ErrorState error={environments.error} />;
+  const parseLines = (value: string) => value.split("\n").map((line) => line.trim().split(/[ ,]+/).map(Number)).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+  return <><PageHeader title="建设声学环境" detail="本机 Draft 工作区：整理 SSP、海底地形与离线 Bellhop 建设参数；在线 Runtime 仍只读取已发布 AcousticFieldAsset。" /><div className="workspace-status"><span>草稿</span><strong>{draft.name}</strong>{saved && <em>已保存到本机</em>}</div><section className="editor-grid"><article className="panel form-panel"><h2>环境基本信息</h2><label>环境名称<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label>说明<textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label><div className="form-grid"><label>最大水深（m）<input type="number" min="1" value={draft.maximumDepthMeters} onChange={(event) => setDraft({ ...draft, maximumDepthMeters: Number(event.target.value) })} /></label><label>最大距离（m）<input type="number" min="1" value={draft.maximumRangeMeters} onChange={(event) => setDraft({ ...draft, maximumRangeMeters: Number(event.target.value) })} /></label><label>工作频率（Hz）<input type="number" min="1" value={draft.centerFrequencyHz} onChange={(event) => setDraft({ ...draft, centerFrequencyHz: Number(event.target.value) })} /></label></div><h2>声速剖面</h2><p className="field-help">每行：深度（m）, 声速（m/s）</p><textarea rows={6} aria-label="声速剖面数据" value={draft.soundSpeedProfile.map((p) => `${p.depthMeters}, ${p.speedMetersPerSecond}`).join("\n")} onChange={(event) => setDraft({ ...draft, soundSpeedProfile: parseLines(event.target.value).map(([depthMeters, speedMetersPerSecond]) => ({ depthMeters, speedMetersPerSecond })) })} /><h2>海底地形</h2><p className="field-help">每行：水平距离（m）, 水深（m）</p><textarea rows={5} aria-label="海底地形数据" value={draft.bathymetry.map((p) => `${p.rangeMeters}, ${p.depthMeters}`).join("\n")} onChange={(event) => setDraft({ ...draft, bathymetry: parseLines(event.target.value).map(([rangeMeters, depthMeters]) => ({ rangeMeters, depthMeters })) })} /><div className="boundary-note"><strong>离线传播场建设</strong><p>Bellhop 输入生成、运行与资产归一化属于离线建设流程。本工作区保存建设意图，但当前后端没有 Draft 发布/离线作业 API，因此不会声称已经生成传播损失或 NoArrival 数据。</p></div></article><article className="panel sticky-preview"><h2>环境预览</h2><DraftEnvironmentProfile draft={draft} /><dl><Field label="建设模式">Bellhop 离线</Field><Field label="预期覆盖">0–{draft.maximumRangeMeters} m / 0–{draft.maximumDepthMeters} m</Field><Field label="工作频率">{formatFrequency(draft.centerFrequencyHz)}</Field></dl></article></section><DraftActions draft={draft} onSaved={() => setSaved(true)} /></>;
+}
+
+function defaultScenario(scenarios: readonly ScenarioDto[]): ScenarioDraft {
+  if (scenarios[0]) return scenarioDraftFrom(scenarios[0]);
+  return { kind: "scenario", id: `scenario-draft-${Date.now()}`, name: "未命名场景", environmentAssetId: "", fusionCenterNodeId: "0", nodes: [{ node_id: "0", can_transmit: true, can_receive: true, duplex_mode: "HalfDuplex", initial_position: { x_meters: 0, y_meters: 0, z_meters: -20 }, initial_velocity: { x_meters_per_second: 0, y_meters_per_second: 0, z_meters_per_second: 0 } }], updatedAt: new Date().toISOString() };
+}
+
+export function ScenarioWorkspacePage() {
+  const [params] = useSearchParams(); const scenarios = useQuery(queries.scenarios()); const environments = useQuery(queries.environments()); const existing = loadDrafts().find((item): item is ScenarioDraft => item.kind === "scenario" && item.id === params.get("draft")); const [draft, setDraft] = useState<ScenarioDraft | null>(existing ?? null); const [saved, setSaved] = useState(false);
+  useEffect(() => { if (!draft && scenarios.data) setDraft(defaultScenario(scenarios.data)); }, [scenarios.data]);
+  if (scenarios.isPending || environments.isPending || !draft) return <LoadingState />; if (scenarios.error || environments.error) return <ErrorState error={scenarios.error || environments.error} />;
+  return <><PageHeader title="设计节点场景" detail="二维画布用于布设任意数量节点；深度剖面与属性侧栏同步，所有坐标都来自草稿而非浏览器模拟。" /><section className="panel scenario-settings"><label>场景名称<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label>绑定声学环境<select value={draft.environmentAssetId} onChange={(event) => setDraft({ ...draft, environmentAssetId: event.target.value })}>{environments.data.map((item) => <option key={item.environment_asset_id}>{item.environment_asset_id}</option>)}</select></label><span>{saved ? "已保存到本机工作区" : "尚未保存"}</span></section><ScenarioDesigner draft={draft} onChange={(next) => { setDraft(next); setSaved(false); }} /><DraftActions draft={draft} onSaved={() => setSaved(true)} /></>;
+}
+
+function defaultExperiment(experiments: readonly ExperimentDto[]): ExperimentDraft {
+  if (experiments[0]) return experimentDraftFrom(experiments[0]);
+  return { kind: "experiment", id: `experiment-draft-${Date.now()}`, name: "未命名实验", sourceExperimentId: null, scenarioId: "", routingMode: "DirectToFusionCenter", macMode: "Tdma", bitRateBitsPerSecond: "60", centerFrequencyHz: 25000, occupiedBandwidthHz: 4000, sourceLevelDb: 110, guardIntervalNs: "2000000000", simulationCycleCount: "2", deterministicSeed: "1", networkUpdateIntervalCycles: "10", updatedAt: new Date().toISOString() };
+}
+
+export function ExperimentWorkspacePage() {
+  const [params] = useSearchParams(); const experiments = useQuery(queries.experiments()); const scenarios = useQuery(queries.scenarios()); const existing = loadDrafts().find((item): item is ExperimentDraft => item.kind === "experiment" && item.id === params.get("draft")); const [draft, setDraft] = useState<ExperimentDraft | null>(existing ?? null); const [saved, setSaved] = useState(false);
+  useEffect(() => { if (!draft && experiments.data) setDraft(defaultExperiment(experiments.data)); }, [experiments.data]);
+  if (experiments.isPending || scenarios.isPending || !draft) return <LoadingState />; if (experiments.error || scenarios.error) return <ErrorState error={experiments.error || scenarios.error} />;
+  const set = <K extends keyof ExperimentDraft>(key: K, value: ExperimentDraft[K]) => { setDraft({ ...draft, [key]: value }); setSaved(false); };
+  return <><PageHeader title="配置网络实验" detail="用科研语言组织场景、网络、通信和执行参数。这里只编辑 Draft；真实 Run 必须由已发布 Experiment 创建。" /><div className="experiment-workspace"><aside className="step-rail"><a href="#basic">01 基础信息</a><a href="#network">02 网络配置</a><a href="#communication">03 通信与物理层</a><a href="#execution">04 仿真设置</a></aside><div><section id="basic" className="panel form-panel"><h2>基础信息</h2><label>实验名称<input value={draft.name} onChange={(event) => set("name", event.target.value)} /></label><label>选择节点场景<select value={draft.scenarioId} onChange={(event) => set("scenarioId", event.target.value)}>{scenarios.data.map((item) => <option key={`${item.scenario_id}:${item.version}`} value={item.scenario_id}>{item.name} · v{item.version}</option>)}</select></label></section><section id="network" className="panel form-panel"><h2>网络配置</h2><div className="form-grid"><label>路由方式<select value={draft.routingMode} onChange={(event) => set("routingMode", event.target.value)}><option>DirectToFusionCenter</option></select></label><label>信道接入方式<select value={draft.macMode} onChange={(event) => set("macMode", event.target.value)}><option>Tdma</option></select></label><label>网络更新周期<input value={draft.networkUpdateIntervalCycles} onChange={(event) => set("networkUpdateIntervalCycles", event.target.value)} /></label></div></section><section id="communication" className="panel form-panel"><h2>通信与物理层</h2><div className="form-grid"><label>通信速率（bit/s）<input value={draft.bitRateBitsPerSecond} onChange={(event) => set("bitRateBitsPerSecond", event.target.value)} /></label><label>中心频率（Hz）<input type="number" value={draft.centerFrequencyHz} onChange={(event) => set("centerFrequencyHz", Number(event.target.value))} /></label><label>占用带宽（Hz）<input type="number" value={draft.occupiedBandwidthHz} onChange={(event) => set("occupiedBandwidthHz", Number(event.target.value))} /></label><label>声源级（dB re 1μPa @ 1m）<input type="number" value={draft.sourceLevelDb} onChange={(event) => set("sourceLevelDb", Number(event.target.value))} /></label><label>保护时间（ns）<input value={draft.guardIntervalNs} onChange={(event) => set("guardIntervalNs", event.target.value)} /></label></div></section><section id="execution" className="panel form-panel"><h2>仿真设置</h2><div className="form-grid"><label>仿真周期数<input value={draft.simulationCycleCount} onChange={(event) => set("simulationCycleCount", event.target.value)} /></label><label>确定性 seed<input value={draft.deterministicSeed} onChange={(event) => set("deterministicSeed", event.target.value)} /></label></div><p className="data-boundary">修改 Draft 不会启动仿真。保存后仍需正式发布接口生成不可变 Experiment version；当前系统不提供假运行按钮。</p></section></div></div><DraftActions draft={draft} onSaved={() => setSaved(true)} />{saved && <p className="save-toast">实验草稿已保存。</p>}</>;
+}
+
+export function ResourceManagementPage() {
+  const catalog = useCatalog(); const drafts = useDrafts(); if (catalog.pending) return <LoadingState />; if (catalog.error) return <ErrorState error={catalog.error} />;
+  const route = (draft: WorkspaceDraft) => `/workspace/${draft.kind}?draft=${encodeURIComponent(draft.id)}`;
+  return <><PageHeader title="资源管理" detail="集中查看正式发布资源和本机工作区草稿。正式版本不可变，草稿可以继续编辑或删除。" /><section className="metric-grid"><MetricCard label="已发布环境" value={catalog.environments.data.length} /><MetricCard label="已发布场景" value={catalog.scenarios.data.length} /><MetricCard label="已发布实验" value={catalog.experiments.data.length} /><MetricCard label="本机草稿" value={drafts.length} /></section><section className="panel"><div className="panel-title"><h2>本机草稿</h2><div className="button-row"><Link to="/workspace/environment">新建环境</Link><Link to="/workspace/scenario">新建场景</Link><Link to="/workspace/experiment">新建实验</Link></div></div>{drafts.length ? <table><thead><tr><th>类型</th><th>名称</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{drafts.map((draft) => <tr key={`${draft.kind}:${draft.id}`}><td>{{ environment: "声学环境", scenario: "节点场景", experiment: "网络实验" }[draft.kind]}</td><td><Link to={route(draft)}>{draft.name}</Link></td><td>{draft.updatedAt}</td><td><button type="button" className="text-button" onClick={() => deleteDraft(draft.kind, draft.id)}>删除草稿</button></td></tr>)}</tbody></table> : <EmptyState>尚无本机草稿。可以从正式资源派生，也可以从空白开始。</EmptyState>}</section><section className="panel"><h2>边界说明</h2><p>当前工作区使用浏览器 localStorage，适合单机 P0 编辑、演示和可重复测试；它不是团队发布数据库。后端尚未提供 Draft clone/publish API，因此没有任何按钮会覆盖正式资源或声称完成发布。</p></section></>;
+}
+
+export function SystemPage() {
+  const query = useQuery(queries.systemInfo()); if (query.isPending) return <LoadingState />; if (query.error) return <ErrorState error={query.error} />; const item = query.data;
+  return <><PageHeader title="系统信息" detail="运行引擎、构建版本与接口边界集中放在这里，不打扰普通仿真工作流。" /><section className="two-column"><article className="panel"><h2>平台</h2><dl><Field label="产品">{item.platform_name}</Field><Field label="版本">{item.platform_version}</Field><Field label="发布基线">{item.product_baseline}</Field><Field label="构建目标">{item.build_target}</Field><Field label="源代码修订">{item.build.source_revision}</Field><Field label="C++ 标准">{item.build.cxx_standard}</Field></dl></article><article className="panel"><h2>仿真权威</h2><dl><Field label="仿真引擎">{item.simulation.engine} {item.simulation.version}</Field><Field label="时间权威">{item.simulation.time_authority}</Field><Field label="调度权威">{item.simulation.scheduler_authority}</Field><Field label="调度网关">{item.simulation.scheduling_gateway}</Field><Field label="运行模式">{item.runtime_mode}</Field></dl></article></section><details className="technical-details" open><summary>接口版本</summary><dl><Field label="API schema">{item.interfaces.api_schema_version}</Field><Field label="Worker wire schema">{item.interfaces.worker_wire_schema_version}</Field><Field label="Acceptance evidence schema">{item.interfaces.acceptance_evidence_schema_version}</Field><Field label="Frontend release">{item.interfaces.frontend_release}</Field></dl></details></>;
+}

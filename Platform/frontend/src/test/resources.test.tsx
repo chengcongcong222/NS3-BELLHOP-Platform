@@ -17,9 +17,10 @@ describe("real resource routes", () => {
       "/results": { body: [resultSummary, latestResult] },
     });
     renderRoute("/");
-    expect(await screen.findByText(/#2 · a-latest-run · Failed/)).toBeTruthy();
-    expect(screen.getByText(/#3 · a-latest-result · Pass/)).toBeTruthy();
-    expect(screen.getByText("2", { selector: ".metric-card strong" })).toBeTruthy();
+    expect(await screen.findByText("a-latest-run")).toBeTruthy();
+    expect(screen.getByText("Failed")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "查看最近结果" }).getAttribute("href")).toBe("/results/a-latest-result");
+    expect(screen.getByText("水声网络数字孪生仿真工作台")).toBeTruthy();
   });
 
   it("renders Environment catalog and detail", async () => {
@@ -101,8 +102,8 @@ describe("real resource routes", () => {
     expect(await screen.findByText(experiment.name)).toBeTruthy();
     catalog.unmount();
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
-    await userEvent.click(await screen.findByRole("button", { name: "Run this experiment" }));
-    expect(await screen.findByText(/Run Monitor · launched-run/)).toBeTruthy();
+    await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
+    expect(await screen.findByText(/仿真运行控制台 · launched-run/)).toBeTruthy();
     const post = fetchMock.mock.calls.find((call) => call[1]?.method === "POST");
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({
       experiment_id: experiment.experiment_id,

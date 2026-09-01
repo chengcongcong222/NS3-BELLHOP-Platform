@@ -8,19 +8,22 @@ import { PRODUCT_METADATA } from "../productMetadata";
 export function AppShell({ children }: PropsWithChildren) {
   const system = useQuery(queries.systemInfo());
   const links = [
-    ["/", "概览"],
-    ["/environments", "环境"],
-    ["/scenarios", "场景"],
-    ["/experiments", "实验"],
-    ["/runs", "运行"],
-    ["/results", "结果"],
+    ["/", "工作台"],
+    ["/cases", "案例中心"],
+    ["/environments", "环境建设"],
+    ["/scenarios", "场景设计"],
+    ["/experiments", "实验配置"],
+    ["/runs", "仿真运行"],
+    ["/results", "结果分析"],
+    ["/resources", "资源管理"],
+    ["/system", "系统信息"],
   ];
   return (
     <div className="app-shell">
-      <header>
+      <header className="product-header">
         <div>
           <strong>{system.data?.platform_name ?? PRODUCT_METADATA.platformName}</strong>
-          <span>水声网络数字孪生</span>
+          <span>水声网络仿真工作台</span>
         </div>
         <div className="engine">Simulation Engine: {system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</div>
       </header>
@@ -45,7 +48,7 @@ export function PageHeader({ title, detail }: { title: string; detail: string })
   return (
     <div className="page-header">
       <div>
-        <p className="eyebrow">PLATFORM / READ MODEL</p>
+        <p className="eyebrow">SIMULATION WORKBENCH</p>
         <h1>{title}</h1>
       </div>
       <p>{detail}</p>
