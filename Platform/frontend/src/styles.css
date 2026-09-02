@@ -38,6 +38,14 @@ footer { padding: 0.8rem 2rem; color: #61777e; background: white; border-top: 1p
 .state-panel { padding: 1.25rem; display: grid; gap: 0.4rem; color: #48616a; }
 .state-panel.error { border-left: 4px solid #a3453d; color: #7c2f2a; }
 .state-panel code { color: #6d4f4b; }
+.status-raw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.draft-boundary { display: flex; flex-wrap: wrap; gap: .45rem 1rem; align-items: center; margin: 0 0 1rem; padding: .65rem .85rem; border: 1px solid #a8c5c8; background: #eff8f7; color: #315e61; }
+.draft-boundary small { color: #577278; }
+.point-editor { display: grid; gap: .5rem; margin: 1rem 0; }
+.point-editor > div { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.point-editor h3 { margin: 0 auto 0 0; }
+.point-editor table { width: 100%; font-size: .8rem; }
+.point-editor input { min-width: 0; width: 100%; }
 dl { margin: 0; }
 .field { display: grid; grid-template-columns: minmax(8rem, 34%) 1fr; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid #edf1f2; }
 .field:last-child { border-bottom: 0; }
@@ -287,3 +295,4 @@ textarea { resize: vertical; }
   .trend-workspace .trend-grid { grid-template-columns: 1fr; }
   .scenario-studio > .property-panel { border-left: 0; border-top: 1px solid #c8d6d9; }
 }
+.depth-workspace { background: linear-gradient(#c7e8ec 0 12%, #2b8a9c 13%, #0b4d61 100%); }

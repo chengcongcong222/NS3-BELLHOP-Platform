@@ -25,7 +25,7 @@ describe("simulation workbench user journeys", () => {
     await userEvent.click(screen.getAllByRole("link", { name: "浅水四节点协同通信与融合" })[0]);
     expect(await screen.findByText("这个案例将如何执行")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "运行默认实验" }));
-    expect(await screen.findByText("网络运行画布")).toBeTruthy();
+    expect(await screen.findByText("场景初始几何 · 当前通信事件")).toBeTruthy();
     expect(document.body.textContent).toContain("case-launched-run");
     const post = fetchMock.mock.calls.find((call) => call[1]?.method === "POST");
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ experiment_id: experiment.experiment_id, experiment_version: experiment.version });
@@ -37,10 +37,14 @@ describe("simulation workbench user journeys", () => {
     expect(await screen.findByRole("img", { name: "草稿声速剖面" })).toBeTruthy();
     const name = screen.getByLabelText("环境名称");
     await userEvent.clear(name); await userEvent.type(name, "南海试验环境");
+    await userEvent.click(screen.getAllByRole("button", { name: "添加点" })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: "添加点" })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: "添加点" })[1]);
+    await userEvent.click(screen.getAllByRole("button", { name: "添加点" })[1]);
     await userEvent.click(screen.getByRole("button", { name: "保存到本机工作区" }));
     expect(screen.getByText("已保存")).toBeTruthy();
     expect(localStorage.getItem("ns3-bellhop-platform.workbench-drafts.v1")).toContain("南海试验环境");
-    expect(document.body.textContent).toContain("不会声称已经生成传播损失或 NoArrival 数据");
+    expect(document.body.textContent).toContain("后端未提供离线作业或发布接口");
   });
 
   it("supports N-node scene editing with canvas and exact coordinate input", async () => {
@@ -52,7 +56,7 @@ describe("simulation workbench user journeys", () => {
     expect(screen.getAllByText(/^N[0-9]+$/).length).toBeGreaterThanOrEqual(before + 1);
     const x = screen.getByLabelText("X（m）"); await userEvent.clear(x); await userEvent.type(x, "321");
     expect((x as HTMLInputElement).value).toBe("321");
-    expect(screen.getByLabelText("节点深度剖面")).toBeTruthy();
+    expect(screen.getByLabelText("节点深度分布（X 坐标）")).toBeTruthy();
   });
 
   it("edits an experiment Draft but exposes no fake Run action", async () => {

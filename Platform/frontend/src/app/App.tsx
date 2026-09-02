@@ -13,12 +13,13 @@ import {
   ScenarioCatalogPage,
   ScenarioDetailPage,
 } from "../features/pages";
-import { ResultDetailPage, RunMonitorPage } from "../features/operations";
+import { ResultDetailPage, R3RunMonitorPage } from "../features/operations";
 import {
   CaseCatalogPage,
   CaseDetailPage,
-  EnvironmentWorkspacePage,
+  R3EnvironmentWorkspacePage,
   ExperimentWorkspacePage,
+  NewSimulationPage,
   ResourceManagementPage,
   ScenarioWorkspacePage,
   SystemPage,
@@ -34,12 +35,13 @@ export function AppRoutes() {
     <AppShell>
       <Routes>
         <Route path="/" element={<WorkbenchPage />} />
+        <Route path="/new-simulation" element={<NewSimulationPage />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/cases" element={<CaseCatalogPage />} />
         <Route path="/cases/:caseId" element={<CaseDetailPage />} />
         <Route path="/environments" element={<EnvironmentCatalogPage />} />
         <Route path="/environments/:assetId" element={<EnvironmentDetailPage />} />
-        <Route path="/workspace/environment" element={<EnvironmentWorkspacePage />} />
+        <Route path="/workspace/environment" element={<R3EnvironmentWorkspacePage />} />
         <Route path="/scenarios" element={<ScenarioCatalogPage />} />
         <Route path="/scenarios/:scenarioId/versions/:version" element={<ScenarioDetailPage />} />
         <Route path="/workspace/scenario" element={<ScenarioWorkspacePage />} />
@@ -47,7 +49,7 @@ export function AppRoutes() {
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
         <Route path="/workspace/experiment" element={<ExperimentWorkspacePage />} />
         <Route path="/runs" element={<RunCatalogPage />} />
-        <Route path="/runs/:runId" element={<RunMonitorPage />} />
+        <Route path="/runs/:runId" element={<R3RunMonitorPage />} />
         <Route path="/results" element={<ResultCatalogPage />} />
         <Route path="/results/:runId" element={<ResultDetailPage />} />
         <Route path="/resources" element={<ResourceManagementPage />} />

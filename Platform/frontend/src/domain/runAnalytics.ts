@@ -74,12 +74,19 @@ export function latestActiveLink(events: readonly RunEventDto[]): ActivityLink |
 
 export function projectionCounts(events: readonly RunEventDto[]) {
   let transmissions = 0; let signals = 0; let noArrivals = 0; let receptions = 0; let cycles = 0;
+  let localDeliveries = 0; let overheard = 0; let notDecoded = 0; let relayEnqueue = 0;
   for (const event of events) {
     if (event.trace.kind === "Transmission") transmissions += 1;
     if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "Signal") signals += 1;
     if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "NoArrival") noArrivals += 1;
-    if (event.trace.kind === "Reception") receptions += 1;
+    if (event.trace.kind === "Reception") {
+      receptions += 1;
+      if (event.trace.payload.disposition === "LocalDelivery") localDeliveries += 1;
+      if (event.trace.payload.disposition === "Overheard") overheard += 1;
+      if (event.trace.payload.disposition === "NotDecoded") notDecoded += 1;
+      if (event.trace.payload.disposition === "RelayEnqueue") relayEnqueue += 1;
+    }
     if (event.trace.kind === "CycleCommit") cycles += 1;
   }
-  return { transmissions, signals, noArrivals, receptions, cycles };
+  return { transmissions, signals, noArrivals, receptions, cycles, localDeliveries, overheard, notDecoded, relayEnqueue };
 }

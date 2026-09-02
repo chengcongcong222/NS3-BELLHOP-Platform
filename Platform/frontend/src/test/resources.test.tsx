@@ -103,7 +103,7 @@ describe("real resource routes", () => {
     catalog.unmount();
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
     await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
-    expect(await screen.findByText("网络运行画布")).toBeTruthy();
+    expect(await screen.findByText("场景初始几何 · 当前通信事件")).toBeTruthy();
     expect(document.body.textContent).toContain("launched-run");
     const post = fetchMock.mock.calls.find((call) => call[1]?.method === "POST");
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({

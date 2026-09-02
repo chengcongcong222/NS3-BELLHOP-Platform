@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { ApiFailure } from "../api/client";
 import { queries } from "../api/queries";
 import { PRODUCT_METADATA } from "../productMetadata";
+import { productLabel } from "../productLanguage";
 
 export function AppShell({ children }: PropsWithChildren) {
   const system = useQuery(queries.systemInfo());
@@ -34,7 +35,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </div>
         </div>
         <div className="shell-context"><span>当前模块</span><strong>{active[2]}</strong></div>
-        <div className="engine"><i className={system.data ? "service-online" : "service-pending"} />{system.data ? "仿真服务已连接" : "正在连接仿真服务"}<small>{system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</small></div>
+        <div className="engine"><i className={system.data ? "service-online" : "service-pending"} />{system.data ? "仿真服务已连接" : "正在连接…"}<small>{system.data ? `${system.data.simulation.engine} ${system.data.simulation.version}` : PRODUCT_METADATA.simulationEngineDisplay}</small></div>
       </header>
       <nav aria-label="主导航">
         <span className="nav-section">仿真工作流</span>
@@ -50,7 +51,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <footer>
         <span><i className={system.data ? "service-online" : "service-pending"} />{system.data ? "系统就绪" : "连接中"}</span>
         <span>{active[2]}</span>
-        <span className="footer-technical">{system.data ? `${system.data.simulation.time_authority} · ${system.data.simulation.scheduler_authority} · ${system.data.product_baseline}` : `${PRODUCT_METADATA.footerAuthority} · ${PRODUCT_METADATA.schedulingGateway}`}</span>
+        <span className="footer-technical">{system.data ? `${system.data.simulation.engine} ${system.data.simulation.version} · 系统就绪` : "正在连接…"}</span>
       </footer>
     </div>
   );
@@ -60,7 +61,7 @@ export function PageHeader({ title, detail }: { title: string; detail: string })
   return (
     <div className="page-header">
       <div>
-        <p className="eyebrow">SIMULATION WORKBENCH</p>
+        <p className="eyebrow">仿真工作台</p>
         <h1>{title}</h1>
       </div>
       <p>{detail}</p>
@@ -68,9 +69,7 @@ export function PageHeader({ title, detail }: { title: string; detail: string })
   );
 }
 
-export function LoadingState() {
-  return <div className="state-panel">正在读取后端权威资源…</div>;
-}
+export function LoadingState() { return <div className="state-panel">正在加载…</div>; }
 
 export function ErrorState({ error }: { error: unknown }) {
   const failure = error instanceof ApiFailure ? error : null;
@@ -86,8 +85,8 @@ export function ErrorState({ error }: { error: unknown }) {
   return (
     <div className="state-panel error" role="alert">
       <strong>{title}</strong>
-      <span>{failure?.message ?? "未知前端错误"}</span>
-      {failure && <code>{failure.code}</code>}
+      <span>{failure?.message ?? "发生未知错误"}</span>
+      {failure && <details><summary>技术详情</summary><code>{failure.code}</code></details>}
     </div>
   );
 }
@@ -96,9 +95,7 @@ export function EmptyState({ children }: PropsWithChildren) {
   return <div className="state-panel">{children}</div>;
 }
 
-export function Status({ value }: { value: string }) {
-  return <span className={`status status-${value.toLowerCase()}`}>{value}</span>;
-}
+export function Status({ value }: { value: string }) { return <span className={`status status-${value.toLowerCase()}`} title={value}>{productLabel(value)}<span className="status-raw">{value}</span></span>; }
 
 export function MetricCard({ label, value }: { label: string; value: ReactNode }) {
   return (

@@ -3,7 +3,7 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import { AppRoutes } from "../app/App";
-import { acceptanceEvidence, experiment, scenario, systemInfo } from "./fixtures";
+import { acceptanceEvidence, environment, experiment, scenario, systemInfo } from "./fixtures";
 
 type Fixture = { status?: number; body: unknown } | Error;
 type FixtureMap = Record<string, Fixture>;
@@ -14,6 +14,7 @@ export function installApi(fixtures: FixtureMap) {
     const method = init?.method ?? "GET";
     const fixture = fixtures[`${method} ${url}`] ?? fixtures[url] ??
       (url === "/system/info" ? { body: systemInfo } : undefined) ??
+      (url === `/environments/${environment.environment_asset_id}` ? { body: environment } : undefined) ??
       (url === `/scenarios/${scenario.scenario_id}/versions/${scenario.version}` ? { body: scenario } : undefined) ??
       (url === `/experiments/${experiment.experiment_id}/versions/${experiment.version}` ? { body: experiment } : undefined) ??
       (url.endsWith("/acceptance-evidence") ? { body: acceptanceEvidence } : undefined);
