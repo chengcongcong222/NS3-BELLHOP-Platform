@@ -36,6 +36,7 @@
 #include "internal/plan_bound_execution_hook.hpp"
 #include "internal/plan_bound_tx_runtime.hpp"
 #include "internal/plan_installer.hpp"
+#include "internal/phy_execution_composition.hpp"
 #include "internal/protocol_cycle_planner.hpp"
 #include "internal/receiver_processor.hpp"
 #include "internal/reception_disposition_applier.hpp"
@@ -93,6 +94,37 @@ class ScenarioRuntime final {
         network_update_interval_cycles_(network_update_interval_cycles),
         cycle_application_(cycle_application) {}
 
+  ScenarioRuntime(
+      kernel::internal::Ns3KernelGateway& gateway,
+      runtime::internal::WorldStateStore& world_store,
+      runtime::internal::PacketQueueStore& queue_store,
+      runtime::internal::ApplicationDeliveryStore& delivery_store,
+      runtime::internal::CommunicationIdAllocator& id_allocator,
+      const structure::internal::StructureBuilder& structure_builder,
+      const planning::internal::IProtocolCyclePlanner& cycle_planner,
+      const PhyExecutionComposition& phy,
+      contracts::PlanningCycleId first_cycle_id,
+      contracts::ITraceSink* trace_sink = nullptr,
+      std::size_t network_update_interval_cycles = 1,
+      IScenarioCycleApplication* cycle_application = nullptr) noexcept
+      : ScenarioRuntime(gateway,
+                        world_store,
+                        queue_store,
+                        delivery_store,
+                        id_allocator,
+                        structure_builder,
+                        cycle_planner,
+                        phy.tx_phy(),
+                        phy.channel_provider(),
+                        phy.noise_provider(),
+                        phy.rx_phy(),
+                        first_cycle_id,
+                        trace_sink,
+                        network_update_interval_cycles,
+                        cycle_application) {
+    physical_artifact_lifecycle_ = phy.artifact_lifecycle();
+  }
+
   ScenarioRuntime(const ScenarioRuntime&) = delete;
   auto operator=(const ScenarioRuntime&) -> ScenarioRuntime& = delete;
   ScenarioRuntime(ScenarioRuntime&&) = delete;
@@ -139,6 +171,20 @@ class ScenarioRuntime final {
     kernel::internal::Ns3KernelGateway& gateway_;
   };
 
+  class PhysicalArtifactRunGuard final {
+   public:
+    explicit PhysicalArtifactRunGuard(
+        phy::internal::IPhysicalArtifactLifecycle* lifecycle) noexcept
+        : lifecycle_(lifecycle) {}
+
+    ~PhysicalArtifactRunGuard() {
+      if(lifecycle_ != nullptr) lifecycle_->ReleaseCycleArtifacts();
+    }
+
+   private:
+    phy::internal::IPhysicalArtifactLifecycle* lifecycle_;
+  };
+
   [[nodiscard]] auto RunOneCycle(contracts::PlanningCycleId cycle_id)
       -> contracts::Status;
 
@@ -169,6 +215,8 @@ class ScenarioRuntime final {
   contracts::ITraceSink* trace_sink_;
   std::size_t network_update_interval_cycles_;
   IScenarioCycleApplication* cycle_application_;
+  phy::internal::IPhysicalArtifactLifecycle*
+      physical_artifact_lifecycle_{nullptr};
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
   std::optional<contracts::ConnectivityGraph> previous_connectivity_;
   std::optional<contracts::StructureSnapshot> applied_structure_;
@@ -465,6 +513,8 @@ inline auto ScenarioRuntime::RunCycles(std::size_t cycle_count)
   }
   state_ = ScenarioRuntimeState::kRunning;
   SimulatorDestroyGuard destroy_guard{gateway_};
+  PhysicalArtifactRunGuard physical_artifact_guard{
+      physical_artifact_lifecycle_};
   if(network_update_interval_cycles_ == 0) {
     return Fail(contracts::Error{
         contracts::ErrorCode::kInvalidArgument,
@@ -490,6 +540,9 @@ inline auto ScenarioRuntime::RunCycles(std::size_t cycle_count)
     const auto cycle_id = contracts::PlanningCycleId{
         first_cycle_id_.value() + index};
     const auto status = RunOneCycle(cycle_id);
+    if(physical_artifact_lifecycle_ != nullptr) {
+      physical_artifact_lifecycle_->ReleaseCycleArtifacts();
+    }
     if(!status) return Fail(status.error());
   }
   state_ = ScenarioRuntimeState::kCompleted;
