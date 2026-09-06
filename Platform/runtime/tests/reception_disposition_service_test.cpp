@@ -117,19 +117,24 @@ class FixtureNoise final : public INoiseFieldProvider {
 
 class FixtureRx final : public IRxPhy {
  public:
-  explicit FixtureRx(DecodeOutcome outcome) noexcept : outcome_(outcome) {}
+  explicit FixtureRx(DecodeOutcome outcome,
+                     std::vector<std::byte> recovered = {})
+      : outcome_(outcome), recovered_(std::move(recovered)) {}
 
   auto Decode(const RxDecodeRequest& request) const
       -> Result<RxDecodeResult> override {
     const auto& desired = request.receiver_window().desired_signal();
-    return RxDecodeResult::Create(desired.transmission_id(),
+    auto result = RxDecodeResult::Create(desired.transmission_id(),
                                   desired.emission().packet_id(),
                                   desired.receiver_node_id(),
                                   outcome_);
+    if(!result || recovered_.empty()) return result;
+    return result->WithRecoveredPayload(recovered_);
   }
 
  private:
   DecodeOutcome outcome_;
+  std::vector<std::byte> recovered_;
 };
 
 auto MakeSession(TransmissionId transmission_id,
@@ -137,7 +142,8 @@ auto MakeSession(TransmissionId transmission_id,
                  NodeId sender,
                  NodeId receiver,
                  DecodeOutcome outcome,
-                 ReceptionId reception_id = ReceptionId{100})
+                 ReceptionId reception_id = ReceptionId{100},
+                 std::vector<std::byte> recovered = {})
     -> Result<ReceptionSession> {
   auto signal = MakeSignal(transmission_id, packet_id, sender, receiver);
   auto snapshot = WorldSnapshot::Create(
@@ -162,7 +168,7 @@ auto MakeSession(TransmissionId transmission_id,
   }
   CommunicationIdAllocator ids{TransmissionId{900}, reception_id};
   const FixtureNoise noise;
-  const FixtureRx rx{outcome};
+  const FixtureRx rx{outcome, std::move(recovered)};
   const ReceiverProcessor processor{ids, noise, rx};
   return processor.ProcessReceivedSignal(*signal, ledger, *working);
 }
@@ -304,6 +310,34 @@ auto TestFinalDeliveryAndRelayPacketPreservation() -> bool {
          relay_action.transmission_id == TransmissionId{31} &&
          relay_action.receiver_node_id == NodeId{2} &&
          relay_action.packet == relay_record->packet();
+}
+
+auto TestRecoveredBytesReplaceTruthForDeliveryAndRelay() -> bool {
+  const std::vector<std::byte> recovered{std::byte{0xa1}, std::byte{0xb2}};
+  for(const auto destination : {NodeId{2}, NodeId{3}}) {
+    const auto record = MakeRecord(TransmissionId{35}, PacketId{35}, NodeId{0},
+        NodeId{1}, UnicastDestination{destination},
+        UnicastTransmissionTarget{NodeId{2}}, {std::byte{0x00}});
+    const auto session = MakeSession(TransmissionId{35}, PacketId{35}, NodeId{1},
+        NodeId{2}, DecodeOutcome::kDecoded, ReceptionId{100}, recovered);
+    if(!record || !session) return false;
+    const auto store = StoreWith(*record);
+    if(!store) return false;
+    const auto disposition = ReceptionDispositionService{}.Decide(*session, *store);
+    if(!disposition) return false;
+    auto expected = record->packet();
+    expected.payload = recovered;
+    if(destination == NodeId{2}) {
+      const auto* action = std::get_if<LocalDeliveryReception>(&*disposition);
+      if(!action || action->packet != expected) return false;
+    } else {
+      const auto* action = std::get_if<RelayEnqueueReception>(&*disposition);
+      if(!action || action->packet != expected) return false;
+    }
+  }
+  const auto failed = RxDecodeResult::Create(TransmissionId{35}, PacketId{35},
+      NodeId{2}, DecodeOutcome::kNotDecoded);
+  return failed && !failed->WithRecoveredPayload(recovered);
 }
 
 auto TestBroadcastLocalDeliveryOnly() -> bool {
@@ -490,6 +524,7 @@ auto main() -> int {
   return TestNotDecodedPrecedesTargetAcceptanceAndIsDeterministic() &&
                  TestUnicastTargetAcceptanceAndOverhearing() &&
                  TestFinalDeliveryAndRelayPacketPreservation() &&
+                 TestRecoveredBytesReplaceTruthForDeliveryAndRelay() &&
                  TestBroadcastLocalDeliveryOnly() &&
                  TestUnsupportedCombinationsAndSelfReception() &&
                  TestIdentityMismatchesAndMissingRecord()

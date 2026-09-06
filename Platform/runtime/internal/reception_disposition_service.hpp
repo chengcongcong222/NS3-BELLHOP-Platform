@@ -94,7 +94,11 @@ inline auto ReceptionDispositionService::Decide(
                                reception.receiver_node_id};
   }
 
-  const auto& packet = transmission_record.packet();
+  auto packet = transmission_record.packet();
+  if(const auto& recovered =
+         reception_session.decode_result().recovered_payload()) {
+    packet.payload = *recovered;
+  }
   if(const auto* const target =
          std::get_if<contracts::UnicastTransmissionTarget>(
              &transmission.target)) {

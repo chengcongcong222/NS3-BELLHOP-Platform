@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstddef>
+#include <vector>
 #include <optional>
 #include <utility>
 
@@ -132,6 +134,33 @@ class RxDecodeResult final {
     return outcome_;
   }
 
+  // Present only when a receiver actually recovered payload bytes. Routing
+  // identities remain in the transmission record; these bytes are authoritative
+  // for delivery. Scalar providers keep the legacy absent-payload behavior.
+  [[nodiscard]] auto recovered_payload() const noexcept
+      -> const std::optional<std::vector<std::byte>>& {
+    return recovered_payload_;
+  }
+
+  [[nodiscard]] auto WithRecoveredPayload(std::vector<std::byte> payload) const
+      -> Result<RxDecodeResult> {
+    if(outcome_ != DecodeOutcome::kDecoded || payload.empty()) {
+      return std::unexpected(Error{
+          ErrorCode::kFailedPrecondition,
+          "Recovered payload requires a decoded result and nonempty bytes"});
+    }
+    auto result = *this;
+    result.recovered_payload_ = std::move(payload);
+    return result;
+  }
+
+  [[nodiscard]] auto WithQualityEvidence(
+      std::optional<RxQualityEvidence> quality) const -> RxDecodeResult {
+    auto result = *this;
+    result.quality_evidence_ = std::move(quality);
+    return result;
+  }
+
   [[nodiscard]] constexpr auto quality_evidence() const noexcept
       -> const std::optional<RxQualityEvidence>& {
     return quality_evidence_;
@@ -157,6 +186,7 @@ class RxDecodeResult final {
   NodeId receiver_node_id_;
   DecodeOutcome outcome_;
   std::optional<RxQualityEvidence> quality_evidence_;
+  std::optional<std::vector<std::byte>> recovered_payload_;
 };
 
 inline auto RxDecodeResult::Create(TransmissionId transmission_id,

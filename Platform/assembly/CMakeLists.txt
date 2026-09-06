@@ -14,6 +14,26 @@ target_link_libraries(
 
 if(BUILD_TESTING)
   add_executable(
+    platform_assembly_channel2_feature_link_test
+    tests/channel2_feature_link_test.cpp
+  )
+  target_include_directories(
+    platform_assembly_channel2_feature_link_test
+    PRIVATE "${PROJECT_SOURCE_DIR}/assembly" "${PROJECT_SOURCE_DIR}/environment" "${PROJECT_SOURCE_DIR}/phy"
+  )
+  target_link_libraries(
+    platform_assembly_channel2_feature_link_test PRIVATE Platform::assembly
+  )
+  target_compile_definitions(
+    platform_assembly_channel2_feature_link_test
+    PRIVATE PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT="${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1"
+  )
+  add_test(
+    NAME platform_assembly_channel2_feature_link_test
+    COMMAND platform_assembly_channel2_feature_link_test
+  )
+
+  add_executable(
     platform_assembly_acceptance_run_report_test
     tests/acceptance_run_report_test.cpp
   )

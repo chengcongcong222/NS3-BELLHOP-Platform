@@ -33,7 +33,12 @@ struct WenzNoiseConfig final {
   auto operator==(const WenzNoiseConfig&) const -> bool = default;
 };
 
-using NoiseProfile = std::variant<AwgnNoiseConfig, WenzNoiseConfig>;
+struct NoNoiseConfig final {
+  auto operator==(const NoNoiseConfig&) const -> bool = default;
+};
+
+using NoiseProfile =
+    std::variant<AwgnNoiseConfig, WenzNoiseConfig, NoNoiseConfig>;
 
 class DeterministicGaussian final {
  public:
@@ -247,11 +252,15 @@ inline void InverseFft(std::vector<std::complex<double>>& values) {
         using Config = std::decay_t<decltype(config)>;
         if constexpr(std::is_same_v<Config, AwgnNoiseConfig>) {
           return GenerateAwgn(config, sample_count, sample_rate_hz);
-        } else {
+        } else if constexpr(std::is_same_v<Config, WenzNoiseConfig>) {
           return GenerateWenzNoise(config,
                                    sample_count,
                                    sample_rate_hz,
                                    acoustic_carrier_hz);
+        } else {
+          return WaveformBuffer::Create(
+              sample_rate_hz,
+              std::vector<WaveformBuffer::Sample>(sample_count));
         }
       },
       profile);

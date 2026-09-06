@@ -92,10 +92,10 @@ class BitFrame final {
 
   const auto ratio = config.sample_rate_hz / config.symbol_rate_baud;
   const auto rounded = std::round(ratio);
-  if(rounded < 2.0 ||
+  if(!std::isfinite(ratio) || rounded < 2.0 ||
      std::abs(ratio - rounded) >
          1.0e-9 * std::max(1.0, std::abs(ratio)) ||
-     rounded > static_cast<double>(
+     static_cast<long double>(rounded) > static_cast<long double>(
                    std::numeric_limits<std::size_t>::max())) {
     return std::unexpected(
         Error{ErrorCode::kFailedPrecondition,

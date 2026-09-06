@@ -5,6 +5,7 @@
 #include <complex>
 #include <cstddef>
 #include <limits>
+#include <numbers>
 #include <span>
 #include <utility>
 #include <vector>
@@ -38,6 +39,33 @@ struct MultipathTap final {
     taps.push_back(MultipathTap{
         static_cast<double>(path.excess_delay().nanoseconds()) / 1.0e9,
         std::polar(path.pressure_gain_linear(), path.phase_radians())});
+  }
+  return taps;
+}
+
+// Normalized Bellhop phase excludes real propagation delay (ADR-0001 2.39).
+// A complex envelope still needs the carrier's relative-delay phase. Work in
+// the first-arrival reference frame: the common first-arrival carrier phase is
+// removed by ideal synchronization, while relative path interference remains.
+[[nodiscard]] inline auto BuildBasebandMultipathTaps(
+    const contracts::ChannelFieldResponse& response, double carrier_hz)
+    -> Result<std::vector<MultipathTap>> {
+  if(!std::isfinite(carrier_hz) || carrier_hz <= 0.0) {
+    return std::unexpected(Error{ErrorCode::kInvalidArgument,
+                                 "Baseband carrier must be finite and positive"});
+  }
+  auto taps = BuildMultipathTaps(response);
+  if(!taps) return std::unexpected(taps.error());
+  for(auto& tap : *taps) {
+    const auto cycles = static_cast<long double>(carrier_hz) *
+                        static_cast<long double>(tap.excess_delay_seconds);
+    if(!std::isfinite(cycles)) {
+      return std::unexpected(Error{ErrorCode::kOverflow,
+                                   "Carrier propagation phase overflow"});
+    }
+    const auto phase = -2.0L * std::numbers::pi_v<long double> *
+                       std::remainder(cycles, 1.0L);
+    tap.pressure_gain *= std::polar(1.0, static_cast<double>(phase));
   }
   return taps;
 }

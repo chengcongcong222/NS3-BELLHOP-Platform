@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -34,6 +35,7 @@
 #include "internal/single_sink_star_topology_policy.hpp"
 #include "internal/structure_builder.hpp"
 #include "internal/world_state_store.hpp"
+#include "internal/waveform_phy.hpp"
 
 namespace ns3_factory::application::internal {
 
@@ -190,7 +192,9 @@ class DeterministicRxPhy final : public IRxPhy {
     const ScenarioDefinition& scenario,
     const ExperimentDefinition& experiment,
     const environment::internal::EnvironmentAssetId& environment_asset_id,
-    double environment_depth_meters)
+    double environment_depth_meters,
+    std::size_t encoded_payload_bytes =
+        assembly::internal::kDetectionFeatureV1PayloadBytes)
     -> Result<assembly::internal::AcceptanceScenarioConfig> {
   if(experiment.scenario().scenario_id != scenario.scenario_id() ||
      experiment.scenario().scenario_version != scenario.version()) {
@@ -215,7 +219,7 @@ class DeterministicRxPhy final : public IRxPhy {
               : assembly::internal::AcceptanceScenarioProfile::kExtended6Node,
           std::move(nodes),
           experiment.phy().bit_rate_bits_per_second,
-          assembly::internal::kDetectionFeatureV1PayloadBytes,
+          encoded_payload_bytes,
           experiment.mac().slot_duration,
           experiment.mac().guard_interval,
           experiment.network_update_interval_cycles(),
@@ -233,12 +237,24 @@ class DeterministicRxPhy final : public IRxPhy {
 
 }  // namespace acceptance_run_executor_detail
 
+// Internal composition entry for Channel 2. No default/frontend experiment is
+// silently switched. The observer is optional and must outlive Execute().
+struct WaveformExecutionOptions final {
+  phy::internal::WaveformPhyConfig phy;
+  phy::internal::IWaveformReceptionObserver* observer = nullptr;
+};
+
 class AcceptanceRunExecutor final : public IRunExecutor {
  public:
   explicit AcceptanceRunExecutor(
       const environment::internal::EnvironmentAssetRepository& environments)
       noexcept
       : environments_(environments) {}
+
+  AcceptanceRunExecutor(
+      const environment::internal::EnvironmentAssetRepository& environments,
+      WaveformExecutionOptions waveform)
+      : environments_(environments), waveform_(std::move(waveform)) {}
 
   [[nodiscard]] auto Execute(
       const RunId& run_id,
@@ -268,7 +284,9 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         (*asset)->source_depth_m().back(),
         (*asset)->receiver_depth_m().back());
     auto config = BuildAcceptanceConfig(
-        scenario, experiment, *asset_id, maximum_depth);
+        scenario, experiment, *asset_id, maximum_depth,
+        assembly::internal::kDetectionFeatureV1PayloadBytes +
+            (waveform_ ? phy::internal::kWaveformCrcBytes : 0U));
     if(!config) return std::unexpected(config.error());
     auto frequency_policy =
         environment::internal::DiscreteFrequencySelectionPolicy::Create(0.0);
@@ -298,6 +316,37 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     if(!deliveries) return std::unexpected(deliveries.error());
     if(!connectivity) return std::unexpected(connectivity.error());
     if(!tx_phy) return std::unexpected(tx_phy.error());
+    phy::internal::TransmissionWaveformStore waveform_store;
+    std::optional<phy::internal::WaveformTxPhy> waveform_tx;
+    std::optional<phy::internal::WaveformRxPhy> waveform_rx;
+    if(waveform_) {
+      const auto& modulation = waveform_->phy.modulation;
+      if(experiment.phy().quality_mode != RxQualityMode::kNone) {
+        return std::unexpected(Error{
+            ErrorCode::kFailedPrecondition,
+            "Waveform execution requires quality_mode=None; observe actual waveform BER separately"});
+      }
+      if(modulation.symbol_rate_baud !=
+             static_cast<double>(experiment.phy().bit_rate_bits_per_second) ||
+         modulation.acoustic_carrier_hz !=
+             experiment.phy().center_frequency_hz ||
+         waveform_->phy.occupied_bandwidth_hz !=
+             experiment.phy().occupied_bandwidth_hz ||
+         std::abs(20.0 * std::log10(modulation.symbol_amplitude_upa) -
+                  experiment.phy().source_level_db_re_1upa_at_1m) > 1e-9) {
+        return std::unexpected(Error{
+            ErrorCode::kFailedPrecondition,
+            "Waveform settings do not match the Experiment PHY configuration"});
+      }
+      auto created_tx =
+          phy::internal::WaveformTxPhy::Create(waveform_->phy, waveform_store);
+      auto created_rx = phy::internal::WaveformRxPhy::Create(
+          waveform_->phy, waveform_store, waveform_->observer);
+      if(!created_tx) return std::unexpected(created_tx.error());
+      if(!created_rx) return std::unexpected(created_rx.error());
+      waveform_tx.emplace(std::move(*created_tx));
+      waveform_rx.emplace(std::move(*created_rx));
+    }
     auto feature_application =
         assembly::internal::AcceptanceFeatureApplication::Create(
             *config, *queues, *deliveries, contracts::SimTime::Zero());
@@ -326,6 +375,12 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         experiment.phy().quality_mode == RxQualityMode::kModeledBpskAwgn
             ? static_cast<const contracts::IRxPhy&>(*modeled_rx)
             : static_cast<const contracts::IRxPhy&>(deterministic_rx);
+    const auto composition =
+        waveform_
+            ? assembly::internal::PhyExecutionComposition::Waveform(
+                  *waveform_tx, *channel, noise, *waveform_rx, waveform_store)
+            : assembly::internal::PhyExecutionComposition::Abstract(
+                  *tx_phy, *channel, noise, rx_phy);
     RecordingTraceSink trace{event_sink};
     assembly::internal::ScenarioRuntime runtime{
         gateway,
@@ -335,10 +390,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         ids,
         structure_builder,
         planner,
-        *tx_phy,
-        *channel,
-        noise,
-        rx_phy,
+        composition,
         contracts::PlanningCycleId{0},
         &trace,
         experiment.network_update_interval_cycles(),
@@ -349,7 +401,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
 
     auto projection = assembly::internal::AcceptanceRunProjection::Build(
         *config,
-        *tx_phy,
+        experiment.phy().bit_rate_bits_per_second,
         trace.events,
         feature_application->fusion_result_store(),
         world.current_snapshot());
@@ -398,6 +450,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
   std::reference_wrapper<
       const environment::internal::EnvironmentAssetRepository>
       environments_;
+  std::optional<WaveformExecutionOptions> waveform_;
 };
 
 }  // namespace ns3_factory::application::internal

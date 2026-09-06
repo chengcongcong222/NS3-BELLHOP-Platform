@@ -43,6 +43,16 @@ struct FusionResultSummary final {
 
 class AcceptanceRunProjection final {
  public:
+  // Used when the selected provider is a waveform Tx. The caller supplies
+  // the actual configured on-air bit rate, not an unused scalar provider.
+  [[nodiscard]] static auto Build(
+      const AcceptanceScenarioConfig& config,
+      std::uint64_t applied_bit_rate,
+      std::span<const contracts::TraceEvent> trace_events,
+      const FusionResultStore& fusion_result_store,
+      const contracts::WorldSnapshot& final_snapshot)
+      -> contracts::Result<AcceptanceRunProjection>;
+
   [[nodiscard]] static auto Build(
       const AcceptanceScenarioConfig& config,
       const phy::internal::RateBasedTxPhy& applied_tx_phy,
@@ -534,6 +544,17 @@ inline auto AcceptanceRunProjection::Build(
     const FusionResultStore& fusion_result_store,
     const contracts::WorldSnapshot& final_snapshot)
     -> contracts::Result<AcceptanceRunProjection> {
+  return Build(config, applied_tx_phy.config().bits_per_second, trace_events,
+               fusion_result_store, final_snapshot);
+}
+
+inline auto AcceptanceRunProjection::Build(
+    const AcceptanceScenarioConfig& config,
+    std::uint64_t applied_bit_rate,
+    std::span<const contracts::TraceEvent> trace_events,
+    const FusionResultStore& fusion_result_store,
+    const contracts::WorldSnapshot& final_snapshot)
+    -> contracts::Result<AcceptanceRunProjection> {
   const auto initial_snapshot = config.InitialWorldSnapshot();
   if(!initial_snapshot) return std::unexpected(initial_snapshot.error());
   if(final_snapshot.nodes().size() != config.nodes().size()) {
@@ -787,7 +808,7 @@ inline auto AcceptanceRunProjection::Build(
       config.sensor_node_ids().size(),
       std::size_t{1},
       config.communication_rate_bits_per_second(),
-      applied_tx_phy.config().bits_per_second,
+      applied_bit_rate,
       transmission_count,
       channel_signal_count,
       channel_no_arrival_count,

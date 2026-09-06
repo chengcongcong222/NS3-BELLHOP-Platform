@@ -93,11 +93,7 @@ class ScalarBerRxPhyDecorator final : public contracts::IRxPhy {
         contracts::ValidateRxDecodeResultIdentity(request, *inner_result);
     if(!identity) return std::unexpected(identity.error());
     const auto without_quality = [&inner_result] {
-      return contracts::RxDecodeResult::Create(
-          inner_result->transmission_id(),
-          inner_result->packet_id(),
-          inner_result->receiver_node_id(),
-          inner_result->outcome());
+      return inner_result->WithQualityEvidence(std::nullopt);
     };
     if(!request.receiver_window().overlapping_signals().empty()) {
       return without_quality();
@@ -105,12 +101,7 @@ class ScalarBerRxPhyDecorator final : public contracts::IRxPhy {
     auto quality = ComputeP0ModeledBpskAwgnQuality(
         request, bit_rate_bits_per_second_);
     if(!quality) return without_quality();
-    return contracts::RxDecodeResult::Create(
-        inner_result->transmission_id(),
-        inner_result->packet_id(),
-        inner_result->receiver_node_id(),
-        inner_result->outcome(),
-        std::move(*quality));
+    return inner_result->WithQualityEvidence(std::move(*quality));
   }
 
   [[nodiscard]] constexpr auto bit_rate_bits_per_second() const noexcept

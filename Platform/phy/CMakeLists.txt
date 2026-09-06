@@ -7,6 +7,10 @@ target_include_directories(
 target_link_libraries(platform_phy INTERFACE Platform::contracts)
 
 if(BUILD_TESTING)
+  add_executable(platform_phy_waveform_phy_test tests/waveform_phy_test.cpp)
+  target_link_libraries(platform_phy_waveform_phy_test PRIVATE Platform::phy)
+  add_test(NAME platform_phy_waveform_phy_test
+           COMMAND platform_phy_waveform_phy_test)
   add_executable(
     platform_phy_channel2_integration_baseline_test
     tests/channel2_integration_baseline_test.cpp
