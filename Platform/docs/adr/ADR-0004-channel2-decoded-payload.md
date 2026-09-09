@@ -24,6 +24,15 @@ schema, new simulation clock, or second scheduler is introduced.
 
 ## Compatibility and review
 
+2026-09-09 独立验收补充：仅依赖具体解调器自觉填入恢复字节不足以保证上述约束。
+本轮在波形装配边界增加检查器（`RecoveredPayloadRequiredRxPhy`），
+由场景运行对象持有。成功但无恢复字节立即返回 `kFailedPrecondition`，
+不产生交付，不进入融合；失败判决按原流程保持不交付。
+不修改公共接收契约，也不在 runtime 引入通道模式分支。
+抽象装配及既有构造方式维持通道1兼容语义；需要波形语义的调用方必须使用
+显式 `PhyExecutionComposition::Waveform`。
+新反例测试在修复前确实产生六条错误交付和一次融合，修复后在第一条交付之前终止。
+
 Old result factories and Channel 1 remain supported. The C++ object layout
 changes, requiring consumers to rebuild; binary ABI compatibility is not
 promised. Waveform samples remain internal. Shared contracts/runtime/assembly

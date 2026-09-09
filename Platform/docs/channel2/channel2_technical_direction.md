@@ -20,10 +20,14 @@ existing transmission/reception lifecycle, not a parallel simulator.
 
 ## Frozen physical model
 
-The first integration target is `Y = X * H`, with noise disabled. Later work
-may add ambient noise `N` and concurrent-source interference `I`, yielding
-`Y = X * H + N + I`. `H`, `N`, and `I` remain separate physical concepts and
-separate provider inputs.
+第一阶段现已实现并验收 `Y = H(X) + N`：正式 Bellhop 多径作用之后再添加
+可重复的 AWGN 或近似 Wenz 噪声，也可显式关闭噪声。它不是 `H(X+N)`。
+并发源的波形干扰 I 仍未实现，后续才扩展到 `H(X) + N + I`。
+H、N、I 是不同物理输入，不混为传播损失或接收判决概率。
+
+当前波形噪声由独立的显式配置决定，旧实验的标量噪声不能唯一决定 N。
+在向正式前端开放通道2之前，必须统一实验噪声来源、单位、带宽和 seed 的投影，
+并拒绝矛盾配置；这不是已经完成的产品能力。
 
 `H` is represented by propagation paths containing absolute pressure gain,
 phase and delay. Bellhop arrivals are the first physics-based source, not the

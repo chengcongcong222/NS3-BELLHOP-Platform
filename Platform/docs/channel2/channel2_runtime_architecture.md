@@ -49,17 +49,22 @@ provider set once, rather than placing `if (channel2)` checks in event code.
 
 ## Tx/channel/Rx boundaries
 
-The next WaveformTxPhy will implement existing `ITxPhy`. During its single
-`Encode` call it will serialize, modulate, publish X, and return the existing
-metadata-only `TxEmission`. The next WaveformRxPhy will implement existing
-`IRxPhy`, resolve X using the desired TransmissionId, turn
-`ChannelFieldResponse.paths()` into taps, apply H, optionally add independent
-N/I, demodulate, compare bits, and return the existing `RxDecodeResult` plus
-appropriate waveform-derived quality evidence.
+发送端波形生成模块（`WaveformTxPhy`）已经实现：一次物理发送只调用一次
+编码，给 payload 增加 CRC32，调制并发布不可变 X，同时返回不含样本的发送元数据。
+所有接收节点通过发送身份查找同一个 X，不重复调制。
 
-No public contract change is required for P0-CH2-00. A later contract change
-is justified only if recovered payload or measured BER must cross a stable
-module boundary not already represented by Reception/application results.
+接收端波形解调模块（`WaveformRxPhy`）已经实现：将正式环境路径映射为
+复基带多径，执行 H(X)，之后叠加独立 N，再理想相位校正、解调与 CRC 检查。
+恢复字节通过 `RxDecodeResult.recovered_payload` 进入公共交付链。
+原始比特仅在判决之后用于 BER 观察，不参与 CRC 判决。
+
+显式波形装配在 `ScenarioRuntime` 内自动绑定恢复数据检查器
+（`RecoveredPayloadRequiredRxPhy`）。即使注入的接收模块错误地返回成功且无数据，
+也会在接收会话及交付之前报错。检查器由场景运行对象持有，不引用临时装配对象；
+被包装的接收模块必须覆盖整个运行生命周期。通道1不使用该检查器。
+
+当前没有其他发送源的波形干扰 I；重叠信号明确不支持，而不是假装处理成功。
+实测和产品化门禁见 [独立验收报告](channel2_acceptance_review.md)。
 
 ## Delay and gain rules
 

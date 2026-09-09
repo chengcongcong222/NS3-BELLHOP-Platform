@@ -1,5 +1,19 @@
 # Channel 2 Current State Audit
 
+## 2026-09-09 第一阶段独立验收更新
+
+本次审查基于 `d76e2072379fa016fe1b79f9515dd5ca133bad40`，
+不是下文历史基线。发送端生成波形、接收端施加正式 Bellhop 多径并加噪解调，
+已经通过显式通道2装配进入正式 ns-3 发送、到达、接收结束和周期清理流程。
+接收恢复的字节参与网络交付与方位融合；不是旁路计算 BER。
+
+本轮补上装配边界约束：通道2成功解调却未提供恢复字节时直接报错，
+不允许公共交付逻辑回退到发送端数据。通道1仍保留兼容行为。
+实测、反例、噪声双来源及后续限制见 [独立验收报告](channel2_acceptance_review.md)。
+默认前端/worker 仍选择通道1；以下表格只描述旧版本，不代表当前缺口。
+
+## P0-CH2-00 历史审计（保留追溯）
+
 Baseline audited: `f806aa7769440eea3ad264b00bb8ec8c4090f8c9`.
 
 ## Capability matrix
@@ -40,9 +54,9 @@ the transmitted samples. Consequently a production Rx cannot resolve the one
 `X(TransmissionId)` that was generated before fan-out. The algorithms exist;
 their transient ownership and Runtime composition did not.
 
-P0-CH2-00 supplies that ownership boundary and cleanup hook. It deliberately
-does not label the standalone pipeline as a production WaveformTxPhy or
-WaveformRxPhy. Those are the next implementation tasks.
+P0-CH2-00 supplied that ownership boundary and cleanup hook. At that historical
+baseline the standalone pipeline was not yet a runtime WaveformTxPhy or
+WaveformRxPhy. Both runtime providers now exist; see the update above.
 
 ## Environment precision currently available
 

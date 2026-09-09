@@ -1,6 +1,24 @@
 platform_add_interface_module(application)
 
 if(PLATFORM_NS3_AVAILABLE)
+  add_executable(platform_application_channel2_acceptance_review
+    tools/channel2_acceptance_review.cpp)
+  target_include_directories(platform_application_channel2_acceptance_review PRIVATE
+    "${PROJECT_SOURCE_DIR}/application" "${PROJECT_SOURCE_DIR}/assembly"
+    "${PROJECT_SOURCE_DIR}/environment" "${PROJECT_SOURCE_DIR}/kernel"
+    "${PROJECT_SOURCE_DIR}/phy" "${PROJECT_SOURCE_DIR}/planning"
+    "${PROJECT_SOURCE_DIR}/runtime" "${PROJECT_SOURCE_DIR}/structure")
+  target_link_libraries(platform_application_channel2_acceptance_review PRIVATE
+    Platform::application Platform::assembly Platform::environment)
+  target_compile_definitions(platform_application_channel2_acceptance_review PRIVATE
+    PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT="${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1")
+  if(BUILD_TESTING)
+    foreach(review_mode IN ITEMS single single-degraded normal alternate missing degraded abstract)
+      add_test(NAME platform_channel2_review_${review_mode}
+        COMMAND platform_application_channel2_acceptance_review ${review_mode})
+    endforeach()
+  endif()
+
   add_executable(
     platform_application_channel2_feature_demo
     tools/channel2_feature_demo.cpp

@@ -37,6 +37,7 @@
 #include "internal/plan_bound_tx_runtime.hpp"
 #include "internal/plan_installer.hpp"
 #include "internal/phy_execution_composition.hpp"
+#include "internal/recovered_payload_required_rx_phy.hpp"
 #include "internal/protocol_cycle_planner.hpp"
 #include "internal/receiver_processor.hpp"
 #include "internal/reception_disposition_applier.hpp"
@@ -89,6 +90,7 @@ class ScenarioRuntime final {
         channel_provider_(channel_provider),
         noise_provider_(noise_provider),
         rx_phy_(rx_phy),
+        required_payload_rx_(rx_phy),
         first_cycle_id_(first_cycle_id),
         trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink),
         network_update_interval_cycles_(network_update_interval_cycles),
@@ -123,6 +125,9 @@ class ScenarioRuntime final {
                         network_update_interval_cycles,
                         cycle_application) {
     physical_artifact_lifecycle_ = phy.artifact_lifecycle();
+    if(phy.path() == PhyExecutionPath::kWaveform) {
+      rx_phy_ = required_payload_rx_;
+    }
   }
 
   ScenarioRuntime(const ScenarioRuntime&) = delete;
@@ -209,7 +214,8 @@ class ScenarioRuntime final {
   const contracts::ITxPhy& tx_phy_;
   const contracts::IChannelFieldProvider& channel_provider_;
   const contracts::INoiseFieldProvider& noise_provider_;
-  const contracts::IRxPhy& rx_phy_;
+  std::reference_wrapper<const contracts::IRxPhy> rx_phy_;
+  RecoveredPayloadRequiredRxPhy required_payload_rx_;
   contracts::PlanningCycleId first_cycle_id_;
   contracts::NullTraceSink null_trace_sink_;
   contracts::ITraceSink* trace_sink_;
@@ -341,7 +347,7 @@ inline auto ScenarioRuntime::RunOneCycle(
   runtime::internal::TransmissionExecutor transmission_executor{
       id_allocator_, tx_phy_, channel_provider_};
   runtime::internal::ReceiverProcessor receiver_processor{
-      id_allocator_, noise_provider_, rx_phy_};
+      id_allocator_, noise_provider_, rx_phy_.get()};
   runtime::internal::CommitService commit_service{world_store_};
   runtime::internal::InFlightSignalLedger ledger;
   runtime::internal::ReceptionResultAccumulator reception_results;

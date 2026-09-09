@@ -1,5 +1,13 @@
 # Channel 2 Parallel Development Plan
 
+## 当前进度（2026-09-09）
+
+以下保留最初分工，不能再当作尚未实现的功能清单。
+波形发送、解调、真实 Bellhop 多径、接收端噪声、CRC 和恢复数据交付均已进入
+显式 ns-3 场景装配。本轮在独立 review 分支验证融合因果并修补缺数据回退漏洞。
+完整证据见 [独立验收报告](channel2_acceptance_review.md)。
+不宣称默认前端已开放通道2，也不把第一阶段验收等同于通道2完整产品化。
+
 Both branches start from the P0-CH2-00 review commit published on
 `feature/channel2-integration-baseline`. The integration owner reports the
 immutable commit SHA after publication; both developers must fetch the branch
@@ -67,6 +75,5 @@ The gate is executable, never skipped:
 6. cycle completion releases the store;
 7. Channel 1 Acceptance and all OFF/ON tests remain unchanged.
 
-The baseline test proves items 1–6 at composition level. The first joint
-integration must additionally execute them through ns-3 TxStart,
-SignalArrival and SessionFinalize before Channel 2 is called production-ready.
+旧基线测试只在装配层验证前六项；本次第一阶段验收新增真实 ns-3 发送、
+到达、接收结束事件及交付/融合测试。后续产品化仍须通过噪声配置统一门禁。
