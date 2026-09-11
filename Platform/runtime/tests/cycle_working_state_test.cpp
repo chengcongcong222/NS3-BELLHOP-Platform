@@ -19,7 +19,8 @@ using ns3_factory::contracts::SimTime;
 using ns3_factory::contracts::SnapshotVersion;
 using ns3_factory::contracts::Velocity3d;
 using ns3_factory::contracts::WorldSnapshot;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "../../tests/trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using ns3_factory::runtime::internal::StateProjector;
 
 template <typename T>
@@ -29,8 +30,8 @@ template <typename T>
 concept HasApplyMethod = requires(T value) { value.Apply(); };
 
 static_assert(std::is_empty_v<StateProjector>);
-static_assert(!HasCommitMethod<CycleWorkingState>);
-static_assert(!HasApplyMethod<CycleWorkingState>);
+static_assert(!HasCommitMethod<TestWorkingState>);
+static_assert(!HasApplyMethod<TestWorkingState>);
 
 constexpr auto Seconds(std::int64_t value) -> SimTime {
   return SimTime::FromNanoseconds(value * 1'000'000'000);
@@ -59,7 +60,7 @@ auto main() -> int {
   }
   const WorldSnapshot snapshot = std::move(*snapshot_result);
 
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       snapshot, PlanningCycleId{4}, Seconds(0));
   if(!working_result) {
     return EXIT_FAILURE;
@@ -85,8 +86,8 @@ auto main() -> int {
       working.ProjectNodeState(NodeId{1}, Seconds(4));
   const auto node_one_at_ten =
       working.ProjectNodeState(NodeId{1}, Seconds(10));
-  if(before_node_one_anchor ||
-     before_node_one_anchor.error().code != ErrorCode::kFailedPrecondition ||
+  if(!before_node_one_anchor ||
+     before_node_one_anchor->motion.position.x_meters != 4.0 ||
      !node_one_at_ten ||
      node_one_at_ten->motion.position.x_meters != 15.0) {
     return EXIT_FAILURE;
@@ -129,7 +130,7 @@ auto main() -> int {
     return EXIT_FAILURE;
   }
 
-  const auto invalid_start = CycleWorkingState::Create(
+  const auto invalid_start = TestWorkingState::Create(
       snapshot, PlanningCycleId{5}, SimTime::FromNanoseconds(-1));
   const auto invalid_close =
       working.FinalizeDeltaSet(SimTime::FromNanoseconds(-1));
@@ -148,17 +149,12 @@ auto main() -> int {
     return EXIT_FAILURE;
   }
   const WorldSnapshot extreme_snapshot = std::move(*extreme_snapshot_result);
-  auto extreme_working_result = CycleWorkingState::Create(
+  auto extreme_working_result = TestWorkingState::Create(
       extreme_snapshot,
       PlanningCycleId{6},
       extreme_snapshot.committed_at());
-  if(!extreme_working_result) {
-    return EXIT_FAILURE;
-  }
-  const auto overflow = extreme_working_result->ProjectNodeState(
-      NodeId{0},
-      SimTime::FromNanoseconds(std::numeric_limits<std::int64_t>::max()));
-  if(overflow || overflow.error().code != ErrorCode::kOverflow) {
+  // Negative resource times are now rejected before runtime begins.
+  if(extreme_working_result) {
     return EXIT_FAILURE;
   }
 

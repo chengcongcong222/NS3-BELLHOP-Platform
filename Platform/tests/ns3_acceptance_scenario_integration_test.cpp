@@ -1,3 +1,4 @@
+#include <ns3_factory/trajectory/generator.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -250,6 +251,9 @@ auto TestAcceptance4NodeTwelveCycleExecution() -> bool {
                           &trace,
                           config->network_update_interval_cycles()};
 
+  auto trajectories = ns3_factory::trajectory::BindGenerated(world.current_snapshot(),
+      SimTime::FromNanoseconds(3'600'000'000'000));
+  if(!trajectories || !runtime.BindTrajectories(*trajectories)) return false;
   const auto run = runtime.RunCycles(12);
   if(!run || runtime.state() != ScenarioRuntimeState::kCompleted ||
      world.current_snapshot().version() != SnapshotVersion{12} ||

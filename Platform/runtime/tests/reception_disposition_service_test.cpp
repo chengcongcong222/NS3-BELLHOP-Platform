@@ -31,7 +31,9 @@
 #include "internal/transmission_record_store.hpp"
 
 using namespace ns3_factory::contracts;
+#include "../../tests/trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -151,9 +153,9 @@ auto MakeSession(TransmissionId transmission_id,
       SimTime::Zero(),
       {Node(0), Node(1), Node(2), Node(3), Node(4), Node(9)});
   auto working = snapshot
-                     ? CycleWorkingState::Create(
+                     ? TestWorkingState::Create(
                            *snapshot, PlanningCycleId{0}, SimTime::Zero())
-                     : Result<CycleWorkingState>{
+                     : Result<TestWorkingState>{
                            std::unexpected(snapshot.error())};
   if(!signal || !snapshot || !working) {
     return std::unexpected(!signal ? signal.error()

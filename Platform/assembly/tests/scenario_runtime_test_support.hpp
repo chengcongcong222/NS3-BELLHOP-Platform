@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ns3_factory/trajectory/generator.hpp>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -388,7 +390,11 @@ class RuntimeFixture final {
                 noise,
                 rx_phy,
                 first_cycle_id,
-                trace_sink) {}
+                trace_sink) {
+    auto trajectories = trajectory::BindGenerated(world.current_snapshot(),
+        SimTime::FromNanoseconds(3'600'000'000'000));
+    if(!trajectories || !runtime.BindTrajectories(*trajectories)) std::abort();
+  }
 };
 
 }  // namespace ns3_factory::assembly::test

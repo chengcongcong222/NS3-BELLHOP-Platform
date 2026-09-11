@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ns3_factory/trajectory/generator.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -395,6 +397,16 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         &trace,
         experiment.network_update_interval_cycles(),
         &*feature_application};
+    const auto duration_ns = config->communication_cycle_duration().nanoseconds();
+    if(experiment.simulation_cycle_count() >
+       static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max() / duration_ns))
+      return std::unexpected(Error{ErrorCode::kOverflow, "Trajectory run horizon overflow"});
+    const auto trajectory_end = contracts::SimTime::FromNanoseconds(
+        duration_ns * static_cast<std::int64_t>(experiment.simulation_cycle_count()));
+    auto trajectories = trajectory::BindGenerated(world.current_snapshot(), trajectory_end);
+    if(!trajectories) return std::unexpected(trajectories.error());
+    auto bound = runtime.BindTrajectories(*trajectories);
+    if(!bound) return std::unexpected(bound.error());
     const auto executed =
         runtime.RunCycles(experiment.simulation_cycle_count());
     if(!executed) return std::unexpected(executed.error());

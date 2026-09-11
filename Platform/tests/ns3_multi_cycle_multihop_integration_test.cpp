@@ -52,7 +52,9 @@
 using namespace ns3_factory::contracts;
 using namespace ns3_factory::kernel::internal;
 using namespace ns3_factory::planning::internal;
+#include "trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using namespace ns3_factory::structure::internal;
 
 namespace {
@@ -492,7 +494,7 @@ auto MultiCycleHarness::RunCycle(
     return false;
   }
 
-  auto working = CycleWorkingState::Create(snapshot, cycle_id, starts_at);
+  auto working = TestWorkingState::Create(snapshot, cycle_id, starts_at);
   if(!working) return false;
   TransmissionExecutor executor{ids_, tx_phy_, channel_};
   rx_phy_.SetNotDecodedReceiver(not_decoded_receiver);

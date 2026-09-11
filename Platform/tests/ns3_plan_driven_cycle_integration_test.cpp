@@ -39,7 +39,9 @@ using ns3_factory::kernel::internal::Ns3KernelGateway;
 using ns3_factory::kernel::internal::PlanInstaller;
 using ns3_factory::kernel::internal::SessionFinalizeEvent;
 using ns3_factory::kernel::internal::SignalArrivalEvent;
+#include "trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -276,7 +278,7 @@ auto RunPlanDrivenCycle(SimDuration first_arrival_delay,
   }
 
   WorldStateStore store{*snapshot};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       store.current_snapshot(), PlanningCycleId{0}, SimTime::Zero());
   if(!working_result) {
     return false;

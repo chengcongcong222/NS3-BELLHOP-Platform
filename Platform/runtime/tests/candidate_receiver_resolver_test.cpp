@@ -11,7 +11,8 @@
 
 using namespace ns3_factory::contracts;
 using ns3_factory::runtime::internal::CandidateReceiverResolver;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "../../tests/trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -30,11 +31,11 @@ auto TestCanonicalCapabilityOnlyFanOut() -> bool {
       SimTime::Zero(),
       {Node(4, false), Node(3, true), Node(2, true), Node(1, true)});
   const auto working = snapshot
-                           ? CycleWorkingState::Create(
+                           ? TestWorkingState::Create(
                                  *snapshot,
                                  PlanningCycleId{0},
                                  SimTime::Zero())
-                           : Result<CycleWorkingState>{
+                           : Result<TestWorkingState>{
                                  std::unexpected(snapshot.error())};
   if(!snapshot || !working) {
     return false;
@@ -53,11 +54,11 @@ auto TestZeroCandidatesAndUnknownSender() -> bool {
       SimTime::Zero(),
       {Node(0, true), Node(1, false)});
   const auto working = snapshot
-                           ? CycleWorkingState::Create(
+                           ? TestWorkingState::Create(
                                  *snapshot,
                                  PlanningCycleId{0},
                                  SimTime::Zero())
-                           : Result<CycleWorkingState>{
+                           : Result<TestWorkingState>{
                                  std::unexpected(snapshot.error())};
   if(!snapshot || !working) {
     return false;

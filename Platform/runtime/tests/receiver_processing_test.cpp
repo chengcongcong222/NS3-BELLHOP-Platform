@@ -56,7 +56,8 @@ using ns3_factory::contracts::TxOpportunity;
 using ns3_factory::contracts::Velocity3d;
 using ns3_factory::contracts::WorldSnapshot;
 using ns3_factory::runtime::internal::CommunicationIdAllocator;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "../../tests/trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using ns3_factory::runtime::internal::InFlightSignalLedger;
 using ns3_factory::runtime::internal::ReceiverProcessor;
 using ns3_factory::runtime::internal::ReceiverWindowBuilder;
@@ -156,7 +157,7 @@ constexpr auto MakeNode(std::uint64_t id,
                   Velocity3d{x_velocity, 0.0, 0.0}}};
 }
 
-auto MakeWorkingState() -> Result<CycleWorkingState> {
+auto MakeWorkingState() -> Result<TestWorkingState> {
   auto snapshot = WorldSnapshot::Create(
       SnapshotVersion{5},
       SimTime::Zero(),
@@ -168,7 +169,7 @@ auto MakeWorkingState() -> Result<CycleWorkingState> {
   if(!snapshot) {
     return std::unexpected(snapshot.error());
   }
-  return CycleWorkingState::Create(
+  return TestWorkingState::Create(
       *snapshot, PlanningCycleId{9}, SimTime::Zero());
 }
 

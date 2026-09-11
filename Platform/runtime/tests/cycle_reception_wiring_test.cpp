@@ -28,7 +28,9 @@
 #include "internal/world_state_store.hpp"
 
 using namespace ns3_factory::contracts;
+#include "../../tests/trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -120,7 +122,7 @@ class MockRxPhy final : public IRxPhy {
 
 struct Fixture final {
   WorldStateStore world;
-  CycleWorkingState working;
+  TestWorkingState working;
   PacketQueueStore queues;
   ApplicationDeliveryStore deliveries;
   CommunicationIdAllocator ids{TransmissionId{10}, ReceptionId{20}};
@@ -139,7 +141,7 @@ struct Fixture final {
   CycleSignalRuntime runtime;
 
   Fixture(WorldSnapshot snapshot,
-          CycleWorkingState cycle,
+          TestWorkingState cycle,
           PacketQueueStore packet_queues,
           ApplicationDeliveryStore application_deliveries,
           NodeId not_decoded,
@@ -174,7 +176,7 @@ auto MakeFixture(NodeId not_decoded = NodeId{99},
       SimTime::Zero(),
       std::vector<NodeCommittedState>{Node(3), Node(0), Node(2), Node(1)});
   if(!snapshot) return nullptr;
-  auto working = CycleWorkingState::Create(
+  auto working = TestWorkingState::Create(
       *snapshot, PlanningCycleId{0}, SimTime::Zero());
   auto queues = PacketQueueStore::Create(
       {NodeId{3}, NodeId{0}, NodeId{2}, NodeId{1}});

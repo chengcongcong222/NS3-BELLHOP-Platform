@@ -44,7 +44,9 @@
 
 using namespace ns3_factory::contracts;
 using namespace ns3_factory::kernel::internal;
+#include "trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -308,7 +310,7 @@ auto RunScenario(Scenario scenario) -> bool {
   if(!snapshot || !plan_result) return false;
   std::optional<ProtocolCyclePlan> plan{std::move(*plan_result)};
   WorldStateStore world{*snapshot};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       world.current_snapshot(), PlanningCycleId{0}, SimTime::Zero());
   auto queue_result = PacketQueueStore::Create(
       {NodeId{3}, NodeId{0}, NodeId{2}, NodeId{1}});

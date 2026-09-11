@@ -1,3 +1,4 @@
+#include <ns3_factory/trajectory/generator.hpp>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
@@ -108,6 +109,9 @@ auto TestScenarioRuntimeUsesOneM5EncodeForThreeReceivers() -> bool {
   const auto packet = TestPacket();
   if(!queues.Enqueue(NodeId{0}, packet)) return false;
 
+  auto trajectories = ns3_factory::trajectory::BindGenerated(world.current_snapshot(),
+      SimTime::FromNanoseconds(3'600'000'000'000));
+  if(!trajectories || !runtime.BindTrajectories(*trajectories)) return false;
   const auto run = runtime.RunCycles(1);
   const auto now = gateway.PlatformNow();
   return run && runtime.state() == ScenarioRuntimeState::kCompleted &&

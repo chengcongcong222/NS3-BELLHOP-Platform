@@ -27,7 +27,8 @@ using ns3_factory::contracts::Status;
 using ns3_factory::contracts::Velocity3d;
 using ns3_factory::contracts::WorldSnapshot;
 using ns3_factory::runtime::internal::CommitService;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "../../tests/trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using ns3_factory::runtime::internal::WorldStateStore;
 
 template <typename T>
@@ -146,7 +147,7 @@ auto TestSuccessfulCommitAndStaleReuse() -> bool {
   }
 
   WorldStateStore store{*initial_result};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       store.current_snapshot(), PlanningCycleId{0}, Seconds(0));
   if(!working_result) {
     return false;

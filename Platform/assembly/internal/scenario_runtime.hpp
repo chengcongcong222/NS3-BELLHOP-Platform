@@ -138,6 +138,20 @@ class ScenarioRuntime final {
   [[nodiscard]] auto RunCycles(std::size_t cycle_count)
       -> contracts::Status;
 
+  [[nodiscard]] auto BindTrajectories(
+      std::shared_ptr<const contracts::INodeTrajectory> trajectories) -> contracts::Status {
+    if(state_ != ScenarioRuntimeState::kReady || !trajectories) {
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Trajectory binding requires a ready run and nonnull immutable input"});
+    }
+    auto validation = runtime::internal::CycleWorkingState::Create(
+        world_store_.current_snapshot(), first_cycle_id_,
+        world_store_.current_snapshot().committed_at(), trajectories);
+    if(!validation) return std::unexpected(validation.error());
+    trajectories_ = std::move(trajectories);
+    return {};
+  }
+
   [[nodiscard]] constexpr auto state() const noexcept
       -> ScenarioRuntimeState {
     return state_;
@@ -216,6 +230,7 @@ class ScenarioRuntime final {
   const contracts::INoiseFieldProvider& noise_provider_;
   std::reference_wrapper<const contracts::IRxPhy> rx_phy_;
   RecoveredPayloadRequiredRxPhy required_payload_rx_;
+  std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
   contracts::PlanningCycleId first_cycle_id_;
   contracts::NullTraceSink null_trace_sink_;
   contracts::ITraceSink* trace_sink_;
@@ -341,8 +356,14 @@ inline auto ScenarioRuntime::RunOneCycle(
   if(!execution_provenance) return execution_provenance;
 
   auto working_state = runtime::internal::CycleWorkingState::Create(
-      snapshot, cycle_id, plan->timing().starts_at());
+      snapshot, cycle_id, plan->timing().starts_at(), trajectories_);
   if(!working_state) return std::unexpected(working_state.error());
+
+  // Reject insufficient immutable input coverage before publishing any events.
+  for(const auto& node : snapshot.nodes()) {
+    auto endpoint = working_state->ProjectNodeState(node.node_id, plan->timing().closes_at());
+    if(!endpoint) return std::unexpected(endpoint.error());
+  }
 
   runtime::internal::TransmissionExecutor transmission_executor{
       id_allocator_, tx_phy_, channel_provider_};

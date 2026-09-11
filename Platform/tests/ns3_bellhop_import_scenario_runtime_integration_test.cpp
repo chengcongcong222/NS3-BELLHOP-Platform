@@ -1,3 +1,4 @@
+#include <ns3_factory/trajectory/generator.hpp>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -318,6 +319,9 @@ auto TestRawImportPackageToScenarioRuntime() -> bool {
   const auto packet = TestPacket();
   if(!queues.Enqueue(NodeId{0}, packet)) return false;
 
+  auto trajectories = ns3_factory::trajectory::BindGenerated(world.current_snapshot(),
+      SimTime::FromNanoseconds(3'600'000'000'000));
+  if(!trajectories || !runtime.BindTrajectories(*trajectories)) return false;
   const auto run = runtime.RunCycles(1U);
   if(!run) {
     std::cerr << "RunCycles failed: " << run.error().message << '\n';

@@ -46,7 +46,8 @@ using ns3_factory::contracts::UnicastTransmissionTarget;
 using ns3_factory::contracts::Velocity3d;
 using ns3_factory::contracts::WorldSnapshot;
 using ns3_factory::runtime::internal::CommunicationIdAllocator;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "../../tests/trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using ns3_factory::runtime::internal::TransmissionExecutionRequest;
 using ns3_factory::runtime::internal::TransmissionExecutor;
 using ns3_factory::runtime::internal::TransmissionSession;
@@ -76,7 +77,7 @@ static_assert(requires(CommunicationIdAllocator& allocator) {
       std::same_as<Result<TransmissionId>>;
 });
 static_assert(requires(const TransmissionExecutor& executor,
-                       const CycleWorkingState& working_state,
+                       const TestWorkingState& working_state,
                        TransmissionExecutionRequest request) {
   { executor.ExecuteTransmission(working_state, std::move(request)) } ->
       std::same_as<Result<TransmissionSession>>;
@@ -219,7 +220,7 @@ constexpr auto Seconds(std::int64_t value) -> SimTime {
   return SimTime::FromNanoseconds(value * 1'000'000'000);
 }
 
-auto MakeWorkingState() -> Result<CycleWorkingState> {
+auto MakeWorkingState() -> Result<TestWorkingState> {
   auto snapshot = WorldSnapshot::Create(
       SnapshotVersion{4},
       SimTime::Zero(),
@@ -234,7 +235,7 @@ auto MakeWorkingState() -> Result<CycleWorkingState> {
   if(!snapshot) {
     return std::unexpected(snapshot.error());
   }
-  return CycleWorkingState::Create(
+  return TestWorkingState::Create(
       *snapshot, PlanningCycleId{8}, SimTime::Zero());
 }
 
@@ -549,8 +550,16 @@ auto TestDurationAndEndOverflow() -> bool {
   const TransmissionExecutor executor{allocator, tx_phy, channel};
   constexpr auto kMaximum =
       std::numeric_limits<SimTime::representation_type>::max();
+  // Cover the boundary explicitly so this remains an emission-end overflow
+  // test, rather than failing earlier on trajectory coverage.
+  auto boundary_tracks = ns3_factory::trajectory::BindGenerated(
+      working->base_snapshot(), SimTime::FromNanoseconds(kMaximum));
+  if(!boundary_tracks) return false;
+  auto boundary_working = ns3_factory::runtime::internal::CycleWorkingState::Create(
+      working->base_snapshot(), PlanningCycleId{8}, SimTime::Zero(), *boundary_tracks);
+  if(!boundary_working) return false;
   const auto result = executor.ExecuteTransmission(
-      *working,
+      *boundary_working,
       MakeRequest(NodeId{2},
                   {},
                   SimTime::FromNanoseconds(kMaximum),

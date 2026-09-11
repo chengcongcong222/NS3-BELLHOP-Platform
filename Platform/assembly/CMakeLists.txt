@@ -4,6 +4,7 @@ target_link_libraries(
   platform_assembly
   INTERFACE
     Platform::contracts
+    Platform::trajectory
     Platform::environment
     Platform::kernel
     Platform::planning

@@ -1,158 +1,65 @@
 #pragma once
 
-#include <algorithm>
-#include <span>
-#include <utility>
-#include <vector>
-
+#include <cmath>
+#include <memory>
 #include <ns3_factory/contracts/delta.hpp>
-#include <ns3_factory/contracts/errors.hpp>
-#include <ns3_factory/contracts/identity.hpp>
-#include <ns3_factory/contracts/state.hpp>
-#include <ns3_factory/contracts/time.hpp>
-
 #include "internal/state_projector.hpp"
 
 namespace ns3_factory::runtime::internal {
-
 class CycleWorkingState final {
  public:
-  [[nodiscard]] static auto Create(
-      const contracts::WorldSnapshot& base_snapshot,
-      contracts::PlanningCycleId cycle_id,
-      contracts::SimTime cycle_started_at)
-      -> contracts::Result<CycleWorkingState>;
-
-  [[nodiscard]] constexpr auto cycle_id() const noexcept
-      -> contracts::PlanningCycleId {
-    return cycle_id_;
-  }
-
-  [[nodiscard]] constexpr auto cycle_started_at() const noexcept
-      -> contracts::SimTime {
-    return cycle_started_at_;
-  }
-
-  [[nodiscard]] auto base_snapshot() const noexcept
-      -> const contracts::WorldSnapshot& {
-    return base_snapshot_;
-  }
-
-  [[nodiscard]] auto ProjectNodeState(contracts::NodeId node_id,
-                                      contracts::SimTime query_time) const
-      -> contracts::Result<contracts::NodeCommittedState>;
-
-  [[nodiscard]] auto UpdateVelocity(
-      contracts::NodeId node_id,
-      contracts::Velocity3d velocity,
-      contracts::SimTime effective_at) -> contracts::Status;
-
-  [[nodiscard]] auto FinalizeDeltaSet(
-      contracts::SimTime cycle_close_time) const
-      -> contracts::Result<contracts::DeltaSet>;
-
- private:
-  CycleWorkingState(const contracts::WorldSnapshot& base_snapshot,
-                    contracts::PlanningCycleId cycle_id,
-                    contracts::SimTime cycle_started_at)
-      : base_snapshot_(base_snapshot),
-        cycle_id_(cycle_id),
-        cycle_started_at_(cycle_started_at) {}
-
-  [[nodiscard]] auto FindOverlay(contracts::NodeId node_id)
-      -> std::vector<WorkingNodeOverlay>::iterator;
-
-  contracts::WorldSnapshot base_snapshot_;
-  contracts::PlanningCycleId cycle_id_;
-  contracts::SimTime cycle_started_at_;
-  std::vector<WorkingNodeOverlay> overlays_;
-};
-
-inline auto CycleWorkingState::Create(
-    const contracts::WorldSnapshot& base_snapshot,
-    contracts::PlanningCycleId cycle_id,
-    contracts::SimTime cycle_started_at)
-    -> contracts::Result<CycleWorkingState> {
-  if(cycle_started_at < base_snapshot.committed_at()) {
-    return std::unexpected(contracts::Error{
-        contracts::ErrorCode::kFailedPrecondition,
-        "CycleWorkingState cannot start before its base snapshot"});
-  }
-  return CycleWorkingState{base_snapshot, cycle_id, cycle_started_at};
-}
-
-inline auto CycleWorkingState::ProjectNodeState(
-    contracts::NodeId node_id,
-    contracts::SimTime query_time) const
-    -> contracts::Result<contracts::NodeCommittedState> {
-  if(query_time < cycle_started_at_) {
-    return std::unexpected(contracts::Error{
-        contracts::ErrorCode::kFailedPrecondition,
-        "CycleWorkingState query_time precedes the cycle start"});
-  }
-  return StateProjector::ProjectNodeState(
-      base_snapshot_, overlays_, node_id, query_time);
-}
-
-inline auto CycleWorkingState::UpdateVelocity(
-    contracts::NodeId node_id,
-    contracts::Velocity3d velocity,
-    contracts::SimTime effective_at) -> contracts::Status {
-  const auto projected = ProjectNodeState(node_id, effective_at);
-  if(!projected) {
-    return std::unexpected(projected.error());
-  }
-
-  auto updated_state = *projected;
-  updated_state.motion.velocity = velocity;
-
-  const auto overlay = FindOverlay(node_id);
-  if(overlay != overlays_.end() && overlay->state.node_id == node_id) {
-    overlay->state = std::move(updated_state);
-    overlay->motion_anchor = effective_at;
-    return {};
-  }
-
-  overlays_.insert(
-      overlay, WorkingNodeOverlay{std::move(updated_state), effective_at});
-  return {};
-}
-
-inline auto CycleWorkingState::FinalizeDeltaSet(
-    contracts::SimTime cycle_close_time) const
-    -> contracts::Result<contracts::DeltaSet> {
-  if(cycle_close_time < cycle_started_at_) {
-    return std::unexpected(contracts::Error{
-        contracts::ErrorCode::kFailedPrecondition,
-        "CycleWorkingState cannot finalize before the cycle start"});
-  }
-
-  std::vector<contracts::NodeStateReplacement> replacements;
-  replacements.reserve(base_snapshot_.nodes().size());
-  for(const auto& base_node : base_snapshot_.nodes()) {
-    const auto projected = StateProjector::ProjectNodeState(
-        base_snapshot_, overlays_, base_node.node_id, cycle_close_time);
-    if(!projected) {
-      return std::unexpected(projected.error());
+  static auto Create(const contracts::WorldSnapshot& snapshot,
+                     contracts::PlanningCycleId cycle_id,
+                     contracts::SimTime starts_at,
+                     std::shared_ptr<const contracts::INodeTrajectory> trajectories)
+      -> contracts::Result<CycleWorkingState> {
+    if(starts_at < snapshot.committed_at() || !trajectories)
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Working state requires trajectory input and valid cycle start"});
+    for(const auto& node : snapshot.nodes()) {
+      auto motion = trajectories->Query(node.node_id, snapshot.committed_at());
+      if(!motion) return std::unexpected(motion.error());
+      // Exact resources may incur last-bit rounding relative to historical
+      // accumulated snapshots; explicit absolute tolerance is 1e-8 metres.
+      const auto& a = motion->position;
+      const auto& b = node.motion.position;
+      if(!std::isfinite(a.x_meters) || !std::isfinite(a.y_meters) || !std::isfinite(a.z_meters) ||
+         !std::isfinite(b.x_meters) || !std::isfinite(b.y_meters) || !std::isfinite(b.z_meters) ||
+         std::abs(a.x_meters-b.x_meters) > 1e-8 ||
+         std::abs(a.y_meters-b.y_meters) > 1e-8 ||
+         std::abs(a.z_meters-b.z_meters) > 1e-8)
+        return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+            "Trajectory initial position differs from committed state"});
     }
-    replacements.push_back(contracts::NodeStateReplacement{*projected});
+    return CycleWorkingState{snapshot,cycle_id,starts_at,std::move(trajectories)};
   }
-
-  return contracts::DeltaSet{cycle_id_,
-                             base_snapshot_.version(),
-                             cycle_close_time,
-                             std::move(replacements)};
-}
-
-inline auto CycleWorkingState::FindOverlay(contracts::NodeId node_id)
-    -> std::vector<WorkingNodeOverlay>::iterator {
-  return std::lower_bound(
-      overlays_.begin(),
-      overlays_.end(),
-      node_id,
-      [](const WorkingNodeOverlay& candidate, contracts::NodeId id) {
-        return candidate.state.node_id < id;
-      });
-}
-
+  auto cycle_id() const noexcept -> contracts::PlanningCycleId { return cycle_id_; }
+  auto cycle_started_at() const noexcept -> contracts::SimTime { return starts_at_; }
+  auto base_snapshot() const noexcept -> const contracts::WorldSnapshot& { return snapshot_; }
+  auto ProjectNodeState(contracts::NodeId node, contracts::SimTime time) const
+      -> contracts::Result<contracts::NodeCommittedState> {
+    if(time < starts_at_) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition, "Projection precedes cycle"});
+    return StateProjector::ProjectNodeState(snapshot_,*trajectories_,node,time);
+  }
+  auto FinalizeDeltaSet(contracts::SimTime closes_at) const -> contracts::Result<contracts::DeltaSet> {
+    if(closes_at < starts_at_) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition, "Close precedes cycle"});
+    std::vector<contracts::NodeStateReplacement> replacements;
+    for(const auto& node : snapshot_.nodes()) {
+      auto state = ProjectNodeState(node.node_id,closes_at);
+      if(!state) return std::unexpected(state.error());
+      replacements.push_back({*state});
+    }
+    return contracts::DeltaSet{cycle_id_,snapshot_.version(),closes_at,std::move(replacements)};
+  }
+ private:
+  CycleWorkingState(const contracts::WorldSnapshot& snapshot, contracts::PlanningCycleId cycle,
+                    contracts::SimTime start, std::shared_ptr<const contracts::INodeTrajectory> trajectories)
+      : snapshot_(snapshot),cycle_id_(cycle),starts_at_(start),trajectories_(std::move(trajectories)) {}
+  contracts::WorldSnapshot snapshot_;
+  contracts::PlanningCycleId cycle_id_;
+  contracts::SimTime starts_at_;
+  std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
+};
 }  // namespace ns3_factory::runtime::internal

@@ -126,7 +126,8 @@ void SingleLink(bool strong_noise) {
       {acceptance_config_detail::Node(1, {0,0,-65}, {}, ProtocolRole::kMember).initial_state,
        acceptance_config_detail::Node(2, {1000,0,-8}, {}, ProtocolRole::kSink).initial_state}));
   WorldStateStore world{snapshot};
-  auto working = Require(CycleWorkingState::Create(snapshot, PlanningCycleId{0}, SimTime::Zero()));
+  auto trajectories = Require(trajectory::BindGenerated(snapshot, SimTime::FromNanoseconds(6'000'000'000)));
+  auto working = Require(CycleWorkingState::Create(snapshot, PlanningCycleId{0}, SimTime::Zero(), trajectories));
   auto queues = Require(PacketQueueStore::Create({NodeId{1}, NodeId{2}}));
   auto deliveries = Require(ApplicationDeliveryStore::Create({NodeId{1}, NodeId{2}}));
   CommunicationIdAllocator ids{TransmissionId{1000}, ReceptionId{2000}};
@@ -235,6 +236,9 @@ void Fusion(std::string_view mode) {
   CommunicationIdAllocator ids{TransmissionId{1000}, ReceptionId{2000}};
   ScenarioRuntime runtime{gateway, world, queues, deliveries, ids, structure, planner,
                           composition, PlanningCycleId{0}, nullptr, 1, &application};
+  auto trajectories = Require(trajectory::BindGenerated(world.current_snapshot(),
+      SimTime::FromNanoseconds(2 * config.communication_cycle_duration().nanoseconds())));
+  Require(runtime.BindTrajectories(trajectories));
   auto executed = runtime.RunCycles(2);
   std::cout << "fusion_mode=" << mode << " run_ok=" << executed.has_value()
             << " tx_calls=" << recording_tx.calls << " rx_calls=" << observer.rows.size()

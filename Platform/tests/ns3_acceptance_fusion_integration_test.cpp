@@ -1,3 +1,4 @@
+#include <ns3_factory/trajectory/generator.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -255,6 +256,9 @@ auto Execute(RunOptions options) -> Result<RunObservation> {
                           &trace,
                           config->network_update_interval_cycles(),
                           &*application};
+  auto trajectories = ns3_factory::trajectory::BindGenerated(world.current_snapshot(),
+      SimTime::FromNanoseconds(3'600'000'000'000));
+  if(!trajectories || !runtime.BindTrajectories(*trajectories)) return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,"Test trajectory binding failed"});
   const auto run = runtime.RunCycles(options.cycle_count);
   if(!run) return std::unexpected(run.error());
   for(const auto node_id : queues->node_ids()) {

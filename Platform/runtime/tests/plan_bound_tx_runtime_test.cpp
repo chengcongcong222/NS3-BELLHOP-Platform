@@ -41,7 +41,9 @@
 #include "internal/world_state_store.hpp"
 
 using namespace ns3_factory::contracts;
+#include "../../tests/trajectory_fixture.hpp"
 using namespace ns3_factory::runtime::internal;
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 
 namespace {
 
@@ -238,7 +240,7 @@ class FailingEventSink final : public ITransmissionSessionEventSink {
 
 struct Fixture final {
   WorldStateStore world_store;
-  CycleWorkingState working;
+  TestWorkingState working;
   PacketQueueStore queues;
   ApplicationDeliveryStore deliveries;
   CommunicationIdAllocator ids{TransmissionId{1}, ReceptionId{1}};
@@ -261,7 +263,7 @@ struct Fixture final {
   NoopEventSink event_sink;
 
   Fixture(WorldSnapshot snapshot,
-          CycleWorkingState cycle,
+          TestWorkingState cycle,
           PacketQueueStore packet_queues,
           ApplicationDeliveryStore application_deliveries,
           SimDuration duration = For(1),
@@ -297,7 +299,7 @@ auto MakeFixture(std::vector<NodeCommittedState> nodes,
                  SimTime close = At(10)) -> std::unique_ptr<Fixture> {
   auto snapshot = Snapshot(std::move(nodes));
   if(!snapshot) return nullptr;
-  auto working = CycleWorkingState::Create(
+  auto working = TestWorkingState::Create(
       *snapshot, PlanningCycleId{0}, SimTime::Zero());
   std::vector<NodeId> node_ids;
   for(const auto& node : snapshot->nodes()) node_ids.push_back(node.node_id);

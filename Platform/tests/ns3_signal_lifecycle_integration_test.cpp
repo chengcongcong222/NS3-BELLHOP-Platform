@@ -70,7 +70,8 @@ using ns3_factory::kernel::internal::TxStartEvent;
 using ns3_factory::runtime::internal::CommunicationIdAllocator;
 using ns3_factory::runtime::internal::CommitService;
 using ns3_factory::runtime::internal::CycleSignalRuntime;
-using ns3_factory::runtime::internal::CycleWorkingState;
+#include "trajectory_fixture.hpp"
+using TestWorkingState = ns3_factory::test_support::TrajectoryWorkingState;
 using ns3_factory::runtime::internal::InFlightSignalLedger;
 using ns3_factory::runtime::internal::ReceiverProcessor;
 using ns3_factory::runtime::internal::ReceptionResultAccumulator;
@@ -236,7 +237,7 @@ auto TestBroadcastFullClosure() -> bool {
     return false;
   }
   WorldStateStore store{*snapshot};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       store.current_snapshot(), PlanningCycleId{0}, SimTime::Zero());
   if(!working_result) {
     return false;
@@ -378,7 +379,7 @@ auto RunSignalPair(bool touching) -> bool {
   }
   const auto close_time = touching ? Seconds(3) : Seconds(5);
   WorldStateStore store{*snapshot};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       store.current_snapshot(), PlanningCycleId{1}, SimTime::Zero());
   if(!working_result) {
     return false;
@@ -484,7 +485,7 @@ auto TestCycleCloseProtectionAndEarlyRejection() -> bool {
     return false;
   }
   WorldStateStore store{*snapshot};
-  auto working_result = CycleWorkingState::Create(
+  auto working_result = TestWorkingState::Create(
       store.current_snapshot(), PlanningCycleId{2}, SimTime::Zero());
   if(!working_result) {
     return false;
