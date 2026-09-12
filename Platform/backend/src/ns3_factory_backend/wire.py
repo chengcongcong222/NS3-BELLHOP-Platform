@@ -321,12 +321,49 @@ class NodeResult(WireModel):
     is_fusion_center: bool
 
 
+class PositionSample(WireModel):
+    node_id: UIntDecimal
+    at_ns: Int64Decimal
+    x_meters: FiniteFloat
+    y_meters: FiniteFloat
+    z_meters: FiniteFloat
+
+
+class FusionSource(WireModel):
+    fusion_sequence: UIntDecimal
+    node_id: UIntDecimal
+    observation_sequence: UIntDecimal
+
+
+class WaveformSummary(WireModel):
+    transmission_id: UIntDecimal
+    receiver_node_id: UIntDecimal
+    payload_bit_count: UIntDecimal
+    bit_error_count: UIntDecimal
+    crc_ok: bool
+
+    @model_validator(mode="after")
+    def valid_error_count(self):
+        if int(self.bit_error_count) > int(self.payload_bit_count):
+            raise ValueError("bit errors exceed payload bits")
+        return self
+
+
+class RunVisualization(WireModel):
+    positions_complete: bool
+    generated_feature_count: UIntDecimal
+    positions: list[PositionSample]
+    fusion_sources: list[FusionSource]
+    waveform: list[WaveformSummary]
+
+
 class RunResult(WireModel):
     run_id: StableId
     projection: RunProjection
     acceptance_report: AcceptanceReport | None
     fusion_results: list[FusionResult]
     nodes: list[NodeResult]
+    visualization: RunVisualization | None = None
 
 
 class WorkerStarted(WireModel):

@@ -13,7 +13,7 @@ import {
   ScenarioCatalogPage,
   ScenarioDetailPage,
 } from "../features/pages";
-import { ResultDetailPage, R3RunMonitorPage } from "../features/operations";
+import { StudioResultPage, StudioRunPage } from "../features/studio";
 import {
   CaseCatalogPage,
   CaseDetailPage,
@@ -49,9 +49,9 @@ export function AppRoutes() {
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
         <Route path="/workspace/experiment" element={<ExperimentWorkspacePage />} />
         <Route path="/runs" element={<RunCatalogPage />} />
-        <Route path="/runs/:runId" element={<R3RunMonitorPage />} />
+        <Route path="/runs/:runId" element={<StudioRunPage />} />
         <Route path="/results" element={<ResultCatalogPage />} />
-        <Route path="/results/:runId" element={<ResultDetailPage />} />
+        <Route path="/results/:runId" element={<StudioResultPage />} />
         <Route path="/resources" element={<ResourceManagementPage />} />
         <Route path="/system" element={<SystemPage />} />
         <Route path="*" element={<NotFoundPage />} />

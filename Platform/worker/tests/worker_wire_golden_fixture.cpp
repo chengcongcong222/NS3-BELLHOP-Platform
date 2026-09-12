@@ -11,6 +11,10 @@ using namespace ns3_factory;
 auto Emit(const worker::WorkerMessage& message) -> bool {
   const auto encoded = worker::codec::EncodeWorkerMessage(message);
   if(!encoded) return false;
+  const auto decoded = worker::codec::DecodeWorkerMessage(*encoded);
+  if(!decoded) return false;
+  const auto roundtrip = worker::codec::EncodeWorkerMessage(*decoded);
+  if(!roundtrip || *roundtrip != *encoded) return false;
   std::cout << *encoded << '\n';
   return static_cast<bool>(std::cout);
 }
@@ -58,7 +62,12 @@ auto main() -> int {
        0},
       std::nullopt,
       {},
-      {}};
+      {},
+      // Codec-only fixture, not an experiment resource or product evidence.
+      application::RunVisualization{true, 1,
+        {{contracts::NodeId{0}, zero, {1.0, 2.0, -3.0}}},
+        {{1, contracts::NodeId{0}, 7}},
+        {{contracts::TransmissionId{9}, contracts::NodeId{0}, 120, 2, false}}}};
 
   return Emit(worker::WorkerStarted{*run}) &&
                  Emit(worker::WorkerRunEvent{

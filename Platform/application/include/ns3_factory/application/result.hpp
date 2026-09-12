@@ -114,12 +114,44 @@ struct AcceptanceReportSummary final {
   auto operator==(const AcceptanceReportSummary&) const -> bool = default;
 };
 
+// Read-only evidence from the same immutable trajectory and completed fusion results.
+// No runtime owner, waveform buffer or alternative simulation clock is exposed.
+struct PositionSample final {
+  contracts::NodeId node_id;
+  contracts::SimTime at;
+  contracts::Position3d position;
+  auto operator==(const PositionSample&) const -> bool = default;
+};
+struct FusionSourceSummary final {
+  std::uint64_t fusion_sequence;
+  contracts::NodeId node_id;
+  std::uint16_t observation_sequence;
+  auto operator==(const FusionSourceSummary&) const -> bool = default;
+};
+struct WaveformSummary final {
+  contracts::TransmissionId transmission_id;
+  contracts::NodeId receiver_node_id;
+  std::size_t payload_bit_count;
+  std::size_t bit_error_count;
+  bool crc_ok;
+  auto operator==(const WaveformSummary&) const -> bool = default;
+};
+struct RunVisualization final {
+  bool positions_complete = true;
+  std::size_t generated_feature_count = 0;
+  std::vector<PositionSample> positions;
+  std::vector<FusionSourceSummary> fusion_sources;
+  std::vector<WaveformSummary> waveform;
+  auto operator==(const RunVisualization&) const -> bool = default;
+};
+
 struct RunResult final {
   RunId run_id;
   RunProjectionSummary projection;
   std::optional<AcceptanceReportSummary> acceptance_report;
   std::vector<FusionResultSummary> fusion_results;
   std::vector<NodeSummary> nodes;
+  std::optional<RunVisualization> visualization = std::nullopt;
 
   auto operator==(const RunResult&) const -> bool = default;
 };

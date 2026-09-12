@@ -741,7 +741,7 @@ complex acoustic animation 或 advanced comparison。ns-3 3.47 只作为固定�
 且继续明确“ns-3 为平台唯一仿真时钟和事件调度器”；Frontend 不参与 simulation causality。
 
 P0-S4-07 至此 CLOSED：SSE projection/lifecycle authority 分离、SSE failure non-authority、backend
-acceptance verdict 原样呈现且不在浏览器重算、typed API boundary、offline dependency closure 与完整
+acceptance verdict 不在浏览器重算（历史呈现条款由下述 P0-UX-R4 更新）、typed API boundary、offline dependency closure 与完整
 resource/Run/Result route 已通过 frontend、Backend Python 及 C++ OFF/ON 门禁冻结。
 
 ### 2.53 Acceptance demo and read-only visualization boundary
@@ -752,14 +752,18 @@ command、runtime causality 或正式 acceptance 计算。Backend Run/Result sum
 投影，不进入仿真时间、worker input 或正式 Result。
 
 Scenario topology 只画 Scenario DTO 提供的 initial position/velocity、fusion-center identity 与
-Environment binding，不补画实时轨迹或 DTO 未提供的 protocol role。Run lifecycle 与 event completeness
+Environment binding，不补画 DTO 未提供的 protocol role。P0-UX-R4 允许消费正式只读轨迹位置投影；
+无该投影时仍只显示初始几何，不由浏览器推算。Run lifecycle 与 event completeness
 只来自 Run resource；SSE 按 RunEventSequence 原序投影 CycleCommit、Transmission、ChannelOutcome 与
 Reception，transport failure 不改变 Run 状态。Channel Signal/NoArrival 只按正式 ChannelOutcome trace
 分别计数和展示；Result DTO 未提供的 aggregate 禁止由浏览器推导。
 
-Acceptance4Node 是第三方验收基准，Extended6Node 必须显示为扩展示例。Result 页 requirement、actual、
-evidence/source、reason 与 verdict 分栏展示，但所有 Pass/Fail/NotEvaluated/overall 均逐字来自 Backend
-AcceptanceReport。Modeled BER 明确为仿真模型证据而非硬件实测；Measured/External 仅在正式 DTO 提供时
+P0-UX-R4（用户授权）替代旧结果展示条款：平台展示真实实验事实和量化结果，不自动显示
+满足要求、PASS 或验收通过。Acceptance Case 可并列展示参考要求与本次值，最终判断由用户完成。
+Backend AcceptanceReport 的内部计算及历史兼容字段保持不变，但不作为产品页面的 verdict。
+既有只读结果可增加投影；不得为了可视化改变运行因果、伪造事件或补造未记录数据。
+ChannelOutcome 是信道查询结果，不是 SignalArrival。轨迹位置须来自运行绑定的轨迹在真实仿真时刻的查询。
+Modeled BER 明确为仿真模型证据而非硬件实测；Measured/External 仅在正式 DTO 提供时
 可显示。Fusion 图只使用 FusionResult estimate/time/count，不根据 target truth 或 fixture 补造 bearing
 observation。所有 ns/count/ID 继续以 string 保存，并仅通过 BigInt 做精确格式化。
 

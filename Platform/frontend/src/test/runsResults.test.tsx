@@ -61,7 +61,7 @@ describe("authoritative Run and Result views", () => {
     });
     expect(screen.getByText("Running")).toBeTruthy();
     expect(screen.queryByText("Completed")).toBeNull();
-    expect(document.querySelector(".metrics-hierarchy")?.textContent).toContain("1周期提交1已记录事件");
+    expect(document.body.textContent).toContain("周期 1/");
     expect(screen.getByText("后端连接不可用")).toBeTruthy();
   });
 
@@ -94,12 +94,12 @@ describe("authoritative Run and Result views", () => {
         payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } },
       });
     });
-    expect(screen.getByText("节点 2 未获得有效声学到达")).toBeTruthy();
-    expect(screen.getAllByText(/无有效到达/).length).toBeGreaterThan(0);
-    expect(document.querySelector(".link-inspector")?.textContent).toContain("N0");
+    expect(screen.getByRole("button", { name: /信道查询 · N2 · 无有效路径/ })).toBeTruthy();
+    expect(screen.getByText(/不播放虚构到达动画/)).toBeTruthy();
+    expect(screen.queryByTestId("communication-arrow")).toBeNull();
     expect(document.querySelector(".link-inspector")?.textContent).toContain("N2");
-    expect(screen.getAllByText("0.00000001 s (10 ns)").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("序列 2")).toBeTruthy();
+    expect(document.body.textContent).toContain("0.00000001 s (10 ns)");
+    expect(screen.getByText("原始序列 2")).toBeTruthy();
   });
 
   it("replays completed formal events without changing Run lifecycle", async () => {
@@ -129,130 +129,65 @@ describe("authoritative Run and Result views", () => {
     expect(document.querySelector(".run-topology")?.classList.contains("phase-transmission")).toBe(true);
   });
 
-  it("renders Result catalog and PASS detail without losing large integers", async () => {
+
+  it("preserves exact duration and removes verdicts from result catalog and detail", async () => {
     const large = "900719925474099312345";
-    installApi({
-      "/results": { body: [{ ...resultSummary, simulation_duration_ns: large }] },
-      [`/runs/${result.run_id}/results`]: { body: { ...result, projection: { ...result.projection, simulation_duration_ns: large } } },
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
-    });
+    installApi({ "/results": { body: [{ ...resultSummary, simulation_duration_ns: large }] },
+      [`/runs/${result.run_id}/results`]: { body: { ...result, projection: { ...result.projection, simulation_duration_ns: large } } } });
     const catalog = renderRoute("/results");
     expect(await screen.findByText(`900719925474.099312345 s (${large} ns)`)).toBeTruthy();
-    catalog.unmount();
+    expect(screen.queryByText("Pass")).toBeNull(); catalog.unmount();
     renderRoute(`/results/${result.run_id}`);
-    expect((await screen.findAllByText("Pass")).length).toBeGreaterThan(0);
-    expect(document.body.textContent).toContain(`900719925474.099312345 s (${large} ns)`);
-    expect(await screen.findByText(/不是硬件实测/)).toBeTruthy();
-  });
-
-  it("renders acceptance Fail and BER NotEvaluated distinctly", async () => {
-    const notEvaluated = {
-      ...result,
-      acceptance_report: {
-        ...result.acceptance_report!,
-        overall: "Fail",
-        bit_error_rate: "NotEvaluated",
-        maximum_ber: null,
-        mean_ber: null,
-        ber_reason: "No target Reception contained BER quality evidence.",
-      },
-    };
-    installApi({
-      [`/runs/${result.run_id}/results`]: { body: notEvaluated },
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: { ...experiment, phy: { ...experiment.phy, rx_quality_mode: "None" } } },
-    });
-    renderRoute(`/results/${result.run_id}`);
-    expect((await screen.findAllByText("Fail")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("NotEvaluated").length).toBeGreaterThan(0);
-    expect(screen.getByText(/未配置 BER quality model/)).toBeTruthy();
-    expect(screen.getByText("No target Reception contained BER quality evidence.")).toBeTruthy();
-  });
-
-  it("renders contradictory backend acceptance verdicts without recomputation", async () => {
-    const contradictory = {
-      ...result,
-      projection: { ...result.projection, node_count: "1" },
-      acceptance_report: {
-        ...result.acceptance_report!,
-        overall: "Pass",
-        network_node_count: "Pass",
-        communication_rate: "Pass",
-        bit_error_rate: "Pass",
-        feature_level_fusion: "Pass",
-        bearing_point_count: "Pass",
-        fusion_period: "Pass",
-        maximum_ber: 0.9,
-        mean_ber: 0.8,
-        minimum_bearing_points: "1",
-        maximum_fusion_period_ns: "999999999999",
-      },
-    };
-    installApi({
-      [`/runs/${result.run_id}/results`]: { body: contradictory },
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: {
-        body: {
-          ...experiment,
-          phy: { ...experiment.phy, bit_rate_bits_per_second: "1" },
-        },
-      },
-    });
-    renderRoute(`/results/${result.run_id}`);
-    expect((await screen.findAllByText("1 bit/s")).length).toBeGreaterThan(0);
-    expect(screen.getByText(/max 0.9（无量纲） · mean 0.8/)).toBeTruthy();
-    expect(screen.getAllByText("999.999999999 s (999999999999 ns)").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
+    expect(await screen.findByText("运行概览", { selector: "h2" })).toBeTruthy();
+    expect(document.body.textContent).toContain(large);
+    expect(screen.queryByText("Pass")).toBeNull();
     expect(screen.queryByText("Fail")).toBeNull();
   });
 
-  it("renders the fixed Acceptance4Node golden screen and resource traceability", async () => {
-    installApi({
-      [`/runs/${acceptance4Result.run_id}/results`]: { body: acceptance4Result },
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
-    });
-    renderRoute(`/results/${acceptance4Result.run_id}`);
-    expect(await screen.findByText(/Acceptance4Node · 第三方验收/)).toBeTruthy();
-    expect(screen.getByText("3–4 nodes（third-party requirement）")).toBeTruthy();
-    expect(screen.getAllByText("4 nodes").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("60 bit/s").length).toBeGreaterThan(0);
-    expect(screen.getByText("5 points")).toBeTruthy();
-    expect(screen.getAllByText("Pass").length).toBeGreaterThanOrEqual(7);
-    expect(screen.getAllByText("120 s (120000000000 ns)").length).toBeGreaterThan(0);
-    expect(screen.getByText(/仿真模型 BER.*不是硬件实测/)).toBeTruthy();
-    expect(screen.getByText(/浮点数值表示下限/)).toBeTruthy();
-    expect(await screen.findByText("Reference / modeled")).toBeTruthy();
-    expect(screen.getByText("Bellhop-derived")).toBeTruthy();
-    expect(screen.getByRole("link", { name: acceptance4Result.run_id }).getAttribute("href")).toBe(`/runs/${acceptance4Result.run_id}`);
-    expect(screen.getByRole("link", { name: new RegExp(experiment.experiment_id) })).toBeTruthy();
-    expect(document.body.textContent).not.toContain("NotDecoded");
-  });
-
-  it("keeps Extended6Node Result outside the Acceptance4Node baseline", async () => {
-    const extendedExperiment = {
-      ...experiment,
-      fusion: { ...experiment.fusion, acceptance_profile: "Extended6Node" },
-    };
-    installApi({
-      [`/runs/${result.run_id}/results`]: { body: { ...result, acceptance_report: null } },
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: extendedExperiment },
-    });
+  it("displays missing physical evidence without interpreting acceptance status", async () => {
+    installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result,
+      acceptance_report: { ...result.acceptance_report!, overall: "Fail", maximum_ber: null } } } });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("Extended6Node 仅为扩展示例，不混入 Acceptance4Node 第三方验收要求。")).toBeTruthy();
-    expect(screen.queryByRole("columnheader", { name: "Requirement" })).toBeNull();
+    expect(await screen.findByText(/本次运行没有正式波形接收记录/)).toBeTruthy();
+    expect(screen.queryByText("Fail")).toBeNull();
+    expect(screen.getByText(/不等于 Channel2 实际误码/)).toBeTruthy();
   });
 
-  it("supports the complete Experiment to Run to Result to Acceptance demo path", async () => {
-    installApi({
-      [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
-      "POST /runs": { body: acceptance4Run },
-      [`/runs/${acceptance4Run.run_id}`]: { body: acceptance4Run },
-      [`/runs/${acceptance4Run.run_id}/results`]: { body: acceptance4Result },
-    });
+  it("shows quantitative values, not backend verdicts even when contradictory", async () => {
+    installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result,
+      acceptance_report: { ...result.acceptance_report!, overall: "Pass", maximum_ber: 0.9 } } } });
+    renderRoute(`/results/${result.run_id}`);
+    expect(await screen.findByText("0.9")).toBeTruthy();
+    expect(screen.queryByText("Pass")).toBeNull();
+    expect(document.body.textContent).not.toContain("满足要求");
+  });
+
+  it("organizes the golden result into five scientific sections", async () => {
+    installApi({ [`/runs/${acceptance4Result.run_id}/results`]: { body: acceptance4Result } });
+    renderRoute(`/results/${acceptance4Result.run_id}`);
+    for (const name of ["运行概览", "网络性能", "水声链路", "波形通信", "探测与融合"])
+      expect(await screen.findByRole("heading", { name })).toBeTruthy();
+    expect(screen.getByText(/不是硬件实测/)).toBeTruthy();
+    expect(screen.getByText(/逐条方位值.*不从发送端报告补造/)).toBeTruthy();
+    expect(document.querySelector(".metric-card")).toBeNull();
+  });
+
+  it("does not add acceptance requirements to a result without a report", async () => {
+    installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result, acceptance_report: null } } });
+    renderRoute(`/results/${result.run_id}`);
+    await screen.findByRole("heading", { name: "运行概览" });
+    expect(screen.queryByText("参考要求与本次量化值")).toBeNull();
+  });
+
+  it("supports the published Experiment to Run to scientific Result path", async () => {
+    installApi({ [`/experiments/${experiment.experiment_id}/versions/${experiment.version}`]: { body: experiment },
+      "POST /runs": { body: acceptance4Run }, [`/runs/${acceptance4Run.run_id}`]: { body: acceptance4Run },
+      [`/runs/${acceptance4Run.run_id}/results`]: { body: acceptance4Result } });
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
     await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
     expect(await screen.findByText("场景初始几何 · 当前通信事件")).toBeTruthy();
-    expect(document.body.textContent).toContain(acceptance4Run.run_id);
     await userEvent.click(screen.getByRole("link", { name: "查看结果 →" }));
-    expect(await screen.findByText(/Acceptance4Node · 第三方验收/)).toBeTruthy();
-    expect(screen.getByText("Frontend does not recompute this verdict")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "探测与融合" })).toBeTruthy();
+    expect(screen.queryByText("Pass")).toBeNull();
   });
 });

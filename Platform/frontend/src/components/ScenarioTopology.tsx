@@ -1,4 +1,5 @@
 import type { ScenarioDto } from "../api/types";
+import { createWorldViewTransform } from "../domain/worldViewTransform";
 
 function isMoving(node: ScenarioDto["nodes"][number]): boolean {
   const velocity = node.initial_velocity;
@@ -11,18 +12,9 @@ export function ScenarioTopology({ scenario }: { scenario: ScenarioDto }) {
   const fusionCenter = scenario.nodes.find(
     (node) => node.node_id === scenario.fusion_center_node_id,
   );
-  const xs = scenario.nodes.map((node) => node.initial_position.x_meters);
-  const ys = scenario.nodes.map((node) => node.initial_position.y_meters);
-  const minimumX = Math.min(...xs, 0);
-  const maximumX = Math.max(...xs, 0);
-  const minimumY = Math.min(...ys, 0);
-  const maximumY = Math.max(...ys, 0);
-  const spanX = Math.max(maximumX - minimumX, 1);
-  const spanY = Math.max(maximumY - minimumY, 1);
-  const point = (x: number, y: number) => ({
-    x: 42 + ((x - minimumX) / spanX) * 516,
-    y: 278 - ((y - minimumY) / spanY) * 236,
-  });
+  const transform = createWorldViewTransform(scenario.nodes.map(n => n.initial_position), undefined,
+    { width: 600, height: 320, padding: 42 });
+  const point = (x: number, y: number) => transform.point({ x_meters: x, y_meters: y });
 
   return (
     <div className="topology-layout">
@@ -52,8 +44,9 @@ export function ScenarioTopology({ scenario }: { scenario: ScenarioDto }) {
       <div className="topology-legend" aria-label="Topology legend">
         <span><i className="legend-fusion" />{fusionCenter && isMoving(fusionCenter) ? "移动融合中心" : "固定融合中心"}</span>
         <span><i className="legend-node" />参与节点</span>
-        <span>箭头：初始速度非零</span>
+        <span>箭头：轨迹生成输入速度非零</span>
         <small>仅显示 Scenario DTO 的初始 x/y 几何；不表示实时轨迹。深度见节点表（m）。</small>
+        <small>正式运行统一查询轨迹；绑定资源详情尚未发布。</small>
       </div>
     </div>
   );

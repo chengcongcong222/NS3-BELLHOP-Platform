@@ -9,6 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from ns3_factory_backend.wire import (
+    WaveformSummary,
     Environment,
     Execution,
     Preset,
@@ -20,6 +21,12 @@ from ns3_factory_backend.wire import (
     encode_start_run_command,
     parse_worker_message,
 )
+
+
+def test_waveform_projection_rejects_impossible_error_count() -> None:
+    with pytest.raises(ValidationError):
+        WaveformSummary(transmission_id="1", receiver_node_id="0",
+                        payload_bit_count="120", bit_error_count="121", crc_ok=False)
 
 
 def test_all_cpp_golden_worker_messages_parse_in_python() -> None:
@@ -34,6 +41,13 @@ def test_all_cpp_golden_worker_messages_parse_in_python() -> None:
         WorkerCompleted,
         WorkerFailed,
     ]
+    visualization = messages[2].result.visualization
+    assert visualization is not None
+    assert visualization.positions[0].node_id == "0"
+    assert visualization.positions[0].z_meters == -3.0
+    assert visualization.fusion_sources[0].observation_sequence == "7"
+    assert visualization.waveform[0].bit_error_count == "2"
+    assert visualization.waveform[0].crc_ok is False
 
 
 def test_python_command_is_schema_v1_and_preserves_large_decimal_strings() -> None:

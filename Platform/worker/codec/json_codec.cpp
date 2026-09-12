@@ -287,25 +287,89 @@ template <typename Enum>
   return application::RunRecord{std::move(*run_id),{std::move(*experiment_id),*experiment_version},{std::move(*scenario_id),*scenario_version},{value.at("environment_asset_id").get<std::string>(),*format_version},*lifecycle,started,ended,snapshot,std::move(failure),complete};
 }
 
+[[nodiscard]] auto EncodeVisualization(const application::RunVisualization& v) -> Json {
+  Json positions=Json::array(), sources=Json::array(), waveform=Json::array();
+  for(const auto& p:v.positions) positions.push_back({
+    {"node_id",Decimal(p.node_id.value())},{"at_ns",TimeJson(p.at)},
+    {"x_meters",p.position.x_meters},{"y_meters",p.position.y_meters},{"z_meters",p.position.z_meters}});
+  for(const auto& s:v.fusion_sources) sources.push_back({
+    {"fusion_sequence",Decimal(s.fusion_sequence)},{"node_id",Decimal(s.node_id.value())},
+    {"observation_sequence",Decimal(s.observation_sequence)}});
+  for(const auto& w:v.waveform) waveform.push_back({
+    {"transmission_id",Decimal(w.transmission_id.value())},{"receiver_node_id",Decimal(w.receiver_node_id.value())},
+    {"payload_bit_count",Decimal(w.payload_bit_count)},{"bit_error_count",Decimal(w.bit_error_count)},{"crc_ok",w.crc_ok}});
+  return {{"positions_complete",v.positions_complete},{"generated_feature_count",Decimal(v.generated_feature_count)},
+          {"positions",std::move(positions)},{"fusion_sources",std::move(sources)},{"waveform",std::move(waveform)}};
+}
+
+[[nodiscard]] auto DecodeVisualization(const Json& v) -> contracts::Result<application::RunVisualization> {
+  auto keys=RequireKeys(v,{"positions_complete","generated_feature_count","positions","fusion_sources","waveform"},"visualization");
+  if(!keys || !v.at("positions_complete").is_boolean() || !v.at("positions").is_array() ||
+     !v.at("fusion_sources").is_array() || !v.at("waveform").is_array())
+    return std::unexpected(ProtocolError("Invalid visualization"));
+  auto count=ParseDecimal<std::size_t>(v.at("generated_feature_count"),"generated_feature_count");
+  if(!count) return std::unexpected(count.error());
+  application::RunVisualization out; out.positions_complete=v.at("positions_complete").get<bool>();
+  out.generated_feature_count=*count;
+  for(const auto& p:v.at("positions")) {
+    if(!RequireKeys(p,{"node_id","at_ns","x_meters","y_meters","z_meters"},"position"))
+      return std::unexpected(ProtocolError("Invalid position fields"));
+    auto id=ParseDecimal<std::uint64_t>(p.at("node_id"),"node_id");
+    auto at=ParseDecimal<std::int64_t>(p.at("at_ns"),"at_ns");
+    auto x=ParseFiniteDouble(p.at("x_meters"),"x"), y=ParseFiniteDouble(p.at("y_meters"),"y"), z=ParseFiniteDouble(p.at("z_meters"),"z");
+    if(!id||!at||!x||!y||!z) return std::unexpected(ProtocolError("Invalid position"));
+    out.positions.push_back({contracts::NodeId{*id},contracts::SimTime::FromNanoseconds(*at),{*x,*y,*z}});
+  }
+  for(const auto& s:v.at("fusion_sources")) {
+    if(!RequireKeys(s,{"fusion_sequence","node_id","observation_sequence"},"fusion source"))
+      return std::unexpected(ProtocolError("Invalid source fields"));
+    auto f=ParseDecimal<std::uint64_t>(s.at("fusion_sequence"),"fusion_sequence");
+    auto n=ParseDecimal<std::uint64_t>(s.at("node_id"),"node_id");
+    auto o=ParseDecimal<std::uint16_t>(s.at("observation_sequence"),"observation_sequence");
+    if(!f||!n||!o) return std::unexpected(ProtocolError("Invalid fusion source"));
+    out.fusion_sources.push_back({*f,contracts::NodeId{*n},*o});
+  }
+  for(const auto& w:v.at("waveform")) {
+    if(!RequireKeys(w,{"transmission_id","receiver_node_id","payload_bit_count","bit_error_count","crc_ok"},"waveform"))
+      return std::unexpected(ProtocolError("Invalid waveform fields"));
+    auto t=ParseDecimal<std::uint64_t>(w.at("transmission_id"),"transmission_id");
+    auto r=ParseDecimal<std::uint64_t>(w.at("receiver_node_id"),"receiver_node_id");
+    auto b=ParseDecimal<std::size_t>(w.at("payload_bit_count"),"payload_bit_count");
+    auto e=ParseDecimal<std::size_t>(w.at("bit_error_count"),"bit_error_count");
+    if(!t||!r||!b||!e||*e>*b||!w.at("crc_ok").is_boolean())
+      return std::unexpected(ProtocolError("Invalid waveform measurement"));
+    out.waveform.push_back({contracts::TransmissionId{*t},contracts::NodeId{*r},*b,*e,w.at("crc_ok").get<bool>()});
+  }
+  return out;
+}
+
 [[nodiscard]] auto EncodeResult(const application::RunResult& result) -> Json {
   const auto& p=result.projection;
   Json report=nullptr;
   if(result.acceptance_report) { const auto& a=*result.acceptance_report; report={{"network_node_count",EncodeMetric(a.network_node_count)},{"communication_rate",EncodeMetric(a.communication_rate)},{"bit_error_rate",EncodeMetric(a.bit_error_rate)},{"feature_level_fusion",EncodeMetric(a.feature_level_fusion)},{"bearing_point_count",EncodeMetric(a.bearing_point_count)},{"fusion_period",EncodeMetric(a.fusion_period)},{"overall",EncodeMetric(a.overall)},{"evaluated_target_receptions",Decimal(a.evaluated_target_receptions)},{"missing_ber_evidence_count",Decimal(a.missing_ber_evidence_count)},{"maximum_ber",a.maximum_ber?Json(*a.maximum_ber):Json(nullptr)},{"mean_ber",a.mean_ber?Json(*a.mean_ber):Json(nullptr)},{"required_maximum_ber",a.required_maximum_ber},{"minimum_bearing_points",a.minimum_bearing_points?Json(Decimal(*a.minimum_bearing_points)):Json(nullptr)},{"required_minimum_bearing_points",Decimal(a.required_minimum_bearing_points)},{"maximum_fusion_period_ns",a.maximum_fusion_period?DurationJson(*a.maximum_fusion_period):Json(nullptr)},{"required_maximum_fusion_period_ns",DurationJson(a.required_maximum_fusion_period)},{"ber_reason",a.ber_reason}}; }
   Json fusion=Json::array(); for(const auto& f:result.fusion_results) fusion.push_back({{"fusion_sequence",Decimal(f.fusion_sequence)},{"started_at_ns",TimeJson(f.started_at)},{"completed_at_ns",TimeJson(f.completed_at)},{"fusion_period_ns",DurationJson(f.fusion_period)},{"observation_count",Decimal(f.observation_count)},{"estimated_target_x_meters",f.estimated_target_x_meters},{"estimated_target_y_meters",f.estimated_target_y_meters}});
   Json nodes=Json::array(); for(const auto& n:result.nodes) nodes.push_back({{"node_id",Decimal(n.node_id.value())},{"x_meters",n.final_position.x_meters},{"y_meters",n.final_position.y_meters},{"z_meters",n.final_position.z_meters},{"is_fusion_center",n.is_fusion_center}});
-  return {{"run_id",result.run_id.value()},{"projection",{{"simulation_started_at_ns",TimeJson(p.simulation_started_at)},{"simulation_ended_at_ns",TimeJson(p.simulation_ended_at)},{"simulation_duration_ns",DurationJson(p.simulation_duration)},{"final_snapshot_version",Decimal(p.final_snapshot_version.value())},{"cycle_count",Decimal(p.cycle_count)},{"node_count",Decimal(p.node_count)},{"transmission_count",Decimal(p.transmission_count)},{"channel_signal_count",Decimal(p.channel_signal_count)},{"channel_no_arrival_count",Decimal(p.channel_no_arrival_count)},{"reception_count",Decimal(p.reception_count)},{"local_delivery_count",Decimal(p.local_delivery_count)}}},{"acceptance_report",std::move(report)},{"fusion_results",std::move(fusion)},{"nodes",std::move(nodes)}};
+  Json encoded = {{"run_id",result.run_id.value()},{"projection",{{"simulation_started_at_ns",TimeJson(p.simulation_started_at)},{"simulation_ended_at_ns",TimeJson(p.simulation_ended_at)},{"simulation_duration_ns",DurationJson(p.simulation_duration)},{"final_snapshot_version",Decimal(p.final_snapshot_version.value())},{"cycle_count",Decimal(p.cycle_count)},{"node_count",Decimal(p.node_count)},{"transmission_count",Decimal(p.transmission_count)},{"channel_signal_count",Decimal(p.channel_signal_count)},{"channel_no_arrival_count",Decimal(p.channel_no_arrival_count)},{"reception_count",Decimal(p.reception_count)},{"local_delivery_count",Decimal(p.local_delivery_count)}}},{"acceptance_report",std::move(report)},{"fusion_results",std::move(fusion)},{"nodes",std::move(nodes)}};
+  if(result.visualization) encoded["visualization"]=EncodeVisualization(*result.visualization);
+  return encoded;
 }
 
 template <typename Integer>
 auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> { return ParseDecimal<Integer>(object.at(key),key); }
 
-[[nodiscard]] auto DecodeResult(const Json& value) -> contracts::Result<application::RunResult> {
+[[nodiscard]] auto DecodeResult(Json value) -> contracts::Result<application::RunResult> {
+  std::optional<application::RunVisualization> visualization;
+  if(value.contains("visualization")) {
+    auto decoded=DecodeVisualization(value.at("visualization"));
+    if(!decoded) return std::unexpected(decoded.error());
+    visualization=std::move(*decoded); value.erase("visualization");
+  }
   auto keys=RequireKeys(value,{"run_id","projection","acceptance_report","fusion_results","nodes"},"result"); if(!keys) return std::unexpected(keys.error());
   auto run=ParseStringId<application::RunId>(value.at("run_id"),"run_id"); const auto& p=value.at("projection"); auto pk=RequireKeys(p,{"simulation_started_at_ns","simulation_ended_at_ns","simulation_duration_ns","final_snapshot_version","cycle_count","node_count","transmission_count","channel_signal_count","channel_no_arrival_count","reception_count","local_delivery_count"},"projection"); if(!run||!pk) return std::unexpected(ProtocolError("result header is invalid"));
   auto ps=ReadInt<std::int64_t>(p,"simulation_started_at_ns"),pe=ReadInt<std::int64_t>(p,"simulation_ended_at_ns"),pd=ReadInt<std::int64_t>(p,"simulation_duration_ns"); auto pv=ReadInt<std::uint64_t>(p,"final_snapshot_version"),pc=ReadInt<std::size_t>(p,"cycle_count"),pn=ReadInt<std::size_t>(p,"node_count"),pt=ReadInt<std::size_t>(p,"transmission_count"),pcs=ReadInt<std::size_t>(p,"channel_signal_count"),pcn=ReadInt<std::size_t>(p,"channel_no_arrival_count"),pr=ReadInt<std::size_t>(p,"reception_count"),pl=ReadInt<std::size_t>(p,"local_delivery_count"); if(!ps||!pe||!pd||!pv||!pc||!pn||!pt||!pcs||!pcn||!pr||!pl) return std::unexpected(ProtocolError("projection integer is invalid"));
   application::RunProjectionSummary projection{contracts::SimTime::FromNanoseconds(*ps),contracts::SimTime::FromNanoseconds(*pe),contracts::SimDuration::FromNanoseconds(*pd),contracts::SnapshotVersion{*pv},*pc,*pn,*pt,*pcs,*pcn,*pr,*pl};
   std::optional<application::AcceptanceReportSummary> report; if(!value.at("acceptance_report").is_null()) { const auto&a=value.at("acceptance_report"); auto ak=RequireKeys(a,{"network_node_count","communication_rate","bit_error_rate","feature_level_fusion","bearing_point_count","fusion_period","overall","evaluated_target_receptions","missing_ber_evidence_count","maximum_ber","mean_ber","required_maximum_ber","minimum_bearing_points","required_minimum_bearing_points","maximum_fusion_period_ns","required_maximum_fusion_period_ns","ber_reason"},"acceptance_report"); auto m1=DecodeMetric<application::MetricStatus>(a.at("network_node_count"),"network_node_count"); auto m2=DecodeMetric<application::MetricStatus>(a.at("communication_rate"),"communication_rate"); auto m3=DecodeMetric<application::MetricStatus>(a.at("bit_error_rate"),"bit_error_rate"); auto m4=DecodeMetric<application::MetricStatus>(a.at("feature_level_fusion"),"feature_level_fusion"); auto m5=DecodeMetric<application::MetricStatus>(a.at("bearing_point_count"),"bearing_point_count"); auto m6=DecodeMetric<application::MetricStatus>(a.at("fusion_period"),"fusion_period"); auto ov=DecodeMetric<application::OverallStatus>(a.at("overall"),"overall"); auto er=ReadInt<std::size_t>(a,"evaluated_target_receptions"); auto mb=ReadInt<std::size_t>(a,"missing_ber_evidence_count"); auto rmb=ReadInt<std::size_t>(a,"required_minimum_bearing_points"); auto rfp=ReadInt<std::int64_t>(a,"required_maximum_fusion_period_ns"); if(!ak||!m1||!m2||!m3||!m4||!m5||!m6||!ov||!er||!mb||!rmb||!rfp||!a.at("ber_reason").is_string()) return std::unexpected(ProtocolError("acceptance report is invalid")); std::optional<double> maxber,meanber; if(!a.at("maximum_ber").is_null()){auto d=ParseFiniteDouble(a.at("maximum_ber"),"maximum_ber");if(!d)return std::unexpected(d.error());maxber=*d;} if(!a.at("mean_ber").is_null()){auto d=ParseFiniteDouble(a.at("mean_ber"),"mean_ber");if(!d)return std::unexpected(d.error());meanber=*d;} auto required=ParseFiniteDouble(a.at("required_maximum_ber"),"required_maximum_ber"); if(!required)return std::unexpected(required.error()); std::optional<std::size_t> minpoints; if(!a.at("minimum_bearing_points").is_null()){auto v=ParseDecimal<std::size_t>(a.at("minimum_bearing_points"),"minimum_bearing_points");if(!v)return std::unexpected(v.error());minpoints=*v;} std::optional<contracts::SimDuration> maxperiod; if(!a.at("maximum_fusion_period_ns").is_null()){auto v=ParseDecimal<std::int64_t>(a.at("maximum_fusion_period_ns"),"maximum_fusion_period_ns");if(!v)return std::unexpected(v.error());maxperiod=contracts::SimDuration::FromNanoseconds(*v);} report=application::AcceptanceReportSummary{*m1,*m2,*m3,*m4,*m5,*m6,*ov,*er,*mb,maxber,meanber,*required,minpoints,*rmb,maxperiod,contracts::SimDuration::FromNanoseconds(*rfp),a.at("ber_reason").get<std::string>()}; }
-  if(!value.at("fusion_results").is_array()||!value.at("nodes").is_array()) return std::unexpected(ProtocolError("result arrays are invalid")); std::vector<application::FusionResultSummary> fusion; for(const auto&f:value.at("fusion_results")){auto fk=RequireKeys(f,{"fusion_sequence","started_at_ns","completed_at_ns","fusion_period_ns","observation_count","estimated_target_x_meters","estimated_target_y_meters"},"fusion");auto seq=ReadInt<std::uint64_t>(f,"fusion_sequence"); auto s=ReadInt<std::int64_t>(f,"started_at_ns"); auto e=ReadInt<std::int64_t>(f,"completed_at_ns"); auto d=ReadInt<std::int64_t>(f,"fusion_period_ns"); auto c=ReadInt<std::size_t>(f,"observation_count"); auto x=ParseFiniteDouble(f.at("estimated_target_x_meters"),"x"); auto y=ParseFiniteDouble(f.at("estimated_target_y_meters"),"y");if(!fk||!seq||!s||!e||!d||!c||!x||!y)return std::unexpected(ProtocolError("fusion result is invalid"));fusion.push_back({*seq,contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*e),contracts::SimDuration::FromNanoseconds(*d),*c,*x,*y});} std::vector<application::NodeSummary> nodes; for(const auto&n:value.at("nodes")){auto nk=RequireKeys(n,{"node_id","x_meters","y_meters","z_meters","is_fusion_center"},"node");auto id=ReadInt<std::uint64_t>(n,"node_id"); auto x=ParseFiniteDouble(n.at("x_meters"),"x"); auto y=ParseFiniteDouble(n.at("y_meters"),"y"); auto z=ParseFiniteDouble(n.at("z_meters"),"z");if(!nk||!id||!x||!y||!z||!n.at("is_fusion_center").is_boolean())return std::unexpected(ProtocolError("node result is invalid"));nodes.push_back({contracts::NodeId{*id},{*x,*y,*z},n.at("is_fusion_center").get<bool>()});} return application::RunResult{std::move(*run),projection,std::move(report),std::move(fusion),std::move(nodes)};
+  if(!value.at("fusion_results").is_array()||!value.at("nodes").is_array()) return std::unexpected(ProtocolError("result arrays are invalid")); std::vector<application::FusionResultSummary> fusion; for(const auto&f:value.at("fusion_results")){auto fk=RequireKeys(f,{"fusion_sequence","started_at_ns","completed_at_ns","fusion_period_ns","observation_count","estimated_target_x_meters","estimated_target_y_meters"},"fusion");auto seq=ReadInt<std::uint64_t>(f,"fusion_sequence"); auto s=ReadInt<std::int64_t>(f,"started_at_ns"); auto e=ReadInt<std::int64_t>(f,"completed_at_ns"); auto d=ReadInt<std::int64_t>(f,"fusion_period_ns"); auto c=ReadInt<std::size_t>(f,"observation_count"); auto x=ParseFiniteDouble(f.at("estimated_target_x_meters"),"x"); auto y=ParseFiniteDouble(f.at("estimated_target_y_meters"),"y");if(!fk||!seq||!s||!e||!d||!c||!x||!y)return std::unexpected(ProtocolError("fusion result is invalid"));fusion.push_back({*seq,contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*e),contracts::SimDuration::FromNanoseconds(*d),*c,*x,*y});} std::vector<application::NodeSummary> nodes; for(const auto&n:value.at("nodes")){auto nk=RequireKeys(n,{"node_id","x_meters","y_meters","z_meters","is_fusion_center"},"node");auto id=ReadInt<std::uint64_t>(n,"node_id"); auto x=ParseFiniteDouble(n.at("x_meters"),"x"); auto y=ParseFiniteDouble(n.at("y_meters"),"y"); auto z=ParseFiniteDouble(n.at("z_meters"),"z");if(!nk||!id||!x||!y||!z||!n.at("is_fusion_center").is_boolean())return std::unexpected(ProtocolError("node result is invalid"));nodes.push_back({contracts::NodeId{*id},{*x,*y,*z},n.at("is_fusion_center").get<bool>()});} return application::RunResult{std::move(*run),projection,std::move(report),std::move(fusion),std::move(nodes),std::move(visualization)};
 }
 
 [[nodiscard]] auto EncodeTrace(const contracts::TraceEvent& event) -> Json {

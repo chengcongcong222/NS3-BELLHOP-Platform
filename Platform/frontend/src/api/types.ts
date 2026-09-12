@@ -152,7 +152,17 @@ export interface AcceptanceReportDto {
   ber_reason: string;
 }
 
+export interface PositionSample { node_id: DecimalString; at_ns: DecimalString; x_meters: number; y_meters: number; z_meters: number }
+export interface RunVisualization {
+  positions_complete: boolean;
+  generated_feature_count: DecimalString;
+  positions: PositionSample[];
+  fusion_sources: { fusion_sequence: DecimalString; node_id: DecimalString; observation_sequence: DecimalString }[];
+  waveform: { transmission_id: DecimalString; receiver_node_id: DecimalString; payload_bit_count: DecimalString; bit_error_count: DecimalString; crc_ok: boolean }[];
+}
+
 export interface ResultDto {
+  visualization?: RunVisualization | null;
   run_id: string;
   experiment_id: string;
   experiment_version: DecimalString;

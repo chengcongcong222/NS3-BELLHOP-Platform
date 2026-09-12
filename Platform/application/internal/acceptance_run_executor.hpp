@@ -321,6 +321,18 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     phy::internal::TransmissionWaveformStore waveform_store;
     std::optional<phy::internal::WaveformTxPhy> waveform_tx;
     std::optional<phy::internal::WaveformRxPhy> waveform_rx;
+    struct ResultObserver final : phy::internal::IWaveformReceptionObserver {
+      phy::internal::IWaveformReceptionObserver* downstream = nullptr;
+      std::vector<WaveformSummary> rows;
+      void Observe(const phy::internal::WaveformReceptionSummary& row) noexcept override {
+        if(downstream) downstream->Observe(row);
+        try {
+          rows.push_back({row.transmission_id, row.receiver_node_id,
+                          row.payload_bit_count, row.bit_error_count, row.crc_ok});
+        } catch(...) { /* Best-effort observation must not affect decoding. */ }
+      }
+    } result_observer;
+    result_observer.downstream = waveform_ ? waveform_->observer : nullptr;
     if(waveform_) {
       const auto& modulation = waveform_->phy.modulation;
       if(experiment.phy().quality_mode != RxQualityMode::kNone) {
@@ -343,7 +355,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       auto created_tx =
           phy::internal::WaveformTxPhy::Create(waveform_->phy, waveform_store);
       auto created_rx = phy::internal::WaveformRxPhy::Create(
-          waveform_->phy, waveform_store, waveform_->observer);
+          waveform_->phy, waveform_store, &result_observer);
       if(!created_tx) return std::unexpected(created_tx.error());
       if(!created_rx) return std::unexpected(created_rx.error());
       waveform_tx.emplace(std::move(*created_tx));
@@ -439,6 +451,33 @@ class AcceptanceRunExecutor final : public IRunExecutor {
           node.motion.position,
           node.node_id == scenario.fusion_center_node_id()});
     }
+    RunVisualization visualization;
+    visualization.generated_feature_count = feature_application->generated_reports().size();
+    visualization.waveform = std::move(result_observer.rows);
+    for(const auto& fused : feature_application->fusion_results()) {
+      for(const auto& identity : fused.observation_identities) {
+        visualization.fusion_sources.push_back({fused.fusion_sequence,
+            identity.sender_node_id, identity.observation_sequence});
+      }
+    }
+    std::vector<contracts::SimTime> sample_times{projection->run_started_at(), projection->run_ended_at()};
+    for(const auto& event : trace.events) sample_times.push_back(event.occurred_at());
+    for(const auto& fused : feature_application->fusion_results()) sample_times.push_back(fused.completed_at);
+    std::sort(sample_times.begin(), sample_times.end());
+    sample_times.erase(std::unique(sample_times.begin(), sample_times.end()), sample_times.end());
+    // Bounded terminal read projection, never a new Runtime sampling loop.
+    for(const auto at : sample_times) {
+      for(const auto& node : world.current_snapshot().nodes()) {
+        if(visualization.positions.size() >= 8192) {
+          visualization.positions_complete = false;
+          break;
+        }
+        const auto motion = (*trajectories)->Query(node.node_id, at);
+        if(!motion) { visualization.positions_complete = false; continue; }
+        visualization.positions.push_back({node.node_id, at, motion->position});
+      }
+      if(!visualization.positions_complete) break;
+    }
     return RunResult{
         run_id,
         RunProjectionSummary{
@@ -455,7 +494,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
             projection->local_delivery_count()},
         report ? std::optional{ToAcceptanceSummary(*report)} : std::nullopt,
         std::move(fusion_results),
-        std::move(nodes)};
+        std::move(nodes), std::move(visualization)};
   }
 
  private:

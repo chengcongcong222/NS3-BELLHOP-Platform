@@ -1,0 +1,46 @@
+{
+  "browser": "Chrome/140.0.7339.16",
+  "viewport": [
+    1440,
+    900
+  ],
+  "run_id": "run-4b1cfdc126ff4afba4a50542fba6c097",
+  "experiment_id": "acceptance4-experiment",
+  "lifecycle": "Completed",
+  "position_samples": 100,
+  "generated_features": "6",
+  "fusion_sources": [
+    {
+      "fusion_sequence": "1",
+      "node_id": "10",
+      "observation_sequence": "1"
+    },
+    {
+      "fusion_sequence": "1",
+      "node_id": "10",
+      "observation_sequence": "2"
+    },
+    {
+      "fusion_sequence": "1",
+      "node_id": "20",
+      "observation_sequence": "1"
+    },
+    {
+      "fusion_sequence": "1",
+      "node_id": "20",
+      "observation_sequence": "2"
+    },
+    {
+      "fusion_sequence": "1",
+      "node_id": "30",
+      "observation_sequence": "1"
+    },
+    {
+      "fusion_sequence": "1",
+      "node_id": "30",
+      "observation_sequence": "2"
+    }
+  ],
+  "waveform_records": 0,
+  "screenshots": 8
+}

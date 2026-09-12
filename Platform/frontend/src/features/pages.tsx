@@ -68,7 +68,7 @@ export function OverviewPage() {
         </article>
         <article className="panel">
           <h2>最近正式 Result</h2>
-          {recentResult ? <Link to={`/results/${recentResult.run_id}`}>#{recentResult.catalog_sequence} · {recentResult.run_id} · {recentResult.acceptance_overall ?? "NotFullyEvaluated"}</Link> : <p>暂无 Result</p>}
+          {recentResult ? <Link to={`/results/${recentResult.run_id}`}>#{recentResult.catalog_sequence} · {recentResult.run_id}</Link> : <p>暂无 Result</p>}
         </article>
       </section>
     </>
@@ -125,7 +125,7 @@ export function ScenarioCatalogPage() {
   for (const scenario of query.data) {
     groups.set(scenario.scenario_id, [...(groups.get(scenario.scenario_id) ?? []), scenario]);
   }
-  return <><PageHeader title="节点场景" detail="查看已发布场景版本，或在二维工作区布设节点、深度与运动参数。" /><div className="catalog-actions"><Link className="button-link" to="/workspace/scenario">设计新场景</Link><span>已发布版本不可变；新设计保存在本机草稿。</span></div><div className="card-grid">{[...groups.entries()].map(([id, versions]) => <article className="panel" key={id}><div className="panel-title"><strong>{id}</strong><span>最新 v{latestVersions(versions)}</span></div>{versions.map((item) => <div className="version-row" key={item.version}><Link to={`/scenarios/${id}/versions/${item.version}`}>v{item.version} · {item.name}</Link><span>{item.nodes.length} 个节点 · {item.environment.environment_asset_id}</span></div>)}</article>)}</div></>;
+  return <><PageHeader title="节点场景" detail="查看已发布场景版本，或在二维工作区布设节点、深度与轨迹生成输入。" /><div className="catalog-actions"><Link className="button-link" to="/workspace/scenario">设计新场景</Link><span>已发布版本不可变；新设计保存在本机草稿。</span></div><div className="card-grid">{[...groups.entries()].map(([id, versions]) => <article className="panel" key={id}><div className="panel-title"><strong>{id}</strong><span>最新 v{latestVersions(versions)}</span></div>{versions.map((item) => <div className="version-row" key={item.version}><Link to={`/scenarios/${id}/versions/${item.version}`}>v{item.version} · {item.name}</Link><span>{item.nodes.length} 个节点 · {item.environment.environment_asset_id}</span></div>)}</article>)}</div></>;
 }
 
 export function ScenarioDetailPage() {
@@ -134,7 +134,7 @@ export function ScenarioDetailPage() {
   if (!params) return <ErrorState error={new ApiFailure("NotFound", "NotFound", "Scenario route is malformed.")} />;
   if (query.isPending || query.error) return <QueryState query={query} />;
   const item = query.data;
-  return <><PageHeader title={`${item.name} · v${item.version}`} detail="节点能力、初始几何和环境绑定的只读版本。" /><section className="panel"><dl className="inline-fields"><Field label="ScenarioId">{item.scenario_id}</Field><Field label="Environment"><Link to={`/environments/${item.environment.environment_asset_id}`}>{item.environment.environment_asset_id}</Link> · v{item.environment.asset_format_version}</Field><Field label="Mobility">{item.mobility.model}</Field><Field label="Fusion center">Node {item.fusion_center_node_id}</Field></dl></section><section className="panel"><h2>Initial topology</h2><ScenarioTopology scenario={item} /></section><section className="panel"><h2>Nodes</h2><table><thead><tr><th>ID / role</th><th>Motion</th><th>TX / RX</th><th>Duplex</th><th>Initial position (m)</th><th>Initial velocity (m/s)</th></tr></thead><tbody>{item.nodes.map((node) => { const velocity = node.initial_velocity; const moving = velocity.x_meters_per_second !== 0 || velocity.y_meters_per_second !== 0 || velocity.z_meters_per_second !== 0; return <tr key={node.node_id}><td>{node.node_id}{node.node_id === item.fusion_center_node_id ? " · Fusion center" : " · Participant"}</td><td>{moving ? "Moving" : "Fixed"}</td><td>{node.can_transmit ? "TX" : "—"} / {node.can_receive ? "RX" : "—"}</td><td>{node.duplex_mode}</td><td>{node.initial_position.x_meters}, {node.initial_position.y_meters}, {node.initial_position.z_meters}</td><td>{velocity.x_meters_per_second}, {velocity.y_meters_per_second}, {velocity.z_meters_per_second}</td></tr>; })}</tbody></table></section></>;
+  return <><PageHeader title={`${item.name} · v${item.version}`} detail="节点能力、初始几何和环境绑定的只读版本。" /><section className="panel"><dl className="inline-fields"><Field label="ScenarioId">{item.scenario_id}</Field><Field label="Environment"><Link to={`/environments/${item.environment.environment_asset_id}`}>{item.environment.environment_asset_id}</Link> · v{item.environment.asset_format_version}</Field><Field label="轨迹输入">运行前生成并绑定轨迹；资源详情尚未发布</Field><Field label="Fusion center">Node {item.fusion_center_node_id}</Field></dl></section><section className="panel"><h2>Initial topology</h2><ScenarioTopology scenario={item} /></section><section className="panel"><h2>Nodes</h2><table><thead><tr><th>ID / role</th><th>初始配置</th><th>TX / RX</th><th>Duplex</th><th>Initial position (m)</th><th>轨迹生成输入速度 (m/s)</th></tr></thead><tbody>{item.nodes.map((node) => { const velocity = node.initial_velocity; const moving = velocity.x_meters_per_second !== 0 || velocity.y_meters_per_second !== 0 || velocity.z_meters_per_second !== 0; return <tr key={node.node_id}><td>{node.node_id}{node.node_id === item.fusion_center_node_id ? " · Fusion center" : " · Participant"}</td><td>{moving ? "Moving" : "Fixed"}</td><td>{node.can_transmit ? "TX" : "—"} / {node.can_receive ? "RX" : "—"}</td><td>{node.duplex_mode}</td><td>{node.initial_position.x_meters}, {node.initial_position.y_meters}, {node.initial_position.z_meters}</td><td>{velocity.x_meters_per_second}, {velocity.y_meters_per_second}, {velocity.z_meters_per_second}</td></tr>; })}</tbody></table></section></>;
 }
 
 export function ExperimentCatalogPage() {
@@ -233,7 +233,7 @@ export function RunMonitorPage() {
 export function ResultCatalogPage() {
   const query = useQuery(queries.results());
   if (query.isPending || query.error) return <QueryState query={query} />;
-  return <><PageHeader title="仿真结果" detail="分析已原子发布的正式结果；通用网络与信道结果优先，验收结论仅在对应实验中出现。" />{!query.data.length ? <EmptyState>暂无正式仿真结果</EmptyState> : <section className="panel"><table><thead><tr><th>顺序</th><th>仿真运行</th><th>验收附加状态</th><th>仿真时长</th><th>融合结果</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td>#{item.catalog_sequence}</td><td><Link to={`/results/${item.run_id}`}>{item.run_id}</Link></td><td>{item.acceptance_overall ? <Status value={item.acceptance_overall} /> : "未定义验收 profile"}</td><td>{formatNanoseconds(item.simulation_duration_ns)}</td><td>{item.fusion_result_count}</td></tr>)}</tbody></table></section>}</>;
+  return <><PageHeader title="仿真结果" detail="查看正式实验量化结果；参考要求不替代人工判断。" />{!query.data.length ? <EmptyState>暂无正式仿真结果</EmptyState> : <section className="panel"><table><thead><tr><th>顺序</th><th>仿真运行</th><th>仿真时长</th><th>融合结果</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td>#{item.catalog_sequence}</td><td><Link to={`/results/${item.run_id}`}>{item.run_id}</Link></td><td>{formatNanoseconds(item.simulation_duration_ns)}</td><td>{item.fusion_result_count}</td></tr>)}</tbody></table></section>}</>;
 }
 
 function AcceptanceEvidence({ report, result, experiment }: {

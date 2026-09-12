@@ -206,6 +206,17 @@ auto ExecuteDemo(const Options& options) -> int {
   std::cout << "Waveform BER above is counted against TX truth AFTER decoding;"
                " legacy scalar BER report is intentionally not evaluated.\n";
   if(options.verify) {
+    if(!result.visualization || result.visualization->waveform.size() != observer.rows.size())
+      throw std::runtime_error("Waveform read projection must preserve actual reception count");
+    for(std::size_t i = 0; i < observer.rows.size(); ++i) {
+      const auto& actual = observer.rows[i];
+      const auto& projected = result.visualization->waveform[i];
+      if(projected.transmission_id != actual.transmission_id ||
+         projected.receiver_node_id != actual.receiver_node_id ||
+         projected.payload_bit_count != actual.payload_bit_count ||
+         projected.bit_error_count != actual.bit_error_count || projected.crc_ok != actual.crc_ok)
+        throw std::runtime_error("Waveform read projection changed measured evidence");
+    }
     if(options.noise == "none" && result.projection.local_delivery_count == 0) {
       throw std::runtime_error("No feature report completed the waveform/runtime round trip");
     }

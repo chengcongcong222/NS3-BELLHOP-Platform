@@ -207,6 +207,22 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
     return false;
   }
   const auto& acceptance = *result->acceptance_report;
+  if(!result->visualization || !result->visualization->positions_complete ||
+     result->visualization != repeated->visualization ||
+     result->visualization != direct->visualization ||
+     result->visualization->generated_feature_count != 6 ||
+     result->visualization->fusion_sources.size() != 6 ||
+     !result->visualization->waveform.empty()) return false;
+  for(const auto& final_node : result->nodes) {
+    bool found = false;
+    for(const auto& sample : result->visualization->positions) {
+      if(sample.node_id == final_node.node_id && sample.at == result->projection.simulation_ended_at) {
+        if(sample.position != final_node.final_position) return false;
+        found = true;
+      }
+    }
+    if(!found) return false;
+  }
   const auto expected_event_count =
       result->projection.transmission_count +
       result->projection.channel_signal_count +

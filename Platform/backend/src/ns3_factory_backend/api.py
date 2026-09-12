@@ -46,6 +46,7 @@ from .wire import (
     OverallStatus,
     RunProjection,
     RunResult,
+    RunVisualization,
     StableId,
     UIntDecimal,
 )
@@ -147,6 +148,7 @@ class RunResultResource(HttpModel):
     acceptance_report: AcceptanceReport | None
     fusion_results: list[FusionResult]
     nodes: list[NodeResult]
+    visualization: RunVisualization | None = None
 
 
 class ResultSummaryResource(HttpModel):
@@ -509,6 +511,7 @@ def create_app(
             acceptance_report=result.acceptance_report,
             fusion_results=result.fusion_results,
             nodes=result.nodes,
+            visualization=result.visualization,
         )
 
     async def evidence_for(run_id: str) -> AcceptanceEvidenceBundle:
