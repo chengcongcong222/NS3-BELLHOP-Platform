@@ -42,10 +42,10 @@ Rejected alternatives:
   Assembly-owned artifact lifecycle.
 
 `ScenarioRuntime` has a composition constructor but retains its existing
-constructor. Current Acceptance code therefore remains Channel 1 without a
-mode branch in M1, M2, M3 or M4. A future Experiment field is interpreted by
-Application/Assembly before Runtime construction; it selects a complete
-provider set once, rather than placing `if (channel2)` checks in event code.
+constructor. Default published Acceptance experiments remain Channel 1 without
+a mode branch in M1, M2, M3 or M4. The Authoring Run boundary now interprets
+the explicit worker execution configuration and selects a complete provider
+set once, rather than placing `if (channel2)` checks in event code.
 
 ## Tx/channel/Rx boundaries
 

@@ -15,13 +15,15 @@ import {
 } from "../features/pages";
 import { StudioResultPage, StudioRunPage } from "../features/studio";
 import {
+  EnvironmentAuthoringPage,
+  ServerWorkspacePage,
+  ScenarioAuthoringPage,
+  ExperimentAuthoringPage,
+} from "../features/authoring";
+import {
   CaseCatalogPage,
   CaseDetailPage,
-  R3EnvironmentWorkspacePage,
-  ExperimentWorkspacePage,
   NewSimulationPage,
-  ResourceManagementPage,
-  ScenarioWorkspacePage,
   SystemPage,
   WorkbenchPage,
 } from "../features/workbench";
@@ -41,18 +43,18 @@ export function AppRoutes() {
         <Route path="/cases/:caseId" element={<CaseDetailPage />} />
         <Route path="/environments" element={<EnvironmentCatalogPage />} />
         <Route path="/environments/:assetId" element={<EnvironmentDetailPage />} />
-        <Route path="/workspace/environment" element={<R3EnvironmentWorkspacePage />} />
+        <Route path="/workspace/environment" element={<EnvironmentAuthoringPage />} />
         <Route path="/scenarios" element={<ScenarioCatalogPage />} />
         <Route path="/scenarios/:scenarioId/versions/:version" element={<ScenarioDetailPage />} />
-        <Route path="/workspace/scenario" element={<ScenarioWorkspacePage />} />
+        <Route path="/workspace/scenario" element={<ScenarioAuthoringPage />} />
         <Route path="/experiments" element={<ExperimentCatalogPage />} />
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
-        <Route path="/workspace/experiment" element={<ExperimentWorkspacePage />} />
+        <Route path="/workspace/experiment" element={<ExperimentAuthoringPage />} />
         <Route path="/runs" element={<RunCatalogPage />} />
         <Route path="/runs/:runId" element={<StudioRunPage />} />
         <Route path="/results" element={<ResultCatalogPage />} />
         <Route path="/results/:runId" element={<StudioResultPage />} />
-        <Route path="/resources" element={<ResourceManagementPage />} />
+        <Route path="/resources" element={<ServerWorkspacePage />} />
         <Route path="/system" element={<SystemPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

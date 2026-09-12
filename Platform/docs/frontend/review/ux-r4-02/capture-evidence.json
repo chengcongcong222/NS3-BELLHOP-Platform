@@ -1,0 +1,12 @@
+{
+  "browser": "HeadlessChrome/140.0.7339.16",
+  "viewport": [
+    1440,
+    900
+  ],
+  "backend": "http://127.0.0.1:8095",
+  "environment_draft_id": "environment-b60146c41925",
+  "environment_revision": 1,
+  "screenshots": 8,
+  "request_interception": false
+}

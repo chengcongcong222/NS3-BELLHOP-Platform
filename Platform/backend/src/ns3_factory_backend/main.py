@@ -51,5 +51,17 @@ app = create_app(
         frontend_origin=os.environ.get(
             "PLATFORM_FRONTEND_ORIGIN", "http://127.0.0.1:4173"
         ),
+        authoring_workspace_root=(
+            Path(os.environ["PLATFORM_AUTHORING_WORKSPACE"])
+            if os.environ.get("PLATFORM_AUTHORING_WORKSPACE")
+            else Path(__file__).resolve().parents[3]
+            / ".runtime"
+            / "authoring-workspace"
+        ),
+        authoring_reference_asset_root=(
+            Path(os.environ["PLATFORM_AUTHORING_REFERENCE_ASSET_ROOT"])
+            if os.environ.get("PLATFORM_AUTHORING_REFERENCE_ASSET_ROOT")
+            else None
+        ),
     )
 )

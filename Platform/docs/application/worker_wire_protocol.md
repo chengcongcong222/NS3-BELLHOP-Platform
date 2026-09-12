@@ -20,7 +20,12 @@ duplicates.
 `StartRunCommand` carries RunId plus explicit preset identity
 (ScenarioId, ExperimentId, definition version, acceptance profile), an
 EnvironmentAssetId/reference, and execution parameters (cycle count, Rx
-quality mode, equivalent noise power and deterministic seed). The environment
+quality mode, equivalent noise power and deterministic seed). Execution also
+carries `physical_layer` (`Channel1Abstract` or `Channel2Waveform`) and the
+explicit waveform modulation/noise fields. Channel2 requires scalar
+`rx_quality_mode=None`; its BER/CRC evidence comes from actual demodulation.
+These fields select one complete provider composition in the worker before
+Runtime construction. The environment
 repository root remains process configuration and is not serialized as a
 domain resource.
 

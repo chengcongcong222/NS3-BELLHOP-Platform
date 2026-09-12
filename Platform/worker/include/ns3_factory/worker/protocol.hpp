@@ -22,6 +22,21 @@ enum class WorkerFailureCategory : std::uint8_t {
   kSimulation = 3,
 };
 
+enum class PhysicalLayerImplementation : std::uint8_t {
+  kChannel1Abstract = 1,
+  kChannel2Waveform = 2,
+};
+
+enum class WaveformModulation : std::uint8_t {
+  kBpsk = 1,
+  kBfsk = 2,
+};
+
+enum class WaveformNoiseModel : std::uint8_t {
+  kNone = 1,
+  kAwgn = 2,
+};
+
 struct StartRunCommand final {
   application::RunId run_id;
   application::ScenarioId scenario_id;
@@ -33,6 +48,10 @@ struct StartRunCommand final {
   application::RxQualityMode quality_mode;
   double equivalent_noise_power_db_re_1upa2;
   std::uint64_t deterministic_seed;
+  PhysicalLayerImplementation physical_layer;
+  WaveformModulation waveform_modulation;
+  WaveformNoiseModel waveform_noise;
+  double waveform_noise_psd_db_re_1upa2_per_hz;
 
   auto operator==(const StartRunCommand&) const -> bool = default;
 };

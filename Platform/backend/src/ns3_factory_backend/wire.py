@@ -115,6 +115,18 @@ class Execution(WireModel):
     rx_quality_mode: Literal["None", "ModeledBpskAwgn"]
     equivalent_noise_power_db_re_1upa2: FiniteFloat
     deterministic_seed: UIntDecimal
+    physical_layer: Literal["Channel1Abstract", "Channel2Waveform"] = (
+        "Channel1Abstract"
+    )
+    waveform_modulation: Literal["Bpsk", "Bfsk"] = "Bpsk"
+    waveform_noise: Literal["None", "Awgn"] = "None"
+    waveform_noise_psd_db_re_1upa2_per_hz: FiniteFloat = 0.0
+
+    @model_validator(mode="after")
+    def validate_physical_layer(self) -> "Execution":
+        if self.physical_layer == "Channel2Waveform" and self.rx_quality_mode != "None":
+            raise ValueError("Channel2Waveform requires rx_quality_mode=None")
+        return self
 
 
 class StartRunCommand(WireModel):

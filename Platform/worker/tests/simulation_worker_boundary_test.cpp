@@ -188,7 +188,11 @@ auto MakeRequest(std::string run_text,
       2,
       RxQualityMode::kModeledBpskAwgn,
       noise_power,
-      19};
+      19,
+      PhysicalLayerImplementation::kChannel1Abstract,
+      WaveformModulation::kBpsk,
+      WaveformNoiseModel::kNone,
+      0.0};
 }
 
 struct CapturedWorkerOutput final {
@@ -502,7 +506,11 @@ auto MakeWireCommand(const AcceptanceWorkerRequest& request)
                          request.simulation_cycle_count,
                          request.quality_mode,
                          request.equivalent_noise_power_db_re_1upa2,
-                         request.deterministic_seed};
+                         request.deterministic_seed,
+                         request.physical_layer,
+                         request.waveform_modulation,
+                         request.waveform_noise,
+                         request.waveform_noise_psd_db_re_1upa2_per_hz};
 }
 
 auto TestWireProcessController(

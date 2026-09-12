@@ -26,7 +26,11 @@ auto MakeCommand() -> contracts::Result<worker::StartRunCommand> {
       2,
       application::RxQualityMode::kModeledBpskAwgn,
       45.0,
-      18'446'744'073'709'551'614ULL};
+      18'446'744'073'709'551'614ULL,
+      worker::PhysicalLayerImplementation::kChannel1Abstract,
+      worker::WaveformModulation::kBpsk,
+      worker::WaveformNoiseModel::kNone,
+      0.0};
 }
 
 auto TestCommandRoundTripAndNumericIntegrity() -> bool {

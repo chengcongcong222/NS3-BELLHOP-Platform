@@ -3,6 +3,28 @@ export type Lifecycle = "Created" | "Running" | "Completed" | "Failed";
 export type MetricStatus = "Pass" | "Fail" | "NotEvaluated";
 export type OverallStatus = "Pass" | "Fail" | "NotFullyEvaluated";
 
+export type DraftKind = "environment" | "scenario" | "experiment";
+export interface AuthoringDraftDto {
+  kind: DraftKind;
+  draft_id: string;
+  name: string;
+  payload: Record<string, unknown>;
+  revision: number;
+  created_at: string;
+  updated_at: string;
+  validation_issues: string[];
+}
+export interface EnvironmentBuildDto {
+  build_id: string;
+  draft_id: string;
+  state: "Draft" | "Validating" | "Ready" | "Queued" | "Running" | "Parsing" | "Normalizing" | "ValidatingAsset" | "Completed" | "Failed";
+  steps: Array<{ key: string; label: string; state: "Waiting" | "Running" | "Completed" | "Failed" }>;
+  created_at: string;
+  updated_at: string;
+  artifact: Record<string, unknown> | null;
+  failure: { code: string; message: string } | null;
+}
+
 export interface FailureDto {
   code: string;
   message: string;

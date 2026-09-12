@@ -1,4 +1,7 @@
 import type {
+  AuthoringDraftDto,
+  DraftKind,
+  EnvironmentBuildDto,
   AcceptanceEvidenceDto,
   EnvironmentDto,
   ExperimentDto,
@@ -90,6 +93,16 @@ const acceptanceEvidence = ((value: unknown): value is AcceptanceEvidenceDto =>
   isObject(value.baseline) && isObject(value.manifest) &&
   isObject(value.acceptance_report) && isObject(value.semantics) &&
   value.semantics.verdict_origin === "BackendAcceptanceReport") as Validator<AcceptanceEvidenceDto>;
+const authoringDraft = ((value: unknown): value is AuthoringDraftDto =>
+  isObject(value) && isString(value.kind) && isString(value.draft_id) &&
+  isString(value.name) && isObject(value.payload) &&
+  typeof value.revision === "number" &&
+  Array.isArray(value.validation_issues)) as Validator<AuthoringDraftDto>;
+const environmentBuild = ((value: unknown): value is EnvironmentBuildDto =>
+  isObject(value) && isString(value.build_id) && isString(value.draft_id) &&
+  isString(value.state) && Array.isArray(value.steps)) as Validator<EnvironmentBuildDto>;
+const anyObject = ((value: unknown): value is Record<string, unknown> =>
+  isObject(value)) as Validator<Record<string, unknown>>;
 
 function failureKind(code: string, status: number): ApiFailureKind {
   if (status === 404 || code.endsWith("NotFound") || code === "NotFound") {
@@ -179,6 +192,10 @@ export class ApiClient {
         experiment_version: version,
       }),
     });
+  createAuthoringRun = (draftId: string) =>
+    this.request(`/authoring/experiments/${encodeURIComponent(draftId)}/runs`, run, {
+      method: "POST",
+    });
   listResults = () => this.request("/results", isArrayOf(resultSummary));
   getResult = (runId: string) =>
     this.request(`/runs/${encodeURIComponent(runId)}/results`, result);
@@ -187,6 +204,34 @@ export class ApiClient {
     this.request(`/runs/${encodeURIComponent(runId)}/acceptance-evidence`, acceptanceEvidence);
   acceptanceEvidenceTextUrl = (runId: string) =>
     this.url(`/runs/${encodeURIComponent(runId)}/acceptance-evidence.txt`);
+  listDrafts = (kind?: DraftKind) =>
+    this.request(`/authoring/drafts${kind ? `?kind=${kind}` : ""}`, isArrayOf(authoringDraft));
+  createDraft = (kind: DraftKind, name: string, payload: Record<string, unknown>) =>
+    this.request("/authoring/drafts", authoringDraft, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, name, payload }),
+    });
+  updateDraft = (draft: AuthoringDraftDto, name: string, payload: Record<string, unknown>) =>
+    this.request(`/authoring/drafts/${draft.kind}/${encodeURIComponent(draft.draft_id)}`, authoringDraft, {
+      method: "PUT", headers: { "Content-Type": "application/json", "If-Match": String(draft.revision) },
+      body: JSON.stringify({ kind: draft.kind, name, payload }),
+    });
+  importSsp = (filename: string, content: string) =>
+    this.request("/authoring/import/ssp", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename, content }) });
+  importTerrain = (filename: string, content: string) =>
+    this.request("/authoring/import/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename, content }) });
+  acquireWoa = (request: Record<string, unknown>) =>
+    this.request("/authoring/acquisition/woa", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
+  acquireTerrain = (request: Record<string, unknown>) =>
+    this.request("/authoring/acquisition/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
+  createEnvironmentBuild = (draftId: string) =>
+    this.request("/authoring/environment-builds", environmentBuild, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft_id: draftId }) });
+  publishEnvironmentBuild = (buildId: string) =>
+    this.request(`/authoring/environment-builds/${encodeURIComponent(buildId)}/publish`, anyObject, { method: "POST" });
+  deleteDraft = async (draft: AuthoringDraftDto) => {
+    const response = await fetch(this.url(`/authoring/drafts/${draft.kind}/${encodeURIComponent(draft.draft_id)}`), { method: "DELETE" });
+    if (!response.ok) throw new ApiFailure("ApiFailure", "DeleteFailed", "草稿删除失败");
+  };
 }
 
 export const apiClient = new ApiClient();

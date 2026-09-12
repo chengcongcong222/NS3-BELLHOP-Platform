@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 #include <functional>
 #include <optional>
 #include <string>
@@ -15,6 +16,7 @@
 #include "internal/acceptance_preset.hpp"
 #include "internal/acceptance_run_executor.hpp"
 #include "internal/environment_asset_repository.hpp"
+#include "internal/waveform_phy.hpp"
 
 namespace ns3_factory::worker::internal {
 
@@ -29,6 +31,10 @@ struct AcceptanceWorkerRequest final {
   application::RxQualityMode quality_mode;
   double equivalent_noise_power_db_re_1upa2;
   std::uint64_t deterministic_seed;
+  PhysicalLayerImplementation physical_layer;
+  WaveformModulation waveform_modulation;
+  WaveformNoiseModel waveform_noise;
+  double waveform_noise_psd_db_re_1upa2_per_hz;
 };
 
 struct AcceptanceWorkerDefinitions final {
@@ -64,6 +70,28 @@ struct WorkerExecutionSnapshot final {
       request.equivalent_noise_power_db_re_1upa2,
       request.deterministic_seed);
   if(!experiment) return std::unexpected(experiment.error());
+  if(request.physical_layer ==
+     PhysicalLayerImplementation::kChannel2Waveform) {
+    auto waveform_experiment = application::ExperimentDefinition::Create(
+        experiment->experiment_id(),
+        experiment->version(),
+        experiment->name(),
+        experiment->scenario(),
+        experiment->routing(),
+        application::MacConfiguration{
+            experiment->mac().mode,
+            contracts::SimDuration::FromNanoseconds(6'000'000'000),
+            experiment->mac().guard_interval},
+        experiment->phy(),
+        experiment->fusion(),
+        experiment->network_update_interval_cycles(),
+        experiment->simulation_cycle_count(),
+        experiment->deterministic_seed());
+    if(!waveform_experiment) {
+      return std::unexpected(waveform_experiment.error());
+    }
+    experiment = std::move(waveform_experiment);
+  }
   return AcceptanceWorkerDefinitions{std::move(*scenario),
                                      std::move(*experiment)};
 }
@@ -124,8 +152,41 @@ class SimulationWorker final {
                          std::nullopt,
                          output);
     }
-    application::internal::AcceptanceRunExecutor executor{
-        environments_.get()};
+    std::optional<application::internal::WaveformExecutionOptions>
+        waveform_options;
+    if(request.physical_layer ==
+       PhysicalLayerImplementation::kChannel2Waveform) {
+      const auto& phy_config = definitions->experiment.phy();
+      phy::internal::NoiseProfile noise = phy::internal::NoNoiseConfig{};
+      if(request.waveform_noise == WaveformNoiseModel::kAwgn) {
+        noise = phy::internal::AwgnNoiseConfig{
+            request.waveform_noise_psd_db_re_1upa2_per_hz,
+            request.deterministic_seed};
+      }
+      const auto modulation =
+          request.waveform_modulation == WaveformModulation::kBpsk
+              ? phy::internal::ModulationScheme::kBpsk
+              : phy::internal::ModulationScheme::kBfsk;
+      waveform_options.emplace(application::internal::WaveformExecutionOptions{
+          phy::internal::WaveformPhyConfig{
+              {modulation,
+               static_cast<double>(phy_config.bit_rate_bits_per_second) * 100.0,
+               static_cast<double>(phy_config.bit_rate_bits_per_second),
+               std::pow(10.0,
+                        phy_config.source_level_db_re_1upa_at_1m / 20.0),
+               phy_config.center_frequency_hz,
+               30.0},
+              phy_config.occupied_bandwidth_hz,
+              noise,
+              true,
+              phy::internal::WaveformFrameFormat::kPayloadWithCrc32,
+              1'000'000},
+          nullptr});
+    }
+    application::internal::AcceptanceRunExecutor executor = waveform_options
+        ? application::internal::AcceptanceRunExecutor{
+              environments_.get(), std::move(*waveform_options)}
+        : application::internal::AcceptanceRunExecutor{environments_.get()};
     application::RunService service{
         scenarios, experiments, runs, executor, events};
     const auto reference = application::ExperimentReference{

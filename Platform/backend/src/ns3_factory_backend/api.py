@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from contextlib import asynccontextmanager
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, Header, Request, status
+from fastapi import FastAPI, Header, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
@@ -51,6 +52,22 @@ from .wire import (
     UIntDecimal,
 )
 from .system_info import SystemInfo, make_system_info
+from .authoring import (
+    AuthoringStore,
+    BuildRequest,
+    DraftKind,
+    DraftResource,
+    DraftWrite,
+    EnvironmentBuildResource,
+    OceanAcquisitionRequest,
+    TerrainAcquisitionRequest,
+    TextImportRequest,
+    acquire_terrain,
+    acquire_woa,
+    new_build,
+    parse_two_column_text,
+    validate_payload,
+)
 
 
 @dataclass(frozen=True)
@@ -75,6 +92,8 @@ class BackendSettings:
     reference_environment_asset_id: str = "reference-shallow-water-v1"
     reference_environment_checksum: str = "fb64e543f9042c52"
     frontend_origin: str = "http://127.0.0.1:4173"
+    authoring_workspace_root: Path | None = None
+    authoring_reference_asset_root: Path | None = None
 
 
 class HttpModel(BaseModel):
@@ -190,6 +209,13 @@ _ERROR_STATUS = {
     "ExperimentVersionNotFound": status.HTTP_404_NOT_FOUND,
     "InvalidReference": status.HTTP_409_CONFLICT,
     "EvidenceUnavailable": status.HTTP_409_CONFLICT,
+    "DraftNotFound": status.HTTP_404_NOT_FOUND,
+    "BuildNotFound": status.HTTP_404_NOT_FOUND,
+    "DraftConflict": status.HTTP_409_CONFLICT,
+    "InvalidDraft": status.HTTP_400_BAD_REQUEST,
+    "DraftValidationFailed": status.HTTP_400_BAD_REQUEST,
+    "BuildNotReady": status.HTTP_409_CONFLICT,
+    "ImmutableResourceConflict": status.HTTP_409_CONFLICT,
 }
 
 
@@ -344,6 +370,16 @@ def create_app(
         reference_environment_checksum=settings.reference_environment_checksum,
     )
     run_manifests: dict[str, RunManifest] = {}
+    authoring_root = settings.authoring_workspace_root or Path(
+        tempfile.mkdtemp(prefix="ns3-platform-authoring-")
+    )
+    authoring = AuthoringStore(authoring_root)
+    reference_asset_root = settings.authoring_reference_asset_root or (
+        Path(__file__).resolve().parents[3]
+        / "environment"
+        / "assets"
+        / "reference_shallow_water_v1"
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -358,8 +394,8 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin],
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "Last-Event-ID"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Content-Type", "Last-Event-ID", "If-Match"],
     )
     app.state.catalog = catalog
     app.state.resource_catalog = selected_resources
@@ -418,6 +454,112 @@ def create_app(
     async def get_system_info() -> SystemInfo:
         return system_info
 
+    @app.get("/authoring/drafts", response_model=list[DraftResource])
+    async def list_drafts(kind: DraftKind | None = None) -> list[DraftResource]:
+        return authoring.list(kind)
+
+    @app.post("/authoring/drafts", response_model=DraftResource, status_code=201)
+    async def create_draft(write: DraftWrite) -> DraftResource:
+        return authoring.create(write)
+
+    @app.get("/authoring/drafts/{kind}/{draft_id}", response_model=DraftResource)
+    async def get_draft(kind: DraftKind, draft_id: str) -> DraftResource:
+        try:
+            return authoring.get(kind, draft_id)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Authoring draft was not found.") from error
+
+    @app.put("/authoring/drafts/{kind}/{draft_id}", response_model=DraftResource)
+    async def update_draft(kind: DraftKind, draft_id: str, write: DraftWrite,
+                           if_match: str | None = Header(default=None, alias="If-Match")) -> DraftResource:
+        try:
+            revision = int(if_match.strip('"')) if if_match else None
+            return authoring.update(kind, draft_id, write, revision)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Authoring draft was not found.") from error
+        except RuntimeError as error:
+            raise CatalogError("DraftConflict", str(error)) from error
+        except (ValueError, TypeError) as error:
+            raise CatalogError("InvalidDraft", str(error)) from error
+
+    @app.delete("/authoring/drafts/{kind}/{draft_id}", status_code=204)
+    async def delete_draft(kind: DraftKind, draft_id: str) -> Response:
+        try:
+            authoring.delete(kind, draft_id)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Authoring draft was not found.") from error
+        return Response(status_code=204)
+
+    @app.post("/authoring/drafts/{kind}/{draft_id}/validate")
+    async def validate_draft(kind: DraftKind, draft_id: str) -> dict[str, object]:
+        try:
+            draft = authoring.get(kind, draft_id)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Authoring draft was not found.") from error
+        issues = validate_payload(kind, draft.payload)
+        return {"valid": not issues, "issues": issues, "revision": draft.revision}
+
+    @app.post("/authoring/import/ssp")
+    async def import_ssp(request: TextImportRequest) -> dict[str, object]:
+        try:
+            points = parse_two_column_text(request.content, "ssp")
+        except ValueError as error:
+            raise CatalogError("InvalidHydrologyFile", str(error)) from error
+        return {"source": "file", "filename": request.filename,
+                "point_count": len(points), "sound_speed_profile": points}
+
+    @app.post("/authoring/import/terrain")
+    async def import_terrain(request: TextImportRequest) -> dict[str, object]:
+        try:
+            points = parse_two_column_text(request.content, "bathymetry")
+        except ValueError as error:
+            raise CatalogError("InvalidTerrainFile", str(error)) from error
+        return {"source": "file", "filename": request.filename,
+                "point_count": len(points), "bathymetry": points}
+
+    @app.post("/authoring/acquisition/woa")
+    async def fetch_woa(request: OceanAcquisitionRequest) -> dict[str, object]:
+        try:
+            return acquire_woa(request, authoring_root / "cache" / "woa23", reference_asset_root)
+        except (ValueError, RuntimeError) as error:
+            raise CatalogError("HydrologyAcquisitionFailed", str(error)) from error
+
+    @app.post("/authoring/acquisition/terrain")
+    async def fetch_terrain(request: TerrainAcquisitionRequest) -> dict[str, object]:
+        try:
+            return acquire_terrain(request, reference_asset_root)
+        except (ValueError, RuntimeError) as error:
+            raise CatalogError("TerrainAcquisitionFailed", str(error)) from error
+
+    @app.post("/authoring/environment-builds", response_model=EnvironmentBuildResource, status_code=202)
+    async def create_environment_build(request: BuildRequest) -> EnvironmentBuildResource:
+        try:
+            effective = request if request.reference_asset_root else request.model_copy(
+                update={"reference_asset_root": str(reference_asset_root)})
+            return new_build(authoring, effective)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Environment draft was not found.") from error
+
+    @app.get("/authoring/environment-builds/{build_id}", response_model=EnvironmentBuildResource)
+    async def get_environment_build(build_id: str) -> EnvironmentBuildResource:
+        try:
+            return authoring.get_build(build_id)
+        except KeyError as error:
+            raise CatalogError("BuildNotFound", "Environment build was not found.") from error
+
+    @app.post("/authoring/environment-builds/{build_id}/publish")
+    async def publish_environment_build(build_id: str) -> dict[str, object]:
+        try:
+            artifact = authoring.publish_build(build_id)
+            return {**artifact, "published": True,
+                    "runtime_catalog_available": False}
+        except KeyError as error:
+            raise CatalogError("BuildNotFound", "Environment build was not found.") from error
+        except FileExistsError as error:
+            raise CatalogError("ImmutableResourceConflict", str(error)) from error
+        except ValueError as error:
+            raise CatalogError("BuildNotReady", str(error)) from error
+
     @app.post(
         "/runs",
         response_model=RunResource,
@@ -443,6 +585,70 @@ def create_app(
         run_manifests[snapshot.run_id] = make_manifest(
             snapshot.run_id, system_info, environment, scenario, experiment
         )
+        return _run_resource(snapshot)
+
+    @app.post(
+        "/authoring/experiments/{draft_id}/runs",
+        response_model=RunResource,
+        status_code=status.HTTP_201_CREATED,
+    )
+    async def create_authoring_experiment_run(draft_id: str) -> RunResource:
+        """Run the executable subset of a persisted experiment draft.
+
+        The immutable Scenario/Environment and acceptance preset remain the
+        authority.  Only worker-supported execution settings are projected;
+        unsupported editor fields are never silently applied.
+        """
+        try:
+            draft = authoring.get("experiment", draft_id)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Experiment draft was not found.") from error
+        if draft.validation_issues:
+            raise CatalogError("DraftValidationFailed", "; ".join(draft.validation_issues))
+        payload = draft.payload
+        scenario_id = str(payload.get("scenario_id", ""))
+        candidates = [item for item in selected_resources.list_experiments()
+                      if item.scenario.scenario_id == scenario_id]
+        if not candidates:
+            raise CatalogError(
+                "InvalidReference",
+                "Draft must reference a Scenario used by a formal Experiment.",
+            )
+        experiment = max(candidates, key=lambda item: int(item.version))
+        scenario = selected_resources.get_scenario(
+            experiment.scenario.scenario_id, experiment.scenario.version)
+        environment = selected_resources.get_environment(
+            scenario.environment.environment_asset_id)
+        physical_layer = str(payload.get("physical_layer", "Channel1Abstract"))
+        if physical_layer not in {"Channel1Abstract", "Channel2Waveform"}:
+            raise CatalogError("InvalidDraft", "Unknown physical layer implementation.")
+        modulation = str(payload.get("waveform_modulation", "Bpsk"))
+        noise_model = str(payload.get("waveform_noise", "None"))
+        if modulation not in {"Bpsk", "Bfsk"} or noise_model not in {"None", "Awgn"}:
+            raise CatalogError("InvalidDraft", "Unknown waveform configuration.")
+
+        def command(run_id: str):
+            base = selected_resources.resolve_command(
+                run_id, experiment.experiment_id, experiment.version)
+            execution = base.execution.model_copy(update={
+                "simulation_cycle_count": str(payload["simulation_cycle_count"]),
+                "deterministic_seed": str(payload["deterministic_seed"]),
+                "rx_quality_mode": (
+                    "None" if physical_layer == "Channel2Waveform"
+                    else experiment.phy.rx_quality_mode
+                ),
+                "physical_layer": physical_layer,
+                "waveform_modulation": modulation,
+                "waveform_noise": noise_model,
+                "waveform_noise_psd_db_re_1upa2_per_hz": float(
+                    payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)
+                ),
+            })
+            return base.model_copy(update={"execution": execution})
+
+        snapshot = await catalog.create(command)
+        run_manifests[snapshot.run_id] = make_manifest(
+            snapshot.run_id, system_info, environment, scenario, experiment)
         return _run_resource(snapshot)
 
     @app.get("/environments", response_model=list[EnvironmentResource])

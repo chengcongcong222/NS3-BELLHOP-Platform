@@ -81,7 +81,11 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
       command->simulation_cycle_count,
       command->quality_mode,
       command->equivalent_noise_power_db_re_1upa2,
-      command->deterministic_seed};
+      command->deterministic_seed,
+      command->physical_layer,
+      command->waveform_modulation,
+      command->waveform_noise,
+      command->waveform_noise_psd_db_re_1upa2_per_hz};
   worker::adapter::JsonLineWorkerMessageSink output{std::cout};
   worker::internal::SimulationWorker simulation_worker{*environments};
   const auto executed = simulation_worker.Run(request, output);
@@ -129,7 +133,11 @@ auto main(int argc, char** argv) -> int {
       2,
       application::RxQualityMode::kModeledBpskAwgn,
       mode == "verdict-fail" ? 180.0 : 45.0,
-      0};
+      0,
+      worker::PhysicalLayerImplementation::kChannel1Abstract,
+      worker::WaveformModulation::kBpsk,
+      worker::WaveformNoiseModel::kNone,
+      0.0};
   worker::NullWorkerMessageSink output;
   worker::internal::SimulationWorker simulation_worker{*environments};
   const auto executed = simulation_worker.Run(request, output);

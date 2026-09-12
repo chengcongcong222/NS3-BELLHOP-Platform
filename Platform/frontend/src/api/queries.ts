@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
+import type { DraftKind } from "./types";
 
 export const queries = {
   systemInfo: () => queryOptions({ queryKey: ["system-info"], queryFn: apiClient.getSystemInfo, staleTime: Infinity }),
@@ -17,4 +18,5 @@ export const queries = {
   results: () => queryOptions({ queryKey: ["results"], queryFn: apiClient.listResults }),
   result: (id: string) => queryOptions({ queryKey: ["results", id], queryFn: () => apiClient.getResult(id) }),
   acceptanceEvidence: (id: string) => queryOptions({ queryKey: ["acceptance-evidence", id], queryFn: () => apiClient.getAcceptanceEvidence(id) }),
+  drafts: (kind?: DraftKind) => queryOptions({ queryKey: ["authoring-drafts", kind ?? "all"], queryFn: () => apiClient.listDrafts(kind), staleTime: 0 }),
 };
