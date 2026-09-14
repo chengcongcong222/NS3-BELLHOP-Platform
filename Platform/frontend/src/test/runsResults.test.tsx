@@ -21,6 +21,11 @@ describe("authoritative Run and Result views", () => {
     expect(document.body.textContent).toContain(run.run_id);
     expect(screen.getAllByText(experiment.name).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(new RegExp(run.environment_asset_id))).toBeTruthy();
+    const transmissionFilter = screen.getByRole("button", { name: "发送" });
+    expect(transmissionFilter.getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(transmissionFilter);
+    expect(document.querySelector(".lane-transmission")).toBeNull();
+    expect(transmissionFilter.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("keeps Run lifecycle authoritative when SSE disagrees or fails", async () => {

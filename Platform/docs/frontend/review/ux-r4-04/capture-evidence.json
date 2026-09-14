@@ -1,0 +1,13 @@
+{
+  "browser": "Edg/152.0.4191.66",
+  "viewport": [
+    1440,
+    900
+  ],
+  "backend": "http://127.0.0.1:8097",
+  "run_id": "run-dc4946a2649745819fea3cd144c46f5b",
+  "lifecycle": "Completed",
+  "environment_draft_id": "environment-013d26c6c279",
+  "screenshots": 8,
+  "request_interception": false
+}
