@@ -68,6 +68,7 @@ from .authoring import (
     parse_two_column_text,
     validate_payload,
 )
+from .trajectory_authoring import Asset as TrajectoryAsset, CsvRequest as TrajectoryCsvRequest, GenerateRequest as TrajectoryGenerateRequest, Store as TrajectoryStore, generate as generate_trajectory, import_csv as import_trajectory_csv
 
 
 @dataclass(frozen=True)
@@ -216,6 +217,7 @@ _ERROR_STATUS = {
     "DraftValidationFailed": status.HTTP_400_BAD_REQUEST,
     "BuildNotReady": status.HTTP_409_CONFLICT,
     "ImmutableResourceConflict": status.HTTP_409_CONFLICT,
+    "TrajectoryAuthoringFailed": status.HTTP_400_BAD_REQUEST,
 }
 
 
@@ -374,6 +376,7 @@ def create_app(
         tempfile.mkdtemp(prefix="ns3-platform-authoring-")
     )
     authoring = AuthoringStore(authoring_root)
+    trajectories = TrajectoryStore(authoring_root / "published" / "trajectories")
     reference_asset_root = settings.authoring_reference_asset_root or (
         Path(__file__).resolve().parents[3]
         / "environment"
@@ -453,6 +456,24 @@ def create_app(
     @app.get("/system/info", response_model=SystemInfo)
     async def get_system_info() -> SystemInfo:
         return system_info
+
+    @app.get("/trajectories", response_model=list[TrajectoryAsset])
+    async def list_trajectories() -> list[TrajectoryAsset]:
+        return trajectories.list()
+
+    @app.post("/authoring/trajectories/generate", response_model=TrajectoryAsset, status_code=201)
+    async def create_generated_trajectory(request: TrajectoryGenerateRequest) -> TrajectoryAsset:
+        try:
+            return trajectories.save(generate_trajectory(request))
+        except (ValueError, FileExistsError) as error:
+            raise CatalogError("TrajectoryAuthoringFailed", str(error)) from error
+
+    @app.post("/authoring/trajectories/import-csv", response_model=TrajectoryAsset, status_code=201)
+    async def create_imported_trajectory(request: TrajectoryCsvRequest) -> TrajectoryAsset:
+        try:
+            return trajectories.save(import_trajectory_csv(request))
+        except (ValueError, FileExistsError) as error:
+            raise CatalogError("TrajectoryAuthoringFailed", str(error)) from error
 
     @app.get("/authoring/drafts", response_model=list[DraftResource])
     async def list_drafts(kind: DraftKind | None = None) -> list[DraftResource]:

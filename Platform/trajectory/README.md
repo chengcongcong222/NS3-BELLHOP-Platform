@@ -48,8 +48,8 @@ WorldSnapshot 仍只保存当前正式状态，不保存轨迹点数组。周期
   绑定持有共享只读资源，即使 Repository 析构也保持资源生命周期。
 - FNV-1a64 checksum 对规范化 little-endian 字段计算；只用于内容复现/意外损坏对比，不是认证或签名。
 
-磁盘持久化 catalog、跨进程资源发布和 HTTP 轨迹 API 尚未实现；本轮提供稳定的 C++
-资源及导入边界，不把内存注册表包装成已完成的持久化产品。
+TRJ-02 在 authoring plane 增加原子 JSON 持久化 catalog 与 HTTP 生成/导入 API。
+它们生产相同的 `LocalCartesianMetersZUp` 资源；Runtime 查询接口仍不包含文件、HTTP 或生成模型。
 
 ## Acceptance4Node 迁移
 
@@ -114,7 +114,24 @@ cmake --build /home/ccc/build/trajectory-20260911-on -j 4
 ctest --test-dir /home/ccc/build/trajectory-20260911-on --output-on-failure
 ```
 
-本轮不实现轨迹前端、ROS、在线动力学、网络反向控制、实时流或 Channel2 新算法。
+## TRJ-02 生产端
+
+轨迹建设页提供静止、匀速直线、线性航路点、UUV 5-DOF 与严格 CSV 五种入口，
+生成后立即保存为带版本和 SHA-256 的正式 Asset。页面只预览 Asset 的 XY、深度-时间和
+时间采样位置，不把生成配置保存到 Scenario 或带入 Runtime。
+
+UUV 状态为 `[north,east,down,pitch,yaw,u,v,w,q,r]`。运动学使用无横滚的 NED
+五自由度变换；Plant 使用有效质量（刚体与附加质量的合并参数）、科氏/向心耦合、
+一次/二次阻尼、重浮力恢复、控制与可选扰动。连续方程只在离线生成器中用确定性固定步长
+RK4 积分。`IUuvController` 与 `Uuv5DofPlant` 分离，第一版包括恒定直接输入和简单的
+航向/深度/速度航路点控制器，不包含 FTESO/NMPC。
+
+生成边界显式执行 `platform.x=north, platform.y=east, platform.z=-down`；Runtime
+内部不做坐标猜测。姿态与体坐标速度作为可选扩展样本保存，既有 Runtime 仍只依赖
+`t,x,y,z`。默认参数明确命名为 Demo preset，仅用于确定性产品演示，不代表任意真实 UUV，
+也不声称来自未纳入仓库的具体论文参数组。
+
+本轮不实现 ROS、在线动力学、网络反向控制、实时流、FTESO/NMPC 或 Channel2 新算法。
 
 2026-09-11 独立新构建目录最终验证：OFF 67/67 PASS，ON/ns-3.47 101/101 PASS。
 其中原 Channel2 冻结的 7 项门禁全部保留并通过；轨迹、内核冒烟、Channel1、Channel2

@@ -11,6 +11,7 @@ import type {
   RunSummaryDto,
   ScenarioDto,
   SystemInfoDto,
+  TrajectoryAssetDto,
 } from "./types";
 
 export type ApiFailureKind =
@@ -103,6 +104,7 @@ const environmentBuild = ((value: unknown): value is EnvironmentBuildDto =>
   isString(value.state) && Array.isArray(value.steps)) as Validator<EnvironmentBuildDto>;
 const anyObject = ((value: unknown): value is Record<string, unknown> =>
   isObject(value)) as Validator<Record<string, unknown>>;
+const trajectory = ((value: unknown): value is TrajectoryAssetDto => isObject(value) && isString(value.asset_id) && typeof value.version === "number" && isString(value.name) && Array.isArray(value.tracks) && isString(value.checksum_sha256)) as Validator<TrajectoryAssetDto>;
 
 function failureKind(code: string, status: number): ApiFailureKind {
   if (status === 404 || code.endsWith("NotFound") || code === "NotFound") {
@@ -167,6 +169,9 @@ export class ApiClient {
   }
 
   listEnvironments = () => this.request("/environments", isArrayOf(environment));
+  listTrajectories = () => this.request("/trajectories", isArrayOf(trajectory));
+  generateTrajectory = (body: Record<string, unknown>) => this.request("/authoring/trajectories/generate", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  importTrajectoryCsv = (body: Record<string, unknown>) => this.request("/authoring/trajectories/import-csv", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   getEnvironment = (id: string) =>
     this.request(`/environments/${encodeURIComponent(id)}`, environment);
   listScenarios = () => this.request("/scenarios", isArrayOf(scenario));

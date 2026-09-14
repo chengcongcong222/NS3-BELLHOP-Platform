@@ -19,6 +19,7 @@ import {
   ServerWorkspacePage,
   ScenarioAuthoringPage,
   ExperimentAuthoringPage,
+  TrajectoryAuthoringPage,
 } from "../features/authoring";
 import {
   CaseCatalogPage,
@@ -44,6 +45,7 @@ export function AppRoutes() {
         <Route path="/environments" element={<EnvironmentCatalogPage />} />
         <Route path="/environments/:assetId" element={<EnvironmentDetailPage />} />
         <Route path="/workspace/environment" element={<EnvironmentAuthoringPage />} />
+        <Route path="/trajectories" element={<TrajectoryAuthoringPage />} />
         <Route path="/scenarios" element={<ScenarioCatalogPage />} />
         <Route path="/scenarios/:scenarioId/versions/:version" element={<ScenarioDetailPage />} />
         <Route path="/workspace/scenario" element={<ScenarioAuthoringPage />} />

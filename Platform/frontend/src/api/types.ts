@@ -4,6 +4,8 @@ export type MetricStatus = "Pass" | "Fail" | "NotEvaluated";
 export type OverallStatus = "Pass" | "Fail" | "NotFullyEvaluated";
 
 export type DraftKind = "environment" | "scenario" | "experiment";
+export interface TrajectoryPointDto { time_s: number; x_m: number; y_m: number; z_m: number; pitch_rad?: number | null; yaw_rad?: number | null; u_mps?: number | null; v_mps?: number | null; w_mps?: number | null; q_radps?: number | null; r_radps?: number | null; }
+export interface TrajectoryAssetDto { asset_id: string; version: number; name: string; coordinate_system: "LocalCartesianMetersZUp"; source: string; source_notice: string | null; tracks: Array<{ track_id: string; points: TrajectoryPointDto[] }>; checksum_sha256: string; }
 export interface AuthoringDraftDto {
   kind: DraftKind;
   draft_id: string;

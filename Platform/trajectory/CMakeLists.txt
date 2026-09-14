@@ -7,6 +7,10 @@ if(BUILD_TESTING)
   target_link_libraries(platform_trajectory_asset_test PRIVATE Platform::trajectory)
   add_test(NAME platform_trajectory_asset_test COMMAND platform_trajectory_asset_test)
 
+  add_executable(platform_trajectory_uuv_5dof_test tests/uuv_5dof_test.cpp)
+  target_link_libraries(platform_trajectory_uuv_5dof_test PRIVATE Platform::trajectory)
+  add_test(NAME platform_trajectory_uuv_5dof_test COMMAND platform_trajectory_uuv_5dof_test)
+
   add_executable(platform_trajectory_geometry_test tests/geometry_test.cpp)
   target_include_directories(platform_trajectory_geometry_test PRIVATE
     "${PROJECT_SOURCE_DIR}/assembly" "${PROJECT_SOURCE_DIR}/environment"
