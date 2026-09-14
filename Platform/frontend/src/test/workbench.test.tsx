@@ -74,7 +74,7 @@ describe("simulation workbench user journeys", () => {
     renderRoute("/workspace/experiment");
     expect(await screen.findByText("通信与物理层")).toBeTruthy();
     expect((screen.getByLabelText("通信速率（bit/s）") as HTMLInputElement).disabled).toBe(true);
-    await userEvent.click(screen.getByRole("button", { name: /Channel2波形级物理层/ }));
+    await userEvent.selectOptions(screen.getByLabelText("物理层实现"), "Channel2Waveform");
     await userEvent.selectOptions(screen.getByLabelText("波形噪声"), "Awgn");
     await userEvent.clear(screen.getByLabelText("噪声 PSD（dB re 1 μPa²/Hz）"));
     await userEvent.type(screen.getByLabelText("噪声 PSD（dB re 1 μPa²/Hz）"), "75");

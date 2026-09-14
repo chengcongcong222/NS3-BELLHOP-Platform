@@ -298,8 +298,12 @@ export function EnvironmentAuthoringPage() {
   const inputReady =
     value.soundSpeedProfile.length >= 2 && value.bathymetry.length >= 2;
   return (
-    <div className="environment-builder">
-      <section className="workspace-toolbar">
+    <div className="environment-builder classic-environment-page">
+      <section className="environment-classic-heading">
+        <div><p className="eyebrow">Bellhop 环境管理</p><h1>环境建设</h1><span>在同一工作区准备 SSP、海底地形与传播参数，再由正式 Build Job 固定产物。</span></div>
+        <div className="environment-classic-state"><b>{drafts.data?.length ?? 0}</b><span>服务器草稿</span><small>{serverDraft ? `当前 revision ${serverDraft.revision}` : "当前未保存"}</small></div>
+      </section>
+      <section className="workspace-toolbar environment-classic-toolbar">
         <div>
           <small>AUTHORING PLANE · 环境建设</small>
           <h1>{value.name}</h1>
@@ -752,8 +756,8 @@ export function ScenarioAuthoringPage() {
     (x) => x.environment_asset_id === value.environmentAssetId,
   );
   return (
-    <div className="scenario-workbench-page">
-      <section className="workspace-toolbar">
+    <div className="scenario-workbench-page classic-scenario-page">
+      <section className="workspace-toolbar studio-topbar classic-scenario-toolbar">
         <div>
           <small>AUTHORING PLANE · SCENARIO STUDIO</small>
           <h1>{value.name}</h1>
@@ -878,11 +882,8 @@ export function ExperimentAuthoringPage() {
   if (scenarios.error) return <ErrorState error={scenarios.error} />;
   return (
     <>
-      <PageHeader
-        title="配置网络实验"
-        detail="沿用成熟的分组配置工作流，只开放当前 Runtime 已接入的协议能力。"
-      />
-      <div className="experiment-workspace">
+      <div className="classic-experiment-heading"><div><p className="eyebrow">仿真工作台</p><h1>配置网络实验</h1></div><p>沿用成熟的分组配置工作流，只开放当前 Runtime 已接入的协议能力。</p></div>
+      <div className="experiment-workspace classic-experiment-workspace">
         <aside className="step-rail">
           <a href="#basic">01 基础信息</a>
           <a href="#network">02 网络与协议</a>
@@ -957,15 +958,14 @@ export function ExperimentAuthoringPage() {
           </section>
           <section id="phy" className="panel form-panel">
             <h2>通信与物理层</h2>
-            <div className="channel-choice" role="group" aria-label="物理层实现">
-              <button type="button" className={physicalLayer === "Channel1Abstract" ? "selected" : ""} onClick={() => setPhysicalLayer("Channel1Abstract")}>
-                <strong>Channel1</strong><span>快速抽象物理层</span>
-              </button>
-              <button type="button" className={physicalLayer === "Channel2Waveform" ? "selected" : ""} onClick={() => setPhysicalLayer("Channel2Waveform")}>
-                <strong>Channel2</strong><span>波形级物理层</span>
-              </button>
-            </div>
             <div className="form-grid">
+              <label>
+                物理层实现
+                <select aria-label="物理层实现" value={physicalLayer} onChange={(event) => setPhysicalLayer(event.target.value as "Channel1Abstract" | "Channel2Waveform")}>
+                  <option value="Channel1Abstract">Channel1 · 快速抽象物理层</option>
+                  <option value="Channel2Waveform">Channel2 · 波形级物理层</option>
+                </select>
+              </label>
               <label>
                 通信速率（bit/s）
                 <input

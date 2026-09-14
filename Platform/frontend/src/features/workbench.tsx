@@ -46,7 +46,39 @@ export function WorkbenchPage() {
   if (catalog.pending || runs.isPending || results.isPending) return <LoadingState />;
   if (catalog.error || runs.error || results.error) return <ErrorState error={catalog.error || runs.error || results.error} />;
   const recentRun = runs.data.at(-1); const recentResult = results.data.at(-1);
-  return <><section className="hero"><div><p className="eyebrow">水声网络仿真</p><h1>水声网络数字孪生仿真工作台</h1><p>建设声学环境、布设水下节点、配置网络实验，并沿正式 ns-3 仿真时间观察通信与融合结果。</p><div className="hero-actions"><Link className="primary-action" to="/new-simulation">开始新的仿真准备</Link><Link className="secondary-action" to="/cases">从案例开始</Link></div></div><div className="hero-system"><span className="pulse" />仿真服务已连接<strong>正式资源 {catalog.environments.data?.length ?? 0} 个环境 · {catalog.scenarios.data?.length ?? 0} 个场景</strong><small>编辑工作保存在本地草稿；已发布资源只读。</small></div></section><section className="workflow-strip" aria-label="仿真工作流">{[["01", "建设环境", "声速、地形与离线传播场", "/environments"], ["02", "设计场景", "节点、运动与空间关系", "/scenarios"], ["03", "配置实验", "网络、通信与仿真参数", "/experiments"], ["04", "运行与分析", "通信过程、统计与结果", "/runs"]].map(([index, title, detail, to]) => <Link to={to} key={index}><b>{index}</b><span><strong>{title}</strong><small>{detail}</small></span></Link>)}</section><div className="section-heading"><div><p className="eyebrow">快速开始</p><h2>推荐案例</h2></div><Link to="/cases">查看全部案例</Link></div><div className="case-grid">{catalog.cases.slice(0, 2).map((item) => <CaseCard key={item.id} item={item} compact />)}</div><section className="workbench-lower"><article className="panel recent-panel"><div className="panel-title"><h2>最近仿真</h2><Link to="/runs">全部运行</Link></div>{recentRun ? <><div className="run-line"><span className="run-orb" /><div><strong>{catalog.cases.find((item) => item.experiment.experiment_id === recentRun.experiment_id)?.title ?? recentRun.experiment_id}</strong><small>{recentRun.run_id}</small></div><Status value={recentRun.lifecycle} /></div><div className="recent-actions"><Link to={`/runs/${recentRun.run_id}`}>打开运行控制台</Link>{recentResult && <Link to={`/results/${recentResult.run_id}`}>查看最近结果</Link>}</div></> : <EmptyState>还没有仿真运行，从案例开始即可创建真实 Run。</EmptyState>}</article><article className="panel"><div className="panel-title"><h2>我的工作区</h2><Link to="/resources">管理资源</Link></div><div className="draft-summary"><strong>{drafts.length}</strong><span>个本地草稿</span></div><p className="muted">草稿用于安全试验与派生，不会覆盖已发布资源。</p><div className="button-row"><Link to="/workspace/environment">新建环境</Link><Link to="/workspace/scenario">设计场景</Link><Link to="/workspace/experiment">配置实验</Link></div></article></section><section className="resource-stats"><span>资源概况</span><MetricCard label="声学环境" value={catalog.environments.data?.length ?? 0} /><MetricCard label="场景版本" value={catalog.scenarios.data?.length ?? 0} /><MetricCard label="实验配置" value={catalog.experiments.data?.length ?? 0} /><MetricCard label="正式结果" value={results.data.length} /></section></>;
+  const latestCase = catalog.cases[0];
+  return <div className="page-grid page-grid--overview classic-overview">
+    <section className="hero-panel">
+      <p className="eyebrow">总览首页</p>
+      <h2>{latestCase ? <Link to={`/cases/${latestCase.id}`}>{latestCase.title}</Link> : "水声网络数字孪生仿真工作台"}</h2>
+      <p className="hero-panel__lead"><strong>水声网络数字孪生仿真工作台</strong><br />{latestCase?.summary ?? "建设声学环境、布设水下节点、配置网络实验，并沿正式 ns-3 仿真时间观察通信与融合结果。"}</p>
+      <div className="hero-panel__actions"><Link className="primary-button" to="/new-simulation">开始新的仿真</Link><Link className="ghost-button" to="/workspace/scenario">进入模型编排</Link></div>
+    </section>
+    <div className="metrics-grid">
+      <MetricCard label="正式环境" value={`${catalog.environments.data.length} 个`} />
+      <MetricCard label="正式场景" value={`${catalog.scenarios.data.length} 个`} />
+      <MetricCard label="最近运行" value={recentRun ? productLabelForWorkbench(recentRun.lifecycle) : "待运行"} />
+    </div>
+    <article className="section-card"><p className="eyebrow">系统概览</p><h2>平台态势</h2><div className="status-grid">
+      <div className="status-grid__item"><span>仿真核心</span><strong>ns-3 离散事件</strong></div>
+      <div className="status-grid__item"><span>环境资源</span><strong>{catalog.environments.data.length} 个</strong></div>
+      <div className="status-grid__item"><span>场景版本</span><strong>{catalog.scenarios.data.length} 个</strong></div>
+      <div className="status-grid__item"><span>实验配置</span><strong>{catalog.experiments.data.length} 个</strong></div>
+      <div className="status-grid__item"><span>正式结果</span><strong>{results.data.length} 份</strong></div>
+      <div className="status-grid__item"><span>本地草稿</span><strong>{drafts.length} 个</strong></div>
+    </div></article>
+    <article className="section-card classic-topology-preview"><p className="eyebrow">资源链路</p><h2>当前工作流</h2><div className="classic-flow-map">{[["环境", "/workspace/environment"], ["场景", "/workspace/scenario"], ["实验", "/workspace/experiment"], ["运行", "/runs"]].map(([label, to], index) => <Link to={to} key={to}><b>{index + 1}</b><span>{label}</span></Link>)}</div>{recentRun && <div className="run-line"><span className="run-orb" /><div><strong>{recentRun.run_id}</strong><small>最近一次正式运行</small></div><Status value={recentRun.lifecycle} /></div>}{recentResult && <Link className="text-action" to={`/results/${recentResult.run_id}`}>查看最近结果</Link>}</article>
+    <article className="section-card"><div className="panel-title"><div><p className="eyebrow">快速开始</p><h2>高频入口</h2></div><Link to="/cases">案例中心</Link></div><div className="quick-actions">
+      <Link to="/workspace/environment" className="quick-action"><strong>建设环境</strong><span>SSP、地形与 Bellhop 离线构建</span></Link>
+      <Link to="/workspace/scenario" className="quick-action"><strong>编排场景</strong><span>节点、轨迹绑定与空间布设</span></Link>
+      <Link to="/workspace/experiment" className="quick-action"><strong>配置实验</strong><span>协议与 Channel1 / Channel2</span></Link>
+      <Link to={recentResult ? `/results/${recentResult.run_id}` : "/results"} className="quick-action"><strong>分析结果</strong><span>网络、水声、波形与融合证据</span></Link>
+    </div></article>
+  </div>;
+}
+
+function productLabelForWorkbench(value: string) {
+  return ({ Created: "已创建", Running: "运行中", Completed: "已完成", Failed: "失败" } as Record<string, string>)[value] ?? value;
 }
 
 export function NewSimulationPage() { return <><PageHeader title="开始新的仿真准备" detail="先选择已有科研案例，或在本地草稿中逐步建设环境、场景和实验；草稿不会改变已发布资源。" /><section className="new-simulation-grid"><Link to="/cases"><strong>从案例开始</strong><span>直接运行已有正式实验，查看可复现的事件与结果。</span></Link><Link to="/environments"><strong>以已发布环境范围新建草稿</strong><span>继承范围、频率和 metadata，不复制 SSP、地形或传播场内容。</span></Link><Link to="/workspace/environment"><strong>新建环境草稿</strong><span>输入 SSP 与地形采样点，准备离线声场建设。</span></Link><Link to="/workspace/scenario"><strong>新建场景草稿</strong><span>布设节点、深度与初始运动配置。</span></Link><Link to="/workspace/experiment"><strong>使用已有场景配置实验</strong><span>配置路由、MAC、物理层与仿真周期。</span></Link></section></>; }

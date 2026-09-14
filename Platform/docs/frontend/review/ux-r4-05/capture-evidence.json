@@ -1,0 +1,11 @@
+{
+  "browser": "Edg/152.0.4191.66",
+  "viewport": [
+    1440,
+    900
+  ],
+  "backend": "http://127.0.0.1:8105",
+  "request_interception": false,
+  "environment_draft_id": "environment-085d448c1b88",
+  "old_reference": "ux-r1 actual legacy capture at the same 1440x900 viewport"
+}
