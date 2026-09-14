@@ -94,10 +94,10 @@ describe("authoritative Run and Result views", () => {
         payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } },
       });
     });
-    expect(screen.getByRole("button", { name: /信道查询 · N2 · 无有效路径/ })).toBeTruthy();
-    expect(screen.getByText(/不播放虚构到达动画/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /节点 2 未获得有效声学到达/ })).toBeTruthy();
+    expect(screen.getByText(/SignalArrival 才表示信号在传播时延后实际到达/)).toBeTruthy();
     expect(screen.queryByTestId("communication-arrow")).toBeNull();
-    expect(document.querySelector(".link-inspector")?.textContent).toContain("N2");
+    expect(document.querySelector(".link-inspector")?.textContent).toContain("节点 2");
     expect(document.body.textContent).toContain("0.00000001 s (10 ns)");
     expect(screen.getByText("原始序列 2")).toBeTruthy();
   });
@@ -113,7 +113,7 @@ describe("authoritative Run and Result views", () => {
       emit(sequence: string, trace: object) { this.listener?.({ lastEventId: sequence, data: JSON.stringify({ run_id: run.run_id, sequence, trace }) } as MessageEvent<string>); }
     }
     vi.stubGlobal("EventSource", ControlledEventSource);
-    installApi({ [`/runs/${run.run_id}`]: { body: run } });
+    const fetchMock = installApi({ [`/runs/${run.run_id}`]: { body: run } });
     renderRoute(`/runs/${run.run_id}`);
     await screen.findByText("Completed");
     await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
@@ -127,6 +127,10 @@ describe("authoritative Run and Result views", () => {
     expect(Number(slider.value)).toBeGreaterThanOrEqual(0);
     expect(screen.getByText("Completed")).toBeTruthy();
     expect(document.querySelector(".run-topology")?.classList.contains("phase-transmission")).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "下一事件" }));
+    await userEvent.click(screen.getByRole("button", { name: "暂停观察" }));
+    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true);
   });
 
 

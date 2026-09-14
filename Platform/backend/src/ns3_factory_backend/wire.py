@@ -247,6 +247,28 @@ class ReceptionPayload(WireModel):
     quality: QualitySummary | None
 
 
+class SignalArrivalPayload(WireModel):
+    transmission_id: UIntDecimal
+    receiver_node_id: UIntDecimal
+
+
+class NodePositionPayload(WireModel):
+    node_id: UIntDecimal
+    x_meters: FiniteFloat
+    y_meters: FiniteFloat
+    z_meters: FiniteFloat
+
+
+class FusionPayload(WireModel):
+    fusion_sequence: UIntDecimal
+    fusion_center_node_id: UIntDecimal
+    started_at_ns: Int64Decimal
+    completed_at_ns: Int64Decimal
+    observation_count: PositiveUIntDecimal
+    estimated_target_x_meters: FiniteFloat
+    estimated_target_y_meters: FiniteFloat
+
+
 class CycleCommitTrace(WireModel):
     occurred_at_ns: Int64Decimal
     kind: Literal["CycleCommit"]
@@ -271,8 +293,32 @@ class ReceptionTrace(WireModel):
     payload: ReceptionPayload
 
 
+class SignalArrivalTrace(WireModel):
+    occurred_at_ns: Int64Decimal
+    kind: Literal["SignalArrival"]
+    payload: SignalArrivalPayload
+
+
+class NodePositionTrace(WireModel):
+    occurred_at_ns: Int64Decimal
+    kind: Literal["NodePosition"]
+    payload: NodePositionPayload
+
+
+class FusionTrace(WireModel):
+    occurred_at_ns: Int64Decimal
+    kind: Literal["Fusion"]
+    payload: FusionPayload
+
+
 TraceEvent: TypeAlias = Annotated[
-    CycleCommitTrace | TransmissionTrace | ChannelOutcomeTrace | ReceptionTrace,
+    CycleCommitTrace
+    | TransmissionTrace
+    | ChannelOutcomeTrace
+    | ReceptionTrace
+    | SignalArrivalTrace
+    | NodePositionTrace
+    | FusionTrace,
     Field(discriminator="kind"),
 ]
 

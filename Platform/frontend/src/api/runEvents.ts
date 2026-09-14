@@ -9,7 +9,9 @@ export interface RunProjectionState {
   channelOutcomeCount: DecimalString;
   channelSignalCount: DecimalString;
   channelNoArrivalCount: DecimalString;
+  signalArrivalCount: DecimalString;
   receptionCount: DecimalString;
+  fusionCount: DecimalString;
   cycleCommitCount: DecimalString;
   timeline: readonly RunEventDto[];
 }
@@ -22,7 +24,9 @@ export const emptyProjection: RunProjectionState = {
   channelOutcomeCount: "0",
   channelSignalCount: "0",
   channelNoArrivalCount: "0",
+  signalArrivalCount: "0",
   receptionCount: "0",
+  fusionCount: "0",
   cycleCommitCount: "0",
   timeline: [],
 };
@@ -111,7 +115,11 @@ export class RunEventProjection {
         next.channelOutcomeCount = (BigInt(next.channelOutcomeCount) + 1n).toString();
       } else if (parsed.trace.kind === "Reception") {
         next.receptionCount = (BigInt(next.receptionCount) + 1n).toString();
-      } else {
+      } else if (parsed.trace.kind === "SignalArrival") {
+        next.signalArrivalCount = (BigInt(next.signalArrivalCount) + 1n).toString();
+      } else if (parsed.trace.kind === "Fusion") {
+        next.fusionCount = (BigInt(next.fusionCount) + 1n).toString();
+      } else if (parsed.trace.kind === "CycleCommit") {
         next.cycleCommitCount = (BigInt(next.cycleCommitCount) + 1n).toString();
       }
       if (parsed.trace.kind === "ChannelOutcome") {
@@ -151,6 +159,9 @@ function isRunEvent(value: unknown): value is RunEventDto {
   if (trace.kind === "Transmission") return isTransmission(trace.payload);
   if (trace.kind === "ChannelOutcome") return isChannelOutcome(trace.payload);
   if (trace.kind === "Reception") return isReception(trace.payload);
+  if (trace.kind === "SignalArrival") return isSignalArrival(trace.payload);
+  if (trace.kind === "NodePosition") return isNodePosition(trace.payload);
+  if (trace.kind === "Fusion") return isFusion(trace.payload);
   return false;
 }
 
@@ -201,4 +212,28 @@ function isReception(payload: Record<string, unknown>): boolean {
     isFiniteNumber(payload.quality.eb_n0_db) &&
     isFiniteNumber(payload.quality.bit_error_rate) &&
     ["Modeled", "Measured", "External"].includes(String(payload.quality.source));
+}
+
+function isSignalArrival(payload: Record<string, unknown>): boolean {
+  return isUnsigned(payload.transmission_id) &&
+    isUnsigned(payload.receiver_node_id);
+}
+
+function isNodePosition(payload: Record<string, unknown>): boolean {
+  return isUnsigned(payload.node_id) &&
+    isFiniteNumber(payload.x_meters) &&
+    isFiniteNumber(payload.y_meters) &&
+    isFiniteNumber(payload.z_meters);
+}
+
+function isFusion(payload: Record<string, unknown>): boolean {
+  return isUnsigned(payload.fusion_sequence) &&
+    isUnsigned(payload.fusion_center_node_id) &&
+    typeof payload.started_at_ns === "string" &&
+    isInt64(payload.started_at_ns) &&
+    typeof payload.completed_at_ns === "string" &&
+    isInt64(payload.completed_at_ns) &&
+    isUnsigned(payload.observation_count) && payload.observation_count !== "0" &&
+    isFiniteNumber(payload.estimated_target_x_meters) &&
+    isFiniteNumber(payload.estimated_target_y_meters);
 }

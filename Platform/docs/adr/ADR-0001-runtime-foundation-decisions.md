@@ -515,9 +515,9 @@ P0-S2 至此 CLOSED：configured Tx PHY、waveform internal pipeline、normalize
 
 ### 2.41 Deterministic read-only trace core
 
-P0-S3-01 的 trace 边界固定在 `contracts/trace.hpp`。该 header 只依赖 Platform time、strong identity、error/status 与 trace 自有的小型只读摘要；不得嵌入 WorldSnapshot、ProtocolCyclePlan、runtime owner、provider response 大对象或 ns-3 类型。`TraceEvent` 由 `occurred_at`、与 payload 一致的 `TraceKind` 和四种 typed payload 组成：CycleCommit、Transmission、ChannelOutcome、Reception。Transmission target 使用 trace 自有 Unicast/Broadcast 摘要；ChannelOutcome 使用 Signal/NoArrival variant，NoArrival 不保存伪造 TL、delay 或 path；Reception 只保存最终 NotDecoded、Overheard、LocalDelivery 或 RelayEnqueue disposition。
+P0-S3-01 的 trace 边界固定在 `contracts/trace.hpp`。该 header 只依赖 Platform time、strong identity、error/status 与 trace 自有的小型只读摘要；不得嵌入 WorldSnapshot、ProtocolCyclePlan、runtime owner、provider response 大对象或 ns-3 类型。`TraceEvent` 由 `occurred_at`、与 payload 一致的 `TraceKind` 和 typed payload 组成。原有 CycleCommit、Transmission、ChannelOutcome、Reception 的枚举值和 schema 保持兼容；P0-UX-R4-03 只追加 SignalArrival、NodePosition、Fusion 三种只读观测。Transmission target 使用 trace 自有 Unicast/Broadcast 摘要；ChannelOutcome 使用 Signal/NoArrival variant，NoArrival 不保存伪造 TL、delay 或 path；Reception 只保存最终 NotDecoded、Overheard、LocalDelivery 或 RelayEnqueue disposition。
 
-Trace emission 固定为 causal result 之后的 best-effort 只读旁路。Transmission trace 每个成功 TransmissionSession 精确一条，且只在完整 receiver fan-out、session event batch publication 与 sender queue conditional consume 全部成功后发送；随后按 canonical candidate receiver 顺序为每个 receiver 发送一条 ChannelOutcome trace。Provider 在 receiver loop 中途失败时，此次 transmission/channel success trace 必须全部为零。Receiver trace 只在 reception finalize、disposition decision 与 disposition application 成功后发送。CycleCommit trace 只在 CommitService 已完成 authoritative `V -> V+1` 后发送。广播仍是一条 Transmission trace、每个 candidate 一条 ChannelOutcome trace、每个实际 ReceptionSession 一条 Reception trace。
+Trace emission 固定为 causal result 之后的 best-effort 只读旁路。Transmission trace 每个成功 TransmissionSession 精确一条，且只在完整 receiver fan-out、session event batch publication 与 sender queue conditional consume 全部成功后发送；随后按 canonical candidate receiver 顺序为每个 receiver 发送一条 ChannelOutcome trace。Provider 在 receiver loop 中途失败时，此次 transmission/channel success trace 必须全部为零。SignalArrival 只允许在正式 `SIGNAL_ARRIVAL` handler 已将对应 ReceivedSignal 成功写入 in-flight ledger 后发送，时间必须等于 `first_arrival_at`；ChannelOutcome 不得替代它。Receiver trace 只在 reception finalize、disposition decision 与 disposition application 成功后发送。Fusion trace 只在真实 FusionResult 成功保存后发送。CycleCommit trace 只在 CommitService 已完成 authoritative `V -> V+1` 后发送。NodePosition 是在既有真实 trace 时刻查询运行绑定 `INodeTrajectory` 得到的观测样本，不增加采样事件或时钟。广播仍是一条 Transmission trace、每个 candidate 一条 ChannelOutcome trace、每个实际到达一条 SignalArrival trace、每个实际 ReceptionSession 一条 Reception trace。
 
 `ITraceSink::Emit` 是 `noexcept -> Status`，但 causal caller 必须无条件忽略该 Status。NullTraceSink 是默认 assembly composition；测试可使用 recording 或 always-fail sink。Sink failure 不得改变 snapshot/version/time、packet queue、delivery、ID allocation、cycle outcome、runtime terminal state 或事件顺序。Core 不增加全局 trace sequence number；输出顺序直接沿用既有 deterministic simulation order，包括 cycle order、EventPhase、canonical NodeId fan-out 和稳定 communication identity。
 
@@ -545,7 +545,7 @@ Acceptance business input 必须经 M1/ns-3 事件进入现有 network path。Sc
 
 Feature-level fusion 只处理成功送达 fusion center 的 LocalDelivery 中的位置与方位 feature，不读取 raw waveform、ADC 或 ChannelResponse。Observation identity 固定为 `(sender NodeId, observation_sequence)`；duplicate delivery 不重复计数，同一 sender 在不同时间的不同 sequence 是不同 point，因此 `>=5 points` 可以跨 cycle 且不要求五个不同节点。ChannelNoArrival、NotDecoded、Overheard 和 RelayEnqueue 均不得进入 accumulator。
 
-P0 fusion 使用经过 finite/rank/conditioning 检查的 2D bearing-line least-squares intersection；solver 只接收 received feature report 中的 sensor position、bearing、confidence/metadata 以及用于结果方位表达的 fusion-center position，绝不接收 acceptance true-target position。True target 只允许用于 workload bearing generation 与 test-side error comparison。退化几何明确失败，不返回伪 target。Fusion window 在成功结果后完整 seal 并消费，结果保存该 window 的 canonical observation identities；任何 identity 不得进入后续结果，禁止 sliding-window reuse。Period 从该 window 第一条有效 observation 的 sample time 计到 cycle-end `RUNTIME_DECISION` completion time。`FusionResult` 是 run-level application output，不写入 authoritative WorldSnapshot，也不加入 core TraceEvent；core Trace 继续只记录实际 Transmission、ChannelOutcome、Reception 与 CycleCommit。
+P0 fusion 使用经过 finite/rank/conditioning 检查的 2D bearing-line least-squares intersection；solver 只接收 received feature report 中的 sensor position、bearing、confidence/metadata 以及用于结果方位表达的 fusion-center position，绝不接收 acceptance true-target position。True target 只允许用于 workload bearing generation 与 test-side error comparison。退化几何明确失败，不返回伪 target。Fusion window 在成功结果后完整 seal 并消费，结果保存该 window 的 canonical observation identities；任何 identity 不得进入后续结果，禁止 sliding-window reuse。Period 从该 window 第一条有效 observation 的 sample time 计到 cycle-end `RUNTIME_DECISION` completion time。`FusionResult` 是 run-level application output，不写入 authoritative WorldSnapshot。P0-UX-R4-03 允许在结果已成功保存后发出只含 sequence、center、timing、observation count 与 estimate 的 FusionTrace；该旁路不是新的 fusion authority。
 
 Acceptance scenario 的 110 dB 通过 `AcceptanceScenarioConfig -> RateBasedTxPhyConfig -> TxEmission` 直接映射到 `source_level_db_re_1upa_at_1m`，因此 P0 simulation 固定解释为 110 dB re 1 uPa @ 1 m。Hardware source-level reference/calibration 仍等待 communication-device parameter confirmation，当前 fixture 不宣称完成硬件标定。
 
@@ -754,15 +754,17 @@ command、runtime causality 或正式 acceptance 计算。Backend Run/Result sum
 Scenario topology 只画 Scenario DTO 提供的 initial position/velocity、fusion-center identity 与
 Environment binding，不补画 DTO 未提供的 protocol role。P0-UX-R4 允许消费正式只读轨迹位置投影；
 无该投影时仍只显示初始几何，不由浏览器推算。Run lifecycle 与 event completeness
-只来自 Run resource；SSE 按 RunEventSequence 原序投影 CycleCommit、Transmission、ChannelOutcome 与
-Reception，transport failure 不改变 Run 状态。Channel Signal/NoArrival 只按正式 ChannelOutcome trace
+只来自 Run resource；SSE 按 RunEventSequence 原序投影 CycleCommit、Transmission、ChannelOutcome、
+SignalArrival、Reception、NodePosition 与 Fusion，transport failure 不改变 Run 状态。Channel Signal/NoArrival 只按正式 ChannelOutcome trace
 分别计数和展示；Result DTO 未提供的 aggregate 禁止由浏览器推导。
 
 P0-UX-R4（用户授权）替代旧结果展示条款：平台展示真实实验事实和量化结果，不自动显示
 满足要求、PASS 或验收通过。Acceptance Case 可并列展示参考要求与本次值，最终判断由用户完成。
 Backend AcceptanceReport 的内部计算及历史兼容字段保持不变，但不作为产品页面的 verdict。
 既有只读结果可增加投影；不得为了可视化改变运行因果、伪造事件或补造未记录数据。
-ChannelOutcome 是信道查询结果，不是 SignalArrival。轨迹位置须来自运行绑定的轨迹在真实仿真时刻的查询。
+ChannelOutcome 是信道查询结果，不是 SignalArrival。SignalArrival 只来自正式运行到达 callback。
+轨迹位置须来自运行绑定的轨迹在真实仿真时刻的查询；前端仅可在相邻正式位置样本间做视觉插值，
+不得外推或建立第二套运动/仿真时钟。暂停、单步、定位、倍速只控制事件日志观看游标。
 Modeled BER 明确为仿真模型证据而非硬件实测；Measured/External 仅在正式 DTO 提供时
 可显示。Fusion 图只使用 FusionResult estimate/time/count，不根据 target truth 或 fixture 补造 bearing
 observation。所有 ns/count/ID 继续以 string 保存，并仅通过 BigInt 做精确格式化。

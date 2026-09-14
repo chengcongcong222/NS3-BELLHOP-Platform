@@ -1,7 +1,10 @@
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <ns3_factory/application/repositories.hpp>
@@ -90,6 +93,59 @@ auto SameTracePayloadOrder(const std::vector<RunEventRecord>& lhs,
     }
   }
   return true;
+}
+
+auto CountKind(const std::vector<RunEventRecord>& events,
+               TraceKind kind) -> std::size_t {
+  return static_cast<std::size_t>(std::count_if(
+      events.begin(), events.end(),
+      [kind](const RunEventRecord& event) {
+        return event.trace_event.kind() == kind;
+      }));
+}
+
+auto HasCausalArrivalEvidence(
+    const std::vector<RunEventRecord>& events) -> bool {
+  for(const auto& arrival_event : events) {
+    const auto* arrival =
+        std::get_if<SignalArrivalTrace>(&arrival_event.trace_event.payload());
+    if(arrival == nullptr) continue;
+    const auto channel = std::find_if(
+        events.begin(), events.end(), [&](const RunEventRecord& candidate) {
+          const auto* outcome = std::get_if<ChannelOutcomeTrace>(
+              &candidate.trace_event.payload());
+          if(outcome == nullptr ||
+             outcome->transmission_id != arrival->transmission_id ||
+             outcome->receiver_node_id != arrival->receiver_node_id) {
+            return false;
+          }
+          const auto* signal =
+              std::get_if<TraceSignalChannelOutcome>(&outcome->outcome);
+          if(signal == nullptr) return false;
+          const auto expected = CheckedAdd(candidate.trace_event.occurred_at(),
+                                           signal->first_arrival_delay);
+          return expected && *expected == arrival_event.trace_event.occurred_at();
+        });
+    if(channel == events.end()) return false;
+  }
+  return true;
+}
+
+auto HasMovingTrajectoryEvidence(
+    const std::vector<RunEventRecord>& events) -> bool {
+  std::optional<NodePositionTrace> first;
+  for(const auto& event : events) {
+    const auto* position =
+        std::get_if<NodePositionTrace>(&event.trace_event.payload());
+    if(position == nullptr || position->node_id != NodeId{10}) continue;
+    if(!first) first = *position;
+    else if(position->x_meters != first->x_meters ||
+            position->y_meters != first->y_meters ||
+            position->z_meters != first->z_meters) {
+      return true;
+    }
+  }
+  return false;
 }
 
 class AlwaysFailJournal final : public IRunEventJournal {
@@ -223,11 +279,15 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
     }
     if(!found) return false;
   }
-  const auto expected_event_count =
+  const auto causal_event_count =
       result->projection.transmission_count +
       result->projection.channel_signal_count +
       result->projection.channel_no_arrival_count +
       result->projection.reception_count + result->projection.cycle_count;
+  const auto observability_event_count =
+      CountKind(*first_events, TraceKind::kSignalArrival) +
+      CountKind(*first_events, TraceKind::kNodePosition) +
+      CountKind(*first_events, TraceKind::kFusion);
   if(record->lifecycle != RunLifecycle::kCompleted ||
      record->event_stream_complete != true ||
      record->experiment != modeled_reference ||
@@ -248,7 +308,15 @@ auto TestAcceptanceRunServiceAndMissingEvidence() -> bool {
      acceptance.fusion_period != MetricStatus::kPass ||
      acceptance.overall != OverallStatus::kPass ||
      !acceptance.maximum_ber || *acceptance.maximum_ber >= 1.0e-4 ||
-     first_events->size() != expected_event_count ||
+     first_events->size() != causal_event_count + observability_event_count ||
+     CountKind(*first_events, TraceKind::kSignalArrival) !=
+         result->projection.channel_signal_count ||
+     CountKind(*first_events, TraceKind::kFusion) !=
+         result->fusion_results.size() ||
+     CountKind(*first_events, TraceKind::kNodePosition) <
+         result->projection.node_count ||
+     !HasCausalArrivalEvidence(*first_events) ||
+     !HasMovingTrajectoryEvidence(*first_events) ||
      !SameTracePayloadOrder(*first_events, *repeated_events) ||
      !SameSimulationResult(*result, *repeated) ||
      !SameSimulationResult(*result, *direct) || *stored != *result) {

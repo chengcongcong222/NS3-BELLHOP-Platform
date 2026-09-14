@@ -26,6 +26,22 @@ class Source implements EventSourceLike {
       receiver_node_id: "2",
       disposition: "LocalDelivery",
       quality: null,
+    } : kind === "SignalArrival" ? {
+      transmission_id: "1",
+      receiver_node_id: "2",
+    } : kind === "NodePosition" ? {
+      node_id: "2",
+      x_meters: 10,
+      y_meters: 20,
+      z_meters: -30,
+    } : kind === "Fusion" ? {
+      fusion_sequence: "1",
+      fusion_center_node_id: "0",
+      started_at_ns: "1",
+      completed_at_ns: time,
+      observation_count: "6",
+      estimated_target_x_meters: 100,
+      estimated_target_y_meters: 200,
     } : {
       cycle_id: sequence,
       base_snapshot_version: "0",
@@ -107,5 +123,24 @@ describe("RunEventSequence projection", () => {
     } as MessageEvent<string>);
     expect(source.closed).toBe(true);
     expect(failure.mock.calls[0][0].kind).toBe("ProtocolFailure");
+  });
+
+  it("accepts real arrival, trajectory position, and fusion events without reclassifying them", () => {
+    const source = new Source();
+    const projections = vi.fn();
+    const failure = vi.fn();
+    const stream = new RunEventProjection("/events", projections, failure, () => source);
+    stream.connect();
+    source.emit("1", "SignalArrival", "100");
+    source.emit("2", "NodePosition", "101");
+    source.emit("3", "Fusion", "102");
+    const state = projections.mock.calls.at(-1)?.[0];
+    expect(state.timeline.map((event: { trace: { kind: string } }) => event.trace.kind)).toEqual([
+      "SignalArrival", "NodePosition", "Fusion",
+    ]);
+    expect(state.signalArrivalCount).toBe("1");
+    expect(state.fusionCount).toBe("1");
+    expect(state.cycleCommitCount).toBe("0");
+    expect(failure).not.toHaveBeenCalled();
   });
 });

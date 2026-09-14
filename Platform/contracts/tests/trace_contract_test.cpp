@@ -69,13 +69,25 @@ auto TestTypedPayloadsAndKinds() -> bool {
                          20.0,
                          1.0e-5,
                          TraceRxQualityEvidenceSource::kModeled}});
+  auto arrival = TraceEvent::Create(
+      Seconds(3),
+      SignalArrivalTrace{TransmissionId{2}, NodeId{0}});
+  auto position = TraceEvent::Create(
+      Seconds(3), NodePositionTrace{NodeId{0}, 1.0, 2.0, -3.0});
+  auto fusion = TraceEvent::Create(
+      Seconds(5),
+      FusionTrace{7, NodeId{0}, Seconds(1), Seconds(5), 6, 9.0, 8.0});
 
   return cycle && transmission && signal && no_arrival && reception &&
+         arrival && position && fusion &&
          cycle->kind() == TraceKind::kCycleCommit &&
          transmission->kind() == TraceKind::kTransmission &&
          signal->kind() == TraceKind::kChannelOutcome &&
          no_arrival->kind() == TraceKind::kChannelOutcome &&
          reception->kind() == TraceKind::kReception &&
+         arrival->kind() == TraceKind::kSignalArrival &&
+         position->kind() == TraceKind::kNodePosition &&
+         fusion->kind() == TraceKind::kFusion &&
          std::get<ReceptionTrace>(reception->payload()).quality &&
          std::get<ReceptionTrace>(reception->payload())
                  .quality->bit_error_rate == 1.0e-5 &&
@@ -133,6 +145,18 @@ auto TestInvariantsAndNullSink() -> bool {
               0.0,
               0.0,
               static_cast<TraceRxQualityEvidenceSource>(0)}});
+  const auto bad_position = TraceEvent::Create(
+      Seconds(2),
+      NodePositionTrace{NodeId{4},
+                        std::numeric_limits<double>::infinity(),
+                        0.0,
+                        0.0});
+  const auto bad_fusion_time = TraceEvent::Create(
+      Seconds(2),
+      FusionTrace{1, NodeId{4}, Seconds(1), Seconds(3), 1, 0.0, 0.0});
+  const auto empty_fusion = TraceEvent::Create(
+      Seconds(3),
+      FusionTrace{1, NodeId{4}, Seconds(1), Seconds(3), 0, 0.0, 0.0});
   auto valid = TraceEvent::Create(
       Seconds(1),
       ChannelOutcomeTrace{TransmissionId{2},
@@ -140,7 +164,8 @@ auto TestInvariantsAndNullSink() -> bool {
                           TraceNoArrivalChannelOutcome{}});
   NullTraceSink sink;
   return !bad_cycle && !bad_transmission && !bad_reception && !bad_quality &&
-         !bad_quality_source && valid &&
+         !bad_quality_source && !bad_position && !bad_fusion_time &&
+         !empty_fusion && valid &&
          sink.Emit(*valid);
 }
 

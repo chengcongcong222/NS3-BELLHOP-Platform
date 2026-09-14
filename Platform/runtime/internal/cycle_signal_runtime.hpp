@@ -87,7 +87,15 @@ class CycleSignalRuntime final {
           contracts::Error{contracts::ErrorCode::kFailedPrecondition,
                            "SignalArrival event time does not match signal"});
     }
-    return ledger_.Insert(std::move(signal));
+    const auto transmission_id = signal.transmission_id();
+    const auto receiver_node_id = signal.receiver_node_id();
+    const auto inserted = ledger_.Insert(std::move(signal));
+    if(!inserted) return inserted;
+    Emit(contracts::TraceEvent::Create(
+        event_time,
+        contracts::SignalArrivalTrace{transmission_id,
+                                      receiver_node_id}));
+    return {};
   }
 
   [[nodiscard]] auto HandleSessionFinalize(

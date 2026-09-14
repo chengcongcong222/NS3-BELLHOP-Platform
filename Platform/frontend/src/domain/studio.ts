@@ -1,4 +1,4 @@
-import type { ResultDto, RunEventDto, PositionSample } from "../api/types";
+import type { RunEventDto, PositionSample } from "../api/types";
 import { eventTitle } from "./runAnalytics";
 
 // Extracted from the read-only legacy StudioCanvas buildEventCurve; DTO-independent.
@@ -11,31 +11,52 @@ export function eventCurve(tx: { x: number; y: number }, rx: { x: number; y: num
 }
 export interface StudioEvent {
   key: string; at: string; kind: string; title: string;
-  event?: RunEventDto; fusion?: ResultDto["fusion_results"][number];
+  event: RunEventDto;
 }
-export function studioEvents(events: readonly RunEventDto[], result?: ResultDto): StudioEvent[] {
-  // Preserve journal order; never manufacture a RunEventSequence for result observations.
-  const rows: StudioEvent[] = events.map(event => ({ key: `trace-${event.sequence}`, at: event.trace.occurred_at_ns,
-    kind: event.trace.kind, title: event.trace.kind === "ChannelOutcome"
-      ? `信道查询 · N${event.trace.payload.receiver_node_id} · ${event.trace.payload.outcome.type === "Signal" ? "存在传播路径" : "无有效路径"}`
-      : eventTitle(event), event }));
-  for (const fusion of result?.fusion_results ?? []) {
-    const row = { key: `fusion-${fusion.fusion_sequence}`, at: fusion.completed_at_ns, kind: "Fusion", title: `融合轮次 ${fusion.fusion_sequence} 完成`, fusion };
-    // Result completion occurs before the same-time CycleCommit, not an SSE event.
-    const next = rows.findIndex(item => BigInt(item.at) > BigInt(row.at) || (item.at === row.at && item.kind === "CycleCommit"));
-    if (next < 0) rows.push(row); else rows.splice(next, 0, row);
-  }
-  return rows;
+export function studioEvents(events: readonly RunEventDto[]): StudioEvent[] {
+  // Position observations update the canvas but do not become separate
+  // operator timeline steps. All other rows retain authoritative journal order.
+  return events.filter(event => event.trace.kind !== "NodePosition").map(event => ({
+    key: `trace-${event.sequence}`,
+    at: event.trace.occurred_at_ns,
+    kind: event.trace.kind,
+    title: eventTitle(event),
+    event,
+  }));
+}
+export function positionSamples(events: readonly RunEventDto[]): PositionSample[] {
+  return events.flatMap(event => event.trace.kind === "NodePosition" ? [{
+    node_id: event.trace.payload.node_id,
+    at_ns: event.trace.occurred_at_ns,
+    x_meters: event.trace.payload.x_meters,
+    y_meters: event.trace.payload.y_meters,
+    z_meters: event.trace.payload.z_meters,
+  }] : []);
 }
 export function positionAt(samples: readonly PositionSample[], nodeId: string, at: string) {
-  // Exact authoritative query sample only. No browser extrapolation or velocity integration.
-  return samples.find(p => p.node_id === nodeId && p.at_ns === at) ?? null;
+  const node = samples.filter(p => p.node_id === nodeId).sort((a, b) => BigInt(a.at_ns) < BigInt(b.at_ns) ? -1 : BigInt(a.at_ns) > BigInt(b.at_ns) ? 1 : 0);
+  const exact = node.find(p => p.at_ns === at);
+  if (exact) return exact;
+  const time = BigInt(at);
+  const before = [...node].reverse().find(p => BigInt(p.at_ns) < time);
+  const after = node.find(p => BigInt(p.at_ns) > time);
+  if (!before || !after) return null;
+  const numerator = Number(time - BigInt(before.at_ns));
+  const denominator = Number(BigInt(after.at_ns) - BigInt(before.at_ns));
+  const alpha = numerator / denominator;
+  return {
+    node_id: nodeId,
+    at_ns: at,
+    x_meters: before.x_meters + alpha * (after.x_meters - before.x_meters),
+    y_meters: before.y_meters + alpha * (after.y_meters - before.y_meters),
+    z_meters: before.z_meters + alpha * (after.z_meters - before.z_meters),
+  };
 }
 export function timePercent(at: string, first: string, last: string) {
   const span = BigInt(last) - BigInt(first);
   return span <= 0n ? 0 : Number((BigInt(at) - BigInt(first)) * 10000n / span) / 100;
 }
-export function seekTime(rows: readonly StudioEvent[], percent: number) {
+export function seekTime(rows: readonly Pick<StudioEvent, "at">[], percent: number) {
   if (!rows.length) return 0;
   const first = BigInt(rows[0].at), last = BigInt(rows.at(-1)!.at);
   const target = first + (last - first) * BigInt(Math.round(percent * 100)) / 10000n;

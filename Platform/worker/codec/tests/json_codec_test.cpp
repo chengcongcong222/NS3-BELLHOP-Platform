@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include <ns3_factory/worker/codec/json_codec.hpp>
 
@@ -129,6 +130,34 @@ auto TestEventIntegerExactness() -> bool {
          encoded->find("9007199254740993") != std::string::npos;
 }
 
+auto TestObservabilityEventRoundTrips() -> bool {
+  auto run = application::RunId::Create("wire-observability");
+  if(!run) return false;
+  const auto at = contracts::SimTime::FromNanoseconds(2'000'000'000);
+  const auto started = contracts::SimTime::FromNanoseconds(1'000'000'000);
+  const std::vector<contracts::TracePayload> payloads{
+      contracts::SignalArrivalTrace{
+          contracts::TransmissionId{8}, contracts::NodeId{2}},
+      contracts::NodePositionTrace{
+          contracts::NodeId{2}, 12.5, -4.0, -60.0},
+      contracts::FusionTrace{
+          3, contracts::NodeId{0}, started, at, 6, 123.0, 456.0}};
+  std::uint64_t sequence = 1;
+  for(const auto& payload : payloads) {
+    auto trace = contracts::TraceEvent::Create(at, payload);
+    if(!trace) return false;
+    const worker::WorkerMessage event = worker::WorkerRunEvent{
+        {*run, application::RunEventSequence{sequence++}, *trace}};
+    auto encoded = worker::codec::EncodeWorkerMessage(event);
+    auto decoded = encoded
+                       ? worker::codec::DecodeWorkerMessage(*encoded)
+                       : contracts::Result<worker::WorkerMessage>{
+                             std::unexpected(encoded.error())};
+    if(!decoded || *decoded != event) return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -136,11 +165,13 @@ auto main() -> int {
   const auto malformed = TestMalformedInputs();
   const auto messages = TestWorkerMessageRoundTrip();
   const auto integers = TestEventIntegerExactness();
+  const auto observability = TestObservabilityEventRoundTrips();
   if(!command) std::cerr << "command round-trip failed\n";
   if(!malformed) std::cerr << "malformed gate failed\n";
   if(!messages) std::cerr << "message round-trip failed\n";
   if(!integers) std::cerr << "event integer exactness failed\n";
-  return command && malformed && messages && integers
+  if(!observability) std::cerr << "observability event round-trip failed\n";
+  return command && malformed && messages && integers && observability
              ? EXIT_SUCCESS
              : EXIT_FAILURE;
 }

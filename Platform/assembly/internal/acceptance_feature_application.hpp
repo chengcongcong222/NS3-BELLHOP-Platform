@@ -15,6 +15,7 @@
 #include <ns3_factory/contracts/identity.hpp>
 #include <ns3_factory/contracts/packet.hpp>
 #include <ns3_factory/contracts/time.hpp>
+#include <ns3_factory/contracts/trace.hpp>
 
 #include "internal/acceptance_feature.hpp"
 #include "internal/acceptance_scenario_config.hpp"
@@ -42,7 +43,8 @@ class AcceptanceFeatureApplication final
       runtime::internal::PacketQueueStore& queue_store,
       const runtime::internal::ApplicationDeliveryStore& delivery_store,
       contracts::SimTime run_started_at,
-      contracts::PacketId first_packet_id = contracts::PacketId{1'000'000})
+      contracts::PacketId first_packet_id = contracts::PacketId{1'000'000},
+      contracts::ITraceSink* trace_sink = nullptr)
       -> contracts::Result<AcceptanceFeatureApplication>;
 
   [[nodiscard]] auto input_node_ids() const noexcept
@@ -104,14 +106,16 @@ class AcceptanceFeatureApplication final
       contracts::SimTime run_started_at,
       std::uint64_t next_packet_id,
       FeatureFusionAccumulator fusion_accumulator,
-      std::vector<SensorSequence> sensor_sequences) noexcept
+      std::vector<SensorSequence> sensor_sequences,
+      contracts::ITraceSink* trace_sink) noexcept
       : config_(config),
         queue_store_(queue_store),
         delivery_store_(delivery_store),
         run_started_at_(run_started_at),
         next_packet_id_(next_packet_id),
         fusion_accumulator_(std::move(fusion_accumulator)),
-        sensor_sequences_(std::move(sensor_sequences)) {}
+        sensor_sequences_(std::move(sensor_sequences)),
+        trace_sink_(trace_sink) {}
 
   std::reference_wrapper<const AcceptanceScenarioConfig> config_;
   std::reference_wrapper<runtime::internal::PacketQueueStore> queue_store_;
@@ -124,6 +128,7 @@ class AcceptanceFeatureApplication final
   std::vector<GeneratedCycleInput> generated_cycle_inputs_;
   std::vector<GeneratedFeatureReport> generated_reports_;
   FusionResultStore fusion_result_store_;
+  contracts::ITraceSink* trace_sink_{nullptr};
 };
 
 inline auto AcceptanceFeatureApplication::Create(
@@ -131,7 +136,8 @@ inline auto AcceptanceFeatureApplication::Create(
     runtime::internal::PacketQueueStore& queue_store,
     const runtime::internal::ApplicationDeliveryStore& delivery_store,
     contracts::SimTime run_started_at,
-    contracts::PacketId first_packet_id)
+    contracts::PacketId first_packet_id,
+    contracts::ITraceSink* trace_sink)
     -> contracts::Result<AcceptanceFeatureApplication> {
   const auto queue_nodes = queue_store.node_ids();
   const auto delivery_nodes = delivery_store.node_ids();
@@ -173,7 +179,8 @@ inline auto AcceptanceFeatureApplication::Create(
                                       run_started_at,
                                       first_packet_id.value(),
                                       std::move(*accumulator),
-                                      std::move(sequences)};
+                                      std::move(sequences),
+                                      trace_sink};
 }
 
 inline auto AcceptanceFeatureApplication::OnInputReady(
@@ -280,8 +287,23 @@ inline auto AcceptanceFeatureApplication::OnRuntimeDecision(
       fusion_center->motion.position.y_meters);
   if(!fused) return std::unexpected(fused.error());
   if(*fused) {
+    const auto trace = contracts::FusionTrace{
+        (**fused).fusion_sequence,
+        config_.get().fusion_center_node_id(),
+        (**fused).started_at,
+        (**fused).completed_at,
+        static_cast<std::uint64_t>((**fused).observation_count),
+        (**fused).estimated_target_x_meters,
+        (**fused).estimated_target_y_meters};
     const auto stored = fusion_result_store_.Append(std::move(**fused));
     if(!stored) return stored;
+    if(trace_sink_ != nullptr) {
+      const auto event = contracts::TraceEvent::Create(now, trace);
+      if(event) {
+        const auto ignored = trace_sink_->Emit(*event);
+        static_cast<void>(ignored);
+      }
+    }
   }
   return {};
 }

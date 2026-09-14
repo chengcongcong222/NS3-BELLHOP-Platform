@@ -350,11 +350,48 @@ export interface ReceptionTraceDto {
   };
 }
 
+export interface SignalArrivalTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "SignalArrival";
+  payload: {
+    transmission_id: DecimalString;
+    receiver_node_id: DecimalString;
+  };
+}
+
+export interface NodePositionTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "NodePosition";
+  payload: {
+    node_id: DecimalString;
+    x_meters: number;
+    y_meters: number;
+    z_meters: number;
+  };
+}
+
+export interface FusionTraceDto {
+  occurred_at_ns: DecimalString;
+  kind: "Fusion";
+  payload: {
+    fusion_sequence: DecimalString;
+    fusion_center_node_id: DecimalString;
+    started_at_ns: DecimalString;
+    completed_at_ns: DecimalString;
+    observation_count: DecimalString;
+    estimated_target_x_meters: number;
+    estimated_target_y_meters: number;
+  };
+}
+
 export type TraceEventDto =
   | CycleCommitTraceDto
   | TransmissionTraceDto
   | ChannelOutcomeTraceDto
-  | ReceptionTraceDto;
+  | ReceptionTraceDto
+  | SignalArrivalTraceDto
+  | NodePositionTraceDto
+  | FusionTraceDto;
 
 export interface RunEventDto {
   run_id: string;

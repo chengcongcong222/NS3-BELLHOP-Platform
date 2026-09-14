@@ -161,9 +161,10 @@ auto TestMixedArrivalScenarioRuntime() -> bool {
          next_reception && *next_reception == ReceptionId{1'002} &&
          CountKind(trace, TraceKind::kTransmission) == 1 &&
          CountKind(trace, TraceKind::kChannelOutcome) == 3 &&
+         CountKind(trace, TraceKind::kSignalArrival) == 2 &&
          CountKind(trace, TraceKind::kReception) == 2 &&
          CountKind(trace, TraceKind::kCycleCommit) == 1 &&
-         trace.events.size() == 7 && HasCanonicalTraceOrder(trace) &&
+         trace.events.size() == 9 && HasCanonicalTraceOrder(trace) &&
          ReceptionDispositions(trace) ==
              std::vector<TraceReceptionDisposition>{
                  TraceReceptionDisposition::kRelayEnqueue,
@@ -210,6 +211,7 @@ auto TestAllNoArrivalScenarioRuntime() -> bool {
          next_reception && *next_reception == ReceptionId{1'000} &&
          CountKind(trace, TraceKind::kTransmission) == 1 &&
          CountKind(trace, TraceKind::kChannelOutcome) == 3 &&
+         CountKind(trace, TraceKind::kSignalArrival) == 0 &&
          CountKind(trace, TraceKind::kReception) == 0 &&
          CountKind(trace, TraceKind::kCycleCommit) == 1 &&
          trace.events.size() == 5 && HasCanonicalTraceOrder(trace) &&
@@ -280,6 +282,7 @@ auto TestBroadcastCardinality() -> bool {
   const auto run = fixture->runtime.RunCycles(1);
   if(!run || CountKind(trace, TraceKind::kTransmission) != 1 ||
      CountKind(trace, TraceKind::kChannelOutcome) != 3 ||
+     CountKind(trace, TraceKind::kSignalArrival) != 3 ||
      CountKind(trace, TraceKind::kReception) != 3 ||
      fixture->deliveries.size() != 3) {
     return false;
@@ -334,6 +337,7 @@ auto TestThreeCycleDeterminismAndCounts() -> bool {
      CountKind(first_trace, TraceKind::kCycleCommit) != 3 ||
      CountKind(first_trace, TraceKind::kTransmission) != 3 ||
      CountKind(first_trace, TraceKind::kChannelOutcome) != 9 ||
+     CountKind(first_trace, TraceKind::kSignalArrival) != 9 ||
      CountKind(first_trace, TraceKind::kReception) != 9 ||
      first->world.current_snapshot().version() != SnapshotVersion{3} ||
      first->world.current_snapshot().committed_at() != Seconds(30) ||
@@ -397,7 +401,7 @@ auto TestFailingSinkIsNonCausal() -> bool {
   const auto failing_now = failing->gateway.PlatformNow();
   const auto& baseline_snapshot = baseline->world.current_snapshot();
   const auto& failing_snapshot = failing->world.current_snapshot();
-  return baseline_run && failing_run && failing_sink.attempt_count == 7 &&
+  return baseline_run && failing_run && failing_sink.attempt_count == 9 &&
          failing_sink.quality_reception_count == 2 &&
          baseline_snapshot.version() == failing_snapshot.version() &&
          baseline_snapshot.committed_at() ==

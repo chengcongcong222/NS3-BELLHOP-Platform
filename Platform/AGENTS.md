@@ -393,6 +393,8 @@ P0-S1 禁止提前实现：
 P0-UX-R4 产品展示遵循 ADR-0001 §2.53 的更新：展示真实实验量化结果，
 不展示自动验收 verdict。参考要求可与本次值并列，最终判断由用户完成。
 只读结果投影不得改变运行因果；ChannelOutcome 查询不是 SignalArrival 事件。
+P0-UX-R4-03 的 NodePosition 必须来自正式轨迹在现有 ns-3 事件时刻的查询，
+SignalArrival 必须来自实际到达 callback；前端播放控制不得形成第二套仿真时钟。
 
 必须优先：
 

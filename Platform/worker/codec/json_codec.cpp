@@ -375,7 +375,73 @@ auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> 
 [[nodiscard]] auto EncodeTrace(const contracts::TraceEvent& event) -> Json {
   Json payload;
   std::string_view kind;
-  std::visit([&](const auto& v){using T=std::decay_t<decltype(v)>; if constexpr(std::is_same_v<T,contracts::CycleCommitTrace>){kind="CycleCommit";payload={{"cycle_id",Decimal(v.cycle_id.value())},{"base_snapshot_version",Decimal(v.base_snapshot_version.value())},{"committed_snapshot_version",Decimal(v.committed_snapshot_version.value())},{"committed_at_ns",TimeJson(v.committed_at)}};}else if constexpr(std::is_same_v<T,contracts::TransmissionTrace>){kind="Transmission";Json target;std::visit([&](const auto&t){using U=std::decay_t<decltype(t)>;if constexpr(std::is_same_v<U,contracts::TraceUnicastTransmissionTarget>)target={{"type","Unicast"},{"node_id",Decimal(t.node_id.value())}};else target={{"type","Broadcast"}};},v.target);payload={{"transmission_id",Decimal(v.transmission_id.value())},{"packet_id",Decimal(v.packet_id.value())},{"sender_node_id",Decimal(v.sender_node_id.value())},{"target",target},{"started_at_ns",TimeJson(v.started_at)},{"ended_at_ns",TimeJson(v.ended_at)}};}else if constexpr(std::is_same_v<T,contracts::ChannelOutcomeTrace>){kind="ChannelOutcome";Json outcome;std::visit([&](const auto&o){using U=std::decay_t<decltype(o)>;if constexpr(std::is_same_v<U,contracts::TraceSignalChannelOutcome>)outcome={{"type","Signal"},{"first_arrival_delay_ns",DurationJson(o.first_arrival_delay)},{"aggregate_transmission_loss_db",o.aggregate_transmission_loss_db},{"path_count",Decimal(o.path_count)}};else outcome={{"type","NoArrival"}};},v.outcome);payload={{"transmission_id",Decimal(v.transmission_id.value())},{"receiver_node_id",Decimal(v.receiver_node_id.value())},{"outcome",outcome}};}else{kind="Reception";Json quality=nullptr;if(v.quality)quality={{"signal_to_noise_ratio_db",v.quality->signal_to_noise_ratio_db},{"eb_n0_db",v.quality->eb_n0_db},{"bit_error_rate",v.quality->bit_error_rate},{"source",v.quality->source==contracts::TraceRxQualityEvidenceSource::kModeled?"Modeled":v.quality->source==contracts::TraceRxQualityEvidenceSource::kMeasured?"Measured":"External"}};std::string_view d=v.disposition==contracts::TraceReceptionDisposition::kNotDecoded?"NotDecoded":v.disposition==contracts::TraceReceptionDisposition::kOverheard?"Overheard":v.disposition==contracts::TraceReceptionDisposition::kLocalDelivery?"LocalDelivery":"RelayEnqueue";payload={{"reception_id",Decimal(v.reception_id.value())},{"transmission_id",Decimal(v.transmission_id.value())},{"packet_id",Decimal(v.packet_id.value())},{"receiver_node_id",Decimal(v.receiver_node_id.value())},{"disposition",d},{"quality",quality}};}},event.payload());
+  std::visit([&](const auto& v) {
+    using T = std::decay_t<decltype(v)>;
+    if constexpr(std::is_same_v<T, contracts::CycleCommitTrace>) {
+      kind = "CycleCommit";
+      payload = {{"cycle_id", Decimal(v.cycle_id.value())},
+                 {"base_snapshot_version", Decimal(v.base_snapshot_version.value())},
+                 {"committed_snapshot_version", Decimal(v.committed_snapshot_version.value())},
+                 {"committed_at_ns", TimeJson(v.committed_at)}};
+    } else if constexpr(std::is_same_v<T, contracts::TransmissionTrace>) {
+      kind = "Transmission";
+      Json target;
+      std::visit([&](const auto& t) {
+        using U = std::decay_t<decltype(t)>;
+        if constexpr(std::is_same_v<U, contracts::TraceUnicastTransmissionTarget>)
+          target = {{"type", "Unicast"}, {"node_id", Decimal(t.node_id.value())}};
+        else
+          target = {{"type", "Broadcast"}};
+      }, v.target);
+      payload = {{"transmission_id", Decimal(v.transmission_id.value())},
+                 {"packet_id", Decimal(v.packet_id.value())},
+                 {"sender_node_id", Decimal(v.sender_node_id.value())},
+                 {"target", target},
+                 {"started_at_ns", TimeJson(v.started_at)},
+                 {"ended_at_ns", TimeJson(v.ended_at)}};
+    } else if constexpr(std::is_same_v<T, contracts::ChannelOutcomeTrace>) {
+      kind = "ChannelOutcome";
+      Json outcome;
+      std::visit([&](const auto& o) {
+        using U = std::decay_t<decltype(o)>;
+        if constexpr(std::is_same_v<U, contracts::TraceSignalChannelOutcome>)
+          outcome = {{"type", "Signal"},
+                     {"first_arrival_delay_ns", DurationJson(o.first_arrival_delay)},
+                     {"aggregate_transmission_loss_db", o.aggregate_transmission_loss_db},
+                     {"path_count", Decimal(o.path_count)}};
+        else
+          outcome = {{"type", "NoArrival"}};
+      }, v.outcome);
+      payload = {{"transmission_id", Decimal(v.transmission_id.value())},
+                 {"receiver_node_id", Decimal(v.receiver_node_id.value())},
+                 {"outcome", outcome}};
+    } else if constexpr(std::is_same_v<T, contracts::ReceptionTrace>) {
+      kind = "Reception";
+      Json quality = nullptr;
+      if(v.quality) quality = {{"signal_to_noise_ratio_db", v.quality->signal_to_noise_ratio_db}, {"eb_n0_db", v.quality->eb_n0_db}, {"bit_error_rate", v.quality->bit_error_rate}, {"source", v.quality->source == contracts::TraceRxQualityEvidenceSource::kModeled ? "Modeled" : v.quality->source == contracts::TraceRxQualityEvidenceSource::kMeasured ? "Measured" : "External"}};
+      const std::string_view disposition = v.disposition == contracts::TraceReceptionDisposition::kNotDecoded ? "NotDecoded" : v.disposition == contracts::TraceReceptionDisposition::kOverheard ? "Overheard" : v.disposition == contracts::TraceReceptionDisposition::kLocalDelivery ? "LocalDelivery" : "RelayEnqueue";
+      payload = {{"reception_id", Decimal(v.reception_id.value())}, {"transmission_id", Decimal(v.transmission_id.value())}, {"packet_id", Decimal(v.packet_id.value())}, {"receiver_node_id", Decimal(v.receiver_node_id.value())}, {"disposition", disposition}, {"quality", quality}};
+    } else if constexpr(std::is_same_v<T, contracts::SignalArrivalTrace>) {
+      kind = "SignalArrival";
+      payload = {{"transmission_id", Decimal(v.transmission_id.value())},
+                 {"receiver_node_id", Decimal(v.receiver_node_id.value())}};
+    } else if constexpr(std::is_same_v<T, contracts::NodePositionTrace>) {
+      kind = "NodePosition";
+      payload = {{"node_id", Decimal(v.node_id.value())},
+                 {"x_meters", v.x_meters},
+                 {"y_meters", v.y_meters},
+                 {"z_meters", v.z_meters}};
+    } else {
+      kind = "Fusion";
+      payload = {{"fusion_sequence", Decimal(v.fusion_sequence)},
+                 {"fusion_center_node_id", Decimal(v.fusion_center_node_id.value())},
+                 {"started_at_ns", TimeJson(v.started_at)},
+                 {"completed_at_ns", TimeJson(v.completed_at)},
+                 {"observation_count", Decimal(v.observation_count)},
+                 {"estimated_target_x_meters", v.estimated_target_x_meters},
+                 {"estimated_target_y_meters", v.estimated_target_y_meters}};
+    }
+  }, event.payload());
   return {{"occurred_at_ns",TimeJson(event.occurred_at())},{"kind",kind},{"payload",std::move(payload)}};
 }
 
@@ -385,6 +451,9 @@ auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> 
   }else if(kind=="Transmission"){auto pk=RequireKeys(p,{"transmission_id","packet_id","sender_node_id","target","started_at_ns","ended_at_ns"},"transmission trace");auto a=ReadInt<std::uint64_t>(p,"transmission_id"); auto b=ReadInt<std::uint64_t>(p,"packet_id"); auto c=ReadInt<std::uint64_t>(p,"sender_node_id"); auto s=ReadInt<std::int64_t>(p,"started_at_ns"); auto e=ReadInt<std::int64_t>(p,"ended_at_ns");if(!pk||!a||!b||!c||!s||!e)return std::unexpected(ProtocolError("transmission trace is invalid"));const auto&t=p.at("target");std::optional<contracts::TraceTransmissionTarget> target;if(t.is_object()&&t.value("type","")=="Broadcast"&&t.size()==1)target=contracts::TraceBroadcastTransmissionTarget{};else{auto tk=RequireKeys(t,{"type","node_id"},"target");auto id=ReadInt<std::uint64_t>(t,"node_id");if(!tk||!id||t.at("type")!="Unicast")return std::unexpected(ProtocolError("target is invalid"));target=contracts::TraceUnicastTransmissionTarget{contracts::NodeId{*id}};}payload=contracts::TransmissionTrace{contracts::TransmissionId{*a},contracts::PacketId{*b},contracts::NodeId{*c},*target,contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*e)};
   }else if(kind=="ChannelOutcome"){auto pk=RequireKeys(p,{"transmission_id","receiver_node_id","outcome"},"channel trace");auto a=ReadInt<std::uint64_t>(p,"transmission_id"); auto b=ReadInt<std::uint64_t>(p,"receiver_node_id");if(!pk||!a||!b)return std::unexpected(ProtocolError("channel trace is invalid"));const auto&o=p.at("outcome");std::optional<contracts::TraceChannelOutcome> outcome;if(o.is_object()&&o.value("type","")=="NoArrival"&&o.size()==1)outcome=contracts::TraceNoArrivalChannelOutcome{};else{auto ok=RequireKeys(o,{"type","first_arrival_delay_ns","aggregate_transmission_loss_db","path_count"},"channel outcome");auto d=ReadInt<std::int64_t>(o,"first_arrival_delay_ns"); auto n=ReadInt<std::uint64_t>(o,"path_count"); auto g=ParseFiniteDouble(o.at("aggregate_transmission_loss_db"),"aggregate_transmission_loss_db");if(!ok||!d||!n||!g||o.at("type")!="Signal")return std::unexpected(ProtocolError("channel outcome is invalid"));outcome=contracts::TraceSignalChannelOutcome{contracts::SimDuration::FromNanoseconds(*d),*g,*n};}payload=contracts::ChannelOutcomeTrace{contracts::TransmissionId{*a},contracts::NodeId{*b},*outcome};
   }else if(kind=="Reception"){auto pk=RequireKeys(p,{"reception_id","transmission_id","packet_id","receiver_node_id","disposition","quality"},"reception trace");auto a=ReadInt<std::uint64_t>(p,"reception_id"),b=ReadInt<std::uint64_t>(p,"transmission_id"),c=ReadInt<std::uint64_t>(p,"packet_id"),d=ReadInt<std::uint64_t>(p,"receiver_node_id");if(!pk||!a||!b||!c||!d||!p.at("disposition").is_string())return std::unexpected(ProtocolError("reception trace is invalid"));const auto ds=p.at("disposition").get<std::string_view>();contracts::TraceReceptionDisposition disposition;if(ds=="NotDecoded")disposition=contracts::TraceReceptionDisposition::kNotDecoded;else if(ds=="Overheard")disposition=contracts::TraceReceptionDisposition::kOverheard;else if(ds=="LocalDelivery")disposition=contracts::TraceReceptionDisposition::kLocalDelivery;else if(ds=="RelayEnqueue")disposition=contracts::TraceReceptionDisposition::kRelayEnqueue;else return std::unexpected(ProtocolError("reception disposition is unknown"));std::optional<contracts::TraceRxQualitySummary> quality;if(!p.at("quality").is_null()){const auto&q=p.at("quality");auto qk=RequireKeys(q,{"signal_to_noise_ratio_db","eb_n0_db","bit_error_rate","source"},"quality");auto x=ParseFiniteDouble(q.at("signal_to_noise_ratio_db"),"snr"),y=ParseFiniteDouble(q.at("eb_n0_db"),"eb_n0"),z=ParseFiniteDouble(q.at("bit_error_rate"),"ber");if(!qk||!x||!y||!z||!q.at("source").is_string())return std::unexpected(ProtocolError("quality is invalid"));const auto qs=q.at("source").get<std::string_view>();auto source=qs=="Modeled"?contracts::TraceRxQualityEvidenceSource::kModeled:qs=="Measured"?contracts::TraceRxQualityEvidenceSource::kMeasured:contracts::TraceRxQualityEvidenceSource::kExternal;if(qs!="Modeled"&&qs!="Measured"&&qs!="External")return std::unexpected(ProtocolError("quality source is unknown"));quality=contracts::TraceRxQualitySummary{*x,*y,*z,source};}payload=contracts::ReceptionTrace{contracts::ReceptionId{*a},contracts::TransmissionId{*b},contracts::PacketId{*c},contracts::NodeId{*d},disposition,quality};
+  }else if(kind=="SignalArrival"){auto pk=RequireKeys(p,{"transmission_id","receiver_node_id"},"signal arrival trace");auto a=ReadInt<std::uint64_t>(p,"transmission_id");auto b=ReadInt<std::uint64_t>(p,"receiver_node_id");if(!pk||!a||!b)return std::unexpected(ProtocolError("signal arrival trace is invalid"));payload=contracts::SignalArrivalTrace{contracts::TransmissionId{*a},contracts::NodeId{*b}};
+  }else if(kind=="NodePosition"){auto pk=RequireKeys(p,{"node_id","x_meters","y_meters","z_meters"},"node position trace");auto a=ReadInt<std::uint64_t>(p,"node_id");auto x=ParseFiniteDouble(p.at("x_meters"),"x_meters");auto y=ParseFiniteDouble(p.at("y_meters"),"y_meters");auto z=ParseFiniteDouble(p.at("z_meters"),"z_meters");if(!pk||!a||!x||!y||!z)return std::unexpected(ProtocolError("node position trace is invalid"));payload=contracts::NodePositionTrace{contracts::NodeId{*a},*x,*y,*z};
+  }else if(kind=="Fusion"){auto pk=RequireKeys(p,{"fusion_sequence","fusion_center_node_id","started_at_ns","completed_at_ns","observation_count","estimated_target_x_meters","estimated_target_y_meters"},"fusion trace");auto a=ReadInt<std::uint64_t>(p,"fusion_sequence");auto b=ReadInt<std::uint64_t>(p,"fusion_center_node_id");auto s=ReadInt<std::int64_t>(p,"started_at_ns");auto c=ReadInt<std::int64_t>(p,"completed_at_ns");auto n=ReadInt<std::uint64_t>(p,"observation_count");auto x=ParseFiniteDouble(p.at("estimated_target_x_meters"),"estimated_target_x_meters");auto y=ParseFiniteDouble(p.at("estimated_target_y_meters"),"estimated_target_y_meters");if(!pk||!a||!b||!s||!c||!n||!x||!y)return std::unexpected(ProtocolError("fusion trace is invalid"));payload=contracts::FusionTrace{*a,contracts::NodeId{*b},contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*c),*n,*x,*y};
   }else return std::unexpected(ProtocolError("trace kind is unknown"));return contracts::TraceEvent::Create(contracts::SimTime::FromNanoseconds(*at),std::move(*payload));
 }
 

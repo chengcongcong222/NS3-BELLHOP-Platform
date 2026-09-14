@@ -12,7 +12,10 @@ export function eventTitle(event: RunEventDto): string {
   }
   if (trace.kind === "ChannelOutcome") return trace.payload.outcome.type === "NoArrival"
     ? `节点 ${trace.payload.receiver_node_id} 未获得有效声学到达`
-    : `信号到达节点 ${trace.payload.receiver_node_id}`;
+    : `信道查询发现至节点 ${trace.payload.receiver_node_id} 的传播路径`;
+  if (trace.kind === "SignalArrival") return `信号实际到达节点 ${trace.payload.receiver_node_id}`;
+  if (trace.kind === "NodePosition") return `节点 ${trace.payload.node_id} 轨迹位置`;
+  if (trace.kind === "Fusion") return `融合轮次 ${trace.payload.fusion_sequence} 完成（${trace.payload.observation_count} 个有效报告）`;
   const disposition = { NotDecoded: "未解码", Overheard: "旁听接收", LocalDelivery: "成功送达本节点", RelayEnqueue: "进入中继队列" }[trace.payload.disposition];
   return `节点 ${trace.payload.receiver_node_id}：${disposition}`;
 }
@@ -24,6 +27,9 @@ export function eventTechnicalDetail(event: RunEventDto): string {
   if (trace.kind === "ChannelOutcome") return trace.payload.outcome.type === "NoArrival"
     ? `TransmissionId ${trace.payload.transmission_id} · formal NoArrival`
     : `TransmissionId ${trace.payload.transmission_id} · ${formatNanoseconds(trace.payload.outcome.first_arrival_delay_ns)} · TL ${trace.payload.outcome.aggregate_transmission_loss_db} dB · ${trace.payload.outcome.path_count} paths`;
+  if (trace.kind === "SignalArrival") return `TransmissionId ${trace.payload.transmission_id} · receiver N${trace.payload.receiver_node_id}`;
+  if (trace.kind === "NodePosition") return `N${trace.payload.node_id} · (${trace.payload.x_meters}, ${trace.payload.y_meters}, ${trace.payload.z_meters}) m`;
+  if (trace.kind === "Fusion") return `fusion ${trace.payload.fusion_sequence} · center N${trace.payload.fusion_center_node_id} · ${trace.payload.observation_count} observations`;
   return `ReceptionId ${trace.payload.reception_id} · TransmissionId ${trace.payload.transmission_id}${trace.payload.quality ? ` · SNR ${trace.payload.quality.signal_to_noise_ratio_db} dB · BER ${trace.payload.quality.bit_error_rate}` : " · 无质量证据"}`;
 }
 
@@ -51,7 +57,7 @@ export interface ActivityLink {
   sender: string | null;
   receiver: string | null;
   outcome: string;
-  phase: "Transmission" | "Signal" | "NoArrival" | "Reception";
+  phase: "Transmission" | "ChannelQuery" | "NoArrival" | "SignalArrival" | "Reception";
   transmissionId: string;
 }
 
@@ -65,9 +71,10 @@ export function latestActiveLink(events: readonly RunEventDto[]): ActivityLink |
     return { sender: latest.trace.payload.sender_node_id, receiver, outcome: receiver ? "发送开始" : "广播发送", phase: "Transmission", transmissionId: latest.trace.payload.transmission_id };
   }
   if (latest.trace.kind === "ChannelOutcome") {
-    const phase = latest.trace.payload.outcome.type === "NoArrival" ? "NoArrival" : "Signal";
-    return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: phase === "Signal" ? "信号到达" : "无有效到达", phase, transmissionId: latest.trace.payload.transmission_id };
+    const phase = latest.trace.payload.outcome.type === "NoArrival" ? "NoArrival" : "ChannelQuery";
+    return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: phase === "ChannelQuery" ? "存在传播路径" : "无有效到达", phase, transmissionId: latest.trace.payload.transmission_id };
   }
+  if (latest.trace.kind === "SignalArrival") return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: "信号实际到达", phase: "SignalArrival", transmissionId: latest.trace.payload.transmission_id };
   if (latest.trace.kind === "Reception") return { sender: senders.get(latest.trace.payload.transmission_id) ?? null, receiver: latest.trace.payload.receiver_node_id, outcome: latest.trace.payload.disposition, phase: "Reception", transmissionId: latest.trace.payload.transmission_id };
   return null;
 }

@@ -88,6 +88,51 @@ def test_internal_wire_model_preserves_extended_profile_compatibility() -> None:
 
 
 @pytest.mark.parametrize(
+    ("kind", "payload"),
+    [
+        ("SignalArrival", {"transmission_id": "7", "receiver_node_id": "2"}),
+        (
+            "NodePosition",
+            {"node_id": "2", "x_meters": 10.0, "y_meters": 20.0, "z_meters": -30.0},
+        ),
+        (
+            "Fusion",
+            {
+                "fusion_sequence": "1",
+                "fusion_center_node_id": "99",
+                "started_at_ns": "100",
+                "completed_at_ns": "200",
+                "observation_count": "6",
+                "estimated_target_x_meters": 123.0,
+                "estimated_target_y_meters": 456.0,
+            },
+        ),
+    ],
+)
+def test_runtime_observability_events_parse_without_coercion(
+    kind: str, payload: dict[str, object]
+) -> None:
+    parsed = parse_worker_message(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "type": "WorkerRunEvent",
+                "run_id": "observability-run",
+                "sequence": "1",
+                "trace": {
+                    "occurred_at_ns": "200",
+                    "kind": kind,
+                    "payload": payload,
+                },
+            },
+            separators=(",", ":"),
+        ).encode()
+    )
+    assert isinstance(parsed, WorkerRunEvent)
+    assert parsed.trace.kind == kind
+
+
+@pytest.mark.parametrize(
     "bad_value", ["", "00", "01", "-0", "1.0", 1, 1.0]
 )
 def test_noncanonical_decimal_values_are_rejected(bad_value) -> None:

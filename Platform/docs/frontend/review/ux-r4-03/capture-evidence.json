@@ -1,0 +1,49 @@
+{
+  "browser": "Edg/152.0.4191.66",
+  "viewport": [
+    1440,
+    900
+  ],
+  "channel1": {
+    "run_id": "run-e4a36e87e54546408d323b01f5bbc775",
+    "lifecycle": "Completed",
+    "counts": {
+      "NodePosition": 172,
+      "Transmission": 6,
+      "ChannelOutcome": 18,
+      "SignalArrival": 18,
+      "Reception": 18,
+      "CycleCommit": 2,
+      "Fusion": 1
+    },
+    "exact_arrival_count": 18,
+    "moving_nodes": [
+      "10",
+      "20",
+      "30"
+    ]
+  },
+  "channel2": {
+    "run_id": "run-c7eb93d5b83246808a799bce5c3ae103",
+    "lifecycle": "Completed",
+    "counts": {
+      "NodePosition": 172,
+      "Transmission": 6,
+      "ChannelOutcome": 18,
+      "SignalArrival": 18,
+      "Reception": 18,
+      "CycleCommit": 2
+    },
+    "exact_arrival_count": 18,
+    "moving_nodes": [
+      "10",
+      "20",
+      "30"
+    ],
+    "waveform_records": 18,
+    "crc_ok": 6,
+    "crc_failed": 12
+  },
+  "screenshots": 8,
+  "request_interception": false
+}

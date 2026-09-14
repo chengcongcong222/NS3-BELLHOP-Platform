@@ -177,6 +177,9 @@ function eventIdentity(event: RunEventDto): string {
   if (trace.kind === "CycleCommit") return `Cycle ${trace.payload.cycle_id}`;
   if (trace.kind === "Transmission") return `Tx ${trace.payload.transmission_id}`;
   if (trace.kind === "ChannelOutcome") return `Tx ${trace.payload.transmission_id} → N${trace.payload.receiver_node_id}`;
+  if (trace.kind === "SignalArrival") return `Tx ${trace.payload.transmission_id} → N${trace.payload.receiver_node_id}`;
+  if (trace.kind === "NodePosition") return `N${trace.payload.node_id}`;
+  if (trace.kind === "Fusion") return `Fusion ${trace.payload.fusion_sequence} · N${trace.payload.fusion_center_node_id}`;
   return `Rx ${trace.payload.reception_id} · Tx ${trace.payload.transmission_id}`;
 }
 
@@ -193,6 +196,9 @@ function eventDetail(event: RunEventDto): string {
     if (trace.payload.outcome.type === "NoArrival") return "NoArrival";
     return `Signal · delay ${formatNanoseconds(trace.payload.outcome.first_arrival_delay_ns)} · loss ${trace.payload.outcome.aggregate_transmission_loss_db} dB · ${trace.payload.outcome.path_count} paths`;
   }
+  if (trace.kind === "SignalArrival") return `signal arrived at receiver N${trace.payload.receiver_node_id}`;
+  if (trace.kind === "NodePosition") return `(${trace.payload.x_meters}, ${trace.payload.y_meters}, ${trace.payload.z_meters}) m`;
+  if (trace.kind === "Fusion") return `${trace.payload.observation_count} observations · estimate (${trace.payload.estimated_target_x_meters}, ${trace.payload.estimated_target_y_meters}) m`;
   const quality = trace.payload.quality
     ? ` · BER ${trace.payload.quality.bit_error_rate}（无量纲） · ${trace.payload.quality.source}`
     : " · no quality evidence";

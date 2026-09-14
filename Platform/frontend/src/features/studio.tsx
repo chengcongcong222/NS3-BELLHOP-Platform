@@ -4,13 +4,13 @@ import { Link, useParams } from "react-router-dom";
 import { apiClient, ApiFailure } from "../api/client";
 import { queries } from "../api/queries";
 import { emptyProjection, RunEventProjection } from "../api/runEvents";
-import type { ResultDto, RunEventDto, ScenarioDto } from "../api/types";
+import type { PositionSample, ResultDto, RunEventDto, ScenarioDto } from "../api/types";
 import { ErrorState, LoadingState, Status } from "../components/common";
 import { MiniTrend } from "../components/MiniTrend";
 import { formatNanoseconds } from "../domain/format";
-import { cumulativeTrends, latestActiveLink, projectionCounts } from "../domain/runAnalytics";
+import { cumulativeTrends, eventTechnicalDetail, latestActiveLink, projectionCounts } from "../domain/runAnalytics";
 import { createWorldViewTransform } from "../domain/worldViewTransform";
-import { eventCurve, positionAt, replayDelay, seekTime, studioEvents, timePercent, type StudioEvent } from "../domain/studio";
+import { eventCurve, positionAt, positionSamples, replayDelay, seekTime, studioEvents, timePercent, type StudioEvent } from "../domain/studio";
 
 function useEvents(runId: string) {
   const [projection, update] = useState(emptyProjection);
@@ -23,32 +23,31 @@ function useEvents(runId: string) {
   return { projection, error };
 }
 
-function StudioCanvas({ scenario, result, row, events, selected, select, range }: {
-  scenario: ScenarioDto; result?: ResultDto; row?: StudioEvent; events: readonly RunEventDto[];
+function StudioCanvas({ scenario, samples, row, events, selected, select, range }: {
+  scenario: ScenarioDto; samples: PositionSample[]; row?: StudioEvent; events: readonly RunEventDto[];
   selected: string | null; select: (id: string) => void; range?: number;
 }) {
-  const samples = result?.visualization?.positions ?? [];
   const positions = scenario.nodes.map(node => ({ node, p: row ? positionAt(samples, node.node_id, row.at) : null }));
   const exact = positions.every(item => item.p !== null);
   const transform = createWorldViewTransform([...scenario.nodes.map(n => n.initial_position), ...samples], range, { width: 980, height: 540, padding: 50 });
   const points = new Map(positions.map(({ node, p }) => [node.node_id, transform.point(p ?? node.initial_position)]));
-  const active = row?.kind === "Transmission" || row?.kind === "Reception" ? latestActiveLink(events) : null;
-  const tx = active?.sender ? points.get(active.sender) : null;
-  const rx = active?.receiver ? points.get(active.receiver) : null;
-  return <><div className="canvas-toolbar"><strong>二维运行场景</strong><span>{exact ? "轨迹查询位置 · 已记录仿真时刻" : "场景初始几何 · 当前通信事件"}</span></div>
-    <svg className={`run-topology phase-${active?.phase.toLowerCase() ?? "idle"}`} viewBox="0 0 980 540" role="img" aria-label="运行画布">
+  const activity = row && ["Transmission", "SignalArrival", "Reception"].includes(row.kind) ? latestActiveLink(events) : null;
+  const tx = activity?.sender ? points.get(activity.sender) : null;
+  const rx = activity?.receiver ? points.get(activity.receiver) : null;
+  return <><div className="canvas-toolbar"><strong>二维运行场景</strong><span>{exact ? "正式轨迹位置 · ns-3 仿真时刻" : "场景初始几何 · 当前通信事件"}</span>{activity && <b>{activity.outcome}</b>}</div>
+    <svg className={`run-topology phase-${activity?.phase.toLowerCase() ?? "idle"}`} viewBox="0 0 980 540" role="img" aria-label="运行画布">
       <defs><pattern id="studio-grid" width="49" height="54" patternUnits="userSpaceOnUse"><path d="M49 0H0V54" fill="none" stroke="#20364c" /></pattern><marker id="studio-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#38bdf8" /></marker></defs>
       <rect width="980" height="540" fill="#071827" /><rect width="980" height="540" fill="url(#studio-grid)" />
       <text x="20" y="28" fill="#8da9bf">局部笛卡尔坐标 · 米 · XY 等比例</text>
       {scenario.nodes.map(node => <polyline key={`track-${node.node_id}`} data-testid={`track-${node.node_id}`} points={samples.filter(p => p.node_id === node.node_id).map(p => { const xy = transform.point(p); return `${xy.x},${xy.y}`; }).join(" ")} fill="none" stroke="#5a829a" strokeDasharray="4 4" strokeWidth="2" />)}
-      {tx && rx && <path data-testid="communication-arrow" d={eventCurve(tx, rx)} fill="none" stroke={active?.outcome === "NotDecoded" ? "#fb7185" : active?.phase === "Reception" ? "#34d399" : "#38bdf8"} strokeWidth="3" markerEnd="url(#studio-arrow)" />}
+      {tx && rx && <path data-testid="communication-arrow" d={eventCurve(tx, rx)} fill="none" stroke={activity?.outcome === "NotDecoded" ? "#fb7185" : activity?.phase === "Reception" ? "#34d399" : activity?.phase === "SignalArrival" ? "#fbbf24" : "#38bdf8"} strokeWidth="3" markerEnd="url(#studio-arrow)" />}
       {positions.map(({ node, p }) => { const xy = points.get(node.node_id)!; const fusion = row?.kind === "Fusion" && node.node_id === scenario.fusion_center_node_id;
         return <g key={node.node_id} transform={`translate(${xy.x} ${xy.y})`} onClick={() => select(node.node_id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(node.node_id); } }} role="button" tabIndex={0} aria-label={`节点 ${node.node_id}`}>
           {(selected === node.node_id || fusion) && <circle r="29" fill="none" stroke={fusion ? "#fbbf24" : "#22d3ee"} strokeWidth="2" />}
-          <circle r="14" fill={node.node_id === active?.sender ? "#38bdf8" : node.node_id === scenario.fusion_center_node_id ? "#22d3ee" : "#f59e0b"} />
+          <circle r="14" fill={node.node_id === activity?.receiver && activity.phase === "SignalArrival" ? "#fbbf24" : node.node_id === activity?.receiver && activity.outcome === "NotDecoded" ? "#fb7185" : node.node_id === activity?.receiver && activity.phase === "Reception" ? "#34d399" : node.node_id === activity?.sender ? "#38bdf8" : node.node_id === scenario.fusion_center_node_id ? "#22d3ee" : "#f59e0b"} />
           <text x="22" y="-3" fill="#edf6ff">N{node.node_id}{fusion ? " · 融合完成" : ""}</text><text x="22" y="15" fill="#9bb0c5" fontSize="11">{(p ?? node.initial_position).z_meters.toFixed(1)} m</text>
         </g>; })}
-    </svg><div className="canvas-caption">虚线：轨迹查询样本。{exact ? "位置由服务端对本次运行绑定轨迹进行查询，浏览器不积分、不外推。" : "当前位置尚未投影，暂显示初始几何；不根据初始速度推算运动。"}</div></>;
+    </svg><div className="canvas-caption">虚线：正式轨迹查询样本。{exact ? "端点来自 Runtime 轨迹查询；仅允许在相邻正式样本间做显示插值，不产生仿真状态。" : "当前位置尚未投影，暂显示初始几何；不根据初始速度推算运动。"}</div></>;
 }
 
 export function StudioRunPage() {
@@ -59,7 +58,9 @@ export function StudioRunPage() {
   const environment = useQuery({ ...queries.environment(run.data?.environment_asset_id ?? ""), enabled: !!run.data });
   const result = useQuery({ ...queries.result(runId), enabled: run.data?.lifecycle === "Completed" });
   const { projection, error } = useEvents(runId);
-  const rows = useMemo(() => studioEvents(projection.timeline, result.data), [projection.timeline, result.data]);
+  const rows = useMemo(() => studioEvents(projection.timeline), [projection.timeline]);
+  const streamedSamples = useMemo(() => positionSamples(projection.timeline), [projection.timeline]);
+  const samples = streamedSamples.length ? streamedSamples : result.data?.visualization?.positions ?? [];
   const [cursor, setCursor] = useState<number | null>(null), [playing, play] = useState(false), [speed, setSpeed] = useState(1), [compressed, setCompressed] = useState(false);
   const [selected, select] = useState<string | null>(null);
   const index = Math.min(cursor ?? Math.max(0, rows.length - 1), Math.max(0, rows.length - 1));
@@ -71,22 +72,22 @@ export function StudioRunPage() {
   }, [playing, index, rows, speed]);
   if (run.error || scenario.error || experiment.error) return <ErrorState error={run.error ?? scenario.error ?? experiment.error} />;
   if (!run.data || !scenario.data || !experiment.data) return <LoadingState />;
-  const visible = rows.slice(0, index + 1).flatMap(item => item.event ? [item.event] : []);
+  const visible = row ? projection.timeline.filter(event => BigInt(event.sequence) <= BigInt(row.event.sequence)) : [];
   const counts = projectionCounts(visible), trends = cumulativeTrends(visible);
   const node = scenario.data.nodes.find(n => n.node_id === selected);
-  const p = node && row ? positionAt(result.data?.visualization?.positions ?? [], node.node_id, row.at) : null;
+  const p = node && row ? positionAt(samples, node.node_id, row.at) : null;
   const progress = Number(BigInt(counts.cycles) * 100n / (BigInt(experiment.data.simulation_cycle_count) || 1n));
   return <div className="studio-product">
     <header className="studio-command"><div><small>仿真工作台 / {runId}</small><h1>{experiment.data.name}</h1></div><Status value={run.data.lifecycle} /><strong>{row ? formatNanoseconds(row.at) : "等待正式事件"}</strong><Link to={`/results/${runId}`}>查看结果 →</Link></header>
     <div className="studio-context">环境 {run.data.environment_asset_id} · 周期 {counts.cycles}/{experiment.data.simulation_cycle_count} · {progress}% · ns-3 事件时间</div>
     {error && (error.kind !== "TransportUnavailable" || run.data.lifecycle !== "Completed") && <ErrorState error={error} />}{result.error && <ErrorState error={result.error} />}
-    <section className="r4-studio-layout"><article className="studio-surface"><StudioCanvas scenario={scenario.data} result={result.data} row={row} events={visible} selected={selected} select={select} range={environment.data?.axes.horizontal_range.maximum} /></article>
-      <aside className="studio-inspector link-inspector"><h2>{node ? "节点位置" : "事件检查器"}</h2>{node ? <><h3>N{node.node_id}</h3><p>{p ? `${p.x_meters.toFixed(3)}, ${p.y_meters.toFixed(3)}, ${p.z_meters.toFixed(3)} m` : "该时刻无位置投影"}</p><p>轨迹绑定资源详情尚未发布。</p></> : <><h3>{row?.title ?? "等待事件"}</h3><p>{row?.event ? `原始序列 ${row.event.sequence}` : row?.fusion ? "来源：正式 FusionResult 完成时刻" : ""}</p></>}
+    <section className="r4-studio-layout"><article className="studio-surface"><StudioCanvas scenario={scenario.data} samples={samples} row={row} events={visible} selected={selected} select={select} range={environment.data?.axes.horizontal_range.maximum} /></article>
+      <aside className="studio-inspector link-inspector"><h2>{node ? "节点位置" : "事件检查器"}</h2>{node ? <><h3>N{node.node_id}</h3><p>{p ? `${p.x_meters.toFixed(3)}, ${p.y_meters.toFixed(3)}, ${p.z_meters.toFixed(3)} m` : "该时刻无位置投影"}</p><p>位置来自正式轨迹查询事件；相邻样本间仅做视觉插值。</p></> : <><h3>{row?.title ?? "等待事件"}</h3><p>{row ? `原始序列 ${row.event.sequence}` : ""}</p><p>{row ? eventTechnicalDetail(row.event) : ""}</p></>}
       <div className="studio-node-buttons">{scenario.data.nodes.map(n => <button key={n.node_id} onClick={() => select(n.node_id)}>N{n.node_id}</button>)}</div><button onClick={() => select(null)}>查看当前通信</button>
-      <h3>观测边界</h3><p>信道查询不代表到达事件。当前未发布 SignalArrival，因此不播放虚构到达动画。</p><p>轨迹位置在结果发布后用于历史回放；运行中未发布的位置不补算。</p></aside></section>
-    <section className="studio-history"><div className="studio-history-controls"><strong>离散事件时间轴</strong><button disabled={!rows.length} onClick={() => { if (index >= rows.length - 1) setCursor(0); play(!playing); }}>{playing ? "暂停回放" : "播放事件"}</button><button onClick={() => { play(false); setCursor(null); }}>最新记录</button><select aria-label="回放速度" value={speed} onChange={e => setSpeed(Number(e.target.value))}>{[0.5, 1, 2, 4].map(s => <option key={s} value={s}>{s}×</option>)}</select><span>{compressed ? "空闲间隔已压缩" : "回放不控制 ns-3"}</span></div>
+      <h3>观测边界</h3><p>ChannelQuery 只表示信道求解；SignalArrival 才表示信号在传播时延后实际到达。</p><p>播放控制只改变观看位置和速度，不推进、暂停或修改 ns-3 仿真。</p></aside></section>
+    <section className="studio-history"><div className="studio-history-controls"><strong>离散事件时间轴</strong><button disabled={!rows.length} onClick={() => { play(false); setCursor(index); }}>暂停观察</button><button disabled={!rows.length || index === 0} onClick={() => { play(false); setCursor(Math.max(0, index - 1)); }}>上一事件</button><button disabled={!rows.length || index >= rows.length - 1} onClick={() => { play(false); setCursor(Math.min(rows.length - 1, index + 1)); }}>下一事件</button><button disabled={!rows.length} onClick={() => { if (playing) { play(false); return; } setCursor(index >= rows.length - 1 ? 0 : index); play(true); }}>{playing ? "暂停回放" : "播放事件"}</button><button onClick={() => { play(false); setCursor(null); }}>实时跟随</button><label>播放速度 <select aria-label="回放速度" value={speed} onChange={e => setSpeed(Number(e.target.value))}>{[0.5, 1, 2, 4].map(s => <option key={s} value={s}>{s}×</option>)}</select></label><span>仿真时间 {row ? formatNanoseconds(row.at) : "等待事件"}</span><span>{compressed ? "空闲间隔已压缩" : cursor === null ? "正在跟随事件流" : "回放不控制 ns-3"}</span></div>
       <input aria-label="按仿真时间定位" type="range" min="0" max="100" step="0.01" value={row ? timePercent(row.at, rows[0].at, rows.at(-1)!.at) : 0} onChange={e => { play(false); setCursor(seekTime(rows, Number(e.target.value))); }} />
-      {(["Transmission", "ChannelOutcome", "Reception", "Fusion", "CycleCommit"] as const).map((kind, lane) => <div className="event-lane" key={kind}><span>{["发送", "信道查询", "接收处理", "融合", "周期提交"][lane]}</span><div>{rows.map((item, i) => item.kind === kind && <button key={item.key} title={`${item.title} · ${formatNanoseconds(item.at)}`} aria-label={`${item.title} · ${item.key}`} className={i === index ? "selected" : ""} style={{ left: `${timePercent(item.at, rows[0].at, rows.at(-1)!.at)}%` }} onClick={() => { play(false); setCursor(i); }} />)}</div></div>)}
+      {(["Transmission", "ChannelOutcome", "SignalArrival", "Reception", "Fusion", "CycleCommit"] as const).map((kind, lane) => <div className="event-lane" key={kind}><span>{["发送", "信道求解", "实际到达", "解调/接收", "融合", "周期提交"][lane]}</span><div>{rows.map((item, i) => item.kind === kind && <button key={item.key} title={`${item.title} · ${formatNanoseconds(item.at)}`} aria-label={`${item.title} · ${item.key}`} className={i === index ? "selected" : ""} style={{ left: `${timePercent(item.at, rows[0].at, rows.at(-1)!.at)}%` }} onClick={() => { play(false); setCursor(i); }} />)}</div></div>)}
     </section><section className="studio-trends"><MiniTrend title="累计发送" unit="次" points={trends.transmissions} empty="暂无发送记录" /><MiniTrend title="接收处理" unit="次" points={trends.receptions} empty="暂无接收记录" /><MiniTrend title="传播时延" unit="s" points={trends.delay} empty="暂无信道记录" /></section>
   </div>;
 }

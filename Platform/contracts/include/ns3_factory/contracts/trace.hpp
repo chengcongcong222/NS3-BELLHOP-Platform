@@ -18,6 +18,9 @@ enum class TraceKind : std::uint8_t {
   kTransmission = 2,
   kChannelOutcome = 3,
   kReception = 4,
+  kSignalArrival = 5,
+  kNodePosition = 6,
+  kFusion = 7,
 };
 
 struct TraceUnicastTransmissionTarget final {
@@ -118,11 +121,47 @@ struct ReceptionTrace final {
       -> bool = default;
 };
 
+struct SignalArrivalTrace final {
+  TransmissionId transmission_id;
+  NodeId receiver_node_id;
+
+  constexpr auto operator==(const SignalArrivalTrace&) const noexcept
+      -> bool = default;
+};
+
+// Trace-owned position summary. It intentionally does not expose MotionState,
+// trajectory owners, or any runtime-internal object.
+struct NodePositionTrace final {
+  NodeId node_id;
+  double x_meters;
+  double y_meters;
+  double z_meters;
+
+  constexpr auto operator==(const NodePositionTrace&) const noexcept
+      -> bool = default;
+};
+
+struct FusionTrace final {
+  std::uint64_t fusion_sequence;
+  NodeId fusion_center_node_id;
+  SimTime started_at;
+  SimTime completed_at;
+  std::uint64_t observation_count;
+  double estimated_target_x_meters;
+  double estimated_target_y_meters;
+
+  constexpr auto operator==(const FusionTrace&) const noexcept
+      -> bool = default;
+};
+
 using TracePayload =
     std::variant<CycleCommitTrace,
                  TransmissionTrace,
                  ChannelOutcomeTrace,
-                 ReceptionTrace>;
+                 ReceptionTrace,
+                 SignalArrivalTrace,
+                 NodePositionTrace,
+                 FusionTrace>;
 
 // A compact, read-only observation value. TraceKind is derived from the
 // payload by Create so the discriminator and payload cannot disagree.
@@ -194,10 +233,10 @@ inline auto TraceEvent::Create(SimTime occurred_at,
           Error{ErrorCode::kInvalidArgument,
                 "ChannelOutcomeTrace signal summary is invalid"});
     }
-  } else {
+  } else if(const auto* reception =
+                std::get_if<ReceptionTrace>(&payload)) {
     kind = TraceKind::kReception;
-    const auto& reception = std::get<ReceptionTrace>(payload);
-    const auto disposition = reception.disposition;
+    const auto disposition = reception->disposition;
     if(disposition != TraceReceptionDisposition::kNotDecoded &&
        disposition != TraceReceptionDisposition::kOverheard &&
        disposition != TraceReceptionDisposition::kLocalDelivery &&
@@ -206,8 +245,8 @@ inline auto TraceEvent::Create(SimTime occurred_at,
           Error{ErrorCode::kInvalidArgument,
                 "ReceptionTrace disposition is invalid"});
     }
-    if(reception.quality) {
-      const auto& quality = *reception.quality;
+    if(reception->quality) {
+      const auto& quality = *reception->quality;
       if(!std::isfinite(quality.signal_to_noise_ratio_db) ||
          !std::isfinite(quality.eb_n0_db) ||
          !std::isfinite(quality.bit_error_rate) ||
@@ -226,6 +265,30 @@ inline auto TraceEvent::Create(SimTime occurred_at,
               Error{ErrorCode::kInvalidArgument,
                     "ReceptionTrace quality source is invalid"});
       }
+    }
+  } else if(std::holds_alternative<SignalArrivalTrace>(payload)) {
+    kind = TraceKind::kSignalArrival;
+  } else if(const auto* position =
+                std::get_if<NodePositionTrace>(&payload)) {
+    kind = TraceKind::kNodePosition;
+    if(!std::isfinite(position->x_meters) ||
+       !std::isfinite(position->y_meters) ||
+       !std::isfinite(position->z_meters)) {
+      return std::unexpected(
+          Error{ErrorCode::kInvalidArgument,
+                "NodePositionTrace coordinates must be finite"});
+    }
+  } else {
+    kind = TraceKind::kFusion;
+    const auto& fusion = std::get<FusionTrace>(payload);
+    if(occurred_at != fusion.completed_at ||
+       fusion.started_at > fusion.completed_at ||
+       fusion.observation_count == 0 ||
+       !std::isfinite(fusion.estimated_target_x_meters) ||
+       !std::isfinite(fusion.estimated_target_y_meters)) {
+      return std::unexpected(
+          Error{ErrorCode::kInvalidArgument,
+                "FusionTrace summary is invalid"});
     }
   }
   return TraceEvent{occurred_at, kind, std::move(payload)};

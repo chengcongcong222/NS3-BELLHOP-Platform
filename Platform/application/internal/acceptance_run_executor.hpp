@@ -50,8 +50,42 @@ class RecordingTraceSink final : public ITraceSink {
   explicit RecordingTraceSink(ITraceSink& downstream) noexcept
       : downstream_(downstream) {}
 
+  void BindPositionSource(
+      const INodeTrajectory& trajectories,
+      std::vector<NodeId> node_ids) noexcept {
+    trajectories_ = &trajectories;
+    node_ids_ = std::move(node_ids);
+  }
+
   auto Emit(const TraceEvent& event) noexcept -> Status override {
-    events.push_back(event);
+    if(trajectories_ != nullptr &&
+       (!last_position_time_ || *last_position_time_ != event.occurred_at())) {
+      for(const auto node_id : node_ids_) {
+        const auto motion = trajectories_->Query(node_id, event.occurred_at());
+        if(!motion) continue;
+        const auto& position = motion->position;
+        const auto position_event = TraceEvent::Create(
+            event.occurred_at(),
+            NodePositionTrace{node_id,
+                              position.x_meters,
+                              position.y_meters,
+                              position.z_meters});
+        if(!position_event) continue;
+        try {
+          events.push_back(*position_event);
+        } catch(...) {
+          // Observation storage failure cannot change simulation causality.
+        }
+        const auto ignored = downstream_.get().Emit(*position_event);
+        static_cast<void>(ignored);
+      }
+      last_position_time_ = event.occurred_at();
+    }
+    try {
+      events.push_back(event);
+    } catch(...) {
+      // Observation storage failure cannot change simulation causality.
+    }
     const auto ignored = downstream_.get().Emit(event);
     (void)ignored;
     return {};
@@ -61,6 +95,9 @@ class RecordingTraceSink final : public ITraceSink {
 
  private:
   std::reference_wrapper<ITraceSink> downstream_;
+  const INodeTrajectory* trajectories_{nullptr};
+  std::vector<NodeId> node_ids_;
+  std::optional<SimTime> last_position_time_;
 };
 
 class FusionCenterEstimator final : public ILinkFeasibilityEstimator {
@@ -361,9 +398,15 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       waveform_tx.emplace(std::move(*created_tx));
       waveform_rx.emplace(std::move(*created_rx));
     }
+    RecordingTraceSink trace{event_sink};
     auto feature_application =
         assembly::internal::AcceptanceFeatureApplication::Create(
-            *config, *queues, *deliveries, contracts::SimTime::Zero());
+            *config,
+            *queues,
+            *deliveries,
+            contracts::SimTime::Zero(),
+            contracts::PacketId{1'000'000},
+            &trace);
     if(!feature_application) {
       return std::unexpected(feature_application.error());
     }
@@ -395,7 +438,6 @@ class AcceptanceRunExecutor final : public IRunExecutor {
                   *waveform_tx, *channel, noise, *waveform_rx, waveform_store)
             : assembly::internal::PhyExecutionComposition::Abstract(
                   *tx_phy, *channel, noise, rx_phy);
-    RecordingTraceSink trace{event_sink};
     assembly::internal::ScenarioRuntime runtime{
         gateway,
         world,
@@ -419,6 +461,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     if(!trajectories) return std::unexpected(trajectories.error());
     auto bound = runtime.BindTrajectories(*trajectories);
     if(!bound) return std::unexpected(bound.error());
+    trace.BindPositionSource(**trajectories, node_ids);
     const auto executed =
         runtime.RunCycles(experiment.simulation_cycle_count());
     if(!executed) return std::unexpected(executed.error());
