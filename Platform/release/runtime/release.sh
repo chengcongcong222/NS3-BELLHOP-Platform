@@ -65,6 +65,7 @@ start() {
   PYTHONPATH="${release_root}/backend/src" PYTHONDONTWRITEBYTECODE=1 \
   PLATFORM_SIM_WORKER="${release_root}/bin/platform_sim_worker" \
   PLATFORM_RESOURCE_CATALOG_ADAPTER="${release_root}/bin/platform_resource_catalog_adapter" \
+  PLATFORM_TRAJECTORY_GENERATOR="${release_root}/bin/platform_trajectory_generator_bridge" \
   PLATFORM_ENVIRONMENT_REPOSITORY="${release_root}/assets/environment-repository" \
   PLATFORM_ACCEPTANCE_BASELINE="${release_root}/acceptance/acceptance4_baseline_v1.json" \
   PLATFORM_ACCEPTANCE_ENVIRONMENT_ASSET_ID="reference-shallow-water-v1" \

@@ -61,6 +61,7 @@ def main() -> None:
     repository = args.environment_repository.resolve()
     worker = build / "worker" / "platform_sim_worker"
     adapter = build / "worker" / "platform_resource_catalog_adapter"
+    trajectory_generator = build / "worker" / "platform_trajectory_generator_bridge"
     backend_python = build / "backend" / "venv" / "bin" / "python"
     npm = root / "frontend" / "scripts" / "npm.sh"
     frontend_dist = root / "frontend" / "dist"
@@ -73,6 +74,7 @@ def main() -> None:
     for path, code in [
         (worker, "WORKER_UNAVAILABLE"),
         (adapter, "RESOURCE_ADAPTER_UNAVAILABLE"),
+        (trajectory_generator, "TRAJECTORY_GENERATOR_UNAVAILABLE"),
         (backend_python, "PYTHON_ENV_UNAVAILABLE"),
         (npm, "NPM_WRAPPER_UNAVAILABLE"),
     ]:

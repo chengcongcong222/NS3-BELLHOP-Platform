@@ -145,6 +145,7 @@ def main() -> None:
 
     copy_file(build / "worker/platform_sim_worker", release_root / "bin/platform_sim_worker", True)
     copy_file(build / "worker/platform_resource_catalog_adapter", release_root / "bin/platform_resource_catalog_adapter", True)
+    copy_file(build / "worker/platform_trajectory_generator_bridge", release_root / "bin/platform_trajectory_generator_bridge", True)
     copy_file(platform / "backend/requirements.lock", release_root / "backend/requirements.lock")
     shutil.copytree(platform / "backend/src", release_root / "backend/src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     shutil.copytree(platform / "third_party/python_wheels/wheels", release_root / "backend/wheels")
@@ -209,7 +210,7 @@ def main() -> None:
     runtime_env = os.environ.copy()
     runtime_env["LD_LIBRARY_PATH"] = str(args.ns3_prefix / "lib")
     binaries: dict[str, dict[str, object]] = {}
-    for name in ("platform_sim_worker", "platform_resource_catalog_adapter"):
+    for name in ("platform_sim_worker", "platform_resource_catalog_adapter", "platform_trajectory_generator_bridge"):
         path = release_root / "bin" / name
         needed = []
         for line in run(["readelf", "-d", str(path)]).splitlines():

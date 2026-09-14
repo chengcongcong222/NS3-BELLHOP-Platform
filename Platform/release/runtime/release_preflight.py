@@ -71,7 +71,8 @@ def main() -> None:
 
     worker = root / "bin/platform_sim_worker"
     adapter = root / "bin/platform_resource_catalog_adapter"
-    for executable in (worker, adapter, root / "release.sh"):
+    trajectory_generator = root / "bin/platform_trajectory_generator_bridge"
+    for executable in (worker, adapter, trajectory_generator, root / "release.sh"):
         if not executable.is_file() or not executable.stat().st_mode & 0o111:
             fail("EXECUTABLE", str(executable))
     environment = os.environ.copy()

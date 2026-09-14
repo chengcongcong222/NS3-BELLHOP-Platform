@@ -63,5 +63,10 @@ app = create_app(
             if os.environ.get("PLATFORM_AUTHORING_REFERENCE_ASSET_ROOT")
             else None
         ),
+        trajectory_generator_executable=(
+            Path(os.environ["PLATFORM_TRAJECTORY_GENERATOR"])
+            if os.environ.get("PLATFORM_TRAJECTORY_GENERATOR")
+            else None
+        ),
     )
 )

@@ -40,7 +40,7 @@ def main(root: Path, expected_revision: str) -> None:
 
     required = [
         "release.sh", "README.md", "MANIFEST.json", "SHA256SUMS",
-        "bin/platform_sim_worker", "bin/platform_resource_catalog_adapter",
+        "bin/platform_sim_worker", "bin/platform_resource_catalog_adapter", "bin/platform_trajectory_generator_bridge",
         "frontend/index.html", "acceptance/acceptance4_baseline_v1.json",
         "assets/environment-repository/reference-shallow-water-v1/field.bin",
         "assets/environment-repository/reference-shallow-water-v1/manifest.txt",
@@ -53,7 +53,7 @@ def main(root: Path, expected_revision: str) -> None:
     ]
     for relative in required:
         assert (root / relative).is_file(), relative
-    for relative in ("release.sh", "bin/platform_sim_worker", "bin/platform_resource_catalog_adapter"):
+    for relative in ("release.sh", "bin/platform_sim_worker", "bin/platform_resource_catalog_adapter", "bin/platform_trajectory_generator_bridge"):
         assert (root / relative).stat().st_mode & 0o111
 
     text_suffixes = {".json", ".md", ".txt", ".py", ".sh", ".lock", ".html", ".css", ".js"}

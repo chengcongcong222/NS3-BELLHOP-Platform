@@ -95,6 +95,7 @@ class BackendSettings:
     frontend_origin: str = "http://127.0.0.1:4173"
     authoring_workspace_root: Path | None = None
     authoring_reference_asset_root: Path | None = None
+    trajectory_generator_executable: Path | None = None
 
 
 class HttpModel(BaseModel):
@@ -464,7 +465,9 @@ def create_app(
     @app.post("/authoring/trajectories/generate", response_model=TrajectoryAsset, status_code=201)
     async def create_generated_trajectory(request: TrajectoryGenerateRequest) -> TrajectoryAsset:
         try:
-            return trajectories.save(generate_trajectory(request))
+            return trajectories.save(generate_trajectory(
+                request, settings.trajectory_generator_executable
+            ))
         except (ValueError, FileExistsError) as error:
             raise CatalogError("TrajectoryAuthoringFailed", str(error)) from error
 

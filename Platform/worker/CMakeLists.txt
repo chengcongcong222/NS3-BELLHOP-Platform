@@ -42,6 +42,15 @@ add_executable(
   platform_resource_catalog_adapter
   adapter/resource_catalog_adapter.cpp
 )
+
+add_executable(
+  platform_trajectory_generator_bridge
+  adapter/trajectory_generator_bridge.cpp
+)
+target_link_libraries(
+  platform_trajectory_generator_bridge
+  PRIVATE Platform::trajectory Platform::third_party_nlohmann_json
+)
 target_include_directories(
   platform_resource_catalog_adapter
   PRIVATE

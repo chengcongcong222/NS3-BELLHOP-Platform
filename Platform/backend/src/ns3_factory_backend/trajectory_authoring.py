@@ -5,7 +5,7 @@ same local-Cartesian, z-up trajectory asset consumed by the trajectory runtime.
 """
 from __future__ import annotations
 
-import csv, hashlib, io, json, math, re, tempfile
+import csv, hashlib, io, json, math, re, subprocess, tempfile
 from pathlib import Path
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -94,35 +94,51 @@ def _waypoint_position(req:GenerateRequest,t:float)->tuple[float,float,float]:
         distance-=length
     return tuple(points[-1])
 
-def _uuv(req:GenerateRequest)->list[Point]:
-    # State is NED [north,east,down,pitch,yaw,u,v,w,q,r]. Fixed-step RK4.
-    s=[req.initial_x_m,req.initial_y_m,-req.initial_z_m,0,0,0,0,0,0,0]
-    mass=req.effective_mass; lin=req.linear_damping; quad=req.quadratic_damping
-    if any(not math.isfinite(v) or v<=0 for v in mass) or any(not math.isfinite(v) or v<0 for v in [*lin,*quad]):
-        raise ValueError("UUV mass must be positive and damping nonnegative finite values")
-    targets=[(float(p[0]),float(p[1]),-float(p[2])) for p in req.waypoints if len(p)==3]
-    def command(x):
-        if req.controller=="Direct" or not targets:return [req.tau_u_n,req.tau_v_n,req.tau_w_n,req.tau_q_nm,req.tau_r_nm]
-        target=targets[-1]; desired=math.atan2(target[1]-x[1],target[0]-x[0]); error=math.remainder(desired-x[4],2*math.pi)
-        return [80*(req.target_speed_mps-x[5]),0,100*(target[2]-x[2])-45*x[7],-35*x[3],90*error-24*x[9]]
-    def derivative(x):
-        ct,st,cp,sp=math.cos(x[3]),math.sin(x[3]),math.cos(x[4]),math.sin(x[4]); tau=command(x); vel=x[5:]
-        kin=[cp*ct*x[5]-sp*x[6]+cp*st*x[7],sp*ct*x[5]+cp*x[6]+sp*st*x[7],-st*x[5]+ct*x[7],x[8],x[9]/ct]
-        cor=[mass[2]*x[7]*x[8]-mass[1]*x[6]*x[9],mass[0]*x[5]*x[9],-mass[0]*x[5]*x[8],0,0]
-        acc=[(tau[i]-cor[i]-lin[i]*vel[i]-quad[i]*abs(vel[i])*vel[i])/mass[i] for i in range(5)]
-        return kin+acc
-    result=[]
-    for t in _times(req.duration_s,req.dt_s):
-        result.append(Point(time_s=t,x_m=s[0],y_m=s[1],z_m=-s[2],pitch_rad=s[3],yaw_rad=s[4],u_mps=s[5],v_mps=s[6],w_mps=s[7],q_radps=s[8],r_radps=s[9]))
-        if t==req.duration_s:break
-        add=lambda a,b,k:[x+k*y for x,y in zip(a,b)]
-        k1=derivative(s);k2=derivative(add(s,k1,req.dt_s/2));k3=derivative(add(s,k2,req.dt_s/2));k4=derivative(add(s,k3,req.dt_s))
-        s=[x+req.dt_s*(a+2*b+2*c+d)/6 for x,a,b,c,d in zip(s,k1,k2,k3,k4)]
-    return result
+def _generate_uuv(req: GenerateRequest, executable: Path | None) -> Asset:
+    if executable is None:
+        raise ValueError("C++ trajectory generator is not configured")
+    if not executable.is_file():
+        raise ValueError("C++ trajectory generator is unavailable")
+    if any(not math.isfinite(v) or v <= 0 for v in req.effective_mass):
+        raise ValueError("UUV effective mass must contain positive finite values")
+    if any(not math.isfinite(v) or v < 0 for v in [*req.linear_damping, *req.quadratic_damping]):
+        raise ValueError("UUV damping must contain nonnegative finite values")
+    if any(len(point) != 3 or not all(math.isfinite(value) for value in point)
+           for point in req.waypoints):
+        raise ValueError("UUV waypoints must contain finite x/y/z triples")
+    payload = {
+        "schema": "ns3-factory-uuv-generation-v1",
+        "asset_id": req.asset_id, "version": req.version, "name": req.name,
+        "track_id": req.track_id, "duration_s": req.duration_s, "dt_s": req.dt_s,
+        "initial_ned": {"north_m": req.initial_x_m, "east_m": req.initial_y_m,
+                        "down_m": -req.initial_z_m},
+        "effective_mass": req.effective_mass,
+        "linear_damping": req.linear_damping,
+        "quadratic_damping": req.quadratic_damping,
+        "controller": ({"type": "Direct", "tau": [req.tau_u_n, req.tau_v_n,
+                        req.tau_w_n, req.tau_q_nm, req.tau_r_nm]}
+                       if req.controller == "Direct" else
+                       {"type": "WaypointPid", "target_speed_mps": req.target_speed_mps,
+                        "waypoints": [[p[0], p[1], -p[2]] for p in req.waypoints]}),
+    }
+    try:
+        completed = subprocess.run(
+            [str(executable)], input=json.dumps(payload, separators=(",", ":")),
+            text=True, capture_output=True, timeout=30, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ValueError(f"C++ trajectory generator failed: {error}") from error
+    if completed.returncode != 0:
+        message = completed.stderr.strip()[:500] or "unknown generator failure"
+        raise ValueError(message)
+    try:
+        return _finalize(Asset.model_validate_json(completed.stdout))
+    except (ValueError, json.JSONDecodeError) as error:
+        raise ValueError("C++ trajectory generator returned an invalid asset") from error
 
-def generate(req:GenerateRequest)->Asset:
+def generate(req:GenerateRequest, uuv_generator: Path | None = None)->Asset:
     times=_times(req.duration_s,req.dt_s)
-    if req.kind=="Uuv5Dof": points=_uuv(req); source="uuv-5dof-rk4-v1"
+    if req.kind=="Uuv5Dof": return _generate_uuv(req, uuv_generator)
     elif req.kind=="Waypoints": points=[Point(time_s=t,x_m=(p:=_waypoint_position(req,t))[0],y_m=p[1],z_m=p[2]) for t in times]; source="waypoint-linear-generator-v1"
     else:
         scale=0 if req.kind=="Fixed" else 1

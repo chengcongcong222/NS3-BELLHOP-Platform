@@ -131,6 +131,11 @@ RK4 积分。`IUuvController` 与 `Uuv5DofPlant` 分离，第一版包括恒定�
 `t,x,y,z`。默认参数明确命名为 Demo preset，仅用于确定性产品演示，不代表任意真实 UUV，
 也不声称来自未纳入仓库的具体论文参数组。
 
+TRJ-02 closeout 后，以上 Plant、Controller 和 RK4 仅在
+`trajectory/include/ns3_factory/trajectory/uuv_5dof.hpp` 实现。Backend 不再包含任何
+UUV 导数或积分代码；它把规范化参数通过 `platform_trajectory_generator_bridge` 交给 C++，
+验证返回 Asset 后原子保存。JSON 仍局限于 worker/backend adapter，不进入 trajectory 或 Runtime。
+
 本轮不实现 ROS、在线动力学、网络反向控制、实时流、FTESO/NMPC 或 Channel2 新算法。
 
 2026-09-11 独立新构建目录最终验证：OFF 67/67 PASS，ON/ns-3.47 101/101 PASS。

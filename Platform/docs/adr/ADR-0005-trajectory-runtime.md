@@ -20,4 +20,7 @@ CSV v1：track_id,time_s,x_m,y_m,z_m；调用方必须指定坐标系、来源�
 
 API 影响：CycleWorkingState 创建及 ScenarioRuntime 装配需提供轨迹查询对象。
 WorldSnapshot、通信 DTO、ChannelQuery 与 ns-3 事件 schema 不变。
-持久化 catalog、前端轨迹建设、坐标变换、实时流、动力学与网络控制留后续阶段。
+P0-TRJ-02 增加离线 authoring：持久化 catalog、前端轨迹建设以及明确的 NED 到平台
+z-up 输出转换。UUV 5-DOF Plant、Controller 与固定步长 RK4 的唯一正式实现位于 C++
+trajectory；Backend 只能经 worker/adapter JSON 子进程桥接调用并持久化结果，不得维护
+第二套动力学。该桥接不进入 Runtime 热路径。实时流与网络控制仍留后续阶段。
