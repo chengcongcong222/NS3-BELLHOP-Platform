@@ -395,6 +395,8 @@ P0-UX-R4 产品展示遵循 ADR-0001 §2.53 的更新：展示真实实验量化
 只读结果投影不得改变运行因果；ChannelOutcome 查询不是 SignalArrival 事件。
 P0-UX-R4-03 的 NodePosition 必须来自正式轨迹在现有 ns-3 事件时刻的查询，
 SignalArrival 必须来自实际到达 callback；前端播放控制不得形成第二套仿真时钟。
+P0-EXP-01 的普通 authored run 必须遵循 ADR-0006：先冻结通用
+RunExecutionDefinition；Acceptance 只能是显式 preset adapter，不能成为隐式 workload。
 
 必须优先：
 

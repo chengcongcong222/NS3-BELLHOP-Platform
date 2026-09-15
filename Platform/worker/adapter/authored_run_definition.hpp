@@ -16,8 +16,8 @@ namespace ns3_factory::worker::adapter {
 
 inline auto LoadAuthoredRunDefinition(
     const std::filesystem::path& path,
-    const internal::AcceptanceWorkerRequest& request)
-    -> contracts::Result<internal::AcceptanceWorkerDefinitions> {
+    const internal::RunExecutionRequest& request)
+    -> contracts::Result<internal::RunExecutionDefinition> {
   using nlohmann::json;
   using namespace contracts;
   try {
@@ -49,16 +49,28 @@ inline auto LoadAuthoredRunDefinition(
     auto scenario = application::ScenarioDefinition::Create(
         request.scenario_id, request.definition_version,
         document.at("scenario_name").get<std::string>(), nodes,
-        request.environment, application::MobilityModel::kConstantVelocity,
+        request.environment, application::MobilityModel::kTrajectoryDriven,
         NodeId{document.at("fusion_center_node_id").get<std::uint64_t>()});
     if(!scenario) return std::unexpected(scenario.error());
 
     const auto& e = document.at("experiment");
+    const auto routing_mode = e.at("routing_mode").get<std::string>();
+    const auto mac_mode = e.at("mac_mode").get<std::string>();
+    const auto workload = e.at("workload").get<std::string>();
+    if((routing_mode != "DirectToFusionCenter" &&
+        routing_mode != "ShortestPath") ||
+       mac_mode != "Tdma" ||
+       (workload != "BearingFusion" && workload != "CommunicationOnly")) {
+      return std::unexpected(Error{ErrorCode::kInvalidArgument,
+          "Authored Experiment selects an unsupported routing, MAC, or workload"});
+    }
     auto experiment = application::ExperimentDefinition::Create(
         request.experiment_id, request.definition_version,
         e.at("name").get<std::string>(),
         {scenario->scenario_id(), scenario->version()},
-        {application::RoutingMode::kDirectToFusionCenter},
+        {routing_mode == "ShortestPath"
+             ? application::RoutingMode::kShortestPath
+             : application::RoutingMode::kDirectToFusionCenter},
         {application::MacMode::kTdma,
          SimDuration::FromNanoseconds(e.at("slot_duration_ns").get<std::int64_t>()),
          SimDuration::FromNanoseconds(e.at("guard_interval_ns").get<std::int64_t>())},
@@ -67,7 +79,9 @@ inline auto LoadAuthoredRunDefinition(
          e.at("occupied_bandwidth_hz").get<double>(),
          e.at("source_level_db").get<double>(),
          request.equivalent_noise_power_db_re_1upa2, request.quality_mode},
-        {application::ApplicationWorkload::kAcceptanceBearingFusion,
+        {workload == "CommunicationOnly"
+             ? application::ApplicationWorkload::kCommunicationOnly
+             : application::ApplicationWorkload::kBearingFusion,
          request.profile, e.value("minimum_bearing_points", 5U),
          SimDuration::FromNanoseconds(e.value("maximum_fusion_period_ns", 180000000000LL)),
          e.value("target_x_m", 200.0), e.value("target_y_m", 150.0),
@@ -110,7 +124,7 @@ inline auto LoadAuthoredRunDefinition(
     }
     auto bound = trajectory::BoundTrajectories::Create(repository, std::move(bindings));
     if(!bound) return std::unexpected(bound.error());
-    return internal::AcceptanceWorkerDefinitions{
+    return internal::RunExecutionDefinition{
         std::move(*scenario), std::move(*experiment), std::move(*bound)};
   } catch(const std::exception& error) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,

@@ -72,7 +72,7 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
     if(!emitted) return ProtocolFailure(emitted.error().message);
     return static_cast<int>(worker::WorkerExitCode::kExecutionFailure);
   }
-  worker::internal::AcceptanceWorkerRequest request{
+  worker::internal::RunExecutionRequest request{
       command->run_id,
       command->scenario_id,
       command->experiment_id,
@@ -87,7 +87,7 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
       command->waveform_modulation,
       command->waveform_noise,
       command->waveform_noise_psd_db_re_1upa2_per_hz};
-  std::optional<worker::internal::AcceptanceWorkerDefinitions> authored;
+  std::optional<worker::internal::RunExecutionDefinition> authored;
   if(command->authored_definition_path) {
     if(std::filesystem::path{*command->authored_definition_path}.filename() !=
        *command->authored_definition_sha256 + ".json") {
@@ -142,7 +142,7 @@ auto main(int argc, char** argv) -> int {
   if(!environments || !run_id || !scenario_id || !experiment_id) {
     return ProtocolFailure("worker input validation failed");
   }
-  worker::internal::AcceptanceWorkerRequest request{
+  worker::internal::RunExecutionRequest request{
       std::move(*run_id),
       std::move(*scenario_id),
       std::move(*experiment_id),

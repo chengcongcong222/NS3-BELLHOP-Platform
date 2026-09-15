@@ -17,6 +17,7 @@
 #include <ns3_factory/contracts/trace.hpp>
 
 #include "internal/acceptance_feature_application.hpp"
+#include "internal/communication_traffic_application.hpp"
 #include "internal/acceptance_run_report.hpp"
 #include "internal/acceptance_scenario_config.hpp"
 #include "internal/acoustic_field_channel_provider.hpp"
@@ -27,6 +28,7 @@
 #include "internal/configured_tdma_policy.hpp"
 #include "internal/connectivity_decision_policy.hpp"
 #include "internal/direct_to_sink_routing_planner.hpp"
+#include "internal/shortest_path_to_sink_routing_planner.hpp"
 #include "internal/discrete_frequency_selector.hpp"
 #include "internal/environment_asset_repository.hpp"
 #include "internal/ns3_kernel_gateway.hpp"
@@ -118,12 +120,12 @@ class FusionCenterEstimator final : public ILinkFeasibilityEstimator {
   NodeId fusion_center_;
 };
 
-class AcceptancePlanner final
+class ConfiguredPlanner final
     : public planning::internal::IProtocolCyclePlanner {
  public:
-  explicit AcceptancePlanner(
-      const assembly::internal::AcceptanceScenarioConfig& config) noexcept
-      : config_(config) {}
+  ConfiguredPlanner(const assembly::internal::AcceptanceScenarioConfig& config,
+                    RoutingMode routing_mode = RoutingMode::kDirectToFusionCenter) noexcept
+      : config_(config), routing_mode_(routing_mode) {}
 
   auto Build(const WorldSnapshot& snapshot,
              const StructureSnapshot& structure) const
@@ -134,9 +136,14 @@ class AcceptancePlanner final
         std::vector<NodeId>{config_.get().sensor_node_ids().begin(),
                             config_.get().sensor_node_ids().end()});
     if(!policy) return std::unexpected(policy.error());
-    const planning::internal::DirectToSinkRoutingPlanner routing;
     const planning::internal::ConfiguredTdmaMacPlanner mac{
         std::move(*policy)};
+    if(routing_mode_ == RoutingMode::kShortestPath) {
+      const planning::internal::ShortestPathToSinkRoutingPlanner routing;
+      return planning::internal::CompositeProtocolCyclePlanner{routing, mac}
+          .Build(snapshot, structure);
+    }
+    const planning::internal::DirectToSinkRoutingPlanner routing;
     return planning::internal::CompositeProtocolCyclePlanner{routing, mac}
         .Build(snapshot, structure);
   }
@@ -145,7 +152,10 @@ class AcceptancePlanner final
   std::reference_wrapper<
       const assembly::internal::AcceptanceScenarioConfig>
       config_;
+  RoutingMode routing_mode_;
 };
+
+using AcceptancePlanner = ConfiguredPlanner;
 
 class ConstantNoise final : public INoiseFieldProvider {
  public:
@@ -263,7 +273,8 @@ class DeterministicRxPhy final : public IRxPhy {
           experiment.mac().guard_interval,
           experiment.network_update_interval_cycles(),
           experiment.fusion().maximum_ber,
-          experiment.fusion().minimum_bearing_points,
+          experiment.fusion().workload == ApplicationWorkload::kCommunicationOnly
+              ? 5U : experiment.fusion().minimum_bearing_points,
           experiment.fusion().maximum_fusion_period,
           experiment.fusion().target_x_meters,
           experiment.fusion().target_y_meters,
@@ -283,19 +294,19 @@ struct WaveformExecutionOptions final {
   phy::internal::IWaveformReceptionObserver* observer = nullptr;
 };
 
-class AcceptanceRunExecutor final : public IRunExecutor {
+class RunExecutionExecutor final : public IRunExecutor {
  public:
-  explicit AcceptanceRunExecutor(
+  explicit RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments)
       noexcept
       : environments_(environments) {}
 
-  AcceptanceRunExecutor(
+  RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments,
       WaveformExecutionOptions waveform)
       : environments_(environments), waveform_(std::move(waveform)) {}
 
-  AcceptanceRunExecutor(
+  RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments,
       std::shared_ptr<const contracts::INodeTrajectory> trajectories,
       std::optional<WaveformExecutionOptions> waveform = std::nullopt)
@@ -407,16 +418,24 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       waveform_rx.emplace(std::move(*created_rx));
     }
     RecordingTraceSink trace{event_sink};
-    auto feature_application =
-        assembly::internal::AcceptanceFeatureApplication::Create(
+    const bool bearing_fusion =
+        experiment.fusion().workload != ApplicationWorkload::kCommunicationOnly;
+    auto feature_application = assembly::internal::AcceptanceFeatureApplication::Create(
             *config,
             *queues,
             *deliveries,
             contracts::SimTime::Zero(),
             contracts::PacketId{1'000'000},
             &trace);
-    if(!feature_application) {
+    if(bearing_fusion && !feature_application) {
       return std::unexpected(feature_application.error());
+    }
+    std::optional<assembly::internal::CommunicationTrafficApplication> traffic_application;
+    if(!bearing_fusion) {
+      traffic_application.emplace(
+          std::vector<contracts::NodeId>{config->sensor_node_ids().begin(),
+                                         config->sensor_node_ids().end()},
+          config->fusion_center_node_id(), *queues);
     }
 
     kernel::internal::Ns3KernelGateway gateway;
@@ -429,7 +448,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     structure::internal::SingleSinkStarTopologyPolicy topology;
     structure::internal::StructureBuilder structure_builder{
         *connectivity, estimator, roles, topology};
-    AcceptancePlanner planner{*config};
+    ConfiguredPlanner planner{*config, experiment.routing().mode};
     ConstantNoise noise{
         experiment.phy().equivalent_noise_power_db_re_1upa2};
     DeterministicRxPhy deterministic_rx;
@@ -458,7 +477,9 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         contracts::PlanningCycleId{0},
         &trace,
         experiment.network_update_interval_cycles(),
-        &*feature_application};
+        bearing_fusion
+            ? static_cast<assembly::internal::IScenarioCycleApplication*>(&*feature_application)
+            : static_cast<assembly::internal::IScenarioCycleApplication*>(&*traffic_application)};
     const auto duration_ns = config->communication_cycle_duration().nanoseconds();
     if(experiment.simulation_cycle_count() >
        static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max() / duration_ns))
@@ -478,18 +499,21 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         runtime.RunCycles(experiment.simulation_cycle_count());
     if(!executed) return std::unexpected(executed.error());
 
+    const assembly::internal::FusionResultStore empty_fusion_results;
+    const auto& fusion_store = bearing_fusion
+        ? feature_application->fusion_result_store() : empty_fusion_results;
     auto projection = assembly::internal::AcceptanceRunProjection::Build(
-        *config,
-        experiment.phy().bit_rate_bits_per_second,
-        trace.events,
-        feature_application->fusion_result_store(),
-        world.current_snapshot());
+        *config, experiment.phy().bit_rate_bits_per_second, trace.events,
+        fusion_store, world.current_snapshot());
     if(!projection) return std::unexpected(projection.error());
-    const auto report =
-        assembly::internal::BuildAcceptanceRunReport(*projection);
+    const auto report = bearing_fusion
+        ? assembly::internal::BuildAcceptanceRunReport(*projection)
+        : std::optional<assembly::internal::AcceptanceRunReport>{};
 
     std::vector<FusionResultSummary> fusion_results;
-    for(const auto& result : feature_application->fusion_results()) {
+    const auto fusion_results_view = bearing_fusion
+        ? feature_application->fusion_results() : std::span<const assembly::internal::FusionResult>{};
+    for(const auto& result : fusion_results_view) {
       fusion_results.push_back(FusionResultSummary{
           result.fusion_sequence,
           result.started_at,
@@ -507,9 +531,10 @@ class AcceptanceRunExecutor final : public IRunExecutor {
           node.node_id == scenario.fusion_center_node_id()});
     }
     RunVisualization visualization;
-    visualization.generated_feature_count = feature_application->generated_reports().size();
+    visualization.generated_feature_count = bearing_fusion
+        ? feature_application->generated_reports().size() : 0U;
     visualization.waveform = std::move(result_observer.rows);
-    for(const auto& fused : feature_application->fusion_results()) {
+    for(const auto& fused : fusion_results_view) {
       for(const auto& identity : fused.observation_identities) {
         visualization.fusion_sources.push_back({fused.fusion_sequence,
             identity.sender_node_id, identity.observation_sequence});
@@ -517,7 +542,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     }
     std::vector<contracts::SimTime> sample_times{projection->run_started_at(), projection->run_ended_at()};
     for(const auto& event : trace.events) sample_times.push_back(event.occurred_at());
-    for(const auto& fused : feature_application->fusion_results()) sample_times.push_back(fused.completed_at);
+    for(const auto& fused : fusion_results_view) sample_times.push_back(fused.completed_at);
     std::sort(sample_times.begin(), sample_times.end());
     sample_times.erase(std::unique(sample_times.begin(), sample_times.end()), sample_times.end());
     // Bounded terminal read projection, never a new Runtime sampling loop.
@@ -559,5 +584,10 @@ class AcceptanceRunExecutor final : public IRunExecutor {
   std::optional<WaveformExecutionOptions> waveform_;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
 };
+
+// Compatibility name for preset-focused callers. Both paths now execute the
+// same generic ExperimentDefinition.
+using AcceptanceRunExecutor = RunExecutionExecutor;
+using AcceptancePlanner = acceptance_run_executor_detail::ConfiguredPlanner;
 
 }  // namespace ns3_factory::application::internal

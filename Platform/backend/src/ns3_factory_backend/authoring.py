@@ -183,6 +183,24 @@ def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
             issues.append("波形调制方式无效")
         if payload.get("waveform_noise", "None") not in {"None", "Awgn"}:
             issues.append("波形噪声配置无效")
+        if payload.get("routing_mode", "DirectToFusionCenter") not in {
+            "DirectToFusionCenter", "ShortestPath"
+        }:
+            issues.append("路由方式尚未接入正式 Runtime")
+        if payload.get("mac_mode", "Tdma") != "Tdma":
+            issues.append("MAC 方式尚未接入正式 Runtime")
+        if payload.get("workload", "BearingFusion") not in {
+            "BearingFusion", "CommunicationOnly"
+        }:
+            issues.append("业务负载无效")
+        if payload.get("workload", "BearingFusion") == "BearingFusion":
+            try:
+                if int(payload.get("minimum_bearing_points", 5)) < 5:
+                    issues.append("最小方位观测数不得小于 5")
+                if int(payload.get("maximum_fusion_period_ns", 180_000_000_000)) <= 0:
+                    issues.append("融合周期必须是正整数纳秒")
+            except (TypeError, ValueError):
+                issues.append("融合参数无效")
         try:
             waveform_noise = float(
                 payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)

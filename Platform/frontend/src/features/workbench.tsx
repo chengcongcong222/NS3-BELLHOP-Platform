@@ -151,7 +151,7 @@ export function ScenarioWorkspacePage() {
 
 function defaultExperiment(experiments: readonly ExperimentDto[]): ExperimentDraft {
   if (experiments[0]) return experimentDraftFrom(experiments[0]);
-  return { kind: "experiment", id: `experiment-draft-${Date.now()}`, name: "未命名实验", sourceExperimentId: null, scenarioId: "", provenance: { kind: "new", label: "新建" }, routingMode: "DirectToFusionCenter", macMode: "Tdma", bitRateBitsPerSecond: "60", centerFrequencyHz: 25000, occupiedBandwidthHz: 4000, sourceLevelDb: 110, guardIntervalNs: "2000000000", simulationCycleCount: "2", deterministicSeed: "1", networkUpdateIntervalCycles: "10", updatedAt: new Date().toISOString() };
+  return { kind: "experiment", id: `experiment-draft-${Date.now()}`, name: "未命名实验", sourceExperimentId: null, scenarioId: "", provenance: { kind: "new", label: "新建" }, routingMode: "DirectToFusionCenter", macMode: "Tdma", workload: "BearingFusion", minimumBearingPoints: "5", maximumFusionPeriodNs: "180000000000", bitRateBitsPerSecond: "60", centerFrequencyHz: 25000, occupiedBandwidthHz: 4000, sourceLevelDb: 110, guardIntervalNs: "2000000000", simulationCycleCount: "2", deterministicSeed: "1", networkUpdateIntervalCycles: "10", updatedAt: new Date().toISOString() };
 }
 
 export function ExperimentWorkspacePage() {

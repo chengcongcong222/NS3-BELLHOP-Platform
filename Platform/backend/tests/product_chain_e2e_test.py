@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from pathlib import Path
 
@@ -81,10 +82,14 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
             })
             assert scenario.json()["validation_issues"] == []
 
-            async def execute(physical_layer: str) -> tuple[dict, dict]:
+            async def execute(physical_layer: str, workload: str,
+                              routing: str) -> tuple[dict, dict]:
                 experiment = await client.post("/authoring/drafts", json={
-                    "kind": "experiment", "name": f"E2E {physical_layer}",
+                    "kind": "experiment", "name": f"E2E {physical_layer} {workload}",
                     "payload": {"scenario_id": scenario.json()["draft_id"],
+                        "routing_mode": routing, "mac_mode": "Tdma",
+                        "workload": workload, "minimum_bearing_points": "5",
+                        "maximum_fusion_period_ns": "180000000000",
                         "bit_rate_bits_per_second": "60", "simulation_cycle_count": "1",
                         "deterministic_seed": "23", "physical_layer": physical_layer,
                         "waveform_modulation": "Bpsk", "waveform_noise": "None",
@@ -100,10 +105,29 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
                 result = (await client.get(f"/runs/{terminal['run_id']}/results")).json()
                 return terminal, result
 
-            _, channel1 = await execute("Channel1Abstract")
-            assert channel1["visualization"]["positions"]
-            _, channel2 = await execute("Channel2Waveform")
-            assert channel2["visualization"]["waveform"]
+            _, communication_channel1 = await execute(
+                "Channel1Abstract", "CommunicationOnly", "DirectToFusionCenter")
+            assert communication_channel1["visualization"]["positions"]
+            assert communication_channel1["acceptance_report"] is None
+            assert communication_channel1["fusion_results"] == []
+            _, communication_channel2 = await execute(
+                "Channel2Waveform", "CommunicationOnly", "ShortestPath")
+            assert communication_channel2["visualization"]["waveform"]
+            assert communication_channel2["fusion_results"] == []
+            _, fusion_channel1 = await execute(
+                "Channel1Abstract", "BearingFusion", "ShortestPath")
+            assert int(fusion_channel1["visualization"]["generated_feature_count"]) > 0
+            _, fusion_channel2 = await execute(
+                "Channel2Waveform", "BearingFusion", "DirectToFusionCenter")
+            assert fusion_channel2["visualization"]["waveform"]
+
+            definitions = [json.loads(path.read_text()) for path in
+                           (workspace / "run-definitions").glob("*.json")]
+            assert {item["experiment"]["workload"] for item in definitions} == {
+                "CommunicationOnly", "BearingFusion"}
+            assert {item["experiment"]["routing_mode"] for item in definitions} == {
+                "DirectToFusionCenter", "ShortestPath"}
+            assert {item["experiment"]["mac_mode"] for item in definitions} == {"Tdma"}
 
             broken = await client.post("/authoring/drafts", json={
                 "kind": "scenario", "name": "Broken",

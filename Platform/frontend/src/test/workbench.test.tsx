@@ -76,6 +76,9 @@ describe("simulation workbench user journeys", () => {
     renderRoute("/workspace/experiment");
     expect(await screen.findByText("通信与物理层")).toBeTruthy();
     expect((screen.getByLabelText("通信速率（bit/s）") as HTMLInputElement).disabled).toBe(true);
+    await userEvent.selectOptions(screen.getByLabelText("业务负载"), "CommunicationOnly");
+    expect(screen.queryByText("最小方位观测数")).toBeNull();
+    await userEvent.selectOptions(screen.getByLabelText("路由"), "ShortestPath");
     await userEvent.selectOptions(screen.getByLabelText("物理层实现"), "Channel2Waveform");
     await userEvent.selectOptions(screen.getByLabelText("波形噪声"), "Awgn");
     await userEvent.clear(screen.getByLabelText("噪声 PSD（dB re 1 μPa²/Hz）"));
@@ -85,6 +88,8 @@ describe("simulation workbench user journeys", () => {
     const payload = JSON.parse(String(write?.[1]?.body)).payload;
     expect(payload.physical_layer).toBe("Channel2Waveform");
     expect(payload.waveform_noise_psd_db_re_1upa2_per_hz).toBe(75);
+    expect(payload.workload).toBe("CommunicationOnly");
+    expect(payload.routing_mode).toBe("ShortestPath");
     await userEvent.click(await screen.findByRole("button", { name: "使用 Channel2 运行已保存草稿" }));
     expect(fetchMock).toHaveBeenCalledWith("/authoring/experiments/experiment-waveform/runs", expect.objectContaining({ method: "POST" }));
   });

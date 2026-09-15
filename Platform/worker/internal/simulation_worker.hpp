@@ -20,7 +20,7 @@
 
 namespace ns3_factory::worker::internal {
 
-struct AcceptanceWorkerRequest final {
+struct RunExecutionRequest final {
   application::RunId run_id;
   application::ScenarioId scenario_id;
   application::ExperimentId experiment_id;
@@ -37,7 +37,7 @@ struct AcceptanceWorkerRequest final {
   double waveform_noise_psd_db_re_1upa2_per_hz;
 };
 
-struct AcceptanceWorkerDefinitions final {
+struct RunExecutionDefinition final {
   application::ScenarioDefinition scenario;
   application::ExperimentDefinition experiment;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories;
@@ -49,9 +49,9 @@ struct WorkerExecutionSnapshot final {
   std::vector<application::RunEventRecord> events;
 };
 
-[[nodiscard]] inline auto MakeAcceptanceWorkerDefinitions(
-    const AcceptanceWorkerRequest& request)
-    -> contracts::Result<AcceptanceWorkerDefinitions> {
+[[nodiscard]] inline auto MakeAcceptancePresetDefinition(
+    const RunExecutionRequest& request)
+    -> contracts::Result<RunExecutionDefinition> {
   auto scenario = application::internal::MakeAcceptanceScenarioPreset(
       request.profile,
       request.scenario_id,
@@ -93,7 +93,7 @@ struct WorkerExecutionSnapshot final {
     }
     experiment = std::move(waveform_experiment);
   }
-  return AcceptanceWorkerDefinitions{std::move(*scenario),
+  return RunExecutionDefinition{std::move(*scenario),
                                      std::move(*experiment), nullptr};
 }
 
@@ -109,9 +109,9 @@ class SimulationWorker final {
     return last_execution_;
   }
 
-  [[nodiscard]] auto Run(const AcceptanceWorkerRequest& request,
+  [[nodiscard]] auto Run(const RunExecutionRequest& request,
                          IWorkerMessageSink& output,
-                         std::optional<AcceptanceWorkerDefinitions> authored = std::nullopt)
+                         std::optional<RunExecutionDefinition> authored = std::nullopt)
       -> contracts::Status {
     if(used_) {
       return std::unexpected(
@@ -124,8 +124,8 @@ class SimulationWorker final {
       return std::unexpected(emitted.error());
     }
     auto definitions = authored
-        ? contracts::Result<AcceptanceWorkerDefinitions>{std::move(*authored)}
-        : MakeAcceptanceWorkerDefinitions(request);
+        ? contracts::Result<RunExecutionDefinition>{std::move(*authored)}
+        : MakeAcceptancePresetDefinition(request);
     if(!definitions) {
       return EmitFailure(request.run_id,
                          WorkerFailureCategory::kComposition,
@@ -187,14 +187,14 @@ class SimulationWorker final {
               1'000'000},
           nullptr});
     }
-    application::internal::AcceptanceRunExecutor executor = definitions->trajectories
-        ? application::internal::AcceptanceRunExecutor{
+    application::internal::RunExecutionExecutor executor = definitions->trajectories
+        ? application::internal::RunExecutionExecutor{
               environments_.get(), definitions->trajectories,
               std::move(waveform_options)}
         : waveform_options
-              ? application::internal::AcceptanceRunExecutor{
+              ? application::internal::RunExecutionExecutor{
                     environments_.get(), std::move(*waveform_options)}
-              : application::internal::AcceptanceRunExecutor{environments_.get()};
+              : application::internal::RunExecutionExecutor{environments_.get()};
     application::RunService service{
         scenarios, experiments, runs, executor, events};
     const auto reference = application::ExperimentReference{
@@ -315,5 +315,13 @@ class SimulationWorker final {
   std::optional<WorkerExecutionSnapshot> last_execution_;
   bool used_{false};
 };
+
+using AcceptanceWorkerRequest = RunExecutionRequest;
+using AcceptanceWorkerDefinitions = RunExecutionDefinition;
+[[nodiscard]] inline auto MakeAcceptanceWorkerDefinitions(
+    const RunExecutionRequest& request)
+    -> contracts::Result<RunExecutionDefinition> {
+  return MakeAcceptancePresetDefinition(request);
+}
 
 }  // namespace ns3_factory::worker::internal

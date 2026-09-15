@@ -27,6 +27,7 @@ struct EnvironmentReference final {
 
 enum class MobilityModel : std::uint8_t {
   kConstantVelocity = 1,
+  kTrajectoryDriven = 2,
 };
 
 struct ScenarioReference final {
@@ -111,6 +112,7 @@ class ScenarioDefinition final {
 
 enum class RoutingMode : std::uint8_t {
   kDirectToFusionCenter = 1,
+  kShortestPath = 2,
 };
 
 enum class MacMode : std::uint8_t {
@@ -124,6 +126,8 @@ enum class RxQualityMode : std::uint8_t {
 
 enum class ApplicationWorkload : std::uint8_t {
   kAcceptanceBearingFusion = 1,
+  kBearingFusion = 2,
+  kCommunicationOnly = 3,
 };
 
 enum class AcceptanceProfile : std::uint8_t {
@@ -280,7 +284,8 @@ inline auto ScenarioDefinition::Create(
     -> contracts::Result<ScenarioDefinition> {
   if(version == 0U || name.empty() || nodes.empty() ||
      environment.asset_id.empty() || environment.asset_format_version == 0U ||
-     mobility_model != MobilityModel::kConstantVelocity) {
+     (mobility_model != MobilityModel::kConstantVelocity &&
+      mobility_model != MobilityModel::kTrajectoryDriven)) {
     return std::unexpected(
         contracts::Error{contracts::ErrorCode::kInvalidArgument,
                          "Scenario definition metadata is invalid"});
@@ -352,7 +357,8 @@ inline auto ExperimentDefinition::Create(
     std::uint64_t deterministic_seed)
     -> contracts::Result<ExperimentDefinition> {
   if(version == 0U || scenario.scenario_version == 0U || name.empty() ||
-     routing.mode != RoutingMode::kDirectToFusionCenter ||
+     (routing.mode != RoutingMode::kDirectToFusionCenter &&
+      routing.mode != RoutingMode::kShortestPath) ||
      mac.mode != MacMode::kTdma ||
      mac.slot_duration <= contracts::SimDuration::Zero() ||
      mac.guard_interval < contracts::SimDuration::Zero() ||
@@ -364,10 +370,13 @@ inline auto ExperimentDefinition::Create(
      phy.center_frequency_hz <= 0.0 || phy.occupied_bandwidth_hz <= 0.0 ||
      (phy.quality_mode != RxQualityMode::kNone &&
       phy.quality_mode != RxQualityMode::kModeledBpskAwgn) ||
-     fusion.workload != ApplicationWorkload::kAcceptanceBearingFusion ||
+     (fusion.workload != ApplicationWorkload::kAcceptanceBearingFusion &&
+      fusion.workload != ApplicationWorkload::kBearingFusion &&
+      fusion.workload != ApplicationWorkload::kCommunicationOnly) ||
      (fusion.acceptance_profile != AcceptanceProfile::kAcceptance4Node &&
       fusion.acceptance_profile != AcceptanceProfile::kExtended6Node) ||
-     fusion.minimum_bearing_points < 5U ||
+     (fusion.workload != ApplicationWorkload::kCommunicationOnly &&
+      fusion.minimum_bearing_points < 5U) ||
      fusion.maximum_fusion_period <= contracts::SimDuration::Zero() ||
      !std::isfinite(fusion.target_x_meters) ||
      !std::isfinite(fusion.target_y_meters) ||

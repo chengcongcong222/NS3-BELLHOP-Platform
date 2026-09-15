@@ -838,6 +838,9 @@ const experimentInitial: ExperimentDraft = {
   provenance: { kind: "new", label: "新建" },
   routingMode: "DirectToFusionCenter",
   macMode: "Tdma",
+  workload: "BearingFusion",
+  minimumBearingPoints: "5",
+  maximumFusionPeriodNs: "180000000000",
   bitRateBitsPerSecond: "60",
   centerFrequencyHz: 25000,
   occupiedBandwidthHz: 4000,
@@ -871,6 +874,9 @@ export function ExperimentAuthoringPage() {
     scenario_id: value.scenarioId,
     routing_mode: value.routingMode,
     mac_mode: value.macMode,
+    workload: value.workload,
+    minimum_bearing_points: value.minimumBearingPoints,
+    maximum_fusion_period_ns: value.maximumFusionPeriodNs,
     bit_rate_bits_per_second: value.bitRateBitsPerSecond,
     center_frequency_hz: value.centerFrequencyHz,
     occupied_bandwidth_hz: value.occupiedBandwidthHz,
@@ -951,27 +957,36 @@ export function ExperimentAuthoringPage() {
               <label>
                 路由
                 <select
-                  disabled
                   value={value.routingMode}
                   onChange={(e) => set("routingMode", e.target.value)}
                 >
                   <option value="DirectToFusionCenter">直接到融合中心</option>
-                  <option disabled>AODV（运行内核暂未接入）</option>
-                  <option disabled>OLSR（运行内核暂未接入）</option>
+                  <option value="ShortestPath">最短路径到融合中心</option>
                 </select>
               </label>
               <label>
                 MAC
                 <select
-                  disabled
                   value={value.macMode}
                   onChange={(e) => set("macMode", e.target.value)}
                 >
                   <option value="Tdma">TDMA</option>
-                  <option disabled>ALOHA（运行内核暂未接入）</option>
-                  <option disabled>CSMA（运行内核暂未接入）</option>
                 </select>
               </label>
+              <label>
+                业务负载
+                <select aria-label="业务负载" value={value.workload}
+                  onChange={(e) => set("workload", e.target.value as ExperimentDraft["workload"])}>
+                  <option value="CommunicationOnly">纯网络通信</option>
+                  <option value="BearingFusion">方位特征融合</option>
+                </select>
+              </label>
+              {value.workload === "BearingFusion" && <>
+                <label>最小方位观测数<input value={value.minimumBearingPoints}
+                  onChange={(e) => set("minimumBearingPoints", e.target.value)} /></label>
+                <label>融合周期上限（ns）<input value={value.maximumFusionPeriodNs}
+                  onChange={(e) => set("maximumFusionPeriodNs", e.target.value)} /></label>
+              </>}
               <label>
                 网络更新周期
                 <input
