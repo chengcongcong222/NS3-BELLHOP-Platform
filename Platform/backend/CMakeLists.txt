@@ -67,6 +67,7 @@ if(BUILD_TESTING)
       "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH=$<TARGET_FILE:platform_worker_test_asset_builder>"
       "PLATFORM_REFERENCE_ENVIRONMENT_BUILDER_PATH=$<TARGET_FILE:platform_reference_environment_builder>"
       "PLATFORM_TRAJECTORY_GENERATOR_PATH=$<TARGET_FILE:platform_trajectory_generator_bridge>"
+      "PLATFORM_ENVIRONMENT_ASSET_PUBLISHER_PATH=$<TARGET_FILE:platform_environment_asset_publisher>"
       "PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT=${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1"
   )
   if(PLATFORM_NS3_AVAILABLE)

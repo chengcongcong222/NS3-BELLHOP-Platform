@@ -14,6 +14,7 @@ log_dir="${state_dir}/logs"
 worker="${build_dir}/worker/platform_sim_worker"
 adapter="${build_dir}/worker/platform_resource_catalog_adapter"
 trajectory_generator="${build_dir}/worker/platform_trajectory_generator_bridge"
+environment_publisher="${build_dir}/worker/platform_environment_asset_publisher"
 asset_builder="${build_dir}/environment/platform_reference_environment_builder"
 reference_environment_assets="${platform_root}/environment/assets/reference_shallow_water_v1"
 acceptance_environment_asset_id="reference-shallow-water-v1"
@@ -79,6 +80,7 @@ start() {
   PLATFORM_ENVIRONMENT_REPOSITORY="${environment_repository}" \
   PLATFORM_RESOURCE_CATALOG_ADAPTER="${adapter}" \
   PLATFORM_TRAJECTORY_GENERATOR="${trajectory_generator}" \
+  PLATFORM_ENVIRONMENT_ASSET_PUBLISHER="${environment_publisher}" \
   PLATFORM_ACCEPTANCE_BASELINE="${platform_root}/acceptance/acceptance4_baseline_v1.json" \
   PLATFORM_ACCEPTANCE_ENVIRONMENT_ASSET_ID="${acceptance_environment_asset_id}" \
   PLATFORM_SOURCE_REVISION="${source_revision}" \

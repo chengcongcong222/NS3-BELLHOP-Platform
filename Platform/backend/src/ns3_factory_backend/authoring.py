@@ -161,6 +161,12 @@ def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
             issues.append("场景至少需要一个节点")
         if not str(payload.get("environment_asset_id") or "").strip():
             issues.append("场景必须绑定已发布环境")
+        bindings = payload.get("trajectory_bindings")
+        node_ids = {str(node.get("node_id")) for node in nodes or [] if isinstance(node, dict)}
+        if not isinstance(bindings, list) or {
+            str(binding.get("node_id")) for binding in bindings if isinstance(binding, dict)
+        } != node_ids:
+            issues.append("每个节点必须且只能绑定一条正式轨迹")
     elif kind == "experiment":
         if not str(payload.get("scenario_id") or "").strip():
             issues.append("实验必须绑定场景")
@@ -302,6 +308,12 @@ class AuthoringStore:
             return json.loads(target.read_text(encoding="utf-8"))
         _atomic_json(target, artifact)
         return artifact
+
+    def get_published(self, kind: DraftKind, published_id: str) -> dict[str, Any]:
+        path = self.root / "published" / kind / f"{_safe_id(published_id)}.json"
+        if not path.is_file():
+            raise KeyError(published_id)
+        return json.loads(path.read_text(encoding="utf-8"))
 
 
 def parse_two_column_text(content: str, kind: Literal["ssp", "bathymetry"]) -> list[dict[str, float]]:
@@ -476,7 +488,7 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
                 execution = "Executed"
             digest = hashlib.sha256(arrivals.read_bytes()).hexdigest()
             validation = json.loads((reference_root / "validation_report.json").read_text(encoding="utf-8"))
-            asset_id = "reference-shallow-water-v1"
+            asset_id = f"{_safe_id(draft.name)}-{draft.draft_id}-r{draft.revision}"
         else:
             executable = request.bellhop_executable or os.environ.get("PLATFORM_BELLHOP_EXECUTABLE")
             if not executable:
@@ -494,7 +506,7 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
         # Parsing/normalizing authority remains the Platform environment importer.
         build.steps[4].state = "Completed"; build.state = "Normalizing"; store.save_build(build)
         build.state = "ValidatingAsset"; build.steps[5].state = "Running"; store.save_build(build)
-        build.artifact = {"environment_asset_id": asset_id, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "validation": validation, "source_draft_id": draft.draft_id, "published": False}
+        build.artifact = {"environment_asset_id": asset_id, "asset_format_version": 1, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "arrivals_path": str(arrivals.resolve()), "validation": validation, "source_draft_id": draft.draft_id, "source_revision": draft.revision, "published": False}
         build.steps[5].state = "Completed"; build.state = "Completed"; build.updated_at = _now(); store.save_build(build)
     except Exception as error:
         for step in build.steps:

@@ -708,6 +708,7 @@ const scenarioInitial = (
 
 export function ScenarioAuthoringPage() {
   const environments = useQuery(queries.environments());
+  const trajectories = useQuery(queries.trajectories());
   const scenarios = useQuery(queries.scenarios());
   const drafts = useQuery(queries.drafts("scenario"));
   const [params] = useSearchParams();
@@ -737,6 +738,7 @@ export function ScenarioAuthoringPage() {
         environmentAssetId: String(p.environment_asset_id ?? ""),
         fusionCenterNodeId: String(p.fusion_center_node_id ?? "0"),
         nodes: p.nodes ?? [],
+        trajectoryBindings: p.trajectory_bindings ?? [],
         provenance: { kind: "new", label: "新建" },
         updatedAt: selected.updated_at,
       });
@@ -748,10 +750,7 @@ export function ScenarioAuthoringPage() {
         environment_asset_id: value!.environmentAssetId,
         fusion_center_node_id: value!.fusionCenterNodeId,
         nodes: value!.nodes,
-        trajectory_binding: {
-          state: "GeneratedBeforeRun",
-          catalog_reference: null,
-        },
+        trajectory_bindings: value!.trajectoryBindings ?? [],
       };
       return server
         ? apiClient.updateDraft(server, value!.name, payload)
@@ -764,12 +763,12 @@ export function ScenarioAuthoringPage() {
   });
   if (
     !value ||
-    environments.isPending ||
+    environments.isPending || trajectories.isPending ||
     scenarios.isPending ||
     drafts.isPending
   )
     return <LoadingState />;
-  const error = environments.error || scenarios.error || drafts.error;
+  const error = environments.error || trajectories.error || scenarios.error || drafts.error;
   if (error) return <ErrorState error={error} />;
   const env = environments.data.find(
     (x) => x.environment_asset_id === value.environmentAssetId,
@@ -803,9 +802,7 @@ export function ScenarioAuthoringPage() {
             ))}
           </select>
         </label>
-        <span className="trajectory-binding-state">
-          轨迹绑定：运行前由正式轨迹服务生成；资源 catalog 尚未公开
-        </span>
+        <span className="trajectory-binding-state">轨迹绑定：正式 Asset / version / track</span>
         <button onClick={() => save.mutate()} disabled={save.isPending}>
           保存场景
         </button>
@@ -816,6 +813,12 @@ export function ScenarioAuthoringPage() {
         maximumDepthMeters={env?.axes.receiver_depth.maximum}
         maximumRangeMeters={env?.axes.horizontal_range.maximum}
       />
+      <section className="panel compact-form"><h2>节点轨迹绑定</h2>
+        {value.nodes.map((node) => { const current=value.trajectoryBindings?.find(x=>x.node_id===node.node_id); return <label key={node.node_id}>N{node.node_id}
+          <select value={current?`${current.asset_id}:${current.version}:${current.track_id}`:""} onChange={e=>{const [asset_id,version,track_id]=e.target.value.split(":");setValue({...value,trajectoryBindings:[...(value.trajectoryBindings??[]).filter(x=>x.node_id!==node.node_id),{node_id:node.node_id,asset_id,version:Number(version),track_id}]})}}>
+            <option value="">选择正式轨迹</option>{trajectories.data?.flatMap(asset=>asset.tracks.map(track=><option key={`${asset.asset_id}:${asset.version}:${track.track_id}`} value={`${asset.asset_id}:${asset.version}:${track.track_id}`}>{asset.name} · v{asset.version} · {track.track_id}</option>))}
+          </select></label>})}
+      </section>
       <div className="draft-actions">
         <span>
           {server ? `服务器草稿 · revision ${server.revision}` : "尚未保存"}
@@ -847,6 +850,7 @@ const experimentInitial: ExperimentDraft = {
 };
 export function ExperimentAuthoringPage() {
   const scenarios = useQuery(queries.scenarios());
+  const scenarioDrafts = useQuery(queries.drafts("scenario"));
   const client = useQueryClient();
   const navigate = useNavigate();
   const [value, setValue] = useState(experimentInitial);
@@ -860,9 +864,9 @@ export function ExperimentAuthoringPage() {
     val: ExperimentDraft[K],
   ) => setValue({ ...value, [key]: val });
   useEffect(() => {
-    if (!value.scenarioId && scenarios.data?.[0])
-      set("scenarioId", scenarios.data[0].scenario_id);
-  }, [scenarios.data]);
+    if (!value.scenarioId && scenarioDrafts.data?.[0])
+      set("scenarioId", scenarioDrafts.data[0].draft_id);
+  }, [scenarioDrafts.data]);
   const payload = {
     scenario_id: value.scenarioId,
     routing_mode: value.routingMode,
@@ -897,8 +901,8 @@ export function ExperimentAuthoringPage() {
       navigate(`/runs/${created.run_id}`);
     },
   });
-  if (scenarios.isPending) return <LoadingState />;
-  if (scenarios.error) return <ErrorState error={scenarios.error} />;
+  if (scenarios.isPending || scenarioDrafts.isPending) return <LoadingState />;
+  if (scenarios.error || scenarioDrafts.error) return <ErrorState error={scenarios.error || scenarioDrafts.error} />;
   return (
     <>
       <div className="classic-experiment-heading"><div><p className="eyebrow">仿真工作台</p><h1>配置网络实验</h1></div><p>沿用成熟的分组配置工作流，只开放当前 Runtime 已接入的协议能力。</p></div>
@@ -925,8 +929,13 @@ export function ExperimentAuthoringPage() {
                 value={value.scenarioId}
                 onChange={(e) => set("scenarioId", e.target.value)}
               >
+                {scenarioDrafts.data.map((x) => (
+                  <option value={x.draft_id} key={x.draft_id}>
+                    {x.name} · authored revision {x.revision}
+                  </option>
+                ))}
                 {scenarios.data.map((x) => (
-                  <option
+                  <option disabled
                     value={x.scenario_id}
                     key={`${x.scenario_id}:${x.version}`}
                   >

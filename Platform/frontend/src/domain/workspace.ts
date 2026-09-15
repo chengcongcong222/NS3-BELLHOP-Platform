@@ -6,7 +6,7 @@ export type DraftProvenance =
   | { kind: "derived"; label: string; sourceId: string; sourceVersion?: string; inherited: readonly string[]; omitted: readonly string[] };
 
 export interface EnvironmentDraft { kind: "environment"; id: string; name: string; description: string; provenance: DraftProvenance; maximumDepthMeters: number; maximumRangeMeters: number; centerFrequencyHz: number; soundSpeedProfile: Array<{ depthMeters: number; speedMetersPerSecond: number }>; bathymetry: Array<{ rangeMeters: number; depthMeters: number }>; constructionMode: "BellhopOffline"; updatedAt: string; }
-export interface ScenarioDraft { kind: "scenario"; id: string; name: string; environmentAssetId: string; fusionCenterNodeId: string; provenance: DraftProvenance; nodes: ScenarioDto["nodes"]; updatedAt: string; }
+export interface ScenarioDraft { kind: "scenario"; id: string; name: string; environmentAssetId: string; fusionCenterNodeId: string; provenance: DraftProvenance; nodes: ScenarioDto["nodes"]; trajectoryBindings?: Array<{ node_id: string; asset_id: string; version: number; track_id: string }>; updatedAt: string; }
 export interface ExperimentDraft { kind: "experiment"; id: string; name: string; sourceExperimentId: string | null; scenarioId: string; provenance: DraftProvenance; routingMode: string; macMode: string; bitRateBitsPerSecond: string; centerFrequencyHz: number; occupiedBandwidthHz: number; sourceLevelDb: number; guardIntervalNs: string; simulationCycleCount: string; deterministicSeed: string; networkUpdateIntervalCycles: string; updatedAt: string; }
 export type WorkspaceDraft = EnvironmentDraft | ScenarioDraft | ExperimentDraft;
 const key = "ns3-bellhop-platform.workbench-drafts.v1";

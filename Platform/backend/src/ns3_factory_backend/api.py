@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import hashlib
+import json
+import subprocess
 import tempfile
 from contextlib import asynccontextmanager
 from collections.abc import Callable
@@ -96,6 +99,7 @@ class BackendSettings:
     authoring_workspace_root: Path | None = None
     authoring_reference_asset_root: Path | None = None
     trajectory_generator_executable: Path | None = None
+    environment_asset_publisher_executable: Path | None = None
 
 
 class HttpModel(BaseModel):
@@ -126,6 +130,7 @@ class RunResource(HttpModel):
     final_snapshot_version: str | None
     event_stream_complete: bool | None
     failure: FailureResource | None
+    provenance: dict[str, object] | None = None
 
 
 class RunSummaryResource(HttpModel):
@@ -170,6 +175,7 @@ class RunResultResource(HttpModel):
     fusion_results: list[FusionResult]
     nodes: list[NodeResult]
     visualization: RunVisualization | None = None
+    provenance: dict[str, object] | None = None
 
 
 class ResultSummaryResource(HttpModel):
@@ -219,6 +225,9 @@ _ERROR_STATUS = {
     "BuildNotReady": status.HTTP_409_CONFLICT,
     "ImmutableResourceConflict": status.HTTP_409_CONFLICT,
     "TrajectoryAuthoringFailed": status.HTTP_400_BAD_REQUEST,
+    "EnvironmentNotFound": status.HTTP_404_NOT_FOUND,
+    "TrajectoryNotFound": status.HTTP_404_NOT_FOUND,
+    "TrajectoryTrackNotFound": status.HTTP_404_NOT_FOUND,
 }
 
 
@@ -237,6 +246,24 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
         failure = BackendFailure(
             code="RunFailed", message=terminal.failure.message
         )
+    provenance = None
+    if snapshot.authored_definition_path:
+        try:
+            definition = json.loads(Path(snapshot.authored_definition_path).read_text(encoding="utf-8"))
+            provenance = {
+                "definition_sha256": snapshot.authored_definition_sha256,
+                "experiment": {"id": definition["experiment_id"], "version": definition["version"]},
+                "scenario": {"id": definition["scenario_id"], "version": definition["version"]},
+                "environment": definition["environment"],
+                "physical_layer": definition["experiment"]["physical_layer"],
+                "deterministic_seed": definition["experiment"]["deterministic_seed"],
+                "trajectory_bindings": definition["trajectory_bindings"],
+                "trajectory_assets": [{"asset_id": item["asset_id"], "version": item["version"],
+                    "checksum_sha256": item["checksum_sha256"]} for item in definition["trajectory_assets"]],
+            }
+        except (OSError, KeyError, ValueError, json.JSONDecodeError):
+            provenance = {"definition_sha256": snapshot.authored_definition_sha256,
+                          "state": "DefinitionUnavailable"}
     return RunResource(
         run_id=snapshot.run_id,
         experiment_id=snapshot.experiment_id,
@@ -261,6 +288,7 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
             if failure is not None
             else None
         ),
+        provenance=provenance,
     )
 
 
@@ -407,6 +435,17 @@ def create_app(
     app.state.acceptance_baseline = acceptance_baseline
     app.state.run_manifests = run_manifests
 
+    def current_resources() -> ResourceCatalog:
+        # The adapter is read-only and cheap; reloading makes a newly published
+        # immutable environment visible without restarting the Backend.
+        if settings.resource_catalog_adapter is None:
+            return selected_resources
+        return ResourceCatalog.from_adapter(
+            settings.resource_catalog_adapter,
+            settings.environment_repository_root,
+            settings.acceptance_environment_asset_id,
+        )
+
     @app.exception_handler(CatalogError)
     async def catalog_error_handler(
         _request: Request, error: CatalogError
@@ -485,6 +524,15 @@ def create_app(
     @app.post("/authoring/drafts", response_model=DraftResource, status_code=201)
     async def create_draft(write: DraftWrite) -> DraftResource:
         return authoring.create(write)
+
+    @app.post("/authoring/drafts/{kind}/{draft_id}/publish")
+    async def publish_draft(kind: DraftKind, draft_id: str) -> dict[str, object]:
+        try:
+            return authoring.publish_draft(kind, draft_id)
+        except KeyError as error:
+            raise CatalogError("DraftNotFound", "Draft was not found.") from error
+        except ValueError as error:
+            raise CatalogError("DraftValidationFailed", str(error)) from error
 
     @app.get("/authoring/drafts/{kind}/{draft_id}", response_model=DraftResource)
     async def get_draft(kind: DraftKind, draft_id: str) -> DraftResource:
@@ -575,8 +623,21 @@ def create_app(
     async def publish_environment_build(build_id: str) -> dict[str, object]:
         try:
             artifact = authoring.publish_build(build_id)
+            asset_id = str(artifact["environment_asset_id"])
+            target = settings.environment_repository_root / asset_id
+            if not target.is_dir():
+                publisher = settings.environment_asset_publisher_executable
+                if publisher is None or not publisher.is_file():
+                    raise ValueError("Environment asset publisher is not configured")
+                settings.environment_repository_root.mkdir(parents=True, exist_ok=True)
+                completed = subprocess.run(
+                    [str(publisher), str(artifact["arrivals_path"]),
+                     str(settings.environment_repository_root), asset_id],
+                    capture_output=True, text=True, timeout=60, check=False)
+                if completed.returncode != 0:
+                    raise ValueError(completed.stderr.strip() or "Environment publication failed")
             return {**artifact, "published": True,
-                    "runtime_catalog_available": False}
+                    "runtime_catalog_available": True}
         except KeyError as error:
             raise CatalogError("BuildNotFound", "Environment build was not found.") from error
         except FileExistsError as error:
@@ -617,12 +678,7 @@ def create_app(
         status_code=status.HTTP_201_CREATED,
     )
     async def create_authoring_experiment_run(draft_id: str) -> RunResource:
-        """Run the executable subset of a persisted experiment draft.
-
-        The immutable Scenario/Environment and acceptance preset remain the
-        authority.  Only worker-supported execution settings are projected;
-        unsupported editor fields are never silently applied.
-        """
+        """Freeze and run one exact authored Experiment/Scenario composition."""
         try:
             draft = authoring.get("experiment", draft_id)
         except KeyError as error:
@@ -631,18 +687,62 @@ def create_app(
             raise CatalogError("DraftValidationFailed", "; ".join(draft.validation_issues))
         payload = draft.payload
         scenario_id = str(payload.get("scenario_id", ""))
-        candidates = [item for item in selected_resources.list_experiments()
-                      if item.scenario.scenario_id == scenario_id]
-        if not candidates:
+        try:
+            scenario_draft = authoring.get("scenario", scenario_id)
+        except KeyError as error:
+            # A named catalog Scenario is an explicit preset selection, not a
+            # fallback. Preserve that compatibility path while authored
+            # Scenario IDs are always resolved only from the authoring store.
+            candidates = [item for item in selected_resources.list_experiments()
+                          if item.scenario.scenario_id == scenario_id]
+            if not candidates:
+                raise CatalogError(
+                    "InvalidReference", "Experiment references an unavailable Scenario."
+                ) from error
+            experiment = max(candidates, key=lambda item: int(item.version))
+            scenario = selected_resources.get_scenario(
+                experiment.scenario.scenario_id, experiment.scenario.version)
+            environment = selected_resources.get_environment(
+                scenario.environment.environment_asset_id)
+            physical_layer = str(payload.get("physical_layer", "Channel1Abstract"))
+            modulation = str(payload.get("waveform_modulation", "Bpsk"))
+            noise_model = str(payload.get("waveform_noise", "None"))
+            def preset_command(run_id: str):
+                base = selected_resources.resolve_command(
+                    run_id, experiment.experiment_id, experiment.version)
+                return base.model_copy(update={"execution": base.execution.model_copy(update={
+                    "simulation_cycle_count": str(payload["simulation_cycle_count"]),
+                    "deterministic_seed": str(payload["deterministic_seed"]),
+                    "rx_quality_mode": "None" if physical_layer == "Channel2Waveform" else experiment.phy.rx_quality_mode,
+                    "physical_layer": physical_layer,
+                    "waveform_modulation": modulation,
+                    "waveform_noise": noise_model,
+                    "waveform_noise_psd_db_re_1upa2_per_hz": float(payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)),
+                })})
+            snapshot = await catalog.create(preset_command)
+            run_manifests[snapshot.run_id] = make_manifest(
+                snapshot.run_id, system_info, environment, scenario, experiment)
+            return _run_resource(snapshot)
+        if scenario_draft.validation_issues:
+            raise CatalogError("InvalidReference", "; ".join(scenario_draft.validation_issues))
+        scenario_payload = scenario_draft.payload
+        environment_id = str(scenario_payload.get("environment_asset_id", ""))
+        environment_version = int(scenario_payload.get("environment_version", 1))
+        environment_path = settings.environment_repository_root / environment_id
+        if not environment_path.is_dir():
             raise CatalogError(
-                "InvalidReference",
-                "Draft must reference a Scenario used by a formal Experiment.",
+                "EnvironmentNotFound",
+                f"Environment {environment_id} v{environment_version} is not in the Runtime repository.",
             )
-        experiment = max(candidates, key=lambda item: int(item.version))
-        scenario = selected_resources.get_scenario(
-            experiment.scenario.scenario_id, experiment.scenario.version)
-        environment = selected_resources.get_environment(
-            scenario.environment.environment_asset_id)
+        environment_checksum = None
+        if settings.resource_catalog_adapter is not None:
+            try:
+                environment_resource = current_resources().get_environment(environment_id)
+            except ResourceCatalogError as error:
+                raise CatalogError("EnvironmentNotFound", "Environment package is unavailable or corrupt.") from error
+            if int(environment_resource.asset_format_version) != environment_version:
+                raise CatalogError("InvalidReference", "Environment asset format version does not match Scenario.")
+            environment_checksum = environment_resource.checksum.value
         physical_layer = str(payload.get("physical_layer", "Channel1Abstract"))
         if physical_layer not in {"Channel1Abstract", "Channel2Waveform"}:
             raise CatalogError("InvalidDraft", "Unknown physical layer implementation.")
@@ -651,37 +751,127 @@ def create_app(
         if modulation not in {"Bpsk", "Bfsk"} or noise_model not in {"None", "Awgn"}:
             raise CatalogError("InvalidDraft", "Unknown waveform configuration.")
 
-        def command(run_id: str):
-            base = selected_resources.resolve_command(
-                run_id, experiment.experiment_id, experiment.version)
-            execution = base.execution.model_copy(update={
-                "simulation_cycle_count": str(payload["simulation_cycle_count"]),
-                "deterministic_seed": str(payload["deterministic_seed"]),
-                "rx_quality_mode": (
-                    "None" if physical_layer == "Channel2Waveform"
-                    else experiment.phy.rx_quality_mode
-                ),
+        bindings = scenario_payload.get("trajectory_bindings")
+        if not isinstance(bindings, list) or not bindings:
+            raise CatalogError("InvalidReference", "Every authored node requires a trajectory binding.")
+        nodes = scenario_payload.get("nodes", [])
+        node_ids = {str(node.get("node_id")) for node in nodes if isinstance(node, dict)}
+        if {str(binding.get("node_id")) for binding in bindings if isinstance(binding, dict)} != node_ids:
+            raise CatalogError("InvalidReference", "Trajectory bindings must cover every Scenario node exactly.")
+        assets: dict[tuple[str, int], TrajectoryAsset] = {}
+        for binding in bindings:
+            try:
+                key = (str(binding["asset_id"]), int(binding["version"]))
+                asset = trajectories.get(*key)
+            except (KeyError, TypeError, ValueError) as error:
+                raise CatalogError("TrajectoryNotFound", "Trajectory asset/version is unavailable or corrupt.") from error
+            if not any(track.track_id == str(binding.get("track_id")) for track in asset.tracks):
+                raise CatalogError("TrajectoryTrackNotFound", "Bound trajectory track does not exist.")
+            assets[key] = asset
+
+        scenario_publication = authoring.publish_draft("scenario", scenario_draft.draft_id)
+        experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
+        definition_version = max(draft.revision, scenario_draft.revision)
+        definition = {
+            "schema": "ns3-factory-authored-run-v1",
+            "scenario_id": scenario_publication["published_id"],
+            "scenario_source_revision": scenario_draft.revision,
+            "scenario_name": scenario_draft.name,
+            "experiment_id": experiment_publication["published_id"],
+            "experiment_source_revision": draft.revision,
+            "version": definition_version,
+            "environment": {"asset_id": environment_id, "format_version": environment_version,
+                            "checksum": environment_checksum},
+            "fusion_center_node_id": int(scenario_payload["fusion_center_node_id"]),
+            "nodes": [{
+                "node_id": int(node["node_id"]),
+                "can_transmit": bool(node["can_transmit"]),
+                "can_receive": bool(node["can_receive"]),
+                "duplex_mode": str(node["duplex_mode"]),
+                "x_m": float(node["initial_position"]["x_meters"]),
+                "y_m": float(node["initial_position"]["y_meters"]),
+                "z_m": float(node["initial_position"]["z_meters"]),
+            } for node in nodes],
+            "trajectory_bindings": [{"node_id": int(binding["node_id"]),
+                "asset_id": str(binding["asset_id"]), "version": int(binding["version"]),
+                "track_id": str(binding["track_id"])} for binding in bindings],
+            "trajectory_assets": [{
+                "asset_id": asset.asset_id, "version": asset.version, "source": asset.source,
+                "checksum_sha256": asset.checksum_sha256,
+                "tracks": [{"track_id": track.track_id, "points": [{
+                    "time_ns": round(point.time_s * 1_000_000_000),
+                    "x_m": point.x_m, "y_m": point.y_m, "z_m": point.z_m,
+                } for point in track.points]} for track in asset.tracks],
+            } for asset in assets.values()],
+            "experiment": {
+                "name": draft.name,
                 "physical_layer": physical_layer,
                 "waveform_modulation": modulation,
                 "waveform_noise": noise_model,
-                "waveform_noise_psd_db_re_1upa2_per_hz": float(
+                "waveform_noise_psd_db_re_1upa2_per_hz": float(payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)),
+                "deterministic_seed": int(payload["deterministic_seed"]),
+                "slot_duration_ns": int(payload.get("slot_duration_ns", 6_000_000_000)),
+                "guard_interval_ns": int(payload.get("guard_interval_ns", 2_000_000_000)),
+                "bit_rate_bps": int(payload["bit_rate_bits_per_second"]),
+                "center_frequency_hz": float(payload.get("center_frequency_hz", 25_000)),
+                "occupied_bandwidth_hz": float(payload.get("occupied_bandwidth_hz", 4_000)),
+                "source_level_db": float(payload.get("source_level_db_re_1upa_at_1m", 110)),
+                "network_update_interval_cycles": int(payload.get("network_update_interval_cycles", 10)),
+            },
+        }
+        encoded = json.dumps(definition, ensure_ascii=False, sort_keys=True,
+                             separators=(",", ":")).encode()
+        digest = hashlib.sha256(encoded).hexdigest()
+        definition_path = authoring_root / "run-definitions" / f"{digest}.json"
+        definition_path.parent.mkdir(parents=True, exist_ok=True)
+        if definition_path.exists():
+            if definition_path.read_bytes() != encoded:
+                raise CatalogError("ImmutableResourceConflict", "Run definition digest collision.")
+        else:
+            temporary = definition_path.with_suffix(".tmp")
+            temporary.write_bytes(encoded)
+            temporary.replace(definition_path)
+            definition_path.chmod(0o444)
+
+        def command(run_id: str):
+            from .wire import Environment, Execution, Preset, StartRunCommand
+            execution = Execution(
+                simulation_cycle_count=str(payload["simulation_cycle_count"]),
+                deterministic_seed=str(payload["deterministic_seed"]),
+                rx_quality_mode=(
+                    "None" if physical_layer == "Channel2Waveform" else "ModeledBpskAwgn"
+                ),
+                equivalent_noise_power_db_re_1upa2=float(payload.get("equivalent_noise_power_db_re_1upa2", 45.0)),
+                physical_layer=physical_layer,
+                waveform_modulation=modulation,
+                waveform_noise=noise_model,
+                waveform_noise_psd_db_re_1upa2_per_hz=float(
                     payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)
                 ),
-            })
-            return base.model_copy(update={"execution": execution})
+            )
+            return StartRunCommand(
+                run_id=run_id,
+                preset=Preset(scenario_id=str(scenario_publication["published_id"]),
+                              experiment_id=str(experiment_publication["published_id"]),
+                              definition_version=str(definition_version),
+                              acceptance_profile=str(payload.get("acceptance_profile", "Acceptance4Node"))),
+                environment=Environment(asset_id=environment_id,
+                                        asset_format_version=str(environment_version)),
+                execution=execution,
+                authored_definition_path=str(definition_path),
+                authored_definition_sha256=digest,
+            )
 
         snapshot = await catalog.create(command)
-        run_manifests[snapshot.run_id] = make_manifest(
-            snapshot.run_id, system_info, environment, scenario, experiment)
         return _run_resource(snapshot)
 
     @app.get("/environments", response_model=list[EnvironmentResource])
     async def list_environments() -> tuple[EnvironmentResource, ...]:
-        return selected_resources.list_environments()
+        return current_resources().list_environments()
 
     @app.get("/environments/{environment_id}", response_model=EnvironmentResource)
     async def get_environment(environment_id: str) -> EnvironmentResource:
-        return selected_resources.get_environment(environment_id)
+        return current_resources().get_environment(environment_id)
 
     @app.get("/scenarios", response_model=list[ScenarioResource])
     async def list_scenarios() -> tuple[ScenarioResource, ...]:
@@ -742,6 +932,7 @@ def create_app(
             fusion_results=result.fusion_results,
             nodes=result.nodes,
             visualization=result.visualization,
+            provenance=_run_resource(snapshot).provenance,
         )
 
     async def evidence_for(run_id: str) -> AcceptanceEvidenceBundle:

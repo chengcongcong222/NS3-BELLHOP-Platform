@@ -5,6 +5,7 @@ import type { DraftKind } from "./types";
 export const queries = {
   systemInfo: () => queryOptions({ queryKey: ["system-info"], queryFn: apiClient.getSystemInfo, staleTime: Infinity }),
   environments: () => queryOptions({ queryKey: ["environments"], queryFn: apiClient.listEnvironments }),
+  trajectories: () => queryOptions({ queryKey: ["trajectories"], queryFn: apiClient.listTrajectories }),
   environment: (id: string) =>
     queryOptions({ queryKey: ["environments", id], queryFn: () => apiClient.getEnvironment(id) }),
   scenarios: () => queryOptions({ queryKey: ["scenarios"], queryFn: apiClient.listScenarios }),

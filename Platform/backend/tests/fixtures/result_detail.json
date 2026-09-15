@@ -1,5 +1,6 @@
 {
   "visualization": null,
+  "provenance": null,
   "acceptance_report": {
     "bearing_point_count": "Pass",
     "ber_reason": "",

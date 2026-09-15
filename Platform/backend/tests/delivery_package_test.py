@@ -34,6 +34,7 @@ def _fake_preflight_tree(tmp_path: Path, *, environment: bool) -> tuple[Path, Pa
 
     executable(build / "worker/platform_sim_worker", "#!/bin/sh\nexit 0\n")
     executable(build / "worker/platform_trajectory_generator_bridge", "#!/bin/sh\nexit 0\n")
+    executable(build / "worker/platform_environment_asset_publisher", "#!/bin/sh\nexit 0\n")
     executable(
         build / "worker/platform_resource_catalog_adapter",
         "#!/bin/sh\nprintf '%s\\n' '{\"experiments\":[{\"experiment_id\":\"acceptance4-experiment\"}]}'\n",

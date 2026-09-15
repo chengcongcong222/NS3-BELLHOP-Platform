@@ -170,3 +170,11 @@ class Store:
             h.write(asset.model_dump_json(indent=2));h.write("\n");temp=Path(h.name)
         temp.replace(path);return asset
     def list(self)->list[Asset]:return [Asset.model_validate_json(p.read_text()) for p in sorted(self.root.glob("*.json"))]
+    def get(self, asset_id: str, version: int) -> Asset:
+        path = self.root / f"{asset_id}.v{version}.json"
+        if not path.is_file():
+            raise KeyError((asset_id, version))
+        asset = Asset.model_validate_json(path.read_text(encoding="utf-8"))
+        if _finalize(asset).checksum_sha256 != asset.checksum_sha256:
+            raise ValueError("trajectory asset checksum mismatch")
+        return asset

@@ -295,6 +295,14 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       WaveformExecutionOptions waveform)
       : environments_(environments), waveform_(std::move(waveform)) {}
 
+  AcceptanceRunExecutor(
+      const environment::internal::EnvironmentAssetRepository& environments,
+      std::shared_ptr<const contracts::INodeTrajectory> trajectories,
+      std::optional<WaveformExecutionOptions> waveform = std::nullopt)
+      : environments_(environments),
+        waveform_(std::move(waveform)),
+        trajectories_(std::move(trajectories)) {}
+
   [[nodiscard]] auto Execute(
       const RunId& run_id,
       const ScenarioDefinition& scenario,
@@ -457,11 +465,15 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       return std::unexpected(Error{ErrorCode::kOverflow, "Trajectory run horizon overflow"});
     const auto trajectory_end = contracts::SimTime::FromNanoseconds(
         duration_ns * static_cast<std::int64_t>(experiment.simulation_cycle_count()));
-    auto trajectories = trajectory::BindGenerated(world.current_snapshot(), trajectory_end);
-    if(!trajectories) return std::unexpected(trajectories.error());
-    auto bound = runtime.BindTrajectories(*trajectories);
+    std::shared_ptr<const contracts::INodeTrajectory> trajectories = trajectories_;
+    if(!trajectories) {
+      auto generated = trajectory::BindGenerated(world.current_snapshot(), trajectory_end);
+      if(!generated) return std::unexpected(generated.error());
+      trajectories = *generated;
+    }
+    auto bound = runtime.BindTrajectories(trajectories);
     if(!bound) return std::unexpected(bound.error());
-    trace.BindPositionSource(**trajectories, node_ids);
+    trace.BindPositionSource(*trajectories, node_ids);
     const auto executed =
         runtime.RunCycles(experiment.simulation_cycle_count());
     if(!executed) return std::unexpected(executed.error());
@@ -515,7 +527,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
           visualization.positions_complete = false;
           break;
         }
-        const auto motion = (*trajectories)->Query(node.node_id, at);
+        const auto motion = trajectories->Query(node.node_id, at);
         if(!motion) { visualization.positions_complete = false; continue; }
         visualization.positions.push_back({node.node_id, at, motion->position});
       }
@@ -545,6 +557,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       const environment::internal::EnvironmentAssetRepository>
       environments_;
   std::optional<WaveformExecutionOptions> waveform_;
+  std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
 };
 
 }  // namespace ns3_factory::application::internal

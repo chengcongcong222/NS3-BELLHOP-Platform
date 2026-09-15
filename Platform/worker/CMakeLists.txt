@@ -47,6 +47,14 @@ add_executable(
   platform_trajectory_generator_bridge
   adapter/trajectory_generator_bridge.cpp
 )
+add_executable(
+  platform_environment_asset_publisher
+  adapter/environment_asset_publisher.cpp
+)
+target_include_directories(platform_environment_asset_publisher PRIVATE
+  "${PROJECT_SOURCE_DIR}/environment")
+target_link_libraries(platform_environment_asset_publisher PRIVATE
+  Platform::environment)
 target_link_libraries(
   platform_trajectory_generator_bridge
   PRIVATE Platform::trajectory Platform::third_party_nlohmann_json
@@ -136,6 +144,8 @@ if(PLATFORM_NS3_AVAILABLE)
       Platform::worker_json_codec
       Platform::assembly
       Platform::environment
+      Platform::trajectory
+      Platform::third_party_nlohmann_json
   )
 
   if(BUILD_TESTING)

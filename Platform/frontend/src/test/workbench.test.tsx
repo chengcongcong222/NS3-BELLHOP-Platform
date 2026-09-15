@@ -8,6 +8,7 @@ const catalog = {
   "/environments": { body: [environment] },
   "/scenarios": { body: [scenario] },
   "/experiments": { body: [experiment] },
+  "/trajectories": { body: [] },
 };
 
 describe("simulation workbench user journeys", () => {
@@ -67,6 +68,7 @@ describe("simulation workbench user journeys", () => {
     const saved = { kind: "experiment", draft_id: "experiment-waveform", name: "未命名网络实验", payload: {}, revision: 1, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z", validation_issues: [] };
     const launched = { ...run, run_id: "channel2-run", lifecycle: "Created" };
     const fetchMock = installApi({ ...catalog,
+      "/authoring/drafts?kind=scenario": { body: [] },
       "POST /authoring/drafts": { body: saved },
       "POST /authoring/experiments/experiment-waveform/runs": { body: launched },
       "/runs/channel2-run": { body: launched },

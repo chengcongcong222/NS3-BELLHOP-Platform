@@ -40,6 +40,7 @@ struct AcceptanceWorkerRequest final {
 struct AcceptanceWorkerDefinitions final {
   application::ScenarioDefinition scenario;
   application::ExperimentDefinition experiment;
+  std::shared_ptr<const contracts::INodeTrajectory> trajectories;
 };
 
 struct WorkerExecutionSnapshot final {
@@ -93,7 +94,7 @@ struct WorkerExecutionSnapshot final {
     experiment = std::move(waveform_experiment);
   }
   return AcceptanceWorkerDefinitions{std::move(*scenario),
-                                     std::move(*experiment)};
+                                     std::move(*experiment), nullptr};
 }
 
 class SimulationWorker final {
@@ -109,7 +110,8 @@ class SimulationWorker final {
   }
 
   [[nodiscard]] auto Run(const AcceptanceWorkerRequest& request,
-                         IWorkerMessageSink& output)
+                         IWorkerMessageSink& output,
+                         std::optional<AcceptanceWorkerDefinitions> authored = std::nullopt)
       -> contracts::Status {
     if(used_) {
       return std::unexpected(
@@ -121,7 +123,9 @@ class SimulationWorker final {
        !emitted) {
       return std::unexpected(emitted.error());
     }
-    auto definitions = MakeAcceptanceWorkerDefinitions(request);
+    auto definitions = authored
+        ? contracts::Result<AcceptanceWorkerDefinitions>{std::move(*authored)}
+        : MakeAcceptanceWorkerDefinitions(request);
     if(!definitions) {
       return EmitFailure(request.run_id,
                          WorkerFailureCategory::kComposition,
@@ -183,10 +187,14 @@ class SimulationWorker final {
               1'000'000},
           nullptr});
     }
-    application::internal::AcceptanceRunExecutor executor = waveform_options
+    application::internal::AcceptanceRunExecutor executor = definitions->trajectories
         ? application::internal::AcceptanceRunExecutor{
-              environments_.get(), std::move(*waveform_options)}
-        : application::internal::AcceptanceRunExecutor{environments_.get()};
+              environments_.get(), definitions->trajectories,
+              std::move(waveform_options)}
+        : waveform_options
+              ? application::internal::AcceptanceRunExecutor{
+                    environments_.get(), std::move(*waveform_options)}
+              : application::internal::AcceptanceRunExecutor{environments_.get()};
     application::RunService service{
         scenarios, experiments, runs, executor, events};
     const auto reference = application::ExperimentReference{

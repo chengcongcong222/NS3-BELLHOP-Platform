@@ -136,6 +136,18 @@ class StartRunCommand(WireModel):
     preset: Preset
     environment: Environment
     execution: Execution
+    authored_definition_path: str | None = None
+    authored_definition_sha256: str | None = None
+
+    @model_validator(mode="after")
+    def validate_authored_definition(self) -> "StartRunCommand":
+        if (self.authored_definition_path is None) != (self.authored_definition_sha256 is None):
+            raise ValueError("authored definition path and checksum must be supplied together")
+        if self.authored_definition_sha256 is not None and not re.fullmatch(
+            r"[0-9a-f]{64}", self.authored_definition_sha256
+        ):
+            raise ValueError("authored definition checksum must be lowercase SHA256")
+        return self
 
 
 ErrorCode = Literal[

@@ -53,6 +53,8 @@ class RunSnapshot:
     failure: BackendFailure | None
     terminal_run: RunRecord | None
     result_available: bool
+    authored_definition_path: str | None
+    authored_definition_sha256: str | None
 
 
 @dataclass(frozen=True)
@@ -304,4 +306,6 @@ class InMemoryRunCatalog:
             result_available=(
                 entry.lifecycle == "Completed" and entry.result is not None
             ),
+            authored_definition_path=entry.command.authored_definition_path,
+            authored_definition_sha256=entry.command.authored_definition_sha256,
         )

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <variant>
 
 #include <ns3_factory/application/result.hpp>
@@ -52,6 +53,10 @@ struct StartRunCommand final {
   WaveformModulation waveform_modulation;
   WaveformNoiseModel waveform_noise;
   double waveform_noise_psd_db_re_1upa2_per_hz;
+  // Present only for an authored run. The file is an immutable, checksummed
+  // assembly snapshot; absence explicitly selects the named acceptance preset.
+  std::optional<std::string> authored_definition_path;
+  std::optional<std::string> authored_definition_sha256;
 
   auto operator==(const StartRunCommand&) const -> bool = default;
 };

@@ -68,5 +68,9 @@ app = create_app(
             if os.environ.get("PLATFORM_TRAJECTORY_GENERATOR")
             else None
         ),
+        environment_asset_publisher_executable=(
+            Path(os.environ["PLATFORM_ENVIRONMENT_ASSET_PUBLISHER"])
+            if os.environ.get("PLATFORM_ENVIRONMENT_ASSET_PUBLISHER") else None
+        ),
     )
 )

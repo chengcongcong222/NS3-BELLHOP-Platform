@@ -8,6 +8,7 @@
 #include <ns3_factory/worker/protocol.hpp>
 
 #include "adapter/json_line_message_sink.hpp"
+#include "adapter/authored_run_definition.hpp"
 #include "internal/environment_asset_repository.hpp"
 #include "internal/simulation_worker.hpp"
 
@@ -86,9 +87,27 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
       command->waveform_modulation,
       command->waveform_noise,
       command->waveform_noise_psd_db_re_1upa2_per_hz};
+  std::optional<worker::internal::AcceptanceWorkerDefinitions> authored;
+  if(command->authored_definition_path) {
+    if(std::filesystem::path{*command->authored_definition_path}.filename() !=
+       *command->authored_definition_sha256 + ".json") {
+      return EmitProtocolFailure(contracts::Error{
+          contracts::ErrorCode::kFailedPrecondition,
+          "Authored definition path does not match its captured SHA256 identity"});
+    }
+    auto loaded = worker::adapter::LoadAuthoredRunDefinition(
+        *command->authored_definition_path, request);
+    if(!loaded) {
+      worker::adapter::JsonLineWorkerMessageSink output{std::cout};
+      (void)output.Emit(worker::WorkerFailed{command->run_id,
+          worker::WorkerFailureCategory::kComposition, loaded.error(), std::nullopt});
+      return static_cast<int>(worker::WorkerExitCode::kExecutionFailure);
+    }
+    authored.emplace(std::move(*loaded));
+  }
   worker::adapter::JsonLineWorkerMessageSink output{std::cout};
   worker::internal::SimulationWorker simulation_worker{*environments};
-  const auto executed = simulation_worker.Run(request, output);
+  const auto executed = simulation_worker.Run(request, output, std::move(authored));
   if(!executed) {
     std::cerr << "platform_sim_worker execution/bridge failure: "
               << executed.error().message << '\n';

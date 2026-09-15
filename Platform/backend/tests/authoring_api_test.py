@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 import httpx
@@ -35,6 +36,8 @@ def test_server_workspace_import_build_and_immutable_publish(tmp_path: Path) -> 
                 worker_executable=tmp_path / "worker",
                 environment_repository_root=tmp_path / "repository",
                 authoring_workspace_root=tmp_path / "workspace",
+                environment_asset_publisher_executable=Path(
+                    os.environ["PLATFORM_ENVIRONMENT_ASSET_PUBLISHER_PATH"]),
             ),
             gateway=IdleGateway(),
             resource_catalog=resource_catalog(),
@@ -86,7 +89,8 @@ def test_server_workspace_import_build_and_immutable_publish(tmp_path: Path) -> 
                 f"/authoring/environment-builds/{build_id}/publish"
             )
             assert published.status_code == 200
-            assert published.json()["environment_asset_id"] == "reference-shallow-water-v1"
+            assert published.json()["environment_asset_id"].endswith("-r1")
+            assert published.json()["runtime_catalog_available"] is True
             repeated = await client.post(
                 f"/authoring/environment-builds/{build_id}/publish"
             )

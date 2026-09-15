@@ -62,6 +62,7 @@ def main() -> None:
     worker = build / "worker" / "platform_sim_worker"
     adapter = build / "worker" / "platform_resource_catalog_adapter"
     trajectory_generator = build / "worker" / "platform_trajectory_generator_bridge"
+    environment_publisher = build / "worker" / "platform_environment_asset_publisher"
     backend_python = build / "backend" / "venv" / "bin" / "python"
     npm = root / "frontend" / "scripts" / "npm.sh"
     frontend_dist = root / "frontend" / "dist"
@@ -75,6 +76,7 @@ def main() -> None:
         (worker, "WORKER_UNAVAILABLE"),
         (adapter, "RESOURCE_ADAPTER_UNAVAILABLE"),
         (trajectory_generator, "TRAJECTORY_GENERATOR_UNAVAILABLE"),
+        (environment_publisher, "ENVIRONMENT_PUBLISHER_UNAVAILABLE"),
         (backend_python, "PYTHON_ENV_UNAVAILABLE"),
         (npm, "NPM_WRAPPER_UNAVAILABLE"),
     ]:
