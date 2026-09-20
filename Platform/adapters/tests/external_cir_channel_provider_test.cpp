@@ -29,13 +29,16 @@ using ns3_factory::contracts::NodeId;
 using ns3_factory::contracts::Position3d;
 using ns3_factory::contracts::SimTime;
 using ns3_factory::contracts::TransmissionId;
+using ns3_factory::phy::internal::ApplyMultipath;
 using ns3_factory::phy::internal::BitFrame;
 using ns3_factory::phy::internal::BuildBasebandMultipathTaps;
+using ns3_factory::phy::internal::BuildDelayAlignmentMatrix;
 using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::NoNoiseConfig;
 using ns3_factory::phy::internal::NoiseProfile;
 using ns3_factory::phy::internal::RunWaveformPipeline;
+using ns3_factory::phy::internal::WaveformBuffer;
 using ns3_factory::phy::internal::WaveformPipelineConfig;
 
 auto Check(bool condition, std::string_view message) -> bool {
@@ -274,11 +277,66 @@ auto TestChannel3ReusesWaveformPipeline() -> bool {
                "Channel 3 round trip has no fixture bit errors");
 }
 
+auto TestNonIntegerRateAlignmentMatrix() -> bool {
+  TemporaryCirPackage package;
+  // External CIR: 1000 Hz. Waveform: 7350 Hz. Bin 1 lands at sample 7.35.
+  WriteDescriptor(package.descriptor_file(), 2U, 2U, 1U);
+  WriteSamples(package.data_file(),
+               {{1.0, 0.0}, {0.4, -0.2}, {0.0, 0.0}, {0.0, 0.0}});
+  const auto provider =
+      ExternalCirChannelProvider::Create(package.descriptor_file());
+  const auto query = MakeQuery(TransmissionId{31}, NodeId{2}, 1'000'000'000);
+  if(!provider || !query) return Check(false, "Rate alignment fixtures");
+  const auto response = Response(*provider, *query);
+  if(!response) return Check(false, "Rate alignment CIR response");
+  const auto taps = BuildBasebandMultipathTaps(*response, 12345.0);
+  if(!taps) return Check(false, "Rate alignment path conversion");
+
+  const auto matrix = BuildDelayAlignmentMatrix(*taps, 7350.0);
+  if(!matrix || matrix->row_count != 9U ||
+     matrix->column_count != 2U || matrix->entries.size() != 3U) {
+    return Check(false, "Sparse delay alignment matrix dimensions");
+  }
+  const auto& entries = matrix->entries;
+  if(!Check(entries[0].waveform_delay_index == 0U &&
+                entries[0].path_index == 0U &&
+                std::abs(entries[0].weight - 1.0) < 1e-12,
+            "Direct path matrix column") ||
+     !Check(entries[1].waveform_delay_index == 7U &&
+                entries[1].path_index == 1U &&
+                std::abs(entries[1].weight - 0.65) < 1e-12,
+            "Fractional path lower matrix weight") ||
+     !Check(entries[2].waveform_delay_index == 8U &&
+                entries[2].path_index == 1U &&
+                std::abs(entries[2].weight - 0.35) < 1e-12,
+            "Fractional path upper matrix weight")) {
+    return false;
+  }
+  const std::vector<std::complex<double>> gains{
+      (*taps)[0].pressure_gain, (*taps)[1].pressure_gain};
+  const auto aligned = matrix->Multiply(gains);
+  const auto impulse = WaveformBuffer::Create(
+      7350.0, {{1.0, 0.0}, {0.0, 0.0}});
+  if(!aligned || !impulse) return Check(false, "Matrix product fixtures");
+  const auto output = ApplyMultipath(*impulse, *taps);
+  return Check(aligned->size() == 9U &&
+                   std::abs((*aligned)[7] -
+                            std::complex<double>{0.26, -0.13}) < 1e-12 &&
+                   std::abs((*aligned)[8] -
+                            std::complex<double>{0.14, -0.07}) < 1e-12,
+               "Matrix product aligns complex CIR without phase loss") &&
+         Check(output && output->sample_count() == 10U &&
+                   std::abs(output->samples()[7] - (*aligned)[7]) < 1e-12 &&
+                   std::abs(output->samples()[8] - (*aligned)[8]) < 1e-12,
+               "Waveform channel uses the matrix-aligned CIR");
+}
+
 }  // namespace
 
 int main() {
   const auto ok = TestDescriptorAndTensorSelection() &&
                   TestCoverageAndFileValidation() &&
-                  TestChannel3ReusesWaveformPipeline();
+                  TestChannel3ReusesWaveformPipeline() &&
+                  TestNonIntegerRateAlignmentMatrix();
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }

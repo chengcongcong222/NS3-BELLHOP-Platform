@@ -51,6 +51,27 @@ multiple snapshots, the query emission time selects
 recorded time, node, carrier, or bandwidth coverage fail explicitly; the
 adapter never clamps or fabricates a direct path.
 
+## Different CIR and waveform sample rates
+
+`delay_sample_rate_hz` describes the CIR delay-bin spacing; the modulator's
+`sample_rate_hz` describes the waveform spacing. Integer multiples are not
+required. For path `k` relative to the first active CIR bin:
+
+```text
+delay_seconds(k) = (k - first_active_bin) / delay_sample_rate_hz
+p(k) = delay_seconds(k) * waveform_sample_rate_hz
+h_wave = R * h_paths
+y = h_wave * x                  (discrete convolution)
+```
+
+`R` is an explicit sparse delay-alignment matrix. Column `k` describes one
+complex CIR path. Its nonzero rows are `floor(p(k))` and `ceil(p(k))`, with
+weights `1 - fractional(p(k))` and `fractional(p(k))`. Thus `p(k) = 7.35`
+gives weights `0.65` at waveform delay 7 and `0.35` at delay 8. Complex
+gain and phase are preserved. This is linear fractional-delay interpolation,
+not a higher-order/band-limited resampler. `snapshot_rate_hz` still selects
+a quasi-static CIR snapshot; the matrix does not interpolate snapshots.
+
 The Underwater Acoustic Channel Library stores compressed HDF5/MAT tensors
 `h_hat[K,M,T]` together with `phi_hat` or `theta_hat`. Those source files
 must first be unpacked with the library's own replay/unpack implementation and
