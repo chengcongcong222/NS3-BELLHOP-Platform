@@ -68,6 +68,17 @@ if(BUILD_TESTING)
   )
 
   add_executable(
+    platform_application_target_packet_metrics_test
+    tests/target_packet_metrics_test.cpp
+  )
+  target_include_directories(platform_application_target_packet_metrics_test
+                             PRIVATE "${PROJECT_SOURCE_DIR}/application")
+  target_link_libraries(platform_application_target_packet_metrics_test
+                        PRIVATE Platform::application)
+  add_test(NAME platform_application_target_packet_metrics_test
+           COMMAND platform_application_target_packet_metrics_test)
+
+  add_executable(
     platform_application_run_event_journal_test
     tests/run_event_journal_test.cpp
   )
@@ -82,6 +93,33 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING AND PLATFORM_NS3_AVAILABLE)
+  add_executable(
+    platform_application_channel12_comparison_baseline_test
+    tests/channel12_comparison_baseline_test.cpp
+  )
+  target_include_directories(
+    platform_application_channel12_comparison_baseline_test
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/application"
+      "${PROJECT_SOURCE_DIR}/assembly"
+      "${PROJECT_SOURCE_DIR}/environment"
+      "${PROJECT_SOURCE_DIR}/kernel"
+      "${PROJECT_SOURCE_DIR}/phy"
+      "${PROJECT_SOURCE_DIR}/planning"
+      "${PROJECT_SOURCE_DIR}/runtime"
+      "${PROJECT_SOURCE_DIR}/structure"
+  )
+  target_link_libraries(
+    platform_application_channel12_comparison_baseline_test
+    PRIVATE Platform::application Platform::assembly Platform::environment
+  )
+  target_compile_definitions(
+    platform_application_channel12_comparison_baseline_test
+    PRIVATE PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT="${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1"
+  )
+  add_test(NAME platform_application_channel12_comparison_baseline_test
+           COMMAND platform_application_channel12_comparison_baseline_test)
+
   add_executable(
     platform_application_acceptance_run_service_test
     tests/application_acceptance_run_service_test.cpp

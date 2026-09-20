@@ -35,6 +35,20 @@ class PhyExecutionComposition final {
                                    nullptr};
   }
 
+  // An abstract/sampled PHY may retain a transient on-air frame without
+  // storing waveform samples. Runtime still sees only the lifecycle hook.
+  [[nodiscard]] static auto AbstractWithArtifacts(
+      const contracts::ITxPhy& tx_phy,
+      const contracts::IChannelFieldProvider& channel_provider,
+      const contracts::INoiseFieldProvider& noise_provider,
+      const contracts::IRxPhy& rx_phy,
+      phy::internal::IPhysicalArtifactLifecycle& artifacts) noexcept
+      -> PhyExecutionComposition {
+    return PhyExecutionComposition{PhyExecutionPath::kAbstract,
+                                   tx_phy, channel_provider, noise_provider,
+                                   rx_phy, &artifacts};
+  }
+
   [[nodiscard]] static auto Waveform(
       const contracts::ITxPhy& tx_phy,
       const contracts::IChannelFieldProvider& channel_provider,

@@ -30,6 +30,7 @@
 #include "internal/ns3_kernel_gateway.hpp"
 #include "internal/packet_queue_store.hpp"
 #include "internal/rate_based_tx_phy.hpp"
+#include "internal/sampled_scalar_phy.hpp"
 #include "internal/scalar_ber_rx_phy.hpp"
 #include "internal/scenario_runtime.hpp"
 #include "internal/single_sink_star_topology_policy.hpp"
@@ -244,6 +245,11 @@ struct WaveformExecutionOptions final {
   phy::internal::IWaveformReceptionObserver* observer = nullptr;
 };
 
+struct ScalarSamplingExecutionOptions final {
+  std::uint64_t deterministic_seed;
+  phy::internal::ISampledScalarReceptionObserver* observer;
+};
+
 class AcceptanceRunExecutor final : public IRunExecutor {
  public:
   explicit AcceptanceRunExecutor(
@@ -255,6 +261,12 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       const environment::internal::EnvironmentAssetRepository& environments,
       WaveformExecutionOptions waveform)
       : environments_(environments), waveform_(std::move(waveform)) {}
+
+  AcceptanceRunExecutor(
+      const environment::internal::EnvironmentAssetRepository& environments,
+      ScalarSamplingExecutionOptions scalar_sampling)
+      : environments_(environments),
+        scalar_sampling_(std::move(scalar_sampling)) {}
 
   [[nodiscard]] auto Execute(
       const RunId& run_id,
@@ -286,7 +298,8 @@ class AcceptanceRunExecutor final : public IRunExecutor {
     auto config = BuildAcceptanceConfig(
         scenario, experiment, *asset_id, maximum_depth,
         assembly::internal::kDetectionFeatureV1PayloadBytes +
-            (waveform_ ? phy::internal::kWaveformCrcBytes : 0U));
+            ((waveform_ || scalar_sampling_)
+                 ? phy::internal::kWaveformCrcBytes : 0U));
     if(!config) return std::unexpected(config.error());
     auto frequency_policy =
         environment::internal::DiscreteFrequencySelectionPolicy::Create(0.0);
@@ -347,6 +360,27 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       waveform_tx.emplace(std::move(*created_tx));
       waveform_rx.emplace(std::move(*created_rx));
     }
+    phy::internal::ScalarFrameStore scalar_frame_store;
+    std::optional<phy::internal::SampledScalarTxPhy> sampled_tx;
+    std::optional<phy::internal::SampledScalarRxPhy> sampled_rx;
+    if(scalar_sampling_) {
+      if(experiment.phy().quality_mode != RxQualityMode::kNone ||
+         scalar_sampling_->observer == nullptr) {
+        return std::unexpected(Error{
+            ErrorCode::kFailedPrecondition,
+            "Sampled scalar comparison requires quality_mode=None and observer"});
+      }
+      auto created_tx = phy::internal::SampledScalarTxPhy::Create(
+          tx_phy->config(), scalar_frame_store);
+      auto created_rx = phy::internal::SampledScalarRxPhy::Create(
+          experiment.phy().bit_rate_bits_per_second,
+          scalar_sampling_->deterministic_seed, scalar_frame_store,
+          *scalar_sampling_->observer);
+      if(!created_tx) return std::unexpected(created_tx.error());
+      if(!created_rx) return std::unexpected(created_rx.error());
+      sampled_tx.emplace(std::move(*created_tx));
+      sampled_rx.emplace(std::move(*created_rx));
+    }
     auto feature_application =
         assembly::internal::AcceptanceFeatureApplication::Create(
             *config, *queues, *deliveries, contracts::SimTime::Zero());
@@ -379,8 +413,12 @@ class AcceptanceRunExecutor final : public IRunExecutor {
         waveform_
             ? assembly::internal::PhyExecutionComposition::Waveform(
                   *waveform_tx, *channel, noise, *waveform_rx, waveform_store)
-            : assembly::internal::PhyExecutionComposition::Abstract(
-                  *tx_phy, *channel, noise, rx_phy);
+            : scalar_sampling_
+                  ? assembly::internal::PhyExecutionComposition::AbstractWithArtifacts(
+                        *sampled_tx, *channel, noise, *sampled_rx,
+                        scalar_frame_store)
+                  : assembly::internal::PhyExecutionComposition::Abstract(
+                        *tx_phy, *channel, noise, rx_phy);
     RecordingTraceSink trace{event_sink};
     assembly::internal::ScenarioRuntime runtime{
         gateway,
@@ -451,6 +489,7 @@ class AcceptanceRunExecutor final : public IRunExecutor {
       const environment::internal::EnvironmentAssetRepository>
       environments_;
   std::optional<WaveformExecutionOptions> waveform_;
+  std::optional<ScalarSamplingExecutionOptions> scalar_sampling_;
 };
 
 }  // namespace ns3_factory::application::internal
