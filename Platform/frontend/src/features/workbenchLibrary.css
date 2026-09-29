@@ -1,0 +1,75 @@
+/* Legacy Overview's paired resource/geometry panels, with bounded dense lists.
+   Scoped to these three views: no Studio, Runtime or Results overrides. */
+.wb-home, .wb-cases, .wb-case-detail { color: #dfedf5; font-size: 14px; line-height: 1.5; min-width: 0; }
+.wb-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 4px 0 14px; background: transparent; border: 0; }
+.wb-heading h1 { font-size: 23px; line-height: 1.3; margin: 3px 0 5px; color: #f1f8fc; }
+.wb-heading p { margin: 0; color: #b5cddc; font-size: 14px; }
+.wb-heading > a { flex-shrink: 0; padding: 9px 15px; border-radius: 5px; font-size: 14px; }
+.wb-heading > a.primary-button { color: #052433; background: #27c6de; border: 1px solid #43d5e8; font-weight: 650; text-decoration: none; }
+.wb-resource-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 28px; border: 1px solid #2b4c60; border-left: 3px solid #22c6dc; border-radius: 5px; padding: 10px 14px; background: #0c2434; margin-bottom: 14px; }
+.wb-resource-strip > * { color: #bfd7e5; text-decoration: none; font-size: 14px; }
+.wb-resource-strip > a { padding: 0; border: 0; }
+.wb-resource-strip b { color: #f1f8fc; margin-left: 8px; }
+.wb-resource-strip > span:last-child { margin-left: auto; font-size: 13px; color: #94b6c8; }
+.wb-home-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); gap: 14px; align-items: start; }
+.wb-panel { min-width: 0; border: 1px solid #2b4c60; border-radius: 6px; background: #0a1e2c; overflow: hidden; }
+.wb-panel > header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #2b4c60; background: #102b3d; }
+.wb-panel h2 { font-size: 16px; font-weight: 650; margin: 0; color: #edf7fd; }
+.wb-panel h2 small { margin-left: 8px; color: #a5c6d8; font-size: 13px; }
+.wb-panel header > span, .wb-panel header > a { font-size: 13px; }
+.wb-search input { width: 200px; max-width: 100%; padding: 6px 9px; font-size: 14px; background: #081b29; border: 1px solid #3a5a6d; border-radius: 4px; color: #edf7fd; }
+.wb-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wb-home table, .wb-case-detail table { width: 100%; min-width: 0; border-collapse: collapse; margin: 0; }
+.wb-home th, .wb-case-detail th { font-size: 13px; font-weight: 550; color: #bad2e0; background: #0b2232; padding: 8px 12px; text-align: left; }
+.wb-home td, .wb-case-detail td { font-size: 14px; color: #dfedf5; padding: 9px 12px; border-bottom: 1px solid #233f51; text-align: left; }
+.wb-home td a { font-weight: 550; }
+.wb-home td small { display: block; color: #a9c3d3; font-size: 12px; margin-top: 2px; }
+.wb-home td:nth-child(2), .wb-home td:nth-child(3) { white-space: nowrap; }
+.wb-draft-list { min-height: 265px; overflow-x: auto; }
+.wb-drafts > footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 9px 14px; color: #a9c3d3; background: #0c2434; font-size: 12px; border-top: 1px solid #2b4c60; }
+.wb-empty { padding: 22px 16px; color: #b7cfdc; }
+.wb-empty strong { color: #e5f3fa; }
+.wb-reference h3 { font-size: 15px; margin: 12px 14px 4px; }
+.wb-preview { padding: 4px 14px; }
+.wb-preview > span { display: block; color: #a8c7d9; font-size: 12px; }
+.wb-preview .topology-layout, .wb-case-geometry .topology-layout { display: block; }
+.wb-preview .topology-plot { display: block; min-width: 0; width: 100%; height: 200px; background: #081b2a; }
+.wb-preview .topology-legend { display: none; }
+.wb-reference-facts { display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 14px; font-size: 13px; border-top: 1px solid #274558; color: #b6d3e3; }
+.wb-reference-facts a { margin-left: auto; }
+.wb-recent { margin-top: 14px; }
+.wb-recent-content { display: flex; gap: 20px; align-items: center; padding: 12px 14px; }
+.wb-recent-content > div:first-child { min-width: 0; flex: 1; }
+.wb-recent-content strong, .wb-recent-content small, .wb-recent-content > div > span { display: block; overflow-wrap: anywhere; }
+.wb-recent-content small { font-family: ui-monospace, monospace; font-size: 12px; color: #a8c6d7; }
+.wb-recent-content > div > span { font-size: 13px; color: #b9d1df; }
+.wb-recent-content > a { font-size: 14px; white-space: nowrap; }
+.wb-case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.wb-case-card { padding: 16px; border: 1px solid #2d5064; border-radius: 6px; background: #0c2434; min-width: 0; }
+.wb-case-card > header { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #a8c7d9; padding: 0; background: transparent; border: 0; }
+.wb-case-card h2 { font-size: 18px; margin: 10px 0 6px; }
+.wb-case-card p { font-size: 14px; color: #c0d5e2; margin: 0 0 12px; }
+.wb-case-card dl, .wb-case-settings dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin: 12px 0; }
+.wb-case-card dl > div, .wb-case-settings dl > div { min-width: 0; }
+.wb-case-card dt, .wb-case-settings dt { font-size: 12px; color: #a7c3d4; }
+.wb-case-card dd, .wb-case-settings dd { font-size: 14px; color: #e4f1f8; margin: 2px 0 0; overflow-wrap: anywhere; }
+.wb-case-launch { display: grid; justify-items: end; gap: 8px; flex-shrink: 0; }
+.wb-case-launch > span { font-size: 13px; color: #b5cddc; }
+.wb-case-launch > button { padding: 9px 18px; background: #19bdd6; color: #032130; font-size: 14px; border-radius: 5px; font-weight: 650; }
+.wb-case-detail-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr); gap: 14px; align-items: start; }
+.wb-case-geometry { padding: 10px 14px; }
+.wb-case-geometry .topology-plot { width: 100%; min-width: 0; height: 275px; display: block; }
+.wb-case-geometry .topology-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; margin-top: 6px; }
+.wb-case-geometry .topology-legend small { flex-basis: 100%; font-size: 12px; }
+.wb-node-table { overflow: auto; max-height: 250px; border-top: 1px solid #294a60; }
+.wb-node-table caption { text-align: left; padding: 8px 12px; font-size: 13px; color: #b5cedc; }
+.wb-node-table td, .wb-node-table tbody th { font-variant-numeric: tabular-nums; font-size: 13px; padding: 7px 12px; }
+.wb-case-settings { display: grid; gap: 12px; }
+.wb-case-settings dl { padding: 0 14px; }
+.wb-resource-id { display: block; padding: 0 14px 12px; overflow-wrap: anywhere; color: #a2c5d7; font-size: 12px; }
+.wb-case-note { padding: 12px 14px; background: #0e293a; border-left: 3px solid #26aabb; color: #bbd1df; font-size: 13px; }
+.wb-case-note p { margin: 5px 0 0; }
+.wb-identities { padding: 10px 0; font-size: 13px; color: #b4d0e0; }
+.wb-identities dl { overflow-wrap: anywhere; }
+@media (max-width: 1050px) { .wb-home-grid, .wb-case-detail-grid { grid-template-columns: 1fr; } .wb-draft-list { min-height: 0; } .wb-heading { flex-wrap: wrap; } }
+@media (max-width: 650px) { .wb-panel > header, .wb-recent-content { flex-wrap: wrap; } .wb-heading h1 { font-size: 20px; } .wb-home td, .wb-home th { padding: 7px; } .wb-resource-strip { gap: 10px 16px; } .wb-resource-strip > span:last-child { margin-left: 0; } .wb-recent-content > div:first-child { flex-basis: 100%; } }

@@ -8,11 +8,14 @@ import type {
   ResultDto,
   ResultSummaryDto,
   RunDto,
+  RunActionsDto,
+  RunDefinitionContextDto,
   RunSummaryDto,
   ScenarioDto,
   SystemInfoDto,
   TrajectoryAssetDto,
 } from "./types";
+import { acquireWithProgress, type AcquisitionProgress } from "./acquisition";
 
 export type ApiFailureKind =
   | "NotFound"
@@ -170,6 +173,8 @@ export class ApiClient {
 
   listEnvironments = () => this.request("/environments", isArrayOf(environment));
   listTrajectories = () => this.request("/trajectories", isArrayOf(trajectory));
+  translateTrajectory = (body: { source_asset_id: string; source_version: number; source_track_id: string; asset_id: string; name: string; x_m: number; y_m: number; z_m: number }) =>
+    this.request("/authoring/trajectories/translate", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   generateTrajectory = (body: Record<string, unknown>) => this.request("/authoring/trajectories/generate", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   importTrajectoryCsv = (body: Record<string, unknown>) => this.request("/authoring/trajectories/import-csv", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   getEnvironment = (id: string) =>
@@ -188,6 +193,18 @@ export class ApiClient {
     );
   listRuns = () => this.request("/runs", isArrayOf(runSummary));
   getRun = (id: string) => this.request(`/runs/${encodeURIComponent(id)}`, run);
+  getRunActions = (id: string) => this.request(`/runs/${encodeURIComponent(id)}/actions`,
+    (value: unknown): value is RunActionsDto => isObject(value) && isString(value.run_id) &&
+      isObject(value.edit) && typeof value.edit.available === "boolean" && isObject(value.rerun) && typeof value.rerun.available === "boolean");
+  repeatRun = (id: string) => this.request(`/runs/${encodeURIComponent(id)}/rerun`, run, { method: "POST" });
+  authoringCapabilities = () => this.request("/authoring/capabilities", anyObject);
+  getRunDefinitionContext = (id: string) => this.request(
+    `/runs/${encodeURIComponent(id)}/definition-context`,
+    (value: unknown): value is RunDefinitionContextDto => isObject(value) &&
+      isString(value.run_id) && scenario(value.scenario) && experiment(value.experiment) &&
+      (value.source === "AuthoredDefinition" || value.source === "Preset") &&
+      isObject(value.execution) && Array.isArray(value.limitations),
+  );
   createRun = (experimentId: string, version: string) =>
     this.request("/runs", run, {
       method: "POST",
@@ -197,9 +214,10 @@ export class ApiClient {
         experiment_version: version,
       }),
     });
-  createAuthoringRun = (draftId: string) =>
+  createAuthoringRun = (draftId: string, revision?: number) =>
     this.request(`/authoring/experiments/${encodeURIComponent(draftId)}/runs`, run, {
       method: "POST",
+      headers: revision === undefined ? undefined : { "If-Match": String(revision) },
     });
   listResults = () => this.request("/results", isArrayOf(resultSummary));
   getResult = (runId: string) =>
@@ -227,10 +245,14 @@ export class ApiClient {
     this.request("/authoring/import/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename, content }) });
   acquireWoa = (request: Record<string, unknown>) =>
     this.request("/authoring/acquisition/woa", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
+  acquireWoaProgress = (request: Record<string, unknown>, progress: (value: AcquisitionProgress) => void, signal: AbortSignal) =>
+    acquireWithProgress(this.url("/authoring/acquisition/woa/stream"), request, progress, signal);
+  environmentCapabilities = () => this.request("/authoring/environment-capabilities", anyObject);
+  environmentInputs = (id: string) => this.request(`/environments/${encodeURIComponent(id)}/authoring-inputs`, anyObject);
   acquireTerrain = (request: Record<string, unknown>) =>
     this.request("/authoring/acquisition/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
-  createEnvironmentBuild = (draftId: string) =>
-    this.request("/authoring/environment-builds", environmentBuild, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft_id: draftId }) });
+  createEnvironmentBuild = (draftId: string, revision?: number) =>
+    this.request("/authoring/environment-builds", environmentBuild, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft_id: draftId, expected_revision: revision }) });
   publishEnvironmentBuild = (buildId: string) =>
     this.request(`/authoring/environment-builds/${encodeURIComponent(buildId)}/publish`, anyObject, { method: "POST" });
   deleteDraft = async (draft: AuthoringDraftDto) => {

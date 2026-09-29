@@ -30,6 +30,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .environment_inputs import validate_environment_samples, verify_arrival_axes, write_bellhop_inputs
+from .ocean_download import Progress, download_dataset
+
 
 DraftKind = Literal["environment", "scenario", "experiment"]
 BuildState = Literal[
@@ -85,6 +88,7 @@ class TerrainAcquisitionRequest(AuthoringModel):
 
 class BuildRequest(AuthoringModel):
     draft_id: str
+    expected_revision: int | None = Field(default=None, ge=1, strict=True)
     bellhop_executable: str | None = None
     reference_asset_root: str | None = None
 
@@ -143,18 +147,10 @@ def _pairs(value: object, first: str, second: str) -> list[tuple[float, float]]:
 def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
     issues: list[str] = []
     if kind == "environment":
-        ssp = _pairs(payload.get("sound_speed_profile"), "depth_meters", "speed_meters_per_second")
-        terrain = _pairs(payload.get("bathymetry"), "range_meters", "depth_meters")
-        if len(ssp) < 2:
-            issues.append("水文数据至少需要两个有效 SSP 采样点")
-        if len(terrain) < 2:
-            issues.append("地形数据至少需要两个有效 Bathymetry 采样点")
-        if any(a < 0 or b <= 0 for a, b in ssp):
-            issues.append("SSP 深度必须非负且声速必须为正")
-        if any(a < 0 or b <= 0 for a, b in terrain):
-            issues.append("地形距离必须非负且水深必须为正")
-        if not isinstance(payload.get("center_frequency_hz"), (int, float)) or float(payload.get("center_frequency_hz", 0)) <= 0:
-            issues.append("工作频率必须大于 0")
+        try:
+            validate_environment_samples(payload)
+        except ValueError as error:
+            issues.append(str(error))
     elif kind == "scenario":
         nodes = payload.get("nodes")
         if not isinstance(nodes, list) or not nodes:
@@ -333,6 +329,12 @@ class AuthoringStore:
             raise KeyError(published_id)
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def environment_input_snapshot(self, asset_id: str) -> dict[str, Any] | None:
+        path = self.root / "published" / f"{_safe_id(asset_id)}.json"
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text(encoding="utf-8")).get("source_snapshot")
+
 
 def parse_two_column_text(content: str, kind: Literal["ssp", "bathymetry"]) -> list[dict[str, float]]:
     rows: list[tuple[float, float]] = []
@@ -343,24 +345,37 @@ def parse_two_column_text(content: str, kind: Literal["ssp", "bathymetry"]) -> l
     if isinstance(value, dict):
         left = value.get("depth_m" if kind == "ssp" else "range_m", [])
         right = value.get("sound_speed_mps" if kind == "ssp" else "depth_m", [])
-        if isinstance(left, list) and isinstance(right, list):
+        if isinstance(left, list) and isinstance(right, list) and len(left) == len(right):
             rows = [(float(a), float(b)) for a, b in zip(left, right)]
+        else:
+            raise ValueError("两列数据的长度必须一致")
     elif isinstance(value, list):
-        rows = [(float(row[0]), float(row[1])) for row in value if isinstance(row, list) and len(row) >= 2]
-    if not rows:
-        for row in csv.reader(io.StringIO(content)):
-            cells = row if len(row) >= 2 else re.split(r"[\t\s]+", row[0].strip())
-            try:
-                rows.append((float(cells[0]), float(cells[1])))
-            except (IndexError, ValueError):
+        if any(not isinstance(row, list) or len(row) != 2 for row in value):
+            raise ValueError("每个采样点必须包含两列数字")
+        rows = [(float(row[0]), float(row[1])) for row in value]
+    else:
+        for index, row in enumerate(csv.reader(io.StringIO(content)), 1):
+            if not row or not any(cell.strip() for cell in row):
                 continue
-    rows = [(a, b) for a, b in rows if math.isfinite(a) and math.isfinite(b)]
+            cells = row if len(row) >= 2 else re.split(r"[\t\s]+", row[0].strip())
+            if index == 1 and cells[0].strip().lower() in {"depth", "depth_m", "range", "range_m"}:
+                continue
+            try:
+                if len(cells) != 2:
+                    raise ValueError("expected two columns")
+                rows.append((float(cells[0]), float(cells[1])))
+            except (IndexError, ValueError) as error:
+                raise ValueError(f"第 {index} 行必须包含两列有效数字，不会跳过错误行") from error
+    if any(not math.isfinite(a) or not math.isfinite(b) or a < 0 or b <= 0 for a, b in rows):
+        raise ValueError("采样值必须有限；深度/距离非负，声速/水深为正")
     if len(rows) < 2:
         raise ValueError("文件中至少需要两个有效数据点")
     rows.sort(key=lambda point: point[0])
+    if any(a[0] == b[0] for a, b in zip(rows, rows[1:])):
+        raise ValueError("同一深度或距离不能重复采样")
     if kind == "ssp":
         return [{"depth_meters": a, "speed_meters_per_second": b} for a, b in rows]
-    return [{"range_meters": a, "depth_meters": abs(b)} for a, b in rows]
+    return [{"range_meters": a, "depth_meters": b} for a, b in rows]
 
 
 def _reference_data(asset_root: Path) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
@@ -369,12 +384,30 @@ def _reference_data(asset_root: Path) -> tuple[list[dict[str, float]], list[dict
     return parse_two_column_text(ssp_text, "ssp"), parse_two_column_text(bathy_text, "bathymetry")
 
 
-def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_root: Path) -> dict[str, Any]:
+def reference_source(asset_root: Path) -> dict[str, Any]:
+    """The shipped manifest, not an API default coordinate, owns provenance."""
+    manifest = json.loads((asset_root / "source" / "source_manifest.json").read_text())
+    for kind in ("sound_speed_profile", "bathymetry"):
+        entry = manifest[kind]
+        content = (asset_root / "source" / entry["path"]).read_bytes()
+        if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+            raise ValueError("参考环境输入校验失败，不能展示或复用")
+    return manifest
+
+
+def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_root: Path,
+                report: Progress = lambda _progress: None) -> dict[str, Any]:
     if not (-90 <= request.latitude_deg <= 90 and -180 <= request.longitude_deg <= 180):
         raise ValueError("坐标超出有效范围")
     if request.use_reference_cache:
+        report({"stage": "cache", "message": "正在读取明确选择的内置参考剖面"})
+        source = reference_source(reference_root)["sound_speed_profile"]
+        selection = source["selection"]
+        coordinate = selection["requested_coordinate"]
+        if (request.latitude_deg, request.longitude_deg, request.month) != (coordinate["latitude_deg"], coordinate["longitude_deg"], selection["month_index"]):
+            raise ValueError("内置参考剖面固定为北纬 18°、东经 110°、4 月；其他海域请使用在线获取或导入文件")
         ssp, _ = _reference_data(reference_root)
-        return {"provider": "WOA23 reference cache", "source": "cached-real-data", "grid_coordinate": {"latitude_deg": 18.0, "longitude_deg": 150.0}, "sound_speed_profile": ssp}
+        return {"provider": "WOA23 内置参考剖面", "source": "cached-real-data", "month": selection["month_index"], "grid_coordinate": source["nearest_grid"], "requested_coordinate": coordinate, "sound_speed_profile": ssp}
     # WOA NetCDF extraction needs the optional scientific stack. Keep acquisition
     # online and explicit; an offline release can still use imported/cache data.
     try:
@@ -389,17 +422,33 @@ def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_ro
         "temperature": (cache_root / f"woa23_decav_t{code}_01.nc", "temperature", "t"),
         "salinity": (cache_root / f"woa23_decav_s{code}_01.nc", "salinity", "s"),
     }
-    for path, folder, variable in profiles.values():
+    cache_hits = 0
+    for index, (path, folder, variable) in enumerate(profiles.values(), 1):
+        dataset = "温度" if variable == "t" else "盐度"
+        def progress(update: dict[str, Any]) -> None:
+            report({**update, "dataset": dataset, "file_index": index, "file_count": 2})
         if path.exists():
-            continue
+            try:
+                with Dataset(str(path)) as cached:
+                    if not all(key in cached.variables for key in ("lat", "lon", "depth", f"{variable}_an")):
+                        raise ValueError("缓存中缺少温盐数据")
+                cache_hits += 1
+                progress({"stage": "cache", "message": "复用已下载的月度数据，无需重复下载"})
+                continue
+            except (OSError, ValueError):
+                # Preserve bad pre-fix caches instead of deleting user files.
+                path.rename(path.with_name(path.name + f".{uuid.uuid4().hex}.invalid"))
+                progress({"stage": "repair", "message": "发现不完整缓存，已保留原文件并重新获取"})
         url = f"https://www.ncei.noaa.gov/data/oceans/woa/WOA23/DATA/{folder}/netcdf/decav/1.00/woa23_decav_{variable}{code}_01.nc"
-        req = urllib.request.Request(url, headers={"User-Agent": "NS3-BELLHOP-Platform/R4"})
+        download_dataset(url, path, progress)
         try:
-            with urllib.request.urlopen(req, timeout=180) as response, path.open("wb") as output:
-                shutil.copyfileobj(response, output)
-        except (urllib.error.URLError, TimeoutError, OSError) as error:
-            path.unlink(missing_ok=True)
-            raise RuntimeError(f"WOA23 数据下载失败: {error}") from error
+            with Dataset(str(path)) as downloaded:
+                if not all(key in downloaded.variables for key in ("lat", "lon", "depth", f"{variable}_an")):
+                    raise ValueError("数据文件缺少温盐剖面")
+        except (OSError, ValueError) as error:
+            path.rename(path.with_name(path.name + f".{uuid.uuid4().hex}.invalid"))
+            raise RuntimeError("NOAA 返回的数据文件无法读取，已隔离；请重试，没有改用参考数据") from error
+    report({"stage": "extracting", "message": "正在按所选经纬度提取温盐并计算声速剖面"})
     temp_path, _, _ = profiles["temperature"]
     salt_path, _, _ = profiles["salinity"]
     with Dataset(str(temp_path)) as temp, Dataset(str(salt_path)) as salt:
@@ -407,8 +456,8 @@ def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_ro
         longitudes = np.asarray(temp.variables["lon"][:], dtype=float)
         depths = np.asarray(temp.variables["depth"][:], dtype=float)
         lat_index = int(np.argmin(np.abs(latitudes - request.latitude_deg)))
-        target_lon = request.longitude_deg % 360
-        lon_index = int(np.argmin(np.minimum(np.abs(longitudes - target_lon), 360 - np.abs(longitudes - target_lon))))
+        longitude_distance = np.abs((longitudes - request.longitude_deg + 180) % 360 - 180)
+        lon_index = int(np.argmin(longitude_distance))
         temperatures = np.ma.filled(temp.variables["t_an"][0, :, lat_index, lon_index], np.nan)
         salinities = np.ma.filled(salt.variables["s_an"][0, :, lat_index, lon_index], np.nan)
         valid = np.isfinite(temperatures) & np.isfinite(salinities) & (depths <= request.maximum_depth_meters)
@@ -418,13 +467,19 @@ def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_ro
             points.append({"depth_meters": round(float(depth), 3), "speed_meters_per_second": round(float(speed), 3)})
     if len(points) < 2:
         raise ValueError("请求位置附近没有足够的 WOA 水文深度数据")
-    return {"provider": "NOAA WOA23", "source": "online-real-data", "grid_coordinate": {"latitude_deg": float(latitudes[lat_index]), "longitude_deg": float(longitudes[lon_index])}, "sound_speed_profile": points}
+    return {"provider": "NOAA WOA23", "source": "online-real-data", "cache_files_reused": cache_hits, "month": request.month, "resolution_degrees": 1, "grid_coordinate": {"latitude_deg": float(latitudes[lat_index]), "longitude_deg": float(longitudes[lon_index])}, "sound_speed_profile": points}
 
 
 def acquire_terrain(request: TerrainAcquisitionRequest, reference_root: Path) -> dict[str, Any]:
+    if not (-90 <= request.latitude_deg <= 90 and -180 <= request.longitude_deg <= 180) or not math.isfinite(request.bearing_deg):
+        raise ValueError("坐标或剖面方向超出有效范围")
     if request.use_reference_cache:
+        selection = reference_source(reference_root)["bathymetry"]["selection"]
+        origin = selection["origin"]
+        if (request.latitude_deg, request.longitude_deg, request.bearing_deg, request.maximum_range_meters, request.sample_count) != (origin["latitude_deg"], origin["longitude_deg"], selection["bearing_degrees"], selection["range_maximum_m"], selection["sample_count"]):
+            raise ValueError("内置参考地形固定为北纬 18°、东经 110°、向东 10 km、41 个采样点")
         _, bathymetry = _reference_data(reference_root)
-        return {"provider": "GEBCO reference cache", "source": "cached-real-data", "bathymetry": bathymetry}
+        return {"provider": "GEBCO 内置参考地形", "source": "cached-real-data", "selection": selection, "bathymetry": bathymetry}
     earth_radius = 6_371_000.0
     locations: list[tuple[float, float]] = []
     ranges = [request.maximum_range_meters * index / (request.sample_count - 1) for index in range(request.sample_count)]
@@ -444,24 +499,24 @@ def acquire_terrain(request: TerrainAcquisitionRequest, reference_root: Path) ->
     if len(results) != len(ranges):
         raise RuntimeError("GEBCO 返回的采样点数量不完整")
     bathymetry = []
-    last_depth: float | None = None
     for distance, result in zip(ranges, results):
         elevation = result.get("elevation") if isinstance(result, dict) else None
-        depth = -float(elevation) if isinstance(elevation, (int, float)) and elevation < 0 else last_depth
-        if depth is None:
-            raise ValueError("所选起点不在 GEBCO 海域范围内")
-        last_depth = depth
+        if isinstance(elevation, bool) or not isinstance(elevation, (int, float)) or not math.isfinite(elevation) or elevation >= 0:
+            raise ValueError(f"距起点 {distance:g} m 处为陆地或缺少有效水深；请调整剖面，不能用相邻水深填补")
+        depth = -float(elevation)
         bathymetry.append({"range_meters": round(distance, 3), "depth_meters": round(depth, 3)})
     return {"provider": "GEBCO 2020 / OpenTopodata", "source": "online-real-data", "bathymetry": bathymetry}
 
 
 def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildResource:
     draft = store.get("environment", request.draft_id)
+    if request.expected_revision is not None and draft.revision != request.expected_revision:
+        raise RuntimeError("环境草稿已更新，请重新保存后计算")
     issues = validate_payload("environment", draft.payload)
     timestamp = _now()
     steps = [BuildStep(key=key, label=label, state="Waiting") for key, label in (
         ("hydrology", "水文数据"), ("terrain", "海底地形"), ("normalization", "数据规范化"),
-        ("bellhop", "Bellhop 离线计算"), ("parsing", "声场解析"), ("asset_validation", "资产验证"),
+        ("bellhop", "Bellhop 离线计算"), ("parsing", "计算输出检查"), ("asset_validation", "输入快照归档"),
     )]
     build = EnvironmentBuildResource(build_id=f"env-build-{uuid.uuid4().hex[:12]}", draft_id=draft.draft_id, state="Validating", steps=steps, created_at=timestamp, updated_at=timestamp)
     if issues:
@@ -476,7 +531,15 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
         # inputs or imports its verified output when no authoring executable is
         # configured. No analytical field is mislabeled as Bellhop output.
         use_reference = draft.payload.get("build_source") == "reference-bellhop-arrivals"
+        input_summary: dict[str, Any] = {}
         if use_reference:
+            reference_ssp, reference_terrain = _reference_data(reference_root)
+            reference_config = json.loads((reference_root / "bellhop" / "config.json").read_text(encoding="utf-8"))
+            if (draft.payload.get("sound_speed_profile") != reference_ssp or
+                draft.payload.get("bathymetry") != reference_terrain or
+                draft.payload.get("center_frequency_hz") != reference_config["frequency_hz"] or
+                "bottom" in draft.payload or "bellhop" in draft.payload):
+                raise ValueError("参考声场只能连同原始参考输入导入；修改后的水文、地形或声学参数必须重新计算 Bellhop")
             reference_bellhop = reference_root / "bellhop"
             arrivals = reference_bellhop / "reference_shallow_water_v1.arr"
             if not arrivals.is_file(): raise FileNotFoundError("参考 Bellhop arrivals 不存在")
@@ -510,21 +573,33 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
         else:
             executable = request.bellhop_executable or os.environ.get("PLATFORM_BELLHOP_EXECUTABLE")
             if not executable:
-                raise RuntimeError("未配置 Bellhop 可执行文件；不能用近似传播模型冒充正式声场")
-            # Authoring jobs run Bellhop only here, never on a Runtime packet path.
-            process = subprocess.run([executable, _safe_id(draft.name)], cwd=store.root / "builds", capture_output=True, text=True, timeout=600, check=False)
+                raise RuntimeError("未配置 Bellhop 离线计算程序。草稿已保留；不会改用内置参考声场")
+            executable_path = Path(executable).resolve()
+            if not executable_path.is_file() or not os.access(executable_path, os.X_OK):
+                raise ValueError("Bellhop 离线计算程序不存在或不可执行")
+            job_root = store.root / "builds" / build.build_id
+            input_summary = write_bellhop_inputs(draft.payload, job_root)
+            command = [str(executable_path)]
+            if executable_path.name.startswith("bellhopcxx"):
+                command.append("-1")  # CPU single-thread execution, not a second simulation clock.
+            command.append("environment")
+            process = subprocess.run(command, cwd=job_root, capture_output=True, text=True, timeout=600, check=False)
+            (job_root / "calculation.log").write_text(process.stdout + process.stderr, encoding="utf-8")
             if process.returncode != 0:
                 raise RuntimeError((process.stderr or process.stdout or "Bellhop 执行失败")[-1000:])
-            arrivals = store.root / "builds" / f"{_safe_id(draft.name)}.arr"
+            arrivals = job_root / "environment.arr"
             if not arrivals.is_file(): raise RuntimeError("Bellhop 未生成 arrivals 文件")
-            digest = hashlib.sha256(arrivals.read_bytes()).hexdigest(); validation = {"state": "Valid", "field": {}}
-            asset_id = _safe_id(draft.name)
+            verify_arrival_axes(arrivals, input_summary)
+            digest = hashlib.sha256(arrivals.read_bytes()).hexdigest()
+            validation = {"state": "InputAndAxesVerified", "full_asset_validation": "PerformedByPublisher"}
+            asset_id = f"{_safe_id(draft.name)}-{draft.draft_id}-r{draft.revision}"
+            input_summary["executable_sha256"] = hashlib.sha256(executable_path.read_bytes()).hexdigest()
             execution = "Executed"
         build.steps[3].state = "Completed"; build.state = "Parsing"; build.steps[4].state = "Running"; store.save_build(build)
         # Parsing/normalizing authority remains the Platform environment importer.
         build.steps[4].state = "Completed"; build.state = "Normalizing"; store.save_build(build)
         build.state = "ValidatingAsset"; build.steps[5].state = "Running"; store.save_build(build)
-        build.artifact = {"environment_asset_id": asset_id, "asset_format_version": 1, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "arrivals_path": str(arrivals.resolve()), "validation": validation, "source_draft_id": draft.draft_id, "source_revision": draft.revision, "published": False}
+        build.artifact = {"environment_asset_id": asset_id, "asset_format_version": 1, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "arrivals_path": str(arrivals.resolve()), "validation": validation, "source_draft_id": draft.draft_id, "source_revision": draft.revision, "published": False, "source_snapshot": draft.model_dump(), "input_summary": input_summary}
         build.steps[5].state = "Completed"; build.state = "Completed"; build.updated_at = _now(); store.save_build(build)
     except Exception as error:
         for step in build.steps:

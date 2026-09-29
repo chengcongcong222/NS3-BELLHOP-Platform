@@ -10,6 +10,7 @@ import pytest
 
 from helpers import resource_catalog
 from ns3_factory_backend.api import BackendSettings, create_app
+from ns3_factory_backend.authoring import _reference_data
 
 
 pytestmark = pytest.mark.skipif(
@@ -45,11 +46,14 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
+            # This gate explicitly imports a reference asset. The separate real
+            # Bellhop gate verifies changed authored inputs, not just new IDs.
+            reference_ssp, reference_terrain = _reference_data(Path(os.environ["PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT"]))
             environment = await client.post("/authoring/drafts", json={
                 "kind": "environment", "name": "e2e-water",
                 "payload": {"center_frequency_hz": 25000,
-                    "sound_speed_profile": [{"depth_meters": 0, "speed_meters_per_second": 1500}, {"depth_meters": 100, "speed_meters_per_second": 1490}],
-                    "bathymetry": [{"range_meters": 0, "depth_meters": 100}, {"range_meters": 2500, "depth_meters": 110}],
+                    "sound_speed_profile": reference_ssp,
+                    "bathymetry": reference_terrain,
                     "build_source": "reference-bellhop-arrivals"},
             })
             build = await client.post("/authoring/environment-builds", json={"draft_id": environment.json()["draft_id"]})
@@ -103,6 +107,16 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
                 assert terminal["provenance"]["trajectory_bindings"] == [
                     {**binding, "node_id": int(binding["node_id"])} for binding in bindings]
                 result = (await client.get(f"/runs/{terminal['run_id']}/results")).json()
+                context_response = await client.get(f"/runs/{terminal['run_id']}/definition-context")
+                assert context_response.status_code == 200, context_response.text
+                context = context_response.json()
+                assert context["scenario"]["scenario_id"] == terminal["scenario_id"]
+                assert context["scenario"]["environment"]["environment_asset_id"] == environment_id
+                assert context["scenario"]["nodes"][0]["initial_position"]["x_meters"] == 1000
+                assert context["experiment"]["routing"]["mode"] == routing
+                assert context["experiment"]["fusion"]["workload"] == workload
+                assert context["execution"]["physical_layer"] == physical_layer
+                assert context["definition_sha256"] == result["provenance"]["definition_sha256"]
                 return terminal, result
 
             _, communication_channel1 = await execute(

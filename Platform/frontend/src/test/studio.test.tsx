@@ -48,8 +48,8 @@ describe("R4 real-evidence studio", () => {
     const f = result.fusion_results[0];
     installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result, visualization: { positions_complete: true, generated_feature_count: "8", positions: [], fusion_sources: [{ fusion_sequence: f.fusion_sequence, node_id: "0", observation_sequence: "3" }], waveform: [{ transmission_id: "99", receiver_node_id: "0", payload_bit_count: "120", bit_error_count: "6", crc_ok: false }] } } } });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("6 / 120")).toBeTruthy();
-    expect(screen.getByText("0.05")).toBeTruthy();
+    expect((await screen.findAllByText("6 / 120")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("0.05").length).toBeGreaterThan(0);
     expect(screen.getByText("失败")).toBeTruthy();
     expect(screen.getByText(/N0 \/ #3/)).toBeTruthy();
     expect(screen.queryByText("Pass")).toBeNull();

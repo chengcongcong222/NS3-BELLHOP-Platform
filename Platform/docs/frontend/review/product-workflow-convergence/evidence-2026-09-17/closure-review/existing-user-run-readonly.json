@@ -1,0 +1,131 @@
+{
+  "url": "http://127.0.0.1:4175/runs/run-d3d4c887ab34460d91dfb3073315b2f8",
+  "backend_port": 8002,
+  "run_before": {
+    "run_id": "run-d3d4c887ab34460d91dfb3073315b2f8",
+    "experiment_id": "experiment-bbf821234fb6-r1",
+    "experiment_version": "1",
+    "scenario_id": "scenario-f2082ae5ed19-r1",
+    "scenario_version": "1",
+    "environment_asset_id": "4-environment-732fb792b77f-r1",
+    "environment_format_version": "1",
+    "lifecycle": "Completed",
+    "simulation_started_at_ns": "0",
+    "simulation_ended_at_ns": "24000000000",
+    "final_snapshot_version": "2",
+    "event_stream_complete": true,
+    "failure": null,
+    "provenance": {
+      "definition_sha256": "ba137351b8beddb8e8f2adb175098b7fb543b7bff75610cae53f7dc74d6a4798",
+      "experiment": {
+        "id": "experiment-bbf821234fb6-r1",
+        "version": 1
+      },
+      "scenario": {
+        "id": "scenario-f2082ae5ed19-r1",
+        "version": 1
+      },
+      "environment": {
+        "asset_id": "4-environment-732fb792b77f-r1",
+        "checksum": "6f7c372480066312",
+        "format_version": 1
+      },
+      "physical_layer": "Channel1Abstract",
+      "deterministic_seed": 1,
+      "trajectory_bindings": [
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 0,
+          "track_id": "N0",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 1,
+          "track_id": "N1",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 2,
+          "track_id": "N2",
+          "version": 1
+        }
+      ],
+      "trajectory_assets": [
+        {
+          "asset_id": "studio-review-1789637515813",
+          "version": 1,
+          "checksum_sha256": "cd28bf51318114c570c37b9b1ba6d801472bb1aabd889feef468a69b29d241b7"
+        }
+      ]
+    }
+  },
+  "run_after": {
+    "run_id": "run-d3d4c887ab34460d91dfb3073315b2f8",
+    "experiment_id": "experiment-bbf821234fb6-r1",
+    "experiment_version": "1",
+    "scenario_id": "scenario-f2082ae5ed19-r1",
+    "scenario_version": "1",
+    "environment_asset_id": "4-environment-732fb792b77f-r1",
+    "environment_format_version": "1",
+    "lifecycle": "Completed",
+    "simulation_started_at_ns": "0",
+    "simulation_ended_at_ns": "24000000000",
+    "final_snapshot_version": "2",
+    "event_stream_complete": true,
+    "failure": null,
+    "provenance": {
+      "definition_sha256": "ba137351b8beddb8e8f2adb175098b7fb543b7bff75610cae53f7dc74d6a4798",
+      "experiment": {
+        "id": "experiment-bbf821234fb6-r1",
+        "version": 1
+      },
+      "scenario": {
+        "id": "scenario-f2082ae5ed19-r1",
+        "version": 1
+      },
+      "environment": {
+        "asset_id": "4-environment-732fb792b77f-r1",
+        "checksum": "6f7c372480066312",
+        "format_version": 1
+      },
+      "physical_layer": "Channel1Abstract",
+      "deterministic_seed": 1,
+      "trajectory_bindings": [
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 0,
+          "track_id": "N0",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 1,
+          "track_id": "N1",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637515813",
+          "node_id": 2,
+          "track_id": "N2",
+          "version": 1
+        }
+      ],
+      "trajectory_assets": [
+        {
+          "asset_id": "studio-review-1789637515813",
+          "version": 1,
+          "checksum_sha256": "cd28bf51318114c570c37b9b1ba6d801472bb1aabd889feef468a69b29d241b7"
+        }
+      ]
+    }
+  },
+  "display": {
+    "nodes": 3,
+    "events": 10,
+    "heading": "历史运行回放"
+  },
+  "definition_context_endpoint_available": false,
+  "semantics": "Historical read-only replay uses recorded positions and events only; no guessed resources or parameters."
+}

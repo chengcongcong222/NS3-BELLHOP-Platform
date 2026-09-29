@@ -243,7 +243,9 @@ def test_sse_replay_live_boundary_cursor_and_terminal_close() -> None:
                 for line in response.text.splitlines()
                 if line.startswith("data: ")
             ]
-            assert [item["sequence"] for item in data_lines] == ["1", "2"]
+            assert [item["sequence"] for item in data_lines[:-1]] == ["1", "2"]
+            assert data_lines[-1] == {"last_sequence": "2"}
+            assert response.text.count("event: stream-end\n") == 1
 
             replay = await client.get(
                 "/runs/run-sse/events", headers={"Last-Event-ID": "1"}
@@ -251,6 +253,9 @@ def test_sse_replay_live_boundary_cursor_and_terminal_close() -> None:
             assert replay.status_code == 200
             assert "id: 1\n" not in replay.text
             assert replay.text.count("id: 2\n") == 1
+            assert replay.text.endswith('event: stream-end\ndata: {"last_sequence":"2"}\n\n')
+            exhausted = await client.get("/runs/run-sse/events", headers={"Last-Event-ID": "2"})
+            assert exhausted.text == 'event: stream-end\ndata: {"last_sequence":"2"}\n\n'
 
             future = await client.get(
                 "/runs/run-sse/events", headers={"Last-Event-ID": "3"}
@@ -282,6 +287,7 @@ def test_worker_failed_preserves_events_and_has_no_result() -> None:
             assert result.json()["error"]["code"] == "RunFailed"
             events = await client.get("/runs/run-failed/events")
             assert events.text.count("event: run-event") == 2
+            assert events.text.endswith('event: stream-end\ndata: {"last_sequence":"2"}\n\n')
 
     asyncio.run(run())
 

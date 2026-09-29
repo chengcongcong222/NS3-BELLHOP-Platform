@@ -1,0 +1,47 @@
+.run-library { max-width: 1400px; margin: 0 auto; }
+.run-library-toolbar, .experiment-run-group > header, .run-library-identity, .run-action-buttons { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.run-library-toolbar { justify-content: flex-start; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #31566b; border-radius: 5px; background: #102839; }
+.run-library-toolbar label { display: flex; align-items: center; gap: 12px; font-size: 14px; white-space: nowrap; }
+.run-library-toolbar input { min-width: 260px; }
+.experiment-run-group { border: 1px solid #31566b; margin-bottom: 10px; border-radius: 5px; overflow: hidden; background: #0b2130; }
+.experiment-run-group > header { background: #123044; padding: 9px 12px; color: #e0f2fa; border-bottom: 1px solid #31566b; }
+.experiment-run-group h2 { font-size: 16px; line-height: 1.4; margin: 0; }
+.experiment-run-group > header > span:not(.status) { color: #bdd7e5; font-size: 14px; }
+.run-library-entry { padding: 14px 16px; border-top: 1px solid #31566b; }
+.run-resource-chain { font-size: 14px; line-height: 1.7; color: #bed5e3; margin: 8px 0; overflow-wrap: anywhere; }
+.run-library-identity { justify-content: space-between; }
+.run-library-identity > a:first-child { font-size: 14px; overflow-wrap: anywhere; }
+.run-library-failure { color: #ffc0ab; font-size: 14px; }
+.run-actions { padding: 10px 14px; color: #c9e0ed; background: #102c3e; border: 1px solid #31556a; }
+.run-actions.compact { padding: 0; border: 0; background: transparent; }
+.run-actions small, .run-action-unavailable { display: block; font-size: 13px; color: #b5cddc; line-height: 1.6; margin-top: 6px; }
+.run-actions p { font-size: 14px; margin: 6px 0 0; }
+.run-timing-warning { color: #ffd09b; }
+.run-failure { border: 1px solid #ad644b; background: #302a29; color: #ffe6d8; padding: 14px 18px; }
+.run-failure h2 { font-size: 18px; margin: 0 0 8px; }
+.run-failure p { font-size: 14px; line-height: 1.7; margin: 6px 0; }
+.run-failure details { color: #d2bdba; font-size: 13px; }
+.event-connection-notice { padding: 10px 14px; color: #f5d295; border: 1px solid #856b3d; }
+.run-library-count { margin-left: auto; color: #bad3e2; font-size: 13px; }
+.run-library-toolbar input, .run-library-toolbar select { font-size: 14px; color: #e8f4fb; border: 1px solid #3b5f75; border-radius: 4px; background: #091e2e; padding: 6px 9px; }
+.run-group-toggle { flex: 0 0 30px; height: 30px; padding: 0; border: 1px solid #3b6078; border-radius: 4px; color: #b8e1f2; background: #0b2333; font-size: 16px; }
+.run-group-title { flex: 1; min-width: 160px; }
+.run-group-title small { display: block; font-size: 12px; color: #aac7d8; margin-top: 2px; overflow-wrap: anywhere; }
+.run-record-table { max-height: 250px; overflow: auto; }
+.run-record-table table { width: 100%; min-width: 720px; border-collapse: collapse; margin: 0; }
+.run-record-table th { position: sticky; top: 0; background: #0c2434; text-align: left; padding: 7px 12px; font-size: 13px; color: #b4cede; }
+.run-record-table td { padding: 9px 12px; font-size: 13px; vertical-align: top; color: #d8eaf4; border-top: 1px solid #2a4658; }
+.run-record-table td:first-child { max-width: 300px; }
+.run-record-table td:nth-child(3) { max-width: 340px; }
+.run-record-table td > a, .run-record-table td > span { overflow-wrap: anywhere; }
+.run-record-table td small { display: block; color: #a7c4d5; font-size: 12px; line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; }
+.run-record-table .run-library-failure { display: block; max-width: 240px; margin-top: 6px; line-height: 1.4; font-size: 12px; }
+.run-record-links { display: flex; gap: 15px; }
+.run-record-actions { margin-top: 6px; color: #b1cddd; }
+.run-record-actions summary { cursor: pointer; font-size: 12px; color: #b1cddd; }
+.run-record-actions .run-action-buttons { gap: 8px; margin-top: 8px; }
+.run-record-actions button { padding: 5px 8px; font-size: 12px; }
+.run-library-pagination { display: flex; gap: 10px; justify-content: flex-end; align-items: center; color: #b1cddd; padding: 5px 0; font-size: 13px; background: transparent; border: 0; overflow: visible; }
+.run-library-pagination > span { margin-right: auto; }
+.run-library-pagination button { font-size: 13px; padding: 6px 12px; }
+@media (max-width: 720px) { .run-library-toolbar input { min-width: 0; width: 100%; } .run-library-toolbar label { width: 100%; } }

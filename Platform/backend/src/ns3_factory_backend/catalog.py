@@ -127,6 +127,11 @@ class InMemoryRunCatalog:
         async with self._condition:
             return self._snapshot(self._find(run_id))
 
+    async def captured_command(self, run_id: str) -> StartRunCommand:
+        """Independent control-plane copy; never mutate or restart the old entry."""
+        async with self._condition:
+            return self._find(run_id).command.model_copy(deep=True)
+
     async def get_result(self, run_id: str) -> RunResult:
         async with self._condition:
             entry = self._find(run_id)

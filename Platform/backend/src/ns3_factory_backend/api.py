@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import asyncio
+import importlib.util
 import hashlib
 import json
 import subprocess
@@ -15,6 +17,7 @@ from fastapi import FastAPI, Header, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict
 
 from .catalog import (
@@ -25,6 +28,7 @@ from .catalog import (
     RunSnapshot,
 )
 from .gateway import WorkerGateway
+from .acquisition_stream import acquisition_stream
 from .evidence import (
     AcceptanceEvidenceBundle,
     RunManifest,
@@ -41,7 +45,10 @@ from .resources import (
     ResourceCatalogError,
     ScenarioResource,
 )
+from .run_context import RunDefinitionContext, load_captured_definition, make_run_context
+from .run_actions import RunActions, make_run_actions, validate_repeat_resources
 from .wire import (
+    Execution,
     PositiveUIntDecimal,
     AcceptanceReport,
     FusionResult,
@@ -70,8 +77,11 @@ from .authoring import (
     new_build,
     parse_two_column_text,
     validate_payload,
+    _reference_data,
+    reference_source,
 )
 from .trajectory_authoring import Asset as TrajectoryAsset, CsvRequest as TrajectoryCsvRequest, GenerateRequest as TrajectoryGenerateRequest, Store as TrajectoryStore, generate as generate_trajectory, import_csv as import_trajectory_csv
+from .trajectory_derivation import TranslateTrajectoryRequest, translate_trajectory
 
 
 @dataclass(frozen=True)
@@ -228,6 +238,10 @@ _ERROR_STATUS = {
     "EnvironmentNotFound": status.HTTP_404_NOT_FOUND,
     "TrajectoryNotFound": status.HTTP_404_NOT_FOUND,
     "TrajectoryTrackNotFound": status.HTTP_404_NOT_FOUND,
+    "RunDefinitionUnavailable": status.HTTP_409_CONFLICT,
+    "TrajectoryResourceInvalid": status.HTTP_409_CONFLICT,
+    "TrajectoryPlacementInvalid": status.HTTP_400_BAD_REQUEST,
+    "SceneDomainViolation": status.HTTP_400_BAD_REQUEST,
 }
 
 
@@ -249,7 +263,7 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
     provenance = None
     if snapshot.authored_definition_path:
         try:
-            definition = json.loads(Path(snapshot.authored_definition_path).read_text(encoding="utf-8"))
+            definition = load_captured_definition(snapshot)
             provenance = {
                 "definition_sha256": snapshot.authored_definition_sha256,
                 "experiment": {"id": definition["experiment_id"], "version": definition["version"]},
@@ -261,7 +275,7 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
                 "trajectory_assets": [{"asset_id": item["asset_id"], "version": item["version"],
                     "checksum_sha256": item["checksum_sha256"]} for item in definition["trajectory_assets"]],
             }
-        except (OSError, KeyError, ValueError, json.JSONDecodeError):
+        except (CatalogError, KeyError, ValueError, TypeError):
             provenance = {"definition_sha256": snapshot.authored_definition_sha256,
                           "state": "DefinitionUnavailable"}
     return RunResource(
@@ -371,6 +385,9 @@ def create_app(
     id_factory: Callable[[], str] | None = None,
     resource_catalog: ResourceCatalog | None = None,
 ) -> FastAPI:
+    # NetCDF/HDF5 is not thread-safe. Serialize acquisition per application,
+    # without blocking the event loop or sharing a mutable global resource.
+    ocean_acquisition_lock = asyncio.Lock()
     selected_gateway = gateway or WorkerGateway(
         settings.worker_executable, settings.environment_repository_root
     )
@@ -401,6 +418,9 @@ def create_app(
         reference_environment_checksum=settings.reference_environment_checksum,
     )
     run_manifests: dict[str, RunManifest] = {}
+    # Observation-only command snapshots, owned by this app just like its Run
+    # catalog. In particular a preset's PHY override must not be lost on read.
+    run_executions: dict[str, Execution] = {}
     authoring_root = settings.authoring_workspace_root or Path(
         tempfile.mkdtemp(prefix="ns3-platform-authoring-")
     )
@@ -499,7 +519,12 @@ def create_app(
 
     @app.get("/trajectories", response_model=list[TrajectoryAsset])
     async def list_trajectories() -> list[TrajectoryAsset]:
-        return trajectories.list()
+        from .scenario_trajectories import internal_placement
+        return [asset for asset in trajectories.list() if not internal_placement(asset)]
+
+    @app.get("/authoring/capabilities")
+    async def authoring_capabilities():
+        return {"relative_trajectory_placement": True, "exact_run_repeat": True, "scene_domain_validation": True}
 
     @app.post("/authoring/trajectories/generate", response_model=TrajectoryAsset, status_code=201)
     async def create_generated_trajectory(request: TrajectoryGenerateRequest) -> TrajectoryAsset:
@@ -516,6 +541,10 @@ def create_app(
             return trajectories.save(import_trajectory_csv(request))
         except (ValueError, FileExistsError) as error:
             raise CatalogError("TrajectoryAuthoringFailed", str(error)) from error
+
+    @app.post("/authoring/trajectories/translate", response_model=TrajectoryAsset, status_code=201)
+    async def create_translated_trajectory(request: TranslateTrajectoryRequest) -> TrajectoryAsset:
+        return translate_trajectory(request, trajectories)
 
     @app.get("/authoring/drafts", response_model=list[DraftResource])
     async def list_drafts(kind: DraftKind | None = None) -> list[DraftResource]:
@@ -592,14 +621,24 @@ def create_app(
     @app.post("/authoring/acquisition/woa")
     async def fetch_woa(request: OceanAcquisitionRequest) -> dict[str, object]:
         try:
-            return acquire_woa(request, authoring_root / "cache" / "woa23", reference_asset_root)
+            async with ocean_acquisition_lock:
+                return await run_in_threadpool(acquire_woa, request, authoring_root / "cache" / "woa23", reference_asset_root)
         except (ValueError, RuntimeError) as error:
             raise CatalogError("HydrologyAcquisitionFailed", str(error)) from error
+
+    @app.post("/authoring/acquisition/woa/stream")
+    async def stream_woa(request: OceanAcquisitionRequest) -> StreamingResponse:
+        return StreamingResponse(
+            acquisition_stream(ocean_acquisition_lock, lambda report: acquire_woa(
+                request, authoring_root / "cache" / "woa23", reference_asset_root, report)),
+            media_type="application/x-ndjson",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @app.post("/authoring/acquisition/terrain")
     async def fetch_terrain(request: TerrainAcquisitionRequest) -> dict[str, object]:
         try:
-            return acquire_terrain(request, reference_asset_root)
+            return await run_in_threadpool(acquire_terrain, request, reference_asset_root)
         except (ValueError, RuntimeError) as error:
             raise CatalogError("TerrainAcquisitionFailed", str(error)) from error
 
@@ -608,9 +647,11 @@ def create_app(
         try:
             effective = request if request.reference_asset_root else request.model_copy(
                 update={"reference_asset_root": str(reference_asset_root)})
-            return new_build(authoring, effective)
+            return await run_in_threadpool(new_build, authoring, effective)
         except KeyError as error:
             raise CatalogError("DraftNotFound", "Environment draft was not found.") from error
+        except RuntimeError as error:
+            raise CatalogError("DraftConflict", str(error)) from error
 
     @app.get("/authoring/environment-builds/{build_id}", response_model=EnvironmentBuildResource)
     async def get_environment_build(build_id: str) -> EnvironmentBuildResource:
@@ -619,10 +660,23 @@ def create_app(
         except KeyError as error:
             raise CatalogError("BuildNotFound", "Environment build was not found.") from error
 
+    @app.get("/authoring/environment-capabilities")
+    async def environment_capabilities() -> dict[str, object]:
+        missing = [name for name in ("numpy", "netCDF4") if importlib.util.find_spec(name) is None]
+        executable = os.environ.get("PLATFORM_BELLHOP_EXECUTABLE", "")
+        return {"woa_online_available": not missing,
+                "woa_unavailable_reason": "在线水文获取尚未配置科学计算依赖；可导入文件或明确选择内置参考案例" if missing else None,
+                "bellhop_available": bool(executable and Path(executable).is_file() and os.access(executable, os.X_OK))}
+
     @app.post("/authoring/environment-builds/{build_id}/publish")
     async def publish_environment_build(build_id: str) -> dict[str, object]:
         try:
-            artifact = authoring.publish_build(build_id)
+            build = authoring.get_build(build_id)
+            if build.state != "Completed" or not build.artifact:
+                raise ValueError("请先完成环境计算")
+            artifact = build.artifact
+            if hashlib.sha256(Path(str(artifact["arrivals_path"])).read_bytes()).hexdigest() != artifact["arrivals_sha256"]:
+                raise ValueError("环境计算结果已发生变化，不能发布")
             asset_id = str(artifact["environment_asset_id"])
             target = settings.environment_repository_root / asset_id
             if not target.is_dir():
@@ -636,13 +690,14 @@ def create_app(
                     capture_output=True, text=True, timeout=60, check=False)
                 if completed.returncode != 0:
                     raise ValueError(completed.stderr.strip() or "Environment publication failed")
+            artifact = authoring.publish_build(build_id)
             return {**artifact, "published": True,
                     "runtime_catalog_available": True}
         except KeyError as error:
             raise CatalogError("BuildNotFound", "Environment build was not found.") from error
         except FileExistsError as error:
             raise CatalogError("ImmutableResourceConflict", str(error)) from error
-        except ValueError as error:
+        except (ValueError, OSError) as error:
             raise CatalogError("BuildNotReady", str(error)) from error
 
     @app.post(
@@ -662,9 +717,11 @@ def create_app(
         )
 
         def command(run_id: str):
-            return selected_resources.resolve_command(
+            captured = selected_resources.resolve_command(
                 run_id, request.experiment_id, request.experiment_version
             )
+            run_executions[run_id] = captured.execution.model_copy(deep=True)
+            return captured
 
         snapshot = await catalog.create(command)
         run_manifests[snapshot.run_id] = make_manifest(
@@ -677,12 +734,14 @@ def create_app(
         response_model=RunResource,
         status_code=status.HTTP_201_CREATED,
     )
-    async def create_authoring_experiment_run(draft_id: str) -> RunResource:
+    async def create_authoring_experiment_run(draft_id: str, if_match: str | None = Header(default=None)) -> RunResource:
         """Freeze and run one exact authored Experiment/Scenario composition."""
         try:
             draft = authoring.get("experiment", draft_id)
         except KeyError as error:
             raise CatalogError("DraftNotFound", "Experiment draft was not found.") from error
+        if if_match is not None and if_match != str(draft.revision):
+            raise CatalogError("DraftConflict", "实验已被其他编辑更新，请重新保存并运行。")
         if draft.validation_issues:
             raise CatalogError("DraftValidationFailed", "; ".join(draft.validation_issues))
         payload = draft.payload
@@ -710,7 +769,7 @@ def create_app(
             def preset_command(run_id: str):
                 base = selected_resources.resolve_command(
                     run_id, experiment.experiment_id, experiment.version)
-                return base.model_copy(update={"execution": base.execution.model_copy(update={
+                captured = base.model_copy(update={"execution": base.execution.model_copy(update={
                     "simulation_cycle_count": str(payload["simulation_cycle_count"]),
                     "deterministic_seed": str(payload["deterministic_seed"]),
                     "rx_quality_mode": "None" if physical_layer == "Channel2Waveform" else experiment.phy.rx_quality_mode,
@@ -719,10 +778,14 @@ def create_app(
                     "waveform_noise": noise_model,
                     "waveform_noise_psd_db_re_1upa2_per_hz": float(payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)),
                 })})
+                run_executions[run_id] = captured.execution.model_copy(deep=True)
+                return captured
             snapshot = await catalog.create(preset_command)
             run_manifests[snapshot.run_id] = make_manifest(
                 snapshot.run_id, system_info, environment, scenario, experiment)
             return _run_resource(snapshot)
+        if payload.get("scenario_revision") is not None and payload["scenario_revision"] != scenario_draft.revision:
+            raise CatalogError("DraftConflict", "节点场景已被其他编辑更新，请重新保存当前实验后运行。")
         if scenario_draft.validation_issues:
             raise CatalogError("InvalidReference", "; ".join(scenario_draft.validation_issues))
         scenario_payload = scenario_draft.payload
@@ -735,6 +798,7 @@ def create_app(
                 f"Environment {environment_id} v{environment_version} is not in the Runtime repository.",
             )
         environment_checksum = None
+        environment_resource = None
         if settings.resource_catalog_adapter is not None:
             try:
                 environment_resource = current_resources().get_environment(environment_id)
@@ -758,17 +822,16 @@ def create_app(
         node_ids = {str(node.get("node_id")) for node in nodes if isinstance(node, dict)}
         if {str(binding.get("node_id")) for binding in bindings if isinstance(binding, dict)} != node_ids:
             raise CatalogError("InvalidReference", "Trajectory bindings must cover every Scenario node exactly.")
-        assets: dict[tuple[str, int], TrajectoryAsset] = {}
-        for binding in bindings:
-            try:
-                key = (str(binding["asset_id"]), int(binding["version"]))
-                asset = trajectories.get(*key)
-            except (KeyError, TypeError, ValueError) as error:
-                raise CatalogError("TrajectoryNotFound", "Trajectory asset/version is unavailable or corrupt.") from error
-            if not any(track.track_id == str(binding.get("track_id")) for track in asset.tracks):
-                raise CatalogError("TrajectoryTrackNotFound", "Bound trajectory track does not exist.")
-            assets[key] = asset
-
+        from .scenario_trajectories import compile_bindings
+        bindings, assets = compile_bindings(nodes, bindings, trajectories)
+        spatial_domain = None
+        if environment_resource is not None or scenario_payload.get("spatial_domain") is not None:
+            from .scene_domain import validate_paths
+            if environment_resource is None:
+                environment_resource = current_resources().get_environment(environment_id)
+            duration_ns = int(payload["simulation_cycle_count"]) * int(payload.get("slot_duration_ns", 6_000_000_000)) * max(0, len(nodes) - 1)
+            spatial_domain = validate_paths(nodes, bindings, assets, environment_resource,
+                await environment_authoring_inputs(environment_id), scenario_payload.get("spatial_domain"), duration_ns)
         scenario_publication = authoring.publish_draft("scenario", scenario_draft.draft_id)
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
@@ -777,6 +840,7 @@ def create_app(
             "scenario_id": scenario_publication["published_id"],
             "scenario_source_revision": scenario_draft.revision,
             "scenario_name": scenario_draft.name,
+            "spatial_domain": spatial_domain,
             "experiment_id": experiment_publication["published_id"],
             "experiment_source_revision": draft.revision,
             "version": definition_version,
@@ -857,7 +921,7 @@ def create_app(
                     payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)
                 ),
             )
-            return StartRunCommand(
+            captured = StartRunCommand(
                 run_id=run_id,
                 preset=Preset(scenario_id=str(scenario_publication["published_id"]),
                               experiment_id=str(experiment_publication["published_id"]),
@@ -869,6 +933,8 @@ def create_app(
                 authored_definition_path=str(definition_path),
                 authored_definition_sha256=digest,
             )
+            run_executions[run_id] = captured.execution.model_copy(deep=True)
+            return captured
 
         snapshot = await catalog.create(command)
         return _run_resource(snapshot)
@@ -880,6 +946,39 @@ def create_app(
     @app.get("/environments/{environment_id}", response_model=EnvironmentResource)
     async def get_environment(environment_id: str) -> EnvironmentResource:
         return current_resources().get_environment(environment_id)
+
+    @app.get("/environments/{environment_id}/authoring-inputs")
+    async def environment_authoring_inputs(environment_id: str) -> dict[str, object]:
+        # Read-only projection of the exact publication snapshot, never the
+        # latest mutable draft. Legacy assets without inputs remain explicit.
+        current_resources().get_environment(environment_id)
+        snapshot = authoring.environment_input_snapshot(environment_id)
+        if snapshot:
+            return {"available": True, "name": snapshot["name"], "payload": snapshot["payload"],
+                    "source_revision": snapshot["revision"], "limitations": []}
+        if environment_id == "reference-shallow-water-v1":
+            manifest = reference_source(reference_asset_root)
+            ssp, terrain = _reference_data(reference_asset_root)
+            config = json.loads((reference_asset_root / "bellhop/config.json").read_text())
+            origin = manifest["proxy_origin"]
+            acquisition = {"latitudeDeg": origin["latitude_deg"], "longitudeDeg": origin["longitude_deg"],
+                           "month": manifest["time_reference"]["month"], "requestedSspDepthMeters": max(p["depth_meters"] for p in ssp),
+                           "bearingDeg": 90, "requestedRangeMeters": 10000, "terrainSamples": 41, "useReferenceCache": True}
+            return {"available": True, "name": "南海浅水参考环境", "source_revision": None,
+                    "limitations": ["这是参考案例，不是实测海域。原声场使用三次样条声速插值；当前建设器另存新版本采用线性插值，不替换原声场。"],
+                    "payload": {"sound_speed_profile": ssp, "bathymetry": terrain,
+                        "description": "北纬18°、东经110°附近的4月参考海域；原传播场查询距离至2500 m。",
+                        "center_frequency_hz": config["frequency_hz"], "acquisition": acquisition,
+                        "sources": {"ssp": {"grid_coordinate": manifest["sound_speed_profile"]["nearest_grid"], "month": 4}},
+                        "bottom": {"sound_speed_meters_per_second": config["bottom_sound_speed_m_per_s"],
+                                   "density_grams_per_cubic_centimeter": config["bottom_density_g_per_cm3"],
+                                   "attenuation_db_per_wavelength": config["bottom_attenuation_db_per_wavelength"]},
+                        "bellhop": {"beam_count": config["computed_beam_count"], "source_depths_meters": config["source_depth_m"],
+                                    "receiver_depths_meters": config["receiver_depth_m"], "range_sample_count": config["horizontal_range_m"]["count"],
+                                    "minimum_launch_angle_degrees": config["launch_angle_degrees"][0],
+                                    "maximum_launch_angle_degrees": config["launch_angle_degrees"][1]}}}
+        return {"available": False, "name": environment_id, "payload": {}, "source_revision": None,
+                "limitations": ["这个旧环境只保留了声场，未保存原始声速、地形和采集参数。可继续用于实验；如需修改，请重新导入输入，不能从声场猜测剖面。"]}
 
     @app.get("/scenarios", response_model=list[ScenarioResource])
     async def list_scenarios() -> tuple[ScenarioResource, ...]:
@@ -912,6 +1011,53 @@ def create_app(
     @app.get("/runs/{run_id}", response_model=RunResource)
     async def get_run(run_id: str) -> RunResource:
         return _run_resource(await catalog.get(run_id))
+
+    @app.get("/runs/{run_id}/definition-context", response_model=RunDefinitionContext)
+    async def get_run_definition_context(run_id: str) -> RunDefinitionContext:
+        snapshot = await catalog.get(run_id)
+        context = make_run_context(snapshot, run_executions.get(run_id), run_manifests.get(run_id))
+        return context.model_copy(update={"actions": await actions_for(run_id)})
+
+    def validate_repeat(snapshot: RunSnapshot, command):
+        try:
+            return validate_repeat_resources(snapshot, command, run_manifests.get(snapshot.run_id),
+                settings.environment_repository_root,
+                lambda asset_id: current_resources().get_environment(asset_id), trajectories)
+        except ResourceCatalogConfigurationError as error:
+            raise CatalogError("InvalidReference", "原运行环境资产无法通过完整性校验，未启动新的运行。") from error
+
+    async def actions_for(run_id: str) -> RunActions:
+        snapshot = await catalog.get(run_id)
+        command = await catalog.captured_command(run_id)
+        reason = None
+        try:
+            validate_repeat(snapshot, command)
+        except (CatalogError, ResourceCatalogError) as error:
+            reason = str(error)
+        return make_run_actions(snapshot, command, run_manifests.get(run_id), authoring, reason)
+
+    @app.get("/runs/{run_id}/actions", response_model=RunActions)
+    async def get_run_actions(run_id: str) -> RunActions:
+        return await actions_for(run_id)
+
+    @app.post("/runs/{run_id}/rerun", response_model=RunResource, status_code=201)
+    async def repeat_run(run_id: str) -> RunResource:
+        original = await catalog.get(run_id)
+        if original.lifecycle not in {"Completed", "Failed"}:
+            raise CatalogError("RunNotReady", "原运行尚未结束，不能以它创建独立的重复运行。")
+        captured = await catalog.captured_command(run_id)
+        validate_repeat(original, captured)
+
+        def command(new_run_id: str):
+            repeated = captured.model_copy(update={"run_id": new_run_id}, deep=True)
+            run_executions[new_run_id] = repeated.execution.model_copy(deep=True)
+            return repeated
+
+        created = await catalog.create(command)
+        manifest = run_manifests.get(run_id)
+        if manifest is not None:
+            run_manifests[created.run_id] = manifest.model_copy(update={"run_id": created.run_id}, deep=True)
+        return _run_resource(created)
 
     @app.get("/runs", response_model=list[RunSummaryResource])
     async def list_runs() -> tuple[RunSummaryResource, ...]:
@@ -989,13 +1135,18 @@ def create_app(
         await catalog.validate_cursor(run_id, cursor)
 
         async def stream():
+            last_sequence = str(cursor)
             async for event in catalog.stream_after(run_id, cursor):
                 data = event.model_dump_json()
+                last_sequence = event.sequence
                 yield (
                     f"id: {event.sequence}\n"
                     "event: run-event\n"
                     f"data: {data}\n\n"
                 )
+            # Transport completion only: no RunEvent identity, lifecycle, or
+            # simulation state is synthesized. GET Run remains authoritative.
+            yield "event: stream-end\ndata: " + json.dumps({"last_sequence": last_sequence}, separators=(",", ":")) + "\n\n"
 
         return StreamingResponse(
             stream(),

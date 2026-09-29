@@ -3,9 +3,10 @@ import { RunEventProjection, type EventSourceLike } from "../api/runEvents";
 
 class Source implements EventSourceLike {
   listener: ((event: MessageEvent<string>) => void) | null = null;
+  endListener: ((event: MessageEvent<string>) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
   closed = false;
-  addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+  addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { if (_type === "run-event") this.listener = listener; if (_type === "stream-end") this.endListener = listener; }
   close() { this.closed = true; }
   emit(sequence: string, kind = "Transmission", time = sequence) {
     const payload = kind === "Transmission" ? {
@@ -56,6 +57,26 @@ class Source implements EventSourceLike {
 }
 
 describe("RunEventSequence projection", () => {
+  it("closes a verified empty terminal stream without reporting transport failure", () => {
+    const source = new Source(), update = vi.fn(), failure = vi.fn();
+    const stream = new RunEventProjection("/events", update, failure, () => source);
+    stream.connect();
+    source.endListener?.({ data: JSON.stringify({ last_sequence: "0" }) } as MessageEvent<string>);
+    source.onerror?.(new Event("error"));
+    expect(source.closed).toBe(true);
+    expect(failure).not.toHaveBeenCalled();
+    expect(update.mock.calls.at(-1)?.[0].timeline).toEqual([]);
+  });
+
+  it("does not accept an end marker that conceals missing events", () => {
+    const source = new Source(), failure = vi.fn();
+    const stream = new RunEventProjection("/events", vi.fn(), failure, () => source);
+    stream.connect(); source.emit("1");
+    source.endListener?.({ data: JSON.stringify({ last_sequence: "2" }) } as MessageEvent<string>);
+    expect(source.closed).toBe(true);
+    expect(failure.mock.calls.at(-1)?.[0].kind).toBe("ProtocolFailure");
+  });
+
   it("deduplicates reconnect replay and preserves integers beyond JS safe range", () => {
     const sources: Source[] = [];
     const projections = vi.fn();

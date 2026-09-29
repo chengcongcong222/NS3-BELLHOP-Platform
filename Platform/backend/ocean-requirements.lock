@@ -1,0 +1,5 @@
+# Optional authoring-only WOA23 reader. CPython 3.12 / Linux x86_64.
+# Exact official PyPI wheels verified 2026-09-17. No runtime dependency.
+numpy==2.2.6 --hash=sha256:fd83c01228a688733f1ded5201c678f0c53ecc1006ffbc404db9f7a899ac6249
+netCDF4==1.7.2 --hash=sha256:f9d8a848373723f41ef662590b4f5e1832227501c9fd4513e8ad8da58c269977
+cftime==1.6.4.post1 --hash=sha256:8e18021f421aa26527bad8688c1acf0c85fa72730beb6efce969c316743294f2

@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 
 from ns3_factory_backend.api import BackendSettings, create_app
+from ns3_factory_backend.authoring import _reference_data
 from helpers import failure_result, resource_catalog
 
 
@@ -55,10 +56,11 @@ def test_server_workspace_import_build_and_immutable_publish(tmp_path: Path) -> 
             )
             assert hydrology.status_code == 200
             assert terrain.status_code == 200
+            reference_ssp, reference_terrain = _reference_data(Path(__file__).resolve().parents[2] / "environment/assets/reference_shallow_water_v1")
             payload = {
                 "center_frequency_hz": 25000,
-                "sound_speed_profile": hydrology.json()["sound_speed_profile"],
-                "bathymetry": terrain.json()["bathymetry"],
+                "sound_speed_profile": reference_ssp,
+                "bathymetry": reference_terrain,
                 "build_source": "reference-bellhop-arrivals",
             }
             created = await client.post(
@@ -115,11 +117,11 @@ def test_reference_woa_and_terrain_acquisition_are_real_cached_sources(tmp_path:
         ) as client:
             woa = await client.post(
                 "/authoring/acquisition/woa",
-                json={"latitude_deg": 18, "longitude_deg": 150, "month": 4, "use_reference_cache": True},
+                json={"latitude_deg": 18, "longitude_deg": 110, "month": 4, "use_reference_cache": True},
             )
             gebco = await client.post(
                 "/authoring/acquisition/terrain",
-                json={"latitude_deg": 18, "longitude_deg": 150, "use_reference_cache": True},
+                json={"latitude_deg": 18, "longitude_deg": 110, "use_reference_cache": True},
             )
             assert woa.status_code == 200
             assert woa.json()["source"] == "cached-real-data"

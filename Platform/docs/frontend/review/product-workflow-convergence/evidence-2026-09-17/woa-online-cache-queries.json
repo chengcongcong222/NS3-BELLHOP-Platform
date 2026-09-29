@@ -1,0 +1,308 @@
+[
+  {
+    "request": {
+      "latitude_deg": 18,
+      "longitude_deg": 110,
+      "month": 9,
+      "maximum_depth_meters": 200,
+      "use_reference_cache": false
+    },
+    "http_status": 200,
+    "elapsed_ms": 91.865928,
+    "events": [
+      {
+        "type": "progress",
+        "stage": "queued",
+        "message": "正在等待水文读取任务；首次获取该月份需下载温度和盐度两个文件"
+      },
+      {
+        "type": "progress",
+        "stage": "cache",
+        "message": "复用已下载的月度数据，无需重复下载",
+        "dataset": "温度",
+        "file_index": 1,
+        "file_count": 2
+      },
+      {
+        "type": "progress",
+        "stage": "cache",
+        "message": "复用已下载的月度数据，无需重复下载",
+        "dataset": "盐度",
+        "file_index": 2,
+        "file_count": 2
+      },
+      {
+        "type": "progress",
+        "stage": "extracting",
+        "message": "正在按所选经纬度提取温盐并计算声速剖面"
+      },
+      {
+        "type": "result",
+        "result": {
+          "provider": "NOAA WOA23",
+          "source": "online-real-data",
+          "cache_files_reused": 2,
+          "month": 9,
+          "resolution_degrees": 1,
+          "grid_coordinate": {
+            "latitude_deg": 17.5,
+            "longitude_deg": 109.5
+          },
+          "sound_speed_profile": [
+            {
+              "depth_meters": 0,
+              "speed_meters_per_second": 1541.752
+            },
+            {
+              "depth_meters": 5,
+              "speed_meters_per_second": 1541.863
+            },
+            {
+              "depth_meters": 10,
+              "speed_meters_per_second": 1541.65
+            },
+            {
+              "depth_meters": 15,
+              "speed_meters_per_second": 1541.518
+            },
+            {
+              "depth_meters": 20,
+              "speed_meters_per_second": 1540.993
+            },
+            {
+              "depth_meters": 25,
+              "speed_meters_per_second": 1540.177
+            },
+            {
+              "depth_meters": 30,
+              "speed_meters_per_second": 1538.831
+            },
+            {
+              "depth_meters": 35,
+              "speed_meters_per_second": 1536.994
+            },
+            {
+              "depth_meters": 40,
+              "speed_meters_per_second": 1534.666
+            },
+            {
+              "depth_meters": 45,
+              "speed_meters_per_second": 1532.749
+            },
+            {
+              "depth_meters": 50,
+              "speed_meters_per_second": 1531.021
+            },
+            {
+              "depth_meters": 55,
+              "speed_meters_per_second": 1529.412
+            },
+            {
+              "depth_meters": 60,
+              "speed_meters_per_second": 1527.925
+            },
+            {
+              "depth_meters": 65,
+              "speed_meters_per_second": 1526.612
+            },
+            {
+              "depth_meters": 70,
+              "speed_meters_per_second": 1524.993
+            },
+            {
+              "depth_meters": 75,
+              "speed_meters_per_second": 1523.858
+            },
+            {
+              "depth_meters": 80,
+              "speed_meters_per_second": 1522.997
+            },
+            {
+              "depth_meters": 85,
+              "speed_meters_per_second": 1522.316
+            },
+            {
+              "depth_meters": 90,
+              "speed_meters_per_second": 1521.64
+            },
+            {
+              "depth_meters": 95,
+              "speed_meters_per_second": 1521.136
+            },
+            {
+              "depth_meters": 100,
+              "speed_meters_per_second": 1519.001
+            },
+            {
+              "depth_meters": 125,
+              "speed_meters_per_second": 1515.515
+            },
+            {
+              "depth_meters": 150,
+              "speed_meters_per_second": 1513.407
+            },
+            {
+              "depth_meters": 175,
+              "speed_meters_per_second": 1511.57
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "request": {
+      "latitude_deg": 18,
+      "longitude_deg": 150,
+      "month": 9,
+      "maximum_depth_meters": 200,
+      "use_reference_cache": false
+    },
+    "http_status": 200,
+    "elapsed_ms": 48.678026,
+    "events": [
+      {
+        "type": "progress",
+        "stage": "queued",
+        "message": "正在等待水文读取任务；首次获取该月份需下载温度和盐度两个文件"
+      },
+      {
+        "type": "progress",
+        "stage": "cache",
+        "message": "复用已下载的月度数据，无需重复下载",
+        "dataset": "温度",
+        "file_index": 1,
+        "file_count": 2
+      },
+      {
+        "type": "progress",
+        "stage": "cache",
+        "message": "复用已下载的月度数据，无需重复下载",
+        "dataset": "盐度",
+        "file_index": 2,
+        "file_count": 2
+      },
+      {
+        "type": "progress",
+        "stage": "extracting",
+        "message": "正在按所选经纬度提取温盐并计算声速剖面"
+      },
+      {
+        "type": "result",
+        "result": {
+          "provider": "NOAA WOA23",
+          "source": "online-real-data",
+          "cache_files_reused": 2,
+          "month": 9,
+          "resolution_degrees": 1,
+          "grid_coordinate": {
+            "latitude_deg": 17.5,
+            "longitude_deg": 149.5
+          },
+          "sound_speed_profile": [
+            {
+              "depth_meters": 0,
+              "speed_meters_per_second": 1543.531
+            },
+            {
+              "depth_meters": 5,
+              "speed_meters_per_second": 1543.595
+            },
+            {
+              "depth_meters": 10,
+              "speed_meters_per_second": 1543.642
+            },
+            {
+              "depth_meters": 15,
+              "speed_meters_per_second": 1543.661
+            },
+            {
+              "depth_meters": 20,
+              "speed_meters_per_second": 1543.694
+            },
+            {
+              "depth_meters": 25,
+              "speed_meters_per_second": 1543.734
+            },
+            {
+              "depth_meters": 30,
+              "speed_meters_per_second": 1543.766
+            },
+            {
+              "depth_meters": 35,
+              "speed_meters_per_second": 1543.764
+            },
+            {
+              "depth_meters": 40,
+              "speed_meters_per_second": 1543.718
+            },
+            {
+              "depth_meters": 45,
+              "speed_meters_per_second": 1543.607
+            },
+            {
+              "depth_meters": 50,
+              "speed_meters_per_second": 1543.406
+            },
+            {
+              "depth_meters": 55,
+              "speed_meters_per_second": 1543.004
+            },
+            {
+              "depth_meters": 60,
+              "speed_meters_per_second": 1542.513
+            },
+            {
+              "depth_meters": 65,
+              "speed_meters_per_second": 1541.957
+            },
+            {
+              "depth_meters": 70,
+              "speed_meters_per_second": 1541.414
+            },
+            {
+              "depth_meters": 75,
+              "speed_meters_per_second": 1540.778
+            },
+            {
+              "depth_meters": 80,
+              "speed_meters_per_second": 1540.196
+            },
+            {
+              "depth_meters": 85,
+              "speed_meters_per_second": 1539.649
+            },
+            {
+              "depth_meters": 90,
+              "speed_meters_per_second": 1539.113
+            },
+            {
+              "depth_meters": 95,
+              "speed_meters_per_second": 1538.535
+            },
+            {
+              "depth_meters": 100,
+              "speed_meters_per_second": 1537.98
+            },
+            {
+              "depth_meters": 125,
+              "speed_meters_per_second": 1535.128
+            },
+            {
+              "depth_meters": 150,
+              "speed_meters_per_second": 1531.811
+            },
+            {
+              "depth_meters": 175,
+              "speed_meters_per_second": 1528.096
+            },
+            {
+              "depth_meters": 200,
+              "speed_meters_per_second": 1524.219
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

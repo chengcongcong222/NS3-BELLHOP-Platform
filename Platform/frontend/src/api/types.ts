@@ -32,6 +32,19 @@ export interface FailureDto {
   message: string;
 }
 
+export interface RunActionsDto {
+  run_id: string;
+  experiment_name: string | null;
+  scenario_name: string | null;
+  environment_asset_id: string;
+  edit: { available: boolean; experiment_draft_id: string | null; captured_revision: number | null;
+    current_revision: number | null; scenario_draft_id: string | null; captured_scenario_revision: number | null;
+    current_scenario_revision: number | null; reason: string | null };
+  rerun: { available: boolean; reason: string | null };
+  timing: { minimum_airtime_ns: string; guard_interval_ns: string; minimum_slot_duration_ns: string;
+    configured_slot_duration_ns: string; slot_contains_airtime_and_guard: boolean; explanation: string } | null;
+}
+
 export interface AxisDto {
   unit: "Hz" | "m";
   count: DecimalString;
@@ -67,6 +80,7 @@ export interface EnvironmentDto {
 }
 
 export interface ScenarioDto {
+  spatial_domain?: SceneSpatialDomain | null;
   scenario_id: string;
   version: DecimalString;
   name: string;
@@ -94,6 +108,12 @@ export interface ScenarioDto {
   fusion_center_node_id: DecimalString;
 }
 
+export interface SceneSpatialDomain {
+  model: "ProfileExtrusion";
+  x_min_m: number; x_max_m: number; y_min_m: number; y_max_m: number;
+  surface_clearance_m: number; bottom_clearance_m: number;
+}
+
 export interface ExperimentDto {
   experiment_id: string;
   version: DecimalString;
@@ -106,6 +126,10 @@ export interface ExperimentDto {
     guard_interval_ns: DecimalString;
   };
   phy: {
+    physical_layer?: "Channel1Abstract" | "Channel2Waveform";
+    waveform_modulation?: string;
+    waveform_noise?: string;
+    waveform_noise_psd_db_re_1upa2_per_hz?: number;
     bit_rate_bits_per_second: DecimalString;
     center_frequency_hz: number;
     occupied_bandwidth_hz: number;
@@ -115,7 +139,7 @@ export interface ExperimentDto {
   };
   fusion: {
     workload: string;
-    acceptance_profile: string;
+    acceptance_profile: string | null;
     minimum_bearing_points: DecimalString;
     maximum_fusion_period_ns: DecimalString;
     maximum_ber: number;
@@ -123,6 +147,16 @@ export interface ExperimentDto {
   network_update_interval_cycles: DecimalString;
   simulation_cycle_count: DecimalString;
   deterministic_seed: DecimalString;
+}
+
+export interface RunDefinitionContextDto {
+  run_id: string;
+  source: "AuthoredDefinition" | "Preset";
+  definition_sha256: string | null;
+  scenario: ScenarioDto & { trajectory_bindings?: Array<{ node_id: string; asset_id: string; version: string; track_id: string }> };
+  experiment: ExperimentDto;
+  execution: Record<string, unknown>;
+  limitations: string[];
 }
 
 export interface RunDto {
@@ -186,6 +220,7 @@ export interface RunVisualization {
 }
 
 export interface ResultDto {
+  provenance?: { physical_layer?: string; [key: string]: unknown } | null;
   visualization?: RunVisualization | null;
   run_id: string;
   experiment_id: string;

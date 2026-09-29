@@ -69,12 +69,23 @@ start() {
     exit 2
   fi
   preflight
-  source_revision="$(git -C "${platform_root}" rev-parse HEAD)"
-  if ! git -C "${platform_root}" diff --quiet || \
-     [[ -n "$(git -C "${platform_root}" ls-files --others --exclude-standard)" ]]; then
-    source_revision="working-tree@${source_revision}"
+  # A delivery/worktree directory can legitimately be copied without its Git
+  # administration directory.  The demo must remain runnable in that state:
+  # source revision is provenance only and is not a runtime dependency.
+  source_revision="${PLATFORM_SOURCE_REVISION:-}"
+  if [[ -z "${source_revision}" ]]; then
+    if git -C "${platform_root}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      source_revision="$(git -C "${platform_root}" rev-parse HEAD)"
+      if ! git -C "${platform_root}" diff --quiet || \
+         [[ -n "$(git -C "${platform_root}" ls-files --others --exclude-standard)" ]]; then
+        source_revision="working-tree@${source_revision}"
+      fi
+    else
+      source_revision="local-tree-without-git-metadata"
+    fi
   fi
   PYTHONPATH="${platform_root}/backend/src" \
+  PLATFORM_BELLHOP_EXECUTABLE="${PLATFORM_BELLHOP_EXECUTABLE:-${platform_root}/.runtime/tools/bellhopcuda/bin/bellhopcxx2d}" \
   PYTHONDONTWRITEBYTECODE=1 \
   PLATFORM_SIM_WORKER="${worker}" \
   PLATFORM_ENVIRONMENT_REPOSITORY="${environment_repository}" \

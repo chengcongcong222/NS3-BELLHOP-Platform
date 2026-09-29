@@ -1,0 +1,81 @@
+{
+  "captured_at": "2026-09-17T13:32:32.657Z",
+  "ui": "http://127.0.0.1:4177",
+  "browser": "existing Chrome CDP, independent tab",
+  "read_only": true,
+  "captures": [
+    {
+      "name": "01-workbench",
+      "path": "/",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "documentWidth": 1440,
+      "documentHeight": 900,
+      "content": {
+        "left": 70,
+        "top": 74,
+        "width": 1352,
+        "height": 768.890625,
+        "bottom": 842.890625
+      },
+      "headings": [
+        "水声网络数字孪生仿真工作台",
+        "我的实验 19",
+        "预置案例",
+        "最近运行"
+      ],
+      "overflow": []
+    },
+    {
+      "name": "02-case-detail",
+      "path": "/cases/acceptance4-shallow-water",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "documentWidth": 1440,
+      "documentHeight": 900,
+      "content": {
+        "left": 70,
+        "top": 74,
+        "width": 1352,
+        "height": 762.390625,
+        "bottom": 836.390625
+      },
+      "headings": [
+        "浅水四节点协同通信与融合",
+        "场景与节点",
+        "绑定环境",
+        "通信与运行参数"
+      ],
+      "overflow": []
+    },
+    {
+      "name": "03-run-library",
+      "path": "/runs",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "documentWidth": 1440,
+      "documentHeight": 900,
+      "content": {
+        "left": 70,
+        "top": 70,
+        "width": 1352,
+        "height": 700.5625,
+        "bottom": 770.5625
+      },
+      "headings": [
+        "运行与结果",
+        "Extended 6-Node Experiment",
+        "Acceptance 4-Node Experiment",
+        "一体化工作台联调 1789648067142",
+        "时隙失败回归（测试0917副本）1789648067142"
+      ],
+      "overflow": []
+    }
+  ]
+}

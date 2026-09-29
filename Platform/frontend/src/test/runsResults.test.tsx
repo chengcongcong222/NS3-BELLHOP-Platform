@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { experiment, result, resultSummary, run, runSummary } from "./fixtures";
@@ -9,9 +9,11 @@ describe("authoritative Run and Result views", () => {
   it("uses GET /runs as catalog authority and renders lifecycle", async () => {
     installApi({ "/runs": { body: [runSummary] } });
     renderRoute("/runs");
-    expect(await screen.findByText(runSummary.run_id)).toBeTruthy();
-    expect(screen.getByText("Completed")).toBeTruthy();
-    expect(screen.getByText("查看结果")).toBeTruthy();
+    const row = (await screen.findByRole("link", { name: runSummary.run_id })).closest("tr")!;
+    expect(row).toBeTruthy();
+    expect(within(row).getByText("Completed")).toBeTruthy();
+    expect(within(row).getByRole("link", { name: "查看结果" }).getAttribute("href"))
+      .toBe(`/results/${runSummary.run_id}`);
   });
 
   it("renders a basic Run monitor with captured identities", async () => {
@@ -34,7 +36,7 @@ describe("authoritative Run and Result views", () => {
       listener: ((event: MessageEvent<string>) => void) | null = null;
       onerror: ((event: Event) => void) | null = null;
       constructor(_url: string) { ControlledEventSource.current = this; }
-      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { if (_type === "run-event") this.listener = listener; }
       close() {}
     }
     vi.stubGlobal("EventSource", ControlledEventSource);
@@ -66,8 +68,8 @@ describe("authoritative Run and Result views", () => {
     });
     expect(screen.getByText("Running")).toBeTruthy();
     expect(screen.queryByText("Completed")).toBeNull();
-    expect(document.body.textContent).toContain("周期 1/");
-    expect(screen.getByText("后端连接不可用")).toBeTruthy();
+    expect(screen.getByRole("progressbar", { name: "已展示周期进度" }).getAttribute("value")).toBe("50");
+    expect(screen.getByText(/事件连接暂时中断，正在重连/)).toBeTruthy();
   });
 
   it("renders Signal and NoArrival from formal ChannelOutcome events", async () => {
@@ -76,7 +78,7 @@ describe("authoritative Run and Result views", () => {
       listener: ((event: MessageEvent<string>) => void) | null = null;
       onerror: ((event: Event) => void) | null = null;
       constructor(_url: string) { ControlledEventSource.current = this; }
-      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { if (_type === "run-event") this.listener = listener; }
       close() {}
       emit(sequence: string, trace: object) {
         this.listener?.({ lastEventId: sequence, data: JSON.stringify({ run_id: run.run_id, sequence, trace }) } as MessageEvent<string>);
@@ -100,11 +102,11 @@ describe("authoritative Run and Result views", () => {
       });
     });
     expect(screen.getByRole("button", { name: /节点 2 未获得有效声学到达/ })).toBeTruthy();
-    expect(screen.getByText(/SignalArrival 才表示信号在传播时延后实际到达/)).toBeTruthy();
+    expect(screen.getByText(/信道计算不是到达事件/)).toBeTruthy();
     expect(screen.queryByTestId("communication-arrow")).toBeNull();
     expect(document.querySelector(".link-inspector")?.textContent).toContain("节点 2");
-    expect(document.body.textContent).toContain("0.00000001 s (10 ns)");
-    expect(screen.getByText("原始序列 2")).toBeTruthy();
+    expect(document.querySelector('.event-stack time[title="0.00000001 s (10 ns)"]')?.textContent).toBe("0.00000001 s");
+    expect(document.querySelector(".event-stack")?.textContent).toContain("节点 2");
   });
 
   it("replays completed formal events without changing Run lifecycle", async () => {
@@ -113,7 +115,7 @@ describe("authoritative Run and Result views", () => {
       listener: ((event: MessageEvent<string>) => void) | null = null;
       onerror: ((event: Event) => void) | null = null;
       constructor(_url: string) { ControlledEventSource.current = this; }
-      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { this.listener = listener; }
+      addEventListener(_type: string, listener: (event: MessageEvent<string>) => void) { if (_type === "run-event") this.listener = listener; }
       close() {}
       emit(sequence: string, trace: object) { this.listener?.({ lastEventId: sequence, data: JSON.stringify({ run_id: run.run_id, sequence, trace }) } as MessageEvent<string>); }
     }
@@ -133,8 +135,9 @@ describe("authoritative Run and Result views", () => {
     expect(screen.getByText("Completed")).toBeTruthy();
     expect(document.querySelector(".run-topology")?.classList.contains("phase-transmission")).toBe(true);
     await userEvent.click(screen.getByRole("button", { name: "下一事件" }));
-    await userEvent.click(screen.getByRole("button", { name: "暂停观察" }));
+    await userEvent.click(screen.getByRole("button", { name: "完整回放" }));
     expect(screen.getByText("Completed")).toBeTruthy();
+    expect(screen.getByText(/不重新计算仿真/)).toBeTruthy();
     expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true);
   });
 
@@ -147,7 +150,7 @@ describe("authoritative Run and Result views", () => {
     expect(await screen.findByText(`900719925474.099312345 s (${large} ns)`)).toBeTruthy();
     expect(screen.queryByText("Pass")).toBeNull(); catalog.unmount();
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText("运行概览", { selector: "h2" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "运行概览" })).toBeTruthy();
     expect(document.body.textContent).toContain(large);
     expect(screen.queryByText("Pass")).toBeNull();
     expect(screen.queryByText("Fail")).toBeNull();
@@ -157,9 +160,10 @@ describe("authoritative Run and Result views", () => {
     installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result,
       acceptance_report: { ...result.acceptance_report!, overall: "Fail", maximum_ber: null } } } });
     renderRoute(`/results/${result.run_id}`);
-    expect(await screen.findByText(/本次运行没有正式波形接收记录/)).toBeTruthy();
+    expect(await screen.findByText("物理模式未随结果提供")).toBeTruthy();
     expect(screen.queryByText("Fail")).toBeNull();
-    expect(screen.getByText(/不等于 Channel2 实际误码/)).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "帧 CRC" })).toBeNull();
+    expect(screen.getByText(/这是业务统计缺口，与选择模式 A 或 B 无关/)).toBeTruthy();
   });
 
   it("shows quantitative values, not backend verdicts even when contradictory", async () => {
@@ -171,8 +175,8 @@ describe("authoritative Run and Result views", () => {
     expect(document.body.textContent).not.toContain("满足要求");
   });
 
-  it("organizes the golden result into five scientific sections", async () => {
-    installApi({ [`/runs/${acceptance4Result.run_id}/results`]: { body: acceptance4Result } });
+  it("organizes a waveform result into five scientific sections", async () => {
+    installApi({ [`/runs/${acceptance4Result.run_id}/results`]: { body: { ...acceptance4Result, provenance: { physical_layer: "Channel2Waveform" } } } });
     renderRoute(`/results/${acceptance4Result.run_id}`);
     for (const name of ["运行概览", "网络性能", "水声链路", "波形通信", "探测与融合"])
       expect(await screen.findByRole("heading", { name })).toBeTruthy();
@@ -185,7 +189,7 @@ describe("authoritative Run and Result views", () => {
     installApi({ [`/runs/${result.run_id}/results`]: { body: { ...result, acceptance_report: null } } });
     renderRoute(`/results/${result.run_id}`);
     await screen.findByRole("heading", { name: "运行概览" });
-    expect(screen.queryByText("参考要求与本次量化值")).toBeNull();
+    expect(screen.queryByText("参考条件（最终判断由实验人员完成）")).toBeNull();
   });
 
   it("supports the published Experiment to Run to scientific Result path", async () => {
@@ -195,7 +199,8 @@ describe("authoritative Run and Result views", () => {
     renderRoute(`/experiments/${experiment.experiment_id}/versions/${experiment.version}`);
     await userEvent.click(await screen.findByRole("button", { name: "开始仿真" }));
     expect(await screen.findByText("场景初始几何 · 当前通信事件")).toBeTruthy();
-    await userEvent.click(screen.getByRole("link", { name: "查看结果 →" }));
+    await userEvent.click(screen.getByRole("button", { name: "查看结果" }));
+    expect(await screen.findByRole("dialog", { name: "本次运行结果" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "探测与融合" })).toBeTruthy();
     expect(screen.queryByText("Pass")).toBeNull();
   });

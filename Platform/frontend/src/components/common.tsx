@@ -11,20 +11,20 @@ export function AppShell({ children }: PropsWithChildren) {
   const location = useLocation();
   const links = [
     ["/", "⌂", "工作台"],
-    ["/cases", "▤", "案例中心"],
     ["/environments", "≈", "环境建设"],
     ["/trajectories", "↝", "轨迹建设"],
-    ["/scenarios", "⌖", "场景设计"],
-    ["/experiments", "⚙", "实验配置"],
-    ["/runs", "▶", "仿真运行"],
-    ["/results", "⌁", "结果分析"],
-    ["/resources", "▦", "资源管理"],
+    ["/workspace/experiment", "⚙", "实验工作台"],
+    ["/runs", "▶", "运行与结果"],
+    ["/cases", "▤", "预置案例"],
     ["/system", "i", "系统信息"],
   ];
   const workspaceSection = location.pathname.startsWith("/workspace/environment") ? "/environments"
-    : location.pathname.startsWith("/workspace/scenario") ? "/scenarios"
-    : location.pathname.startsWith("/workspace/experiment") ? "/experiments" : null;
-  const active = links.find(([to]) => to === (workspaceSection ?? (to === "/" && location.pathname === "/" ? "/" : location.pathname.split("/").slice(0, 2).join("/")))) ?? links[0];
+    : location.pathname.startsWith("/workspace/scenario") ? "/workspace/experiment"
+    : location.pathname.startsWith("/workspace/experiment") ? "/workspace/experiment" : null;
+  const routeSection = location.pathname.startsWith("/results") ? "/runs"
+    : location.pathname.startsWith("/experiments") ? "/workspace/experiment"
+    : workspaceSection ?? (location.pathname === "/" ? "/" : `/${location.pathname.split("/")[1]}`);
+  const active = links.find(([to]) => to === routeSection) ?? links[0];
   return (
     <div className="app-shell">
       <header className="product-header">
@@ -40,13 +40,13 @@ export function AppShell({ children }: PropsWithChildren) {
       </header>
       <nav aria-label="主导航">
         <span className="nav-section">仿真工作流</span>
-        {links.slice(0, 8).map(([to, icon, label]) => (
+        {links.slice(0, 5).map(([to, icon, label]) => (
           <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => isActive || to === workspaceSection ? "active" : undefined}>
             <b>{icon}</b><span>{label}</span>
           </NavLink>
         ))}
         <span className="nav-section nav-secondary">平台</span>
-        {links.slice(8).map(([to, icon, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? "active" : undefined}><b>{icon}</b><span>{label}</span></NavLink>)}
+        {links.slice(5).map(([to, icon, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? "active" : undefined}><b>{icon}</b><span>{label}</span></NavLink>)}
       </nav>
       <main>{children}</main>
       <footer>

@@ -1,0 +1,13 @@
+{
+  "status": 400,
+  "body": {
+    "error": {
+      "code": "SceneDomainViolation",
+      "message": "节点 N1 在 24 秒：移出所选场景范围。请调整起点、轨迹或试验域，不会自动限制节点运动。"
+    }
+  },
+  "initial_x": 1000,
+  "final_x": 3500,
+  "x_max": 3000,
+  "no_run_created": true
+}

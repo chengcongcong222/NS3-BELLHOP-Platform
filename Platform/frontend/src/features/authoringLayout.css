@@ -1,0 +1,80 @@
+/* The editor shares the runtime workbench's proportions, without sharing any
+   execution state. Its controls, selection and persistence remain unchanged. */
+.app-shell:has(.authoring-layout) { height: 100dvh; min-height: 0; }
+.app-shell > main:has(> .authoring-layout) { min-height: 0; overflow: hidden; padding: 6px 10px; }
+.unified-experiment-page.authoring-layout { height: 100%; min-height: 0; gap: 0; }
+.authoring-layout .unified-scene.scenario-studio {
+  grid-template-columns: minmax(236px, .6fr) minmax(0, 1.8fr) minmax(320px, .8fr);
+  height: 100%; min-height: 0; gap: 8px;
+}
+.authoring-layout .unified-scene > .studio-tools,
+.authoring-layout .unified-scene > .property-panel {
+  display: block; height: 100%; min-height: 0; padding: 12px; overflow: auto;
+  scrollbar-gutter: stable; border-radius: 4px; font-size: 14px;
+}
+.authoring-layout .unified-experiment-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 6px; min-height: 0; padding: 0; margin: 0; border: 0; background: transparent; }
+.authoring-layout .unified-experiment-toolbar > div,
+.authoring-layout .unified-experiment-toolbar > label,
+.authoring-layout .unified-experiment-toolbar > [role=status] { grid-column: 1 / -1; }
+.authoring-layout .unified-experiment-toolbar h1 { font-size: 20px; line-height: 1.4; }
+.authoring-layout .unified-experiment-toolbar small { display: block; margin-top: 4px; color: #b9d0de; font-size: 12px; }
+.authoring-layout .unified-experiment-toolbar label { display: grid; align-items: start; gap: 6px; font-size: 13px; }
+.authoring-layout .unified-experiment-toolbar input { width: 100%; min-width: 0; height: 34px; padding: 6px 8px; font-size: 14px; }
+.authoring-layout .unified-experiment-toolbar [role=status] { margin: 0; padding: 6px 0; border-bottom: 1px solid #29485a; color: #b9d8e5; }
+.authoring-layout .unified-experiment-toolbar button { padding: 6px; min-height: 34px; font-size: 13px; }
+.authoring-layout .unified-experiment-toolbar .primary-button { color: #e9fbff; background: #11556d; border-color: #3686a0; }
+.authoring-layout .studio-save-note,
+.authoring-layout .studio-save-error { margin: 10px 0; padding: 8px; font-size: 12px; line-height: 1.6; border-left: 2px solid #41758d; overflow-wrap: anywhere; }
+.authoring-layout .studio-save-error { border-left-color: #f09282; }
+.authoring-layout .experiment-control-help { margin: 10px 0 14px; color: #adc9d9; font-size: 12px; line-height: 1.6; }
+.authoring-layout .studio-tools > .studio-pane-title { position: static; padding: 6px 0; margin: 0; min-height: 38px; border-top: 1px solid #29485a; background: transparent; }
+.authoring-layout .studio-pane-title button { display: block; width: auto; height: auto; min-height: 28px; padding: 3px 7px; font-size: 13px; }
+.authoring-layout .node-tool-list { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; padding: 10px 0; }
+.authoring-layout .node-tool-list button { min-height: 49px; color: #e0eef7; background: #0c293c; border: 1px solid #2b4b5e; border-radius: 3px; }
+.authoring-layout .node-tool-list button.selected { background: #124055; border-color: #41c5d9; }
+.authoring-layout .node-tool-list strong { font-size: 14px; }
+.authoring-layout .node-tool-list small { color: #b6cddc; font-size: 12px; }
+.authoring-layout .tool-help { margin: 0; padding: 10px 0; border-color: #29485a; color: #b0cad9; font-size: 12px; }
+.authoring-layout .unified-scene .studio-canvas { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; border-radius: 4px; }
+.authoring-layout .studio-canvas > * { flex-shrink: 0; }
+.authoring-layout .unified-scene .studio-canvas > svg { flex: 1 1 0; min-width: 0; min-height: 180px; height: 0; width: 100%; }
+.authoring-layout .studio-canvas .canvas-toolbar { min-height: 38px; height: auto; justify-content: flex-start; gap: 6px; padding: 4px 8px; flex-wrap: wrap; }
+.authoring-layout .canvas-toolbar > span:last-child { margin-left: auto; }
+.authoring-layout .canvas-view-label { display: none; }
+.authoring-layout .studio-axis-label { font: 14px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #c8dde9; }
+.authoring-layout .node-label { font: 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+.authoring-layout .node-depth { font: 12px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+.authoring-layout .studio-canvas .scene-depth-profile > header { min-height: 32px; gap: 8px; padding: 4px 10px; border-bottom: 1px solid #365162; }
+.authoring-layout .scene-depth-profile .scene-depth-plots { padding-block: 4px; }
+.authoring-layout .unified-scene .scene-depth-profile .scene-node-depth svg { height: 190px; min-height: 0; max-height: 190px; }
+.authoring-layout .scene-depth-profile .scene-node-depth svg text { font: 13px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+.authoring-layout .studio-statusbar { min-height: 30px; padding: 5px 9px; gap: 5px 12px; flex-wrap: wrap; color: #b9d5e4; font-size: 12px; }
+.authoring-layout .property-panel > .studio-pane-title,
+.authoring-layout .experiment-inspector > .studio-pane-title { min-height: 35px; margin-top: -12px; margin-bottom: 8px; }
+.authoring-layout .inspector-tabs { flex-wrap: wrap; padding-bottom: 8px; }
+.authoring-layout .inspector-tabs button { min-width: 55px; min-height: 32px; font-size: 13px; }
+.authoring-layout .parameter-detail { padding: 8px; margin: 8px 0; }
+.authoring-layout .parameter-detail label { margin-block: 7px; }
+.authoring-layout .property-panel .panel { overflow-x: visible; }
+.authoring-layout .property-panel .scene-domain-editor > label { display: flex; align-items: flex-start; gap: 8px; }
+.authoring-layout .property-panel .scene-domain-editor > label input { margin-top: 4px; flex-shrink: 0; }
+.authoring-layout :is(button, input, select, summary):focus-visible { outline: 2px solid #74deef; outline-offset: 2px; }
+
+@media (max-width: 1150px), (max-height: 700px) {
+  .app-shell:has(.authoring-layout) { height: auto; min-height: 100dvh; }
+  .app-shell > main:has(> .authoring-layout) { overflow: auto; }
+  .unified-experiment-page.authoring-layout { height: auto; }
+  .authoring-layout .unified-scene.scenario-studio { height: 740px; grid-template-columns: minmax(208px, .6fr) minmax(0, 1.8fr) minmax(285px, .8fr); }
+}
+@media (max-width: 1000px) {
+  .authoring-layout .unified-scene.scenario-studio { height: auto; grid-template-columns: minmax(0, 1fr); }
+  .authoring-layout .unified-scene > .studio-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; height: auto; }
+  .authoring-layout .experiment-control-panel { grid-column: 1; grid-row: 1 / 4; }
+  .authoring-layout .studio-tools > :not(.experiment-control-panel) { grid-column: 2; }
+  .authoring-layout .unified-scene .studio-canvas { height: 680px; }
+  .authoring-layout .unified-scene > .property-panel { height: auto; max-height: 600px; }
+}
+@media (max-width: 650px) {
+  .authoring-layout .unified-scene > .studio-tools { display: block; }
+  .authoring-layout .studio-canvas .canvas-toolbar { flex-wrap: wrap; }
+}

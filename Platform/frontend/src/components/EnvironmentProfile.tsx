@@ -6,8 +6,36 @@ export function PublishedEnvironmentProfile({ environment }: { environment: Envi
   return <div className="environment-visual-grid"><svg viewBox="0 0 700 270" role="img" aria-label="正式环境覆盖范围"><defs><linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d8f1f4" /><stop offset="1" stopColor="#2e7180" /></linearGradient></defs><rect x="40" y="28" width="620" height="190" rx="4" fill="url(#water)" /><line x1="40" y1="28" x2="660" y2="28" className="surface-line" /><line x1="40" y1="218" x2="660" y2="218" className="plot-axis" /><text x="44" y="20">海面 · 0 m</text><text x="44" y="238">深度轴 0–{depth} m</text><text x="485" y="238">水平距离 0–{environment.axes.horizontal_range.maximum} m</text><rect x="70" y="52" width="560" height="132" className="coverage-field" /><text x="350" y="122" textAnchor="middle" className="coverage-label">正式 AcousticFieldAsset 覆盖范围</text></svg><div className="visual-facts"><strong>{environment.axes.frequency.minimum / 1000} kHz</strong><span>正式资产工作频率</span><strong>{environment.signal_cell_count} / {environment.cell_count}</strong><span>Signal 网格</span><strong>{ratio}%</strong><span>正式 NoArrival 网格占比</span><p>当前资源接口未提供逐点 SSP、Bathymetry、TL、SNR 或传播路径；本视图只显示正式 coverage 与坐标轴。</p></div></div>;
 }
 export function DraftEnvironmentProfile({ draft }: { draft: EnvironmentDraft }) {
-  const ssp = draft.soundSpeedProfile.length >= 2 ? points(draft.soundSpeedProfile.map((point) => [point.speedMetersPerSecond, point.depthMeters]), 44, 24, 288, 206, Math.max(...draft.soundSpeedProfile.map((point) => point.speedMetersPerSecond)), Math.min(...draft.soundSpeedProfile.map((point) => point.speedMetersPerSecond)), draft.maximumDepthMeters) : null;
-  const bathymetry = draft.bathymetry.length >= 2 ? points(draft.bathymetry.map((point) => [point.rangeMeters, point.depthMeters]), 44, 24, 288, 206, draft.maximumRangeMeters, 0, draft.maximumDepthMeters) : null;
-  return <div className="profile-pair"><figure><figcaption>声速剖面（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿声速剖面"><rect x="1" y="1" width="358" height="258" className="plot-frame" />{ssp ? <polyline points={ssp} className="profile-line" /> : <text x="180" y="132" textAnchor="middle">尚未输入 SSP 采样点</text>}<text x="210" y="248">声速 m/s</text><text x="10" y="20">深度 m ↓</text></svg></figure><figure><figcaption>海底地形（草稿输入）</figcaption><svg viewBox="0 0 360 260" role="img" aria-label="草稿海底地形"><rect x="1" y="1" width="358" height="258" className="plot-frame" />{bathymetry ? <polyline points={bathymetry} className="bathymetry-line" /> : <text x="180" y="132" textAnchor="middle">尚未输入地形采样点</text>}<text x="230" y="248">水平距离 m</text><text x="10" y="20">深度 m ↓</text></svg></figure></div>;
+  return <div className="profile-pair">
+    <NumericProfile name="草稿声速剖面" label="声速剖面" xLabel="声速（m/s）" line="profile-line" values={draft.soundSpeedProfile.map(p => [p.speedMetersPerSecond, p.depthMeters])} />
+    <NumericProfile name="草稿海底地形" label="海底地形" xLabel="水平距离（m）" line="bathymetry-line" values={draft.bathymetry.map(p => [p.rangeMeters, p.depthMeters])} />
+  </div>;
 }
-function points(values: Array<[number, number]>, left: number, top: number, width: number, height: number, maximumX: number, minimumX: number, maximumY: number): string { return values.map(([x, y]) => `${left + ((x - minimumX) / Math.max(maximumX - minimumX, 1)) * width},${top + Math.min(1, y / Math.max(maximumY, 1)) * height}`).join(" "); }
+
+function NumericProfile({ name, label, xLabel, values, line }: { name: string; label: string; xLabel: string; values: [number, number][]; line: string }) {
+  // Each plot owns its domain. Loading terrain must never change the SSP curve.
+  const valid = values.length >= 2 && values.every(p => p.every(Number.isFinite));
+  const xs = values.map(p => p[0]);
+  const minimum = valid ? Math.min(...xs) : 0;
+  const maximum = valid ? Math.max(...xs) : 1;
+  const span = Math.max(maximum - minimum, 1);
+  const depth = valid ? Math.max(1, ...values.map(p => p[1])) : 1;
+  const point = ([x, y]: [number, number]) => [58 + (x - minimum) / span * 362, 32 + y / depth * 170];
+  return <figure className="numeric-profile"><figcaption>{label}</figcaption>
+    <svg viewBox="0 0 460 255" role="img" aria-label={name}>
+      <rect width="460" height="255" fill="#091e2e" />
+      <g fill="#d8eaf4" fontSize="13" fontFamily="sans-serif">
+        <text x="12" y="19">深度（m，向下）</text><text x="230" y="249" textAnchor="middle">{xLabel}</text>
+        {valid ? <>
+          {[0, .25, .5, .75, 1].map(fraction => <g key={fraction}>
+            <path d={`M58 ${32 + fraction * 170} H420 M${58 + fraction * 362} 32 V202`} stroke="#254557" fill="none" />
+            <text x="49" y={36 + fraction * 170} textAnchor="end">{(depth * fraction).toFixed(0)}</text>
+            <text x={58 + fraction * 362} y="223" textAnchor="middle">{(minimum + fraction * span).toFixed(maximum < 100 ? 1 : 0)}</text>
+          </g>)}
+          <polyline points={values.map(p => point(p).join(",")).join(" ")} className={line} />
+          {values.map((p, i) => <circle key={i} cx={point(p)[0]} cy={point(p)[1]} r="3" fill="#70dced"><title>{`${xLabel} ${p[0]} · 深度 ${p[1]} m`}</title></circle>)}
+        </> : <text x="230" y="128" textAnchor="middle">尚未输入{label}采样点</text>}
+      </g>
+    </svg>
+  </figure>;
+}

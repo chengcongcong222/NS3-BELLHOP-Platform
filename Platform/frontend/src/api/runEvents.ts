@@ -73,14 +73,27 @@ export class RunEventProjection {
     const source = this.createSource(this.url);
     this.source = source;
     source.addEventListener("run-event", (event) => this.accept(event));
+    source.addEventListener("stream-end", (event) => {
+      if (this.source !== source) return;
+      try {
+        const end = JSON.parse(event.data) as { last_sequence?: unknown };
+        if (end.last_sequence !== this.state.latestSequence) throw new Error("incomplete event stream");
+        this.close();
+        this.onProjection(this.state);
+      } catch {
+        this.close();
+        this.onFailure(new ApiFailure("ProtocolFailure", "ProtocolFailure", "事件记录结束位置不一致，请重新载入记录。"));
+      }
+    });
     source.onerror = () => {
+      if (this.source !== source) return;
       // Native EventSource owns reconnect and Last-Event-ID. A transport error
       // is visible, but the source stays open for browser-managed reconnect.
       this.onFailure(
         new ApiFailure(
           "TransportUnavailable",
           "TransportUnavailable",
-          "Run event stream is reconnecting.",
+          "事件连接暂时中断，正在重新连接；这不代表仿真运行失败。",
         ),
       );
     };

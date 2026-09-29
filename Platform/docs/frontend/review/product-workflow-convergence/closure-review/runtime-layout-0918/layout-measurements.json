@@ -1,0 +1,508 @@
+{
+  "captured_at": "2026-09-18T00:36:07.729Z",
+  "base": "http://127.0.0.1:4178",
+  "run": "run-edc4414a2c204d7daa4d88468de24b2e",
+  "read_only": true,
+  "mutations": 0,
+  "errors": [],
+  "captures": [
+    {
+      "viewport": {
+        "width": 2553,
+        "height": 1264
+      },
+      "documentHeight": 1264,
+      "documentWidth": 2553,
+      "mainScrollHeight": 1182,
+      "mainClientHeight": 1182,
+      "canvas": {
+        "x": 532.1875,
+        "y": 62,
+        "width": 1386.5625,
+        "height": 950.5,
+        "bottom": 1012.5
+      },
+      "plan": {
+        "x": 533.1875,
+        "y": 98,
+        "width": 1384.5625,
+        "height": 623.90625,
+        "bottom": 721.90625
+      },
+      "profile": {
+        "x": 533.1875,
+        "y": 781.90625,
+        "width": 1384.5625,
+        "height": 180,
+        "bottom": 961.90625
+      },
+      "history": {
+        "x": 62,
+        "y": 1020.5,
+        "width": 2481,
+        "height": 211.5,
+        "bottom": 1232
+      },
+      "footer": {
+        "x": 0,
+        "y": 1238,
+        "width": 2553,
+        "height": 26,
+        "bottom": 1264
+      },
+      "plots": [
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        },
+        {
+          "x": 153,
+          "width": 2371
+        }
+      ],
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 1208.7032966480022,
+          "depthX": 1208.7032964453406
+        },
+        {
+          "id": "1",
+          "planX": 1018.415420504942,
+          "depthX": 1018.4154180020703
+        },
+        {
+          "id": "2",
+          "planX": 1354.981830794687,
+          "depthX": 1354.981832360248
+        }
+      ],
+      "visibleEvents": "25",
+      "eventTextOverflow": false
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "documentHeight": 1080,
+      "documentWidth": 1920,
+      "mainScrollHeight": 998,
+      "mainClientHeight": 998,
+      "canvas": {
+        "x": 413.5,
+        "y": 62,
+        "width": 1030.5,
+        "height": 766.5,
+        "bottom": 828.5
+      },
+      "plan": {
+        "x": 414.5,
+        "y": 98,
+        "width": 1028.5,
+        "height": 439.90625,
+        "bottom": 537.90625
+      },
+      "profile": {
+        "x": 414.5,
+        "y": 597.90625,
+        "width": 1028.5,
+        "height": 180,
+        "bottom": 777.90625
+      },
+      "history": {
+        "x": 62,
+        "y": 836.5,
+        "width": 1848,
+        "height": 211.5,
+        "bottom": 1048
+      },
+      "footer": {
+        "x": 0,
+        "y": 1054,
+        "width": 1920,
+        "height": 26,
+        "bottom": 1080
+      },
+      "plots": [
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        },
+        {
+          "x": 153,
+          "width": 1738
+        }
+      ],
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 916.2960525849974,
+          "depthX": 916.2960522865762
+        },
+        {
+          "id": "1",
+          "planX": 774.9437638372663,
+          "depthX": 774.9437601517658
+        },
+        {
+          "id": "2",
+          "planX": 1024.956709350918,
+          "depthX": 1024.9567116562203
+        }
+      ],
+      "visibleEvents": "25",
+      "eventTextOverflow": false
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "documentHeight": 900,
+      "documentWidth": 1440,
+      "mainScrollHeight": 818,
+      "mainClientHeight": 818,
+      "canvas": {
+        "x": 323.5,
+        "y": 62,
+        "width": 760.5,
+        "height": 586.5,
+        "bottom": 648.5
+      },
+      "plan": {
+        "x": 324.5,
+        "y": 98,
+        "width": 758.5,
+        "height": 259.90625,
+        "bottom": 357.90625
+      },
+      "profile": {
+        "x": 324.5,
+        "y": 417.90625,
+        "width": 758.5,
+        "height": 180,
+        "bottom": 597.90625
+      },
+      "history": {
+        "x": 62,
+        "y": 656.5,
+        "width": 1368,
+        "height": 211.5,
+        "bottom": 868
+      },
+      "footer": {
+        "x": 0,
+        "y": 874,
+        "width": 1440,
+        "height": 26,
+        "bottom": 900
+      },
+      "plots": [
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        },
+        {
+          "x": 153,
+          "width": 1258
+        }
+      ],
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 694.5654408993234,
+          "depthX": 694.5654406022052
+        },
+        {
+          "id": "1",
+          "planX": 590.320705735637,
+          "depthX": 590.3207020662269
+        },
+        {
+          "id": "2",
+          "planX": 774.7006936612454,
+          "depthX": 774.7006959564832
+        }
+      ],
+      "visibleEvents": "25",
+      "eventTextOverflow": false
+    },
+    {
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "documentHeight": 768,
+      "documentWidth": 1366,
+      "mainScrollHeight": 686,
+      "mainClientHeight": 686,
+      "canvas": {
+        "x": 309.625,
+        "y": 62,
+        "width": 718.875,
+        "height": 454.5,
+        "bottom": 516.5
+      },
+      "plan": {
+        "x": 310.625,
+        "y": 98,
+        "width": 716.875,
+        "height": 170.71875,
+        "bottom": 268.71875
+      },
+      "profile": {
+        "x": 310.625,
+        "y": 328.71875,
+        "width": 716.875,
+        "height": 140,
+        "bottom": 468.71875
+      },
+      "history": {
+        "x": 62,
+        "y": 524.5,
+        "width": 1294,
+        "height": 211.5,
+        "bottom": 736
+      },
+      "footer": {
+        "x": 0,
+        "y": 742,
+        "width": 1366,
+        "height": 26,
+        "bottom": 768
+      },
+      "plots": [
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        },
+        {
+          "x": 153,
+          "width": 1184
+        }
+      ],
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 660.4121978589128,
+          "depthX": 660.4121976774566
+        },
+        {
+          "id": "1",
+          "planX": 562.2313254831707,
+          "depthX": 562.2313232421875
+        },
+        {
+          "id": "2",
+          "planX": 735.8860522285352,
+          "depthX": 735.8860536302839
+        }
+      ],
+      "visibleEvents": "25",
+      "eventTextOverflow": false
+    },
+    {
+      "viewport": {
+        "width": 800,
+        "height": 900
+      },
+      "documentHeight": 1788,
+      "documentWidth": 785,
+      "mainScrollHeight": 1706,
+      "mainClientHeight": 1706,
+      "canvas": {
+        "x": 62,
+        "y": 459.4375,
+        "width": 713,
+        "height": 600,
+        "bottom": 1059.4375
+      },
+      "plan": {
+        "x": 63,
+        "y": 495.4375,
+        "width": 711,
+        "height": 273.40625,
+        "bottom": 768.84375
+      },
+      "profile": {
+        "x": 63,
+        "y": 828.84375,
+        "width": 711,
+        "height": 180,
+        "bottom": 1008.84375
+      },
+      "history": {
+        "x": 62,
+        "y": 1525.4375,
+        "width": 713,
+        "height": 230.5,
+        "bottom": 1755.9375
+      },
+      "footer": {
+        "x": 0,
+        "y": 1761.9375,
+        "width": 785,
+        "height": 26,
+        "bottom": 1787.9375
+      },
+      "plots": [
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        },
+        {
+          "x": 153,
+          "width": 603
+        }
+      ],
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 409.8906107688437,
+          "depthX": 409.8906107688437
+        },
+        {
+          "id": "1",
+          "planX": 312.1740529585858,
+          "depthX": 312.1740529585858
+        },
+        {
+          "id": "2",
+          "planX": 485.0075080093073,
+          "depthX": 485.0075080093073
+        }
+      ],
+      "visibleEvents": "25",
+      "eventTextOverflow": false
+    }
+  ],
+  "interactions": [
+    {
+      "tx_selection": true,
+      "node_and_events_visible_together": true,
+      "expandedHeight": 439.90625,
+      "collapsedHeight": 664.703125
+    }
+  ]
+}

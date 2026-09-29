@@ -1,0 +1,2163 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "trajectory_asset_id": "studio-review-1789648067142",
+  "environment_asset_id": "4-environment-732fb792b77f-r1",
+  "scenario": {
+    "kind": "scenario",
+    "name": "三节点真实资源联调 1789648067142",
+    "payload": {
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_version": 1,
+      "fusion_center_node_id": "0",
+      "nodes": [
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "0"
+        },
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "1"
+        },
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "2"
+        }
+      ],
+      "trajectory_bindings": [
+        {
+          "asset_id": "studio-review-1789648067142",
+          "node_id": "0",
+          "placement_mode": "RelativeToNodeStart",
+          "track_id": "N0",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789648067142",
+          "node_id": "1",
+          "placement_mode": "RelativeToNodeStart",
+          "track_id": "N1",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789648067142",
+          "node_id": "2",
+          "placement_mode": "RelativeToNodeStart",
+          "track_id": "N1",
+          "version": 1
+        }
+      ]
+    },
+    "draft_id": "scenario-c3db81fa056c",
+    "revision": 2,
+    "created_at": "2026-09-17T12:27:49.224988Z",
+    "updated_at": "2026-09-17T12:27:50.241745Z",
+    "validation_issues": []
+  },
+  "experiment": [
+    {
+      "kind": "experiment",
+      "name": "时隙失败回归（测试0917副本）1789648067142",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "1",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-07881620285e",
+        "scenario_revision": 8,
+        "simulation_cycle_count": "10",
+        "slot_duration_ns": "4000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "Awgn",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 500,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-91a279f5b3be",
+      "revision": 1,
+      "created_at": "2026-09-17T12:27:51.569438Z",
+      "updated_at": "2026-09-17T12:27:51.569438Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789648067142",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-c3db81fa056c",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "slot_duration_ns": "6000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-f05193ba9b60",
+      "revision": 2,
+      "created_at": "2026-09-17T12:27:49.246510Z",
+      "updated_at": "2026-09-17T12:27:50.255059Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789647858472",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-71c8dcb65fd6",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "slot_duration_ns": "6000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-3de8b0b0f86a",
+      "revision": 2,
+      "created_at": "2026-09-17T12:24:20.778555Z",
+      "updated_at": "2026-09-17T12:24:21.764289Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "123",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-e8ebb1f30feb",
+        "scenario_revision": 4,
+        "simulation_cycle_count": "5",
+        "slot_duration_ns": "6000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-2400ec9c739f",
+      "revision": 4,
+      "created_at": "2026-09-17T11:38:43.455612Z",
+      "updated_at": "2026-09-17T11:39:52.416878Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "测试0917",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "1",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-07881620285e",
+        "scenario_revision": 8,
+        "simulation_cycle_count": "10",
+        "slot_duration_ns": "4000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "Awgn",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 500,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-ede96f9aca45",
+      "revision": 2,
+      "created_at": "2026-09-17T11:31:31.234489Z",
+      "updated_at": "2026-09-17T11:31:35.719640Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789642133828",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-8b4d5d3cc443",
+        "scenario_revision": 5,
+        "simulation_cycle_count": "2",
+        "slot_duration_ns": "6000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-234ec7de3f0f",
+      "revision": 5,
+      "created_at": "2026-09-17T10:48:55.132112Z",
+      "updated_at": "2026-09-17T10:58:17.998280Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789642585674",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-94942775a627",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "slot_duration_ns": "6000000000",
+        "source_level_db": 190,
+        "target_x_m": 200,
+        "target_y_m": 150,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-27afb604407b",
+      "revision": 2,
+      "created_at": "2026-09-17T10:56:27.264588Z",
+      "updated_at": "2026-09-17T10:56:29.333257Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789642076803",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-d9be27899238",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-eab7ba4a2679",
+      "revision": 2,
+      "created_at": "2026-09-17T10:47:58.698750Z",
+      "updated_at": "2026-09-17T10:47:59.486900Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-ce886adc2193",
+        "scenario_revision": 1,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-f43c8bee0332",
+      "revision": 1,
+      "created_at": "2026-09-17T10:47:15.477199Z",
+      "updated_at": "2026-09-17T10:47:15.477199Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-920d3bc3328c",
+        "scenario_revision": 1,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-cb224035a7c8",
+      "revision": 1,
+      "created_at": "2026-09-17T10:46:20.033525Z",
+      "updated_at": "2026-09-17T10:46:20.033525Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-f2082ae5ed19",
+        "scenario_revision": 6,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-4aaf9b37335e",
+      "revision": 2,
+      "created_at": "2026-09-17T10:15:39.456691Z",
+      "updated_at": "2026-09-17T10:15:41.218359Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-f2082ae5ed19",
+        "scenario_revision": 4,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-11f3245d112d",
+      "revision": 2,
+      "created_at": "2026-09-17T10:14:35.564913Z",
+      "updated_at": "2026-09-17T10:14:41.228946Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-f2082ae5ed19",
+        "scenario_revision": 3,
+        "simulation_cycle_count": "10",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "Awgn",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 10,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-0404f90b2f91",
+      "revision": 1,
+      "created_at": "2026-09-17T10:13:17.220284Z",
+      "updated_at": "2026-09-17T10:13:17.220284Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "未命名网络实验",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-07881620285e",
+        "scenario_revision": 6,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "BearingFusion"
+      },
+      "draft_id": "experiment-9ac27e13f34a",
+      "revision": 3,
+      "created_at": "2026-09-17T10:04:40.063468Z",
+      "updated_at": "2026-09-17T10:05:13.493575Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637809594",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-d843069cbf53",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-cf3143e547aa",
+      "revision": 2,
+      "created_at": "2026-09-17T09:36:50.866977Z",
+      "updated_at": "2026-09-17T09:36:51.488510Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637607762",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-e218af226be4",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-59ba4844aa68",
+      "revision": 2,
+      "created_at": "2026-09-17T09:33:28.986902Z",
+      "updated_at": "2026-09-17T09:33:29.478245Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637515813",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-f2082ae5ed19",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-bbf821234fb6",
+      "revision": 2,
+      "created_at": "2026-09-17T09:31:57.008667Z",
+      "updated_at": "2026-09-17T09:31:57.569693Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637227891",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-e5abff9c1e00",
+        "scenario_revision": 1,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-22ca7bc10c2d",
+      "revision": 1,
+      "created_at": "2026-09-17T09:27:08.978598Z",
+      "updated_at": "2026-09-17T09:27:08.978598Z",
+      "validation_issues": []
+    }
+  ],
+  "channel1": {
+    "run": {
+      "run_id": "run-9c0b9e843c1b488d940a61551921c8e7",
+      "experiment_id": "experiment-f05193ba9b60-r1",
+      "experiment_version": "1",
+      "scenario_id": "scenario-c3db81fa056c-r1",
+      "scenario_version": "1",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "lifecycle": "Completed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": "24000000000",
+      "final_snapshot_version": "2",
+      "event_stream_complete": true,
+      "failure": null,
+      "provenance": {
+        "definition_sha256": "6e56edb1c527fa0b4222bc5e69e7723da4e9b69bcf0330447cbef43300b34eae",
+        "experiment": {
+          "id": "experiment-f05193ba9b60-r1",
+          "version": 1
+        },
+        "scenario": {
+          "id": "scenario-c3db81fa056c-r1",
+          "version": 1
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel1Abstract",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "node_id": 2,
+            "track_id": "N1",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "version": 1,
+            "checksum_sha256": "c58508f0031bd2fa3e8849faf665ca82cfb590614985c000f31269cb45b2381f"
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "version": 1,
+            "checksum_sha256": "0220c724cfa340cb84ba91a30aa566ebe71705d516a58b5b3a4462c892b3f36a"
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "version": 1,
+            "checksum_sha256": "77a809da8555a63a49e4995fe8e5f4401a4161b8e834d2ed65d0da1a5f403202"
+          }
+        ]
+      }
+    },
+    "result": {
+      "run_id": "run-9c0b9e843c1b488d940a61551921c8e7",
+      "experiment_id": "experiment-f05193ba9b60-r1",
+      "experiment_version": "1",
+      "scenario_id": "scenario-c3db81fa056c-r1",
+      "scenario_version": "1",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "projection": {
+        "simulation_started_at_ns": "0",
+        "simulation_ended_at_ns": "24000000000",
+        "simulation_duration_ns": "24000000000",
+        "final_snapshot_version": "2",
+        "cycle_count": "2",
+        "node_count": "3",
+        "transmission_count": "4",
+        "channel_signal_count": "8",
+        "channel_no_arrival_count": "0",
+        "reception_count": "8",
+        "local_delivery_count": "4"
+      },
+      "acceptance_report": null,
+      "fusion_results": [],
+      "nodes": [
+        {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -8,
+          "is_fusion_center": true
+        },
+        {
+          "node_id": "1",
+          "x_meters": 1002.4,
+          "y_meters": 0,
+          "z_meters": -60,
+          "is_fusion_center": false
+        },
+        {
+          "node_id": "2",
+          "x_meters": 2002.4,
+          "y_meters": 100,
+          "z_meters": -60,
+          "is_fusion_center": false
+        }
+      ],
+      "visualization": {
+        "positions_complete": true,
+        "generated_feature_count": "0",
+        "positions": [
+          {
+            "node_id": "0",
+            "at_ns": "0",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "0",
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "0",
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "653418601",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "653418601",
+            "x_meters": 1000.0653418601,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "653418601",
+            "x_meters": 2000.0653418601,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "657712267",
+            "x_meters": 1000.0657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "657712267",
+            "x_meters": 2000.0657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "1502454134",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "1502454134",
+            "x_meters": 1000.1502454134,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "1502454134",
+            "x_meters": 2000.1502454134,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "1530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "1530865926",
+            "x_meters": 1000.1530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "1530865926",
+            "x_meters": 2000.1530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6000000000",
+            "x_meters": 1000.6,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6000000000",
+            "x_meters": 2000.6,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6657712267",
+            "x_meters": 1000.6657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6657712267",
+            "x_meters": 2000.6657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7305485757",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7305485757",
+            "x_meters": 1000.7305485757,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7305485757",
+            "x_meters": 2000.7305485757,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7530865926",
+            "x_meters": 1000.7530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7530865926",
+            "x_meters": 2000.7530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8128672181",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8128672181",
+            "x_meters": 1000.8128672181,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8128672181",
+            "x_meters": 2000.8128672181,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12000000000",
+            "x_meters": 1001.2,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12000000000",
+            "x_meters": 2001.2,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12654198668",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12654198668",
+            "x_meters": 1001.2654198668,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12654198668",
+            "x_meters": 2001.2654198668,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12657712267",
+            "x_meters": 1001.2657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12657712267",
+            "x_meters": 2001.2657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "13503234201",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "13503234201",
+            "x_meters": 1001.3503234201,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "13503234201",
+            "x_meters": 2001.3503234201,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "13530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "13530865926",
+            "x_meters": 1001.3530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "13530865926",
+            "x_meters": 2001.3530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18000000000",
+            "x_meters": 1001.8,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18000000000",
+            "x_meters": 2001.8,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18657712267",
+            "x_meters": 1001.8657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18657712267",
+            "x_meters": 2001.8657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19306263945",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19306263945",
+            "x_meters": 1001.9306263945,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19306263945",
+            "x_meters": 2001.9306263945,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19530865926",
+            "x_meters": 1001.9530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19530865926",
+            "x_meters": 2001.9530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20129450369",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20129450369",
+            "x_meters": 1002.0129450369,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20129450369",
+            "x_meters": 2002.0129450369,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "24000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "24000000000",
+            "x_meters": 1002.4,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "24000000000",
+            "x_meters": 2002.4,
+            "y_meters": 100,
+            "z_meters": -60
+          }
+        ],
+        "fusion_sources": [],
+        "waveform": []
+      },
+      "provenance": {
+        "definition_sha256": "6e56edb1c527fa0b4222bc5e69e7723da4e9b69bcf0330447cbef43300b34eae",
+        "experiment": {
+          "id": "experiment-f05193ba9b60-r1",
+          "version": 1
+        },
+        "scenario": {
+          "id": "scenario-c3db81fa056c-r1",
+          "version": 1
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel1Abstract",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "node_id": 2,
+            "track_id": "N1",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "version": 1,
+            "checksum_sha256": "c58508f0031bd2fa3e8849faf665ca82cfb590614985c000f31269cb45b2381f"
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "version": 1,
+            "checksum_sha256": "0220c724cfa340cb84ba91a30aa566ebe71705d516a58b5b3a4462c892b3f36a"
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "version": 1,
+            "checksum_sha256": "77a809da8555a63a49e4995fe8e5f4401a4161b8e834d2ed65d0da1a5f403202"
+          }
+        ]
+      }
+    }
+  },
+  "channel2": {
+    "run": {
+      "run_id": "run-3877bf6d470d4f87bbaa53ee1d56cb81",
+      "experiment_id": "experiment-f05193ba9b60-r2",
+      "experiment_version": "2",
+      "scenario_id": "scenario-c3db81fa056c-r2",
+      "scenario_version": "2",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "lifecycle": "Completed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": "24000000000",
+      "final_snapshot_version": "2",
+      "event_stream_complete": true,
+      "failure": null,
+      "provenance": {
+        "definition_sha256": "c0cbaa1a47e2b7562f20cd7951e524eea98cef1b242a7dd310d7fed250194456",
+        "experiment": {
+          "id": "experiment-f05193ba9b60-r2",
+          "version": 2
+        },
+        "scenario": {
+          "id": "scenario-c3db81fa056c-r2",
+          "version": 2
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "node_id": 2,
+            "track_id": "N1",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "version": 1,
+            "checksum_sha256": "c58508f0031bd2fa3e8849faf665ca82cfb590614985c000f31269cb45b2381f"
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "version": 1,
+            "checksum_sha256": "0220c724cfa340cb84ba91a30aa566ebe71705d516a58b5b3a4462c892b3f36a"
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "version": 1,
+            "checksum_sha256": "77a809da8555a63a49e4995fe8e5f4401a4161b8e834d2ed65d0da1a5f403202"
+          }
+        ]
+      }
+    },
+    "result": {
+      "run_id": "run-3877bf6d470d4f87bbaa53ee1d56cb81",
+      "experiment_id": "experiment-f05193ba9b60-r2",
+      "experiment_version": "2",
+      "scenario_id": "scenario-c3db81fa056c-r2",
+      "scenario_version": "2",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "projection": {
+        "simulation_started_at_ns": "0",
+        "simulation_ended_at_ns": "24000000000",
+        "simulation_duration_ns": "24000000000",
+        "final_snapshot_version": "2",
+        "cycle_count": "2",
+        "node_count": "3",
+        "transmission_count": "4",
+        "channel_signal_count": "8",
+        "channel_no_arrival_count": "0",
+        "reception_count": "8",
+        "local_delivery_count": "0"
+      },
+      "acceptance_report": null,
+      "fusion_results": [],
+      "nodes": [
+        {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -8,
+          "is_fusion_center": true
+        },
+        {
+          "node_id": "1",
+          "x_meters": 1002.4,
+          "y_meters": 0,
+          "z_meters": -60,
+          "is_fusion_center": false
+        },
+        {
+          "node_id": "2",
+          "x_meters": 2002.4,
+          "y_meters": 100,
+          "z_meters": -60,
+          "is_fusion_center": false
+        }
+      ],
+      "visualization": {
+        "positions_complete": true,
+        "generated_feature_count": "0",
+        "positions": [
+          {
+            "node_id": "0",
+            "at_ns": "0",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "0",
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "0",
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "653418601",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "653418601",
+            "x_meters": 1000.0653418601,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "653418601",
+            "x_meters": 2000.0653418601,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "657712267",
+            "x_meters": 1000.0657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "657712267",
+            "x_meters": 2000.0657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "2035787467",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "2035787467",
+            "x_meters": 1000.2035787467,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "2035787467",
+            "x_meters": 2000.2035787467,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "2064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "2064199259",
+            "x_meters": 1000.2064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "2064199259",
+            "x_meters": 2000.2064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6000000000",
+            "x_meters": 1000.6,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6000000000",
+            "x_meters": 2000.6,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6657712267",
+            "x_meters": 1000.6657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6657712267",
+            "x_meters": 2000.6657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7305485757",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7305485757",
+            "x_meters": 1000.7305485757,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7305485757",
+            "x_meters": 2000.7305485757,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8064199259",
+            "x_meters": 1000.8064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8064199259",
+            "x_meters": 2000.8064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8662005514",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8662005514",
+            "x_meters": 1000.8662005514,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8662005514",
+            "x_meters": 2000.8662005514,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12000000000",
+            "x_meters": 1001.2,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12000000000",
+            "x_meters": 2001.2,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12654198668",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12654198668",
+            "x_meters": 1001.2654198668,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12654198668",
+            "x_meters": 2001.2654198668,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12657712267",
+            "x_meters": 1001.2657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12657712267",
+            "x_meters": 2001.2657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "14036567534",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "14036567534",
+            "x_meters": 1001.4036567534,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "14036567534",
+            "x_meters": 2001.4036567534,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "14064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "14064199259",
+            "x_meters": 1001.4064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "14064199259",
+            "x_meters": 2001.4064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18000000000",
+            "x_meters": 1001.8,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18000000000",
+            "x_meters": 2001.8,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18657712267",
+            "x_meters": 1001.8657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18657712267",
+            "x_meters": 2001.8657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19306263945",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19306263945",
+            "x_meters": 1001.9306263945,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19306263945",
+            "x_meters": 2001.9306263945,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20064199259",
+            "x_meters": 1002.0064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20064199259",
+            "x_meters": 2002.0064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20662783702",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20662783702",
+            "x_meters": 1002.0662783702,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20662783702",
+            "x_meters": 2002.0662783702,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "24000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "24000000000",
+            "x_meters": 1002.4,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "24000000000",
+            "x_meters": 2002.4,
+            "y_meters": 100,
+            "z_meters": -60
+          }
+        ],
+        "fusion_sources": [],
+        "waveform": [
+          {
+            "transmission_id": "1000",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "3",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1000",
+            "receiver_node_id": "2",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1001",
+            "receiver_node_id": "1",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1001",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "20",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1002",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "3",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1002",
+            "receiver_node_id": "2",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1003",
+            "receiver_node_id": "1",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1003",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "20",
+            "crc_ok": false
+          }
+        ]
+      },
+      "provenance": {
+        "definition_sha256": "c0cbaa1a47e2b7562f20cd7951e524eea98cef1b242a7dd310d7fed250194456",
+        "experiment": {
+          "id": "experiment-f05193ba9b60-r2",
+          "version": 2
+        },
+        "scenario": {
+          "id": "scenario-c3db81fa056c-r2",
+          "version": 2
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "node_id": 2,
+            "track_id": "N1",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "scene-path-bdc08983095a215c7e9c80e38e261b81e6cff0f7a4fcb75f84f4e49d8e23bc31",
+            "version": 1,
+            "checksum_sha256": "c58508f0031bd2fa3e8849faf665ca82cfb590614985c000f31269cb45b2381f"
+          },
+          {
+            "asset_id": "scene-path-2868afc6f0471ac5e095f892acac81f246bea18d3dc0b6bdcc9f4205efe4a8cc",
+            "version": 1,
+            "checksum_sha256": "0220c724cfa340cb84ba91a30aa566ebe71705d516a58b5b3a4462c892b3f36a"
+          },
+          {
+            "asset_id": "scene-path-af32e1bf3b8c98e1792817da6aaf98d11d9e442f4d7fd2e83a9c3ef4505107a9",
+            "version": 1,
+            "checksum_sha256": "77a809da8555a63a49e4995fe8e5f4401a4161b8e834d2ed65d0da1a5f403202"
+          }
+        ]
+      }
+    }
+  },
+  "failureEvidence": {
+    "source_draft_id": "experiment-ede96f9aca45",
+    "original_unchanged": true,
+    "copied_draft_id": "experiment-91a279f5b3be",
+    "failed": {
+      "run_id": "run-36dc931c5f764e3cb9b8c56058a2537a",
+      "experiment_id": "experiment-91a279f5b3be-r1",
+      "experiment_version": "8",
+      "scenario_id": "scenario-07881620285e-r8",
+      "scenario_version": "8",
+      "environment_asset_id": "reference-shallow-water-v1",
+      "environment_format_version": "1",
+      "lifecycle": "Failed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": null,
+      "final_snapshot_version": null,
+      "event_stream_complete": true,
+      "failure": {
+        "code": "RunFailed",
+        "message": "TDMA slot cannot contain maximum packet airtime and guard"
+      },
+      "provenance": {
+        "definition_sha256": "bd213d948e6fe35542aa639d68fa3f2be0181406a4588f8e4d5c15da6fd8bc15",
+        "experiment": {
+          "id": "experiment-91a279f5b3be-r1",
+          "version": 8
+        },
+        "scenario": {
+          "id": "scenario-07881620285e-r8",
+          "version": 8
+        },
+        "environment": {
+          "asset_id": "reference-shallow-water-v1",
+          "checksum": "fb64e543f9042c52",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637515813",
+            "node_id": 20,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "node_id": 10,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "node_id": 30,
+            "track_id": "N2",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637227891",
+            "node_id": 99,
+            "track_id": "N0",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637515813",
+            "version": 1,
+            "checksum_sha256": "cd28bf51318114c570c37b9b1ba6d801472bb1aabd889feef468a69b29d241b7"
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "version": 1,
+            "checksum_sha256": "ac63c2f4c7fa1056cf03b51f4cd7ec6d4a1f4da3579f48b0a3c4e06989685b27"
+          },
+          {
+            "asset_id": "studio-review-1789637227891",
+            "version": 1,
+            "checksum_sha256": "6fa7e9cafb9b521c0d585b16936c67bc40ee17eba42c65047868f81eb5048a02"
+          }
+        ]
+      }
+    },
+    "repeated": {
+      "run_id": "run-79c96ee4d2574a34b8275a87cd501125",
+      "experiment_id": "experiment-91a279f5b3be-r1",
+      "experiment_version": "8",
+      "scenario_id": "scenario-07881620285e-r8",
+      "scenario_version": "8",
+      "environment_asset_id": "reference-shallow-water-v1",
+      "environment_format_version": "1",
+      "lifecycle": "Failed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": null,
+      "final_snapshot_version": null,
+      "event_stream_complete": true,
+      "failure": {
+        "code": "RunFailed",
+        "message": "TDMA slot cannot contain maximum packet airtime and guard"
+      },
+      "provenance": {
+        "definition_sha256": "bd213d948e6fe35542aa639d68fa3f2be0181406a4588f8e4d5c15da6fd8bc15",
+        "experiment": {
+          "id": "experiment-91a279f5b3be-r1",
+          "version": 8
+        },
+        "scenario": {
+          "id": "scenario-07881620285e-r8",
+          "version": 8
+        },
+        "environment": {
+          "asset_id": "reference-shallow-water-v1",
+          "checksum": "fb64e543f9042c52",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637515813",
+            "node_id": 20,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "node_id": 10,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "node_id": 30,
+            "track_id": "N2",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637227891",
+            "node_id": 99,
+            "track_id": "N0",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637515813",
+            "version": 1,
+            "checksum_sha256": "cd28bf51318114c570c37b9b1ba6d801472bb1aabd889feef468a69b29d241b7"
+          },
+          {
+            "asset_id": "studio-review-1789637607762",
+            "version": 1,
+            "checksum_sha256": "ac63c2f4c7fa1056cf03b51f4cd7ec6d4a1f4da3579f48b0a3c4e06989685b27"
+          },
+          {
+            "asset_id": "studio-review-1789637227891",
+            "version": 1,
+            "checksum_sha256": "6fa7e9cafb9b521c0d585b16936c67bc40ee17eba42c65047868f81eb5048a02"
+          }
+        ]
+      }
+    },
+    "actions": {
+      "run_id": "run-36dc931c5f764e3cb9b8c56058a2537a",
+      "experiment_name": "时隙失败回归（测试0917副本）1789648067142",
+      "scenario_name": "Acceptance 4-Node Scenario 派生场景",
+      "environment_asset_id": "reference-shallow-water-v1",
+      "edit": {
+        "available": true,
+        "experiment_draft_id": "experiment-91a279f5b3be",
+        "captured_revision": 1,
+        "current_revision": 1,
+        "scenario_draft_id": "scenario-07881620285e",
+        "captured_scenario_revision": 8,
+        "current_scenario_revision": 8,
+        "reason": null
+      },
+      "rerun": {
+        "available": true,
+        "reason": null
+      },
+      "timing": {
+        "planned_payload_bytes": "15",
+        "frame_overhead_bytes": "4",
+        "encoded_bytes": "19",
+        "bit_rate_bits_per_second": "60",
+        "minimum_airtime_ns": "2533333334",
+        "guard_interval_ns": "2000000000",
+        "minimum_slot_duration_ns": "4533333334",
+        "configured_slot_duration_ns": "4000000000",
+        "slot_contains_airtime_and_guard": false,
+        "explanation": "按当前已实现帧长与比特率检查时隙；保护时间已计入。该下限不保证所有传播/多径过程均可容纳，也不保证解调成功。"
+      }
+    }
+  }
+}

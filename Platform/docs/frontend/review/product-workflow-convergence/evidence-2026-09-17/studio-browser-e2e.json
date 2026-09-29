@@ -1,0 +1,1477 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "trajectory_asset_id": "studio-review-1789637809594",
+  "environment_asset_id": "4-environment-732fb792b77f-r1",
+  "scenario": {
+    "kind": "scenario",
+    "name": "三节点真实资源联调 1789637809594",
+    "payload": {
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_version": 1,
+      "fusion_center_node_id": "0",
+      "nodes": [
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "0"
+        },
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "1"
+        },
+        {
+          "can_receive": true,
+          "can_transmit": true,
+          "duplex_mode": "HalfDuplex",
+          "initial_position": {
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          "initial_velocity": {
+            "x_meters_per_second": 0,
+            "y_meters_per_second": 0,
+            "z_meters_per_second": 0
+          },
+          "node_id": "2"
+        }
+      ],
+      "trajectory_bindings": [
+        {
+          "asset_id": "studio-review-1789637809594",
+          "node_id": "0",
+          "track_id": "N0",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637809594",
+          "node_id": "1",
+          "track_id": "N1",
+          "version": 1
+        },
+        {
+          "asset_id": "studio-review-1789637809594",
+          "node_id": "2",
+          "track_id": "N2",
+          "version": 1
+        }
+      ]
+    },
+    "draft_id": "scenario-d843069cbf53",
+    "revision": 2,
+    "created_at": "2026-09-17T09:36:50.853121Z",
+    "updated_at": "2026-09-17T09:36:51.479048Z",
+    "validation_issues": []
+  },
+  "experiment": [
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637809594",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-d843069cbf53",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-cf3143e547aa",
+      "revision": 2,
+      "created_at": "2026-09-17T09:36:50.866977Z",
+      "updated_at": "2026-09-17T09:36:51.488510Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637607762",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-e218af226be4",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-59ba4844aa68",
+      "revision": 2,
+      "created_at": "2026-09-17T09:33:28.986902Z",
+      "updated_at": "2026-09-17T09:33:29.478245Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637515813",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel2Waveform",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-f2082ae5ed19",
+        "scenario_revision": 2,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-bbf821234fb6",
+      "revision": 2,
+      "created_at": "2026-09-17T09:31:57.008667Z",
+      "updated_at": "2026-09-17T09:31:57.569693Z",
+      "validation_issues": []
+    },
+    {
+      "kind": "experiment",
+      "name": "一体化工作台联调 1789637227891",
+      "payload": {
+        "bit_rate_bits_per_second": "60",
+        "center_frequency_hz": 25000,
+        "deterministic_seed": "1",
+        "guard_interval_ns": "2000000000",
+        "mac_mode": "Tdma",
+        "maximum_fusion_period_ns": "180000000000",
+        "minimum_bearing_points": "5",
+        "network_update_interval_cycles": "10",
+        "occupied_bandwidth_hz": 4000,
+        "physical_layer": "Channel1Abstract",
+        "routing_mode": "DirectToFusionCenter",
+        "scenario_id": "scenario-e5abff9c1e00",
+        "scenario_revision": 1,
+        "simulation_cycle_count": "2",
+        "source_level_db": 190,
+        "waveform_modulation": "Bpsk",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+        "workload": "CommunicationOnly"
+      },
+      "draft_id": "experiment-22ca7bc10c2d",
+      "revision": 1,
+      "created_at": "2026-09-17T09:27:08.978598Z",
+      "updated_at": "2026-09-17T09:27:08.978598Z",
+      "validation_issues": []
+    }
+  ],
+  "channel1": {
+    "run": {
+      "run_id": "run-ff3930c23b78426fa429cc3735d4e9a6",
+      "experiment_id": "experiment-cf3143e547aa-r1",
+      "experiment_version": "1",
+      "scenario_id": "scenario-d843069cbf53-r1",
+      "scenario_version": "1",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "lifecycle": "Completed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": "24000000000",
+      "final_snapshot_version": "2",
+      "event_stream_complete": true,
+      "failure": null,
+      "provenance": {
+        "definition_sha256": "7dfd682e7fa18a42e451973e1a452d66e2792f32259c5d87cc8240571ce2238d",
+        "experiment": {
+          "id": "experiment-cf3143e547aa-r1",
+          "version": 1
+        },
+        "scenario": {
+          "id": "scenario-d843069cbf53-r1",
+          "version": 1
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel1Abstract",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "version": 1,
+            "checksum_sha256": "828e911d54ba0c2461716213a76673e7422fa6ea94f27829311d63ac47d99a1e"
+          }
+        ]
+      }
+    },
+    "result": {
+      "run_id": "run-ff3930c23b78426fa429cc3735d4e9a6",
+      "experiment_id": "experiment-cf3143e547aa-r1",
+      "experiment_version": "1",
+      "scenario_id": "scenario-d843069cbf53-r1",
+      "scenario_version": "1",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "projection": {
+        "simulation_started_at_ns": "0",
+        "simulation_ended_at_ns": "24000000000",
+        "simulation_duration_ns": "24000000000",
+        "final_snapshot_version": "2",
+        "cycle_count": "2",
+        "node_count": "3",
+        "transmission_count": "4",
+        "channel_signal_count": "8",
+        "channel_no_arrival_count": "0",
+        "reception_count": "8",
+        "local_delivery_count": "4"
+      },
+      "acceptance_report": null,
+      "fusion_results": [],
+      "nodes": [
+        {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -8,
+          "is_fusion_center": true
+        },
+        {
+          "node_id": "1",
+          "x_meters": 1002.4,
+          "y_meters": 0,
+          "z_meters": -60,
+          "is_fusion_center": false
+        },
+        {
+          "node_id": "2",
+          "x_meters": 2002.4,
+          "y_meters": 100,
+          "z_meters": -60,
+          "is_fusion_center": false
+        }
+      ],
+      "visualization": {
+        "positions_complete": true,
+        "generated_feature_count": "0",
+        "positions": [
+          {
+            "node_id": "0",
+            "at_ns": "0",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "0",
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "0",
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "653418601",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "653418601",
+            "x_meters": 1000.0653418601,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "653418601",
+            "x_meters": 2000.0653418601,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "657712267",
+            "x_meters": 1000.0657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "657712267",
+            "x_meters": 2000.0657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "1502454134",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "1502454134",
+            "x_meters": 1000.1502454134,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "1502454134",
+            "x_meters": 2000.1502454134,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "1530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "1530865926",
+            "x_meters": 1000.1530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "1530865926",
+            "x_meters": 2000.1530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6000000000",
+            "x_meters": 1000.6,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6000000000",
+            "x_meters": 2000.6,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6657712267",
+            "x_meters": 1000.6657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6657712267",
+            "x_meters": 2000.6657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7305485757",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7305485757",
+            "x_meters": 1000.7305485757,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7305485757",
+            "x_meters": 2000.7305485757,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7530865926",
+            "x_meters": 1000.7530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7530865926",
+            "x_meters": 2000.7530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8128672181",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8128672181",
+            "x_meters": 1000.8128672181,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8128672181",
+            "x_meters": 2000.8128672181,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12000000000",
+            "x_meters": 1001.2,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12000000000",
+            "x_meters": 2001.2,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12654198668",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12654198668",
+            "x_meters": 1001.2654198668,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12654198668",
+            "x_meters": 2001.2654198668,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12657712267",
+            "x_meters": 1001.2657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12657712267",
+            "x_meters": 2001.2657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "13503234201",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "13503234201",
+            "x_meters": 1001.3503234201,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "13503234201",
+            "x_meters": 2001.3503234201,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "13530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "13530865926",
+            "x_meters": 1001.3530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "13530865926",
+            "x_meters": 2001.3530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18000000000",
+            "x_meters": 1001.8,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18000000000",
+            "x_meters": 2001.8,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18657712267",
+            "x_meters": 1001.8657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18657712267",
+            "x_meters": 2001.8657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19306263945",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19306263945",
+            "x_meters": 1001.9306263945,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19306263945",
+            "x_meters": 2001.9306263945,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19530865926",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19530865926",
+            "x_meters": 1001.9530865926,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19530865926",
+            "x_meters": 2001.9530865926,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20129450369",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20129450369",
+            "x_meters": 1002.0129450369,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20129450369",
+            "x_meters": 2002.0129450369,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "24000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "24000000000",
+            "x_meters": 1002.4,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "24000000000",
+            "x_meters": 2002.4,
+            "y_meters": 100,
+            "z_meters": -60
+          }
+        ],
+        "fusion_sources": [],
+        "waveform": []
+      },
+      "provenance": {
+        "definition_sha256": "7dfd682e7fa18a42e451973e1a452d66e2792f32259c5d87cc8240571ce2238d",
+        "experiment": {
+          "id": "experiment-cf3143e547aa-r1",
+          "version": 1
+        },
+        "scenario": {
+          "id": "scenario-d843069cbf53-r1",
+          "version": 1
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel1Abstract",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "version": 1,
+            "checksum_sha256": "828e911d54ba0c2461716213a76673e7422fa6ea94f27829311d63ac47d99a1e"
+          }
+        ]
+      }
+    }
+  },
+  "channel2": {
+    "run": {
+      "run_id": "run-601b5f0d01aa43bf9d4ef32e6f49c610",
+      "experiment_id": "experiment-cf3143e547aa-r2",
+      "experiment_version": "2",
+      "scenario_id": "scenario-d843069cbf53-r2",
+      "scenario_version": "2",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "lifecycle": "Completed",
+      "simulation_started_at_ns": "0",
+      "simulation_ended_at_ns": "24000000000",
+      "final_snapshot_version": "2",
+      "event_stream_complete": true,
+      "failure": null,
+      "provenance": {
+        "definition_sha256": "569c4d9809f0169d3a9e9e2c18b2a2dc891c7b7320b474cd88d57f4aa8bdd12e",
+        "experiment": {
+          "id": "experiment-cf3143e547aa-r2",
+          "version": 2
+        },
+        "scenario": {
+          "id": "scenario-d843069cbf53-r2",
+          "version": 2
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "version": 1,
+            "checksum_sha256": "828e911d54ba0c2461716213a76673e7422fa6ea94f27829311d63ac47d99a1e"
+          }
+        ]
+      }
+    },
+    "result": {
+      "run_id": "run-601b5f0d01aa43bf9d4ef32e6f49c610",
+      "experiment_id": "experiment-cf3143e547aa-r2",
+      "experiment_version": "2",
+      "scenario_id": "scenario-d843069cbf53-r2",
+      "scenario_version": "2",
+      "environment_asset_id": "4-environment-732fb792b77f-r1",
+      "environment_format_version": "1",
+      "projection": {
+        "simulation_started_at_ns": "0",
+        "simulation_ended_at_ns": "24000000000",
+        "simulation_duration_ns": "24000000000",
+        "final_snapshot_version": "2",
+        "cycle_count": "2",
+        "node_count": "3",
+        "transmission_count": "4",
+        "channel_signal_count": "8",
+        "channel_no_arrival_count": "0",
+        "reception_count": "8",
+        "local_delivery_count": "0"
+      },
+      "acceptance_report": null,
+      "fusion_results": [],
+      "nodes": [
+        {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -8,
+          "is_fusion_center": true
+        },
+        {
+          "node_id": "1",
+          "x_meters": 1002.4,
+          "y_meters": 0,
+          "z_meters": -60,
+          "is_fusion_center": false
+        },
+        {
+          "node_id": "2",
+          "x_meters": 2002.4,
+          "y_meters": 100,
+          "z_meters": -60,
+          "is_fusion_center": false
+        }
+      ],
+      "visualization": {
+        "positions_complete": true,
+        "generated_feature_count": "0",
+        "positions": [
+          {
+            "node_id": "0",
+            "at_ns": "0",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "0",
+            "x_meters": 1000,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "0",
+            "x_meters": 2000,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "653418601",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "653418601",
+            "x_meters": 1000.0653418601,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "653418601",
+            "x_meters": 2000.0653418601,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "657712267",
+            "x_meters": 1000.0657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "657712267",
+            "x_meters": 2000.0657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "2035787467",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "2035787467",
+            "x_meters": 1000.2035787467,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "2035787467",
+            "x_meters": 2000.2035787467,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "2064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "2064199259",
+            "x_meters": 1000.2064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "2064199259",
+            "x_meters": 2000.2064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6000000000",
+            "x_meters": 1000.6,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6000000000",
+            "x_meters": 2000.6,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "6657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "6657712267",
+            "x_meters": 1000.6657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "6657712267",
+            "x_meters": 2000.6657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "7305485757",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "7305485757",
+            "x_meters": 1000.7305485757,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "7305485757",
+            "x_meters": 2000.7305485757,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8064199259",
+            "x_meters": 1000.8064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8064199259",
+            "x_meters": 2000.8064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "8662005514",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "8662005514",
+            "x_meters": 1000.8662005514,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "8662005514",
+            "x_meters": 2000.8662005514,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12000000000",
+            "x_meters": 1001.2,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12000000000",
+            "x_meters": 2001.2,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12654198668",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12654198668",
+            "x_meters": 1001.2654198668,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12654198668",
+            "x_meters": 2001.2654198668,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "12657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "12657712267",
+            "x_meters": 1001.2657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "12657712267",
+            "x_meters": 2001.2657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "14036567534",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "14036567534",
+            "x_meters": 1001.4036567534,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "14036567534",
+            "x_meters": 2001.4036567534,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "14064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "14064199259",
+            "x_meters": 1001.4064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "14064199259",
+            "x_meters": 2001.4064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18000000000",
+            "x_meters": 1001.8,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18000000000",
+            "x_meters": 2001.8,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "18657712267",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "18657712267",
+            "x_meters": 1001.8657712267,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "18657712267",
+            "x_meters": 2001.8657712267,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "19306263945",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "19306263945",
+            "x_meters": 1001.9306263945,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "19306263945",
+            "x_meters": 2001.9306263945,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20064199259",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20064199259",
+            "x_meters": 1002.0064199259,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20064199259",
+            "x_meters": 2002.0064199259,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "20662783702",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "20662783702",
+            "x_meters": 1002.0662783702,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "20662783702",
+            "x_meters": 2002.0662783702,
+            "y_meters": 100,
+            "z_meters": -60
+          },
+          {
+            "node_id": "0",
+            "at_ns": "24000000000",
+            "x_meters": 0,
+            "y_meters": 0,
+            "z_meters": -8
+          },
+          {
+            "node_id": "1",
+            "at_ns": "24000000000",
+            "x_meters": 1002.4,
+            "y_meters": 0,
+            "z_meters": -60
+          },
+          {
+            "node_id": "2",
+            "at_ns": "24000000000",
+            "x_meters": 2002.4,
+            "y_meters": 100,
+            "z_meters": -60
+          }
+        ],
+        "fusion_sources": [],
+        "waveform": [
+          {
+            "transmission_id": "1000",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "3",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1000",
+            "receiver_node_id": "2",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1001",
+            "receiver_node_id": "1",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1001",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "20",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1002",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "3",
+            "crc_ok": false
+          },
+          {
+            "transmission_id": "1002",
+            "receiver_node_id": "2",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1003",
+            "receiver_node_id": "1",
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true
+          },
+          {
+            "transmission_id": "1003",
+            "receiver_node_id": "0",
+            "payload_bit_count": "32",
+            "bit_error_count": "20",
+            "crc_ok": false
+          }
+        ]
+      },
+      "provenance": {
+        "definition_sha256": "569c4d9809f0169d3a9e9e2c18b2a2dc891c7b7320b474cd88d57f4aa8bdd12e",
+        "experiment": {
+          "id": "experiment-cf3143e547aa-r2",
+          "version": 2
+        },
+        "scenario": {
+          "id": "scenario-d843069cbf53-r2",
+          "version": 2
+        },
+        "environment": {
+          "asset_id": "4-environment-732fb792b77f-r1",
+          "checksum": "6f7c372480066312",
+          "format_version": 1
+        },
+        "physical_layer": "Channel2Waveform",
+        "deterministic_seed": 1,
+        "trajectory_bindings": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "studio-review-1789637809594",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "trajectory_assets": [
+          {
+            "asset_id": "studio-review-1789637809594",
+            "version": 1,
+            "checksum_sha256": "828e911d54ba0c2461716213a76673e7422fa6ea94f27829311d63ac47d99a1e"
+          }
+        ]
+      }
+    }
+  }
+}

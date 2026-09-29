@@ -6,21 +6,34 @@ import { environment, experiment, resultSummary, run, runSummary, scenario } fro
 import { installApi, renderRoute } from "./render";
 
 describe("real resource routes", () => {
-  it("renders real overview counts and latest backend creation-order entries", async () => {
+  it("renders the latest run without attaching a different run's latest result", async () => {
     const latestRun = { ...runSummary, catalog_sequence: "2", run_id: "a-latest-run", lifecycle: "Failed", result_available: false };
     const latestResult = { ...resultSummary, catalog_sequence: "3", run_id: "a-latest-result" };
     installApi({
       "/environments": { body: [environment] },
       "/scenarios": { body: [scenario] },
       "/experiments": { body: [experiment] },
+      "/authoring/drafts": { body: [] },
       "/runs": { body: [runSummary, latestRun] },
       "/results": { body: [resultSummary, latestResult] },
     });
     renderRoute("/");
     expect(await screen.findByText("a-latest-run")).toBeTruthy();
-    expect(screen.getByText("Failed")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "查看最近结果" }).getAttribute("href")).toBe("/results/a-latest-result");
+    expect(screen.getByText("运行失败")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "打开运行工作台" }).getAttribute("href")).toBe("/runs/a-latest-run");
+    expect(screen.queryByRole("link", { name: "查看最近结果" })).toBeNull();
     expect(screen.getByText("水声网络数字孪生仿真工作台")).toBeTruthy();
+  });
+
+  it("links the latest run only to its own result", async () => {
+    const matchingRun = { ...runSummary, run_id: "same-run", catalog_sequence: "2" };
+    installApi({ "/environments": { body: [environment] }, "/scenarios": { body: [scenario] },
+      "/experiments": { body: [experiment] }, "/authoring/drafts": { body: [] },
+      "/runs": { body: [runSummary, matchingRun] },
+      "/results": { body: [{ ...resultSummary, run_id: "same-run" }, { ...resultSummary, run_id: "unrelated-latest-result", catalog_sequence: "3" }] },
+    });
+    renderRoute("/");
+    expect((await screen.findByRole("link", { name: "查看最近结果" })).getAttribute("href")).toBe("/results/same-run");
   });
 
   it("renders Environment catalog and detail", async () => {
@@ -48,32 +61,41 @@ describe("real resource routes", () => {
     } as typeof environment;
     installApi({
       "/environments": { body: [referenceEnvironment] },
+      "/authoring/drafts?kind=environment": { body: [] },
+      [`/environments/${referenceEnvironment.environment_asset_id}/authoring-inputs`]: { body: {
+        available: true, name: "南海浅水参考环境", limitations: [], payload: {
+          sound_speed_profile: [{ depth_meters: 0, speed_meters_per_second: 1500 }, { depth_meters: 175, speed_meters_per_second: 1490 }],
+          bathymetry: [{ range_meters: 0, depth_meters: 100 }, { range_meters: 1000, depth_meters: 110 }],
+          acquisition: { latitudeDeg: 18, longitudeDeg: 110, month: 4 },
+        },
+      } },
       [`/environments/${referenceEnvironment.environment_asset_id}`]: { body: referenceEnvironment },
     });
     const catalog = renderRoute("/environments");
-    expect(await screen.findByText(referenceEnvironment.environment_asset_id)).toBeTruthy();
+    expect(await screen.findByText("南海浅水参考环境")).toBeTruthy();
+    expect(screen.queryByText("Producer")).toBeNull();
     catalog.unmount();
     renderRoute(`/environments/${referenceEnvironment.environment_asset_id}`);
-    expect(
-      await screen.findByText((_content, element) =>
-        element?.tagName === "DD" &&
-        element.textContent?.includes(referenceEnvironment.checksum.value) === true,
-      ),
-    ).toBeTruthy();
-    expect(screen.getByText(/total.*Signal.*NoArrival/)).toBeTruthy();
-    expect(screen.getByText("Raw logical source")).toBeTruthy();
-    expect(screen.getByText("reference_shallow_water_v1.arr")).toBeTruthy();
-    expect(screen.getByText(/Reference\/proxy modeled environment/)).toBeTruthy();
+    expect(await screen.findByRole("img", { name: "草稿声速剖面" })).toBeTruthy();
+    expect(screen.getByText("已发布环境的输入 · 修改后另存新版本")).toBeTruthy();
+    expect((screen.getByLabelText("环境名称") as HTMLInputElement).value).toBe("南海浅水参考环境");
+    expect(screen.queryByText("正式 AcousticFieldAsset 覆盖范围")).toBeNull();
     expect(document.body.textContent).not.toContain("/home/");
   });
 
-  it("renders Scenario catalog and version detail", async () => {
+  it("replaces the Scenario catalog with unified editing while preserving versioned read-only links", async () => {
     installApi({
       "/scenarios": { body: [scenario] },
+      "/environments": { body: [environment] },
+      "/trajectories": { body: [] },
+      "/authoring/drafts?kind=scenario": { body: [] },
+      "/authoring/drafts?kind=experiment": { body: [] },
       [`/scenarios/${scenario.scenario_id}/versions/${scenario.version}`]: { body: scenario },
     });
     const catalog = renderRoute("/scenarios");
-    expect(await screen.findByText(scenario.scenario_id)).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "实验工作台" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "可编辑场景画布" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "场景设计" })).toBeNull();
     catalog.unmount();
     renderRoute(`/scenarios/${scenario.scenario_id}/versions/${scenario.version}`);
     expect(await screen.findByText(`Node ${scenario.fusion_center_node_id}`)).toBeTruthy();

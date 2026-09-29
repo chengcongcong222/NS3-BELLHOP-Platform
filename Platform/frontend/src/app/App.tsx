@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { AppShell } from "../components/common";
 import {
   EnvironmentCatalogPage,
@@ -10,21 +10,18 @@ import {
   OverviewPage,
   ResultCatalogPage,
   RunCatalogPage,
-  ScenarioCatalogPage,
   ScenarioDetailPage,
 } from "../features/pages";
 import { StudioResultPage, StudioRunPage } from "../features/studio";
 import {
   EnvironmentAuthoringPage,
   ServerWorkspacePage,
-  ScenarioAuthoringPage,
   ExperimentAuthoringPage,
   TrajectoryAuthoringPage,
 } from "../features/authoring";
 import {
   CaseCatalogPage,
   CaseDetailPage,
-  NewSimulationPage,
   SystemPage,
   WorkbenchPage,
 } from "../features/workbench";
@@ -33,12 +30,18 @@ export const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: 5_000 } },
 });
 
+function ScenarioEditorRedirect() {
+  const [params] = useSearchParams();
+  const draft = params.get("draft");
+  return <Navigate replace to={`/workspace/experiment${draft ? `?scenario=${encodeURIComponent(draft)}` : ""}`} />;
+}
+
 export function AppRoutes() {
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<WorkbenchPage />} />
-        <Route path="/new-simulation" element={<NewSimulationPage />} />
+        <Route path="/new-simulation" element={<Navigate replace to="/workspace/experiment" />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/cases" element={<CaseCatalogPage />} />
         <Route path="/cases/:caseId" element={<CaseDetailPage />} />
@@ -46,9 +49,9 @@ export function AppRoutes() {
         <Route path="/environments/:assetId" element={<EnvironmentDetailPage />} />
         <Route path="/workspace/environment" element={<EnvironmentAuthoringPage />} />
         <Route path="/trajectories" element={<TrajectoryAuthoringPage />} />
-        <Route path="/scenarios" element={<ScenarioCatalogPage />} />
+        <Route path="/scenarios" element={<Navigate replace to="/workspace/experiment" />} />
         <Route path="/scenarios/:scenarioId/versions/:version" element={<ScenarioDetailPage />} />
-        <Route path="/workspace/scenario" element={<ScenarioAuthoringPage />} />
+        <Route path="/workspace/scenario" element={<ScenarioEditorRedirect />} />
         <Route path="/experiments" element={<ExperimentCatalogPage />} />
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
         <Route path="/workspace/experiment" element={<ExperimentAuthoringPage />} />

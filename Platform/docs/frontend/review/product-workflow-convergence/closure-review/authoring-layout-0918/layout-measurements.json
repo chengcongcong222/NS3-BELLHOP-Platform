@@ -1,0 +1,374 @@
+{
+  "captured_at": "2026-09-18T01:08:20.750Z",
+  "base": "http://127.0.0.1:4178",
+  "draft": "experiment-f1e890b99dec",
+  "read_only": true,
+  "mutations": 0,
+  "errors": [],
+  "captures": [
+    {
+      "viewport": {
+        "width": 2553,
+        "height": 1264
+      },
+      "documentHeight": 1264,
+      "documentWidth": 2553,
+      "mainScrollHeight": 1182,
+      "mainClientHeight": 1182,
+      "canvas": {
+        "x": 532.1875,
+        "y": 62,
+        "width": 1386.5625,
+        "height": 1170,
+        "bottom": 1232
+      },
+      "plan": {
+        "x": 533.1875,
+        "y": 104,
+        "width": 1384.5625,
+        "height": 815.203125,
+        "bottom": 919.203125
+      },
+      "profile": {
+        "x": 533.1875,
+        "y": 986.203125,
+        "width": 1384.5625,
+        "height": 190,
+        "bottom": 1176.203125
+      },
+      "sidebar": {
+        "x": 62,
+        "y": 62,
+        "width": 462.1875,
+        "height": 1170,
+        "bottom": 1232
+      },
+      "inspector": {
+        "x": 1926.75,
+        "y": 62,
+        "width": 616.25,
+        "height": 1170,
+        "bottom": 1232
+      },
+      "canvasScrollHeight": 1168,
+      "canvasClientHeight": 1168,
+      "profileViewBox": "0 0 1384.5625 190",
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 1208.3412475585938,
+          "depthX": 1208.3412475585938
+        },
+        {
+          "id": "1",
+          "planX": 1011.375,
+          "depthX": 1011.375
+        },
+        {
+          "id": "2",
+          "planX": 1355.2095336914062,
+          "depthX": 1355.2095336914062
+        }
+      ],
+      "nodeGlyph": {
+        "x": 1188.34130859375,
+        "y": 538.566650390625,
+        "width": 42,
+        "height": 24,
+        "bottom": 562.566650390625
+      }
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "documentHeight": 1080,
+      "documentWidth": 1920,
+      "mainScrollHeight": 998,
+      "mainClientHeight": 998,
+      "canvas": {
+        "x": 413.5,
+        "y": 62,
+        "width": 1030.5,
+        "height": 986,
+        "bottom": 1048
+      },
+      "plan": {
+        "x": 414.5,
+        "y": 104,
+        "width": 1028.5,
+        "height": 631.203125,
+        "bottom": 735.203125
+      },
+      "profile": {
+        "x": 414.5,
+        "y": 802.203125,
+        "width": 1028.5,
+        "height": 190,
+        "bottom": 992.203125
+      },
+      "sidebar": {
+        "x": 62,
+        "y": 62,
+        "width": 343.5,
+        "height": 986,
+        "bottom": 1048
+      },
+      "inspector": {
+        "x": 1452,
+        "y": 62,
+        "width": 458,
+        "height": 986,
+        "bottom": 1048
+      },
+      "canvasScrollHeight": 984,
+      "canvasClientHeight": 984,
+      "profileViewBox": "0 0 1028.5 190",
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 916.3699951171875,
+          "depthX": 916.3699951171875
+        },
+        {
+          "id": "1",
+          "planX": 774,
+          "depthX": 774
+        },
+        {
+          "id": "2",
+          "planX": 1022.5285034179688,
+          "depthX": 1022.5285034179688
+        }
+      ],
+      "nodeGlyph": {
+        "x": 896.3699951171875,
+        "y": 435.76605224609375,
+        "width": 42,
+        "height": 24,
+        "bottom": 459.76605224609375
+      }
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "documentHeight": 900,
+      "documentWidth": 1440,
+      "mainScrollHeight": 818,
+      "mainClientHeight": 818,
+      "canvas": {
+        "x": 323.5,
+        "y": 62,
+        "width": 760.5,
+        "height": 806,
+        "bottom": 868
+      },
+      "plan": {
+        "x": 324.5,
+        "y": 104,
+        "width": 758.5,
+        "height": 451.203125,
+        "bottom": 555.203125
+      },
+      "profile": {
+        "x": 324.5,
+        "y": 622.203125,
+        "width": 758.5,
+        "height": 190,
+        "bottom": 812.203125
+      },
+      "sidebar": {
+        "x": 62,
+        "y": 62,
+        "width": 253.5,
+        "height": 806,
+        "bottom": 868
+      },
+      "inspector": {
+        "x": 1092,
+        "y": 62,
+        "width": 338,
+        "height": 806,
+        "bottom": 868
+      },
+      "canvasScrollHeight": 804,
+      "canvasClientHeight": 804,
+      "profileViewBox": "0 0 758.5 190",
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 694.9700012207031,
+          "depthX": 694.9700012207031
+        },
+        {
+          "id": "1",
+          "planX": 594,
+          "depthX": 594
+        },
+        {
+          "id": "2",
+          "planX": 770.2585144042969,
+          "depthX": 770.2585144042969
+        }
+      ],
+      "nodeGlyph": {
+        "x": 674.969970703125,
+        "y": 337.5760498046875,
+        "width": 42,
+        "height": 24,
+        "bottom": 361.5760498046875
+      }
+    },
+    {
+      "viewport": {
+        "width": 1366,
+        "height": 768
+      },
+      "documentHeight": 768,
+      "documentWidth": 1366,
+      "mainScrollHeight": 686,
+      "mainClientHeight": 686,
+      "canvas": {
+        "x": 309.5,
+        "y": 62,
+        "width": 718.484375,
+        "height": 674,
+        "bottom": 736
+      },
+      "plan": {
+        "x": 310.5,
+        "y": 104,
+        "width": 716.484375,
+        "height": 319.203125,
+        "bottom": 423.203125
+      },
+      "profile": {
+        "x": 310.5,
+        "y": 490.203125,
+        "width": 716.484375,
+        "height": 190,
+        "bottom": 680.203125
+      },
+      "sidebar": {
+        "x": 62,
+        "y": 62,
+        "width": 239.5,
+        "height": 674,
+        "bottom": 736
+      },
+      "inspector": {
+        "x": 1035.984375,
+        "y": 62,
+        "width": 320,
+        "height": 674,
+        "bottom": 736
+      },
+      "canvasScrollHeight": 672,
+      "canvasClientHeight": 672,
+      "profileViewBox": "0 0 716.484375 190",
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 660.5223999023438,
+          "depthX": 660.5223999023438
+        },
+        {
+          "id": "1",
+          "planX": 565.9947967529297,
+          "depthX": 565.9947967529297
+        },
+        {
+          "id": "2",
+          "planX": 731.0071105957031,
+          "depthX": 731.0071105957031
+        }
+      ],
+      "nodeGlyph": {
+        "x": 640.5223999023438,
+        "y": 270.30157470703125,
+        "width": 42,
+        "height": 24,
+        "bottom": 294.30157470703125
+      }
+    },
+    {
+      "viewport": {
+        "width": 800,
+        "height": 900
+      },
+      "documentHeight": 1731,
+      "documentWidth": 785,
+      "mainScrollHeight": 1649,
+      "mainClientHeight": 1649,
+      "canvas": {
+        "x": 62,
+        "y": 411.15625,
+        "width": 713,
+        "height": 680,
+        "bottom": 1091.15625
+      },
+      "plan": {
+        "x": 63,
+        "y": 453.15625,
+        "width": 711,
+        "height": 325.203125,
+        "bottom": 778.359375
+      },
+      "profile": {
+        "x": 63,
+        "y": 845.359375,
+        "width": 711,
+        "height": 190,
+        "bottom": 1035.359375
+      },
+      "sidebar": {
+        "x": 62,
+        "y": 62,
+        "width": 713,
+        "height": 341.15625,
+        "bottom": 403.15625
+      },
+      "inspector": {
+        "x": 62,
+        "y": 1099.15625,
+        "width": 713,
+        "height": 600,
+        "bottom": 1699.15625
+      },
+      "canvasScrollHeight": 678,
+      "canvasClientHeight": 678,
+      "profileViewBox": "0 0 711 190",
+      "nodeX": [
+        {
+          "id": "0",
+          "planX": 410.35333251953125,
+          "depthX": 410.35333251953125
+        },
+        {
+          "id": "1",
+          "planX": 316.6666717529297,
+          "depthX": 316.6666717529297
+        },
+        {
+          "id": "2",
+          "planX": 480.21099853515625,
+          "depthX": 480.21099853515625
+        }
+      ],
+      "nodeGlyph": {
+        "x": 390.35333251953125,
+        "y": 622.29150390625,
+        "width": 42,
+        "height": 24,
+        "bottom": 646.29150390625
+      }
+    }
+  ],
+  "interactions": {
+    "node_inspector": true,
+    "physical_mode_tab": true
+  }
+}

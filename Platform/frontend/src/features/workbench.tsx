@@ -4,11 +4,14 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { apiClient } from "../api/client";
 import { queries } from "../api/queries";
 import type { ExperimentDto, ScenarioDto } from "../api/types";
-import { PublishedEnvironmentProfile, DraftEnvironmentProfile } from "../components/EnvironmentProfile";
+import { DraftEnvironmentProfile } from "../components/EnvironmentProfile";
 import { EmptyState, ErrorState, Field, LoadingState, MetricCard, PageHeader, Status } from "../components/common";
 import { ScenarioDesigner } from "../components/ScenarioDesigner";
 import { composeCases } from "../domain/cases";
 import { formatFrequency, formatNanoseconds } from "../domain/format";
+import { physicalModeLabel } from "../productLanguage";
+import { ScenarioTopology } from "../components/ScenarioTopology";
+import "./workbenchLibrary.css";
 import {
   deleteDraft, experimentDraftFrom, loadDrafts, newEnvironmentDraft, saveDraft,
   scenarioDraftFrom, validateDraft, type EnvironmentDraft, type ExperimentDraft,
@@ -38,54 +41,37 @@ function useDrafts() {
 }
 
 function CaseCard({ item, compact = false }: { item: ReturnType<typeof composeCases>[number]; compact?: boolean }) {
-  return <article className={`case-card ${compact ? "compact" : ""}`}><div className="case-art"><span>{item.classification}</span><div className="sonar-rings" /></div><div className="case-body"><p className="eyebrow">科研案例</p><h2><Link to={`/cases/${item.id}`}>{item.title}</Link></h2><p>{item.summary}</p><div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="case-meta"><span>{item.scenario.nodes.length} 个节点</span><span>{item.environment.axes.horizontal_range.maximum / 1000} km 覆盖</span><span>{item.experiment.simulation_cycle_count} 个周期</span></div><Link className="text-action" to={`/cases/${item.id}`}>查看案例与运行 →</Link></div></article>;
+  return <article className={`wb-case-card ${compact ? "compact" : ""}`}><header><span>{item.classification}</span><small>实验版本 {item.experiment.version}</small></header><h2><Link to={`/cases/${item.id}`}>{item.title}</Link></h2><p>{item.summary}</p><dl><Field label="节点 / 中心">{item.scenario.nodes.length} 个 / N{item.scenario.fusion_center_node_id}</Field><Field label="工作频率">{item.experiment.phy.center_frequency_hz / 1000} kHz</Field><Field label="声场范围">{item.environment.axes.horizontal_range.maximum / 1000} km</Field><Field label="仿真周期">{item.experiment.simulation_cycle_count}</Field></dl><Link to={`/cases/${item.id}`}>查看配置与运行 →</Link></article>;
 }
 
 export function WorkbenchPage() {
-  const catalog = useCatalog(); const runs = useQuery(queries.runs()); const results = useQuery(queries.results()); const drafts = useDrafts();
-  if (catalog.pending || runs.isPending || results.isPending) return <LoadingState />;
-  if (catalog.error || runs.error || results.error) return <ErrorState error={catalog.error || runs.error || results.error} />;
-  const recentRun = runs.data.at(-1); const recentResult = results.data.at(-1);
+  const catalog = useCatalog(); const runs = useQuery(queries.runs()); const results = useQuery(queries.results()); const drafts = useQuery(queries.drafts());
+  const [search, setSearch] = useState("");
+  const recentRun = runs.data?.at(-1);
+  const recentDetails = useQuery({ ...queries.runActions(recentRun?.run_id ?? ""), enabled: Boolean(recentRun) });
+  if (catalog.pending || runs.isPending || results.isPending || drafts.isPending) return <LoadingState />;
+  if (catalog.error || runs.error || results.error || drafts.error) return <ErrorState error={catalog.error || runs.error || results.error || drafts.error} />;
+  const recentResult = results.data.find(item => item.run_id === recentRun?.run_id);
   const latestCase = catalog.cases[0];
-  return <div className="page-grid page-grid--overview classic-overview">
-    <section className="hero-panel">
-      <p className="eyebrow">总览首页</p>
-      <h2>{latestCase ? <Link to={`/cases/${latestCase.id}`}>{latestCase.title}</Link> : "水声网络数字孪生仿真工作台"}</h2>
-      <p className="hero-panel__lead"><strong>水声网络数字孪生仿真工作台</strong><br />{latestCase?.summary ?? "建设声学环境、布设水下节点、配置网络实验，并沿正式 ns-3 仿真时间观察通信与融合结果。"}</p>
-      <div className="hero-panel__actions"><Link className="primary-button" to="/new-simulation">开始新的仿真</Link><Link className="ghost-button" to="/workspace/scenario">进入模型编排</Link></div>
+  const editing = drafts.data.filter(item => item.kind === "experiment").sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  const visibleDrafts = editing.filter(item => `${item.name} ${item.draft_id}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+  return <div className="wb-home">
+    <header className="wb-heading"><div><h1>水声网络数字孪生仿真工作台</h1><p>建设可复用资源，在同一个实验中配置节点、协议和物理模式。</p></div><Link className="primary-button" to="/workspace/experiment">＋ 新建实验</Link></header>
+    <nav className="wb-resource-strip" aria-label="资源概览"><Link to="/environments">声学环境 <b>{catalog.environments.data.length}</b></Link><Link to="/trajectories">轨迹建设</Link><Link to="/cases">预置案例 <b>{catalog.cases.length}</b></Link><Link to="/runs">运行记录 <b>{runs.data.length}</b></Link><span>正式结果 <b>{results.data.length}</b></span><span>ns-3 离散事件</span></nav>
+    <div className="wb-home-grid"><section className="wb-panel wb-drafts"><header><h2>我的实验 <small>{editing.length}</small></h2><label className="wb-search"><span className="wb-sr-only">查找我的实验</span><input type="search" placeholder="按实验名称查找" value={search} onChange={event => setSearch(event.target.value)} /></label></header>
+      <div className="wb-draft-list">{visibleDrafts.length ? <table><thead><tr><th>实验 / 场景</th><th>物理模式</th><th>最近保存</th><th>编辑</th></tr></thead><tbody>{visibleDrafts.slice(0, 6).map(item => { const scene = drafts.data.find(draft => draft.kind === "scenario" && draft.draft_id === item.payload.scenario_id); return <tr key={item.draft_id}><td><Link to={`/workspace/experiment?draft=${encodeURIComponent(item.draft_id)}`}>{item.name}</Link><small>{scene?.name ?? "场景引用待核对"} · 修订 {item.revision}</small></td><td title={physicalModeLabel(String(item.payload.physical_layer ?? ""))}>{item.payload.physical_layer === "Channel1Abstract" ? "A · 快速网络" : item.payload.physical_layer === "Channel2Waveform" ? "B · 波形通信" : "待选择"}</td><td>{new Date(item.updated_at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td><Link aria-label={`继续编辑 ${item.name}`} to={`/workspace/experiment?draft=${encodeURIComponent(item.draft_id)}`}>打开 →</Link></td></tr>; })}</tbody></table> : <div className="wb-empty"><strong>{search ? "没有匹配的实验" : "还没有自己的实验"}</strong><p>{search ? "换一个名称试试。" : "可以新建实验，也可以先查看右侧预置案例的资源与配置。"}</p></div>}</div>
+      <footer><span>{visibleDrafts.length > 6 ? `显示最近 6 / ${visibleDrafts.length} 个匹配实验，可按名称定位` : "草稿保存在服务器；运行会冻结当次配置"}</span><Link to="/workspace/experiment">进入实验编辑 →</Link></footer>
     </section>
-    <div className="metrics-grid">
-      <MetricCard label="正式环境" value={`${catalog.environments.data.length} 个`} />
-      <MetricCard label="正式场景" value={`${catalog.scenarios.data.length} 个`} />
-      <MetricCard label="最近运行" value={recentRun ? productLabelForWorkbench(recentRun.lifecycle) : "待运行"} />
-    </div>
-    <article className="section-card"><p className="eyebrow">系统概览</p><h2>平台态势</h2><div className="status-grid">
-      <div className="status-grid__item"><span>仿真核心</span><strong>ns-3 离散事件</strong></div>
-      <div className="status-grid__item"><span>环境资源</span><strong>{catalog.environments.data.length} 个</strong></div>
-      <div className="status-grid__item"><span>场景版本</span><strong>{catalog.scenarios.data.length} 个</strong></div>
-      <div className="status-grid__item"><span>实验配置</span><strong>{catalog.experiments.data.length} 个</strong></div>
-      <div className="status-grid__item"><span>正式结果</span><strong>{results.data.length} 份</strong></div>
-      <div className="status-grid__item"><span>本地草稿</span><strong>{drafts.length} 个</strong></div>
-    </div></article>
-    <article className="section-card classic-topology-preview"><p className="eyebrow">资源链路</p><h2>当前工作流</h2><div className="classic-flow-map">{[["环境", "/workspace/environment"], ["场景", "/workspace/scenario"], ["实验", "/workspace/experiment"], ["运行", "/runs"]].map(([label, to], index) => <Link to={to} key={to}><b>{index + 1}</b><span>{label}</span></Link>)}</div>{recentRun && <div className="run-line"><span className="run-orb" /><div><strong>{recentRun.run_id}</strong><small>最近一次正式运行</small></div><Status value={recentRun.lifecycle} /></div>}{recentResult && <Link className="text-action" to={`/results/${recentResult.run_id}`}>查看最近结果</Link>}</article>
-    <article className="section-card"><div className="panel-title"><div><p className="eyebrow">快速开始</p><h2>高频入口</h2></div><Link to="/cases">案例中心</Link></div><div className="quick-actions">
-      <Link to="/workspace/environment" className="quick-action"><strong>建设环境</strong><span>SSP、地形与 Bellhop 离线构建</span></Link>
-      <Link to="/workspace/scenario" className="quick-action"><strong>编排场景</strong><span>节点、轨迹绑定与空间布设</span></Link>
-      <Link to="/workspace/experiment" className="quick-action"><strong>配置实验</strong><span>协议与 Channel1 / Channel2</span></Link>
-      <Link to={recentResult ? `/results/${recentResult.run_id}` : "/results"} className="quick-action"><strong>分析结果</strong><span>网络、水声、波形与融合证据</span></Link>
-    </div></article>
+    <section className="wb-panel wb-reference"><header><h2>预置案例</h2><Link to="/cases">全部案例 →</Link></header>{latestCase ? <><h3><Link to={`/cases/${latestCase.id}`}>{latestCase.title}</Link></h3><div className="wb-preview"><span>初始节点布设 · 非实时位置</span><ScenarioTopology scenario={latestCase.scenario} /></div><div className="wb-reference-facts"><span>{latestCase.scenario.nodes.length} 节点</span><span>{latestCase.experiment.phy.center_frequency_hz / 1000} kHz</span><span>中心 N{latestCase.scenario.fusion_center_node_id}</span><Link to={`/cases/${latestCase.id}`}>查看配置 →</Link></div></> : <div className="wb-empty">尚无可运行案例</div>}</section></div>
+    <section className="wb-panel wb-recent"><header><h2>最近运行</h2><Link to="/runs">全部运行 →</Link></header>{recentRun ? <div className="wb-recent-content"><div><strong>{recentDetails.data?.experiment_name ?? recentRun.experiment_id}</strong><small>{recentRun.run_id}</small><span>场景：{recentDetails.data?.scenario_name ?? recentRun.scenario_id} · v{recentRun.scenario_version}</span></div><Status value={recentRun.lifecycle} /><Link to={`/runs/${recentRun.run_id}`}>打开运行工作台</Link>{recentResult && <Link to={`/results/${recentResult.run_id}`}>查看最近结果</Link>}</div> : <div className="wb-empty">尚无运行记录，保存实验后即可开始仿真。</div>}</section>
   </div>;
 }
 
-function productLabelForWorkbench(value: string) {
-  return ({ Created: "已创建", Running: "运行中", Completed: "已完成", Failed: "失败" } as Record<string, string>)[value] ?? value;
-}
 
-export function NewSimulationPage() { return <><PageHeader title="开始新的仿真准备" detail="先选择已有科研案例，或在本地草稿中逐步建设环境、场景和实验；草稿不会改变已发布资源。" /><section className="new-simulation-grid"><Link to="/cases"><strong>从案例开始</strong><span>直接运行已有正式实验，查看可复现的事件与结果。</span></Link><Link to="/environments"><strong>以已发布环境范围新建草稿</strong><span>继承范围、频率和 metadata，不复制 SSP、地形或传播场内容。</span></Link><Link to="/workspace/environment"><strong>新建环境草稿</strong><span>输入 SSP 与地形采样点，准备离线声场建设。</span></Link><Link to="/workspace/scenario"><strong>新建场景草稿</strong><span>布设节点、深度与初始运动配置。</span></Link><Link to="/workspace/experiment"><strong>使用已有场景配置实验</strong><span>配置路由、MAC、物理层与仿真周期。</span></Link></section></>; }
 
 export function CaseCatalogPage() {
   const catalog = useCatalog(); if (catalog.pending) return <LoadingState />; if (catalog.error) return <ErrorState error={catalog.error} />;
-  return <><PageHeader title="案例中心" detail="案例把声学环境、节点场景和实验配置组织成可理解、可直接运行的科研任务。" /><div className="case-grid">{catalog.cases.map((item) => <CaseCard key={item.id} item={item} />)}</div></>;
+  return <div className="wb-cases"><PageHeader title="案例中心" detail="查看预置实验的真实环境、节点与通信参数，再按已发布配置运行。" /><div className="wb-case-grid">{catalog.cases.map((item) => <CaseCard key={item.id} item={item} />)}</div></div>;
 }
 
 function StartCaseButton({ experiment }: { experiment: ExperimentDto }) {
@@ -94,10 +80,18 @@ function StartCaseButton({ experiment }: { experiment: ExperimentDto }) {
 }
 
 export function CaseDetailPage() {
-  const { caseId } = useParams(); const catalog = useCatalog(); const navigate = useNavigate();
+  const { caseId } = useParams(); const catalog = useCatalog();
   if (catalog.pending) return <LoadingState />; if (catalog.error) return <ErrorState error={catalog.error} />;
   const item = catalog.cases.find((candidate) => candidate.id === caseId); if (!item) return <EmptyState>案例不存在或其正式资源组合不完整。</EmptyState>;
-  return <><section className="case-hero"><div><Link to="/cases">← 案例中心</Link><p className="eyebrow">{item.classification}</p><h1>{item.title}</h1><p>{item.summary}</p><div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><div className="hero-actions"><StartCaseButton experiment={item.experiment} /><button type="button" className="secondary-button" onClick={() => { const draft = experimentDraftFrom(item.experiment); saveDraft(draft); navigate(`/workspace/experiment?draft=${encodeURIComponent(draft.id)}`); }}>基于此案例创建实验</button></div></div><PublishedEnvironmentProfile environment={item.environment} /></section><section className="journey-panel"><h2>这个案例将如何执行</h2><div className="journey"><div><b>1</b><strong>参考环境</strong><Link to={`/environments/${item.environment.environment_asset_id}`}>{item.environment.environment_asset_id}</Link></div><div><b>2</b><strong>节点场景</strong><Link to={`/scenarios/${item.scenario.scenario_id}/versions/${item.scenario.version}`}>{item.scenario.nodes.length} 节点空间布设</Link></div><div><b>3</b><strong>网络实验</strong><Link to={`/experiments/${item.experiment.experiment_id}/versions/${item.experiment.version}`}>{item.experiment.routing.mode} · {item.experiment.mac.mode}</Link></div><div><b>4</b><strong>运行与结果</strong><span>正式事件投影与分析</span></div></div></section><section className="two-column"><article className="panel"><h2>场景一览</h2><dl><Field label="节点规模">{item.scenario.nodes.length} 个</Field><Field label="融合中心">N{item.scenario.fusion_center_node_id}</Field><Field label="运动模型">{item.scenario.mobility.model}</Field><Field label="活动范围">{item.environment.axes.horizontal_range.maximum} m</Field></dl></article><article className="panel"><h2>实验一览</h2><dl><Field label="路由策略">{item.experiment.routing.mode}</Field><Field label="信道接入">{item.experiment.mac.mode}</Field><Field label="通信速率">{item.experiment.phy.bit_rate_bits_per_second} bit/s</Field><Field label="工作频率">{formatFrequency(item.experiment.phy.center_frequency_hz)}</Field><Field label="仿真周期">{item.experiment.simulation_cycle_count}</Field></dl></article></section><details className="technical-details"><summary>技术详情</summary><dl><Field label="Environment identity">{item.environment.environment_asset_id} · v{item.environment.asset_format_version}</Field><Field label="Scenario identity">{item.scenario.scenario_id} · v{item.scenario.version}</Field><Field label="Experiment identity">{item.experiment.experiment_id} · v{item.experiment.version}</Field></dl></details></>;
+  const seconds = (value: string) => formatNanoseconds(value).split(" (")[0];
+  const routing = item.experiment.routing.mode === "DirectToFusionCenter" ? "直接送往融合中心" : item.experiment.routing.mode === "ShortestPath" ? "最短路径" : "路由配置未识别";
+  return <div className="wb-case-detail"><header className="wb-heading"><div><Link to="/cases">← 案例中心</Link><h1>{item.title}</h1><p>{item.summary}</p></div><div className="wb-case-launch"><span>已发布配置 · 只读</span><StartCaseButton experiment={item.experiment} /></div></header>
+    <div className="wb-case-detail-grid"><section className="wb-panel"><header><h2>场景与节点</h2><span>{item.scenario.nodes.length} 个节点 · 中心 N{item.scenario.fusion_center_node_id}</span></header><div className="wb-case-geometry"><ScenarioTopology scenario={item.scenario} /></div><div className="wb-node-table"><table><caption>{item.scenario.name} · 初始坐标，单位 m</caption><thead><tr><th>节点</th><th>X</th><th>Y</th><th>Z</th><th>收发能力</th></tr></thead><tbody>{item.scenario.nodes.map(node => <tr key={node.node_id}><th>N{node.node_id}{node.node_id === item.scenario.fusion_center_node_id ? " · 中心" : ""}</th><td>{node.initial_position.x_meters}</td><td>{node.initial_position.y_meters}</td><td>{node.initial_position.z_meters}</td><td>{node.can_transmit ? "发送" : "不发送"} / {node.can_receive ? "接收" : "不接收"}</td></tr>)}</tbody></table></div></section>
+    <aside className="wb-case-settings"><section className="wb-panel"><header><h2>绑定环境</h2><Link to={`/environments/${item.environment.environment_asset_id}`}>查看环境 →</Link></header><dl><Field label="环境版本">{item.environment.asset_format_version}</Field><Field label="声场距离">{item.environment.axes.horizontal_range.minimum}–{item.environment.axes.horizontal_range.maximum} m</Field><Field label="收发深度">{Math.min(item.environment.axes.source_depth.minimum, item.environment.axes.receiver_depth.minimum)}–{Math.max(item.environment.axes.source_depth.maximum, item.environment.axes.receiver_depth.maximum)} m</Field><Field label="计算频率">{formatFrequency(item.environment.axes.frequency.minimum)}</Field></dl><small className="wb-resource-id">{item.environment.environment_asset_id}</small></section>
+    <section className="wb-panel"><header><h2>通信与运行参数</h2><span>实验版本 {item.experiment.version}</span></header><dl><Field label="路由策略">{routing}</Field><Field label="信道接入">{item.experiment.mac.mode === "Tdma" ? "TDMA · 分时发送" : "接入方式未识别"}</Field><Field label="发送比特率">{item.experiment.phy.bit_rate_bits_per_second} bit/s</Field><Field label="频率 / 带宽">{item.experiment.phy.center_frequency_hz / 1000} / {item.experiment.phy.occupied_bandwidth_hz / 1000} kHz</Field><Field label="时隙 / 保护时间">{seconds(item.experiment.mac.slot_duration_ns)} / {seconds(item.experiment.mac.guard_interval_ns)}</Field><Field label="仿真周期 / 种子">{item.experiment.simulation_cycle_count} / {item.experiment.deterministic_seed}</Field><Field label="业务">{item.experiment.fusion.workload === "CommunicationOnly" ? "纯网络通信" : "方位特征融合"}</Field></dl></section>
+    <section className="wb-case-note"><strong>这个案例将如何执行</strong><p>按本页环境、场景和实验版本创建独立运行。查看真实轨迹位置、通信事件和结果，不修改预置资源。</p></section></aside></div>
+    <details className="wb-identities"><summary>精确资源标识</summary><dl><Field label="场景">{item.scenario.scenario_id} · v{item.scenario.version}</Field><Field label="实验">{item.experiment.experiment_id} · v{item.experiment.version}</Field><Field label="环境校验值">{item.environment.checksum.value}</Field></dl></details>
+  </div>;
 }
 
 function DraftActions({ draft, onSaved }: { draft: WorkspaceDraft; onSaved: () => void }) {

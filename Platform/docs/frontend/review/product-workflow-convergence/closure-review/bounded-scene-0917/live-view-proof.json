@@ -1,0 +1,103 @@
+{
+  "sourceId": "run-af910d0136bc4397a2e02863630542b9",
+  "repeatedId": "run-381c072368be47a3a17f670fabd09302",
+  "counts": [
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 0
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 0
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 1
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 2
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 3
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 4
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 4
+    },
+    {
+      "path": "/runs/run-381c072368be47a3a17f670fabd09302",
+      "presentation": "progressive",
+      "count": 4
+    }
+  ],
+  "geometry": {
+    "plot": [
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      },
+      {
+        "x": 161,
+        "width": 1227
+      }
+    ],
+    "paired": [
+      {
+        "id": "0",
+        "depthX": 228.66836734693877,
+        "planX": 228.6683776302472
+      },
+      {
+        "id": "1",
+        "depthX": 315.1383298445721,
+        "planX": 315.13833806875095
+      },
+      {
+        "id": "2",
+        "depthX": 401.50465637518437,
+        "planX": 401.50466254270145
+      }
+    ],
+    "pageHeight": 1032,
+    "viewport": 900
+  },
+  "unchangedProjection": true,
+  "frozenConfigurationPreserved": true
+}

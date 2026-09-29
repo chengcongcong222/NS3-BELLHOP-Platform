@@ -16,6 +16,8 @@ export const queries = {
     queryOptions({ queryKey: ["experiments", id, version], queryFn: () => apiClient.getExperiment(id, version) }),
   runs: () => queryOptions({ queryKey: ["runs"], queryFn: apiClient.listRuns }),
   run: (id: string) => queryOptions({ queryKey: ["runs", id], queryFn: () => apiClient.getRun(id) }),
+  runActions: (id: string) => queryOptions({ queryKey: ["run-actions", id], queryFn: () => apiClient.getRunActions(id) }),
+  runDefinitionContext: (id: string) => queryOptions({ queryKey: ["run-definition-context", id], queryFn: () => apiClient.getRunDefinitionContext(id) }),
   results: () => queryOptions({ queryKey: ["results"], queryFn: apiClient.listResults }),
   result: (id: string) => queryOptions({ queryKey: ["results", id], queryFn: () => apiClient.getResult(id) }),
   acceptanceEvidence: (id: string) => queryOptions({ queryKey: ["acceptance-evidence", id], queryFn: () => apiClient.getAcceptanceEvidence(id) }),

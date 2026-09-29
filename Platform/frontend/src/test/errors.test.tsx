@@ -4,7 +4,8 @@ import { installApi, renderRoute } from "./render";
 
 it("distinguishes backend NotFound from transport unavailable", async () => {
   installApi({
-    "/environments/missing": {
+    "/authoring/drafts?kind=environment": { body: [] },
+    "/environments/missing/authoring-inputs": {
       status: 404,
       body: { error: { code: "EnvironmentNotFound", message: "missing" } },
     },
@@ -14,7 +15,7 @@ it("distinguishes backend NotFound from transport unavailable", async () => {
   expect(screen.getByText("EnvironmentNotFound")).toBeTruthy();
   notFound.unmount();
 
-  installApi({ "/environments/offline": new Error("connection refused") });
+  installApi({ "/authoring/drafts?kind=environment": { body: [] }, "/environments/offline/authoring-inputs": new Error("connection refused") });
   renderRoute("/environments/offline");
   expect(await screen.findByText("后端连接不可用")).toBeTruthy();
   expect(screen.getByText("TransportUnavailable")).toBeTruthy();

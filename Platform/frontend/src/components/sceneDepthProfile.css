@@ -1,0 +1,62 @@
+/* Compact paired plan/profile structure adapted from the legacy Studio/ProfileView.
+   All samples and selection state come from the caller; CSS is display-only. */
+.scene-depth-profile { min-width: 0; border-top: 1px solid #34556a; background: #0b2232; color: #dcebf4; }
+.scene-depth-profile > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 10px; min-height: 34px; background: #112c3e; }
+.scene-depth-profile > header button { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 3px 0; border: 0; border-radius: 0; background: transparent; color: #eff8ff; font: 600 14px system-ui, sans-serif; }
+.scene-depth-profile > header > span { color: #bfd6e5; font: 12px system-ui, sans-serif; text-align: right; }
+.scene-depth-plots { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 6px 8px; }
+.scene-depth-plots.has-environment { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.scene-depth-plots.aligned-environment { padding-inline: 0; }
+.scene-depth-plots.aligned-environment figcaption, .scene-depth-plots.aligned-environment p { padding-inline: 10px; }
+.scene-domain-editor { padding: 8px 0; border-top: 1px solid #34556a; color: #dcebf4; }
+.scene-domain-editor summary { cursor: pointer; font-weight: 600; }
+.scene-domain-editor p { font-size: 12px; line-height: 1.5; color: #c2d7e5; }
+.scene-domain-editor > label { display: flex; align-items: flex-start; gap: 6px; }
+.scene-domain-editor > label input { width: auto; margin-top: 3px; }
+.scene-domain-editor .domain-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scene-domain-editor .domain-fields label { min-width: 0; font-size: 12px; }
+.scene-domain-editor .domain-fields input { width: 100%; min-width: 0; }
+.scenario-domain-boundary { fill: #124051; fill-opacity: .24; stroke: #6ec4d6; stroke-width: 1.5; stroke-dasharray: 5 3; }
+.scene-depth-profile figure { margin: 0; min-width: 0; }
+.scene-depth-profile figcaption { min-height: 22px; display: flex; align-items: baseline; gap: 7px; justify-content: space-between; color: #e7f2fa; font: 13px system-ui, sans-serif; }
+.scene-depth-profile figcaption small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; color: #c4d9e7; font-size: 12px; }
+.scene-depth-profile .scene-depth-plots svg { display: block; width: 100%; height: 170px; min-height: 0; max-height: 190px; background: #0a1d2c; touch-action: auto; }
+.scene-depth-profile p { margin: 3px 2px 1px; font: 12px/1.4 system-ui, sans-serif; color: #b9d1e1; }
+.scene-depth-profile .depth-source-unavailable { font-size: 12px; padding: 0 5px 3px; }
+.scene-depth-profile .depth-water { fill: #0e3043; }
+.scene-depth-profile .depth-chart-grid path { fill: none; stroke: #315365; stroke-width: .8; }
+.scene-depth-profile .depth-chart-grid text, .scene-depth-profile .depth-axis-label { fill: #d2e3ee; font: 13px system-ui, sans-serif; }
+.scene-depth-profile .depth-sea-surface { stroke: #77c8dc; stroke-width: 1.3; }
+.scene-depth-profile .depth-measure-line { stroke: #edc961; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.scene-depth-profile .depth-node { outline: none; }
+.scene-depth-profile .depth-node text { fill: #ecf7ff; font: 13px system-ui, sans-serif; }
+.scene-depth-profile .depth-node.selectable { cursor: pointer; }
+.scene-depth-profile .depth-node:focus .uuv-hull { stroke: #fff; stroke-width: 3; }
+.scene-depth-profile .depth-empty-label { fill: #cbdce8; font: 14px system-ui, sans-serif; }
+.scene-depth-profile .depth-terrain-fill { fill: #695b3a; opacity: .65; }
+.scene-depth-profile .depth-terrain-line { fill: none; stroke: #d8b773; stroke-width: 2.5; }
+.uuv-node-glyph { --glyph-fill: #36bce5; --glyph-edge: #d9f7ff; }
+.uuv-node-glyph.tone-selected { --glyph-fill: #f4c75c; --glyph-edge: #fff2bf; }
+.uuv-node-glyph.tone-peer { --glyph-fill: #88d4e7; --glyph-edge: #defaff; }
+.uuv-node-glyph.tone-fusion { --glyph-fill: #b491f3; --glyph-edge: #ebdfff; }
+.uuv-node-glyph.tone-tx { --glyph-fill: #52b7ff; --glyph-edge: #e5f3ff; }
+.uuv-node-glyph.tone-arrival { --glyph-fill: #f6bd4f; --glyph-edge: #fff1c0; }
+.uuv-node-glyph.tone-success { --glyph-fill: #41d2a0; --glyph-edge: #cdffec; }
+.uuv-node-glyph.tone-failure { --glyph-fill: #ee7985; --glyph-edge: #ffe3e7; }
+.uuv-node-glyph .uuv-hull, .uuv-node-glyph .uuv-fins { fill: var(--glyph-fill); stroke: var(--glyph-edge); stroke-width: 1; stroke-linejoin: round; }
+.uuv-node-glyph .uuv-keel { fill: none; stroke: #133744; stroke-width: 1.2; }
+.uuv-node-glyph .uuv-port { fill: #0a3545; stroke: var(--glyph-edge); stroke-width: .7; }
+.scenario-studio.with-depth-profile > .studio-canvas { grid-template-rows: 44px minmax(210px, 1fr) auto 32px; min-height: 0; }
+.scenario-studio.with-depth-profile > .studio-canvas > svg { min-height: 210px; }
+.scenario-studio.with-depth-profile .scene-depth-profile .scene-depth-plots svg { min-height: 0; height: 156px; }
+.studio-surface:has(.scene-depth-profile) .run-topology { height: 300px; min-height: 300px; }
+@media (max-width: 1100px) {
+  .scene-depth-profile .scene-depth-plots svg { height: 148px; }
+  .scene-depth-profile figcaption { flex-wrap: wrap; }
+  .scene-depth-profile figcaption small { max-width: 100%; }
+}
+@media (max-width: 750px) {
+  .scene-depth-plots.has-environment { grid-template-columns: 1fr; }
+  .scene-depth-profile > header { flex-wrap: wrap; }
+  .scenario-studio.with-depth-profile > .studio-canvas { height: auto; min-height: 620px; }
+}

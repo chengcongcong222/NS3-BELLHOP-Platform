@@ -1,0 +1,11 @@
+{
+  "source": "real NOAA WOA23; actual browser button",
+  "month": 10,
+  "viewport": [
+    1440,
+    900
+  ],
+  "observed_byte_progress": true,
+  "progress": "正在下载 NOAA 月度数据\n已等待 6 秒 · 温度（1/2）\n1.8 MB / 59.3 MB",
+  "cancellation": "已取消获取；现有剖面未替换，已完成的月度下载仍可复用。"
+}

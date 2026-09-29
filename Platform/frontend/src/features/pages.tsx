@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { apiClient, ApiFailure } from "../api/client";
 import { queries } from "../api/queries";
 import {
@@ -77,19 +77,22 @@ export function OverviewPage() {
 
 export function EnvironmentCatalogPage() {
   const query = useQuery(queries.environments());
+  const inputs = useQueries({ queries: (query.data ?? []).map(item => ({ queryKey: ["environment-inputs", item.environment_asset_id], queryFn: () => apiClient.environmentInputs(item.environment_asset_id) })) });
   const state = <QueryState query={query} />;
   if (query.isPending || query.error) return state;
   return (
     <>
-      <PageHeader title="声学环境" detail="浏览已发布声学场资产，或进入工作区建设新的离线环境。" />
-      <div className="catalog-actions"><Link className="button-link" to="/workspace/environment">建设新环境</Link><span>已发布资产不可变；编辑在 Draft 工作区进行。</span></div>
+      <PageHeader title="环境建设" detail="选择环境查看声速、海底地形和计算参数；修改后另存新版本，既有实验不受影响。" />
+      <div className="catalog-actions"><Link className="button-link" to="/workspace/environment">建设新环境</Link><span>{query.data.length} 个已发布环境 · 直接进入建设器查看与编辑</span></div>
       {!query.data.length ? <EmptyState>暂无环境资产</EmptyState> : (
-        <div className="card-grid">{query.data.map((item) => (
-          <article className="panel" key={item.environment_asset_id}>
-            <div className="panel-title"><Link to={`/environments/${item.environment_asset_id}`}>{item.environment_asset_id}</Link><Status value={item.validation_state} /></div>
-            <dl><Field label="坐标轴">{item.coordinate_frame.vertical_axis}</Field><Field label="网格 cells">{item.cell_count}</Field><Field label="无到达">{item.no_arrival_cell_count}</Field><Field label="Producer">{item.provenance.producer}</Field></dl>
-          </article>
-        ))}</div>
+        <div className="environment-library">{query.data.map((item, index) => {
+          const source = inputs[index].data; const p = source?.payload as any; const acquisition = p?.acquisition;
+          return <article className="environment-library-card" key={item.environment_asset_id}>
+            <header><span className="environment-symbol" aria-hidden="true">≈</span><div><h2><Link to={`/environments/${item.environment_asset_id}`}>{source?.available && source.name ? String(source.name) : item.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : "已发布声场（名称未保留）"}</Link></h2><small>已发布 · 修改后另存</small></div></header>
+            <dl><Field label="海域坐标">{acquisition ? `${acquisition.latitudeDeg}°N / ${acquisition.longitudeDeg}°E` : "原始坐标未保留"}</Field><Field label="水深">{p?.bathymetry?.length ? `最深 ${Math.max(...p.bathymetry.map((x: any) => Number(x.depth_meters)))} m` : "地形输入未保留"}</Field><Field label="收发深度">{item.axes.receiver_depth.minimum}–{item.axes.receiver_depth.maximum} m</Field><Field label="声场查询距离">0–{item.axes.horizontal_range.maximum / 1000} km</Field><Field label="频率">{formatFrequency(item.axes.frequency.minimum)}</Field><Field label="数据月份">{acquisition?.month ? `${acquisition.month}月` : "未保留"}</Field></dl>
+            <footer><Link to={`/environments/${item.environment_asset_id}`}>打开环境 →</Link><details><summary>版本标识</summary><code>{item.environment_asset_id}</code><p>校验值 {item.checksum.value}</p></details></footer>
+          </article>;
+        })}</div>
       )}
     </>
   );
@@ -97,21 +100,8 @@ export function EnvironmentCatalogPage() {
 
 export function EnvironmentDetailPage() {
   const params = useRequiredParams("assetId");
-  const query = useQuery({ ...queries.environment(params?.[0] ?? ""), enabled: Boolean(params) });
   if (!params) return <ErrorState error={new ApiFailure("NotFound", "NotFound", "Environment route is malformed.")} />;
-  if (query.isPending || query.error) return <QueryState query={query} />;
-  const item = query.data;
-  return (
-    <>
-      <PageHeader title={item.environment_asset_id} detail="已发布声学环境：覆盖范围、传播场完整性与数据来源。" />
-      <section className="panel"><div className="panel-title"><h2>环境剖面与传播场覆盖</h2><Link to={`/workspace/environment?source=${encodeURIComponent(item.environment_asset_id)}`}>基于此环境创建草稿</Link></div><PublishedEnvironmentProfile environment={item} /></section>
-      <section className="two-column">
-        <article className="panel"><h2>资产</h2><dl><Field label="格式">{item.format}</Field><Field label="Package version">{item.package_format_version}</Field><Field label="Asset version">{item.asset_format_version}</Field><Field label="Cells">{item.cell_count} total · {item.signal_cell_count} Signal · {item.no_arrival_cell_count} NoArrival</Field><Field label="Checksum">{item.checksum.algorithm} · {item.checksum.value}</Field><Field label="Payload bytes">{item.payload_bytes}</Field></dl></article>
-        <article className="panel"><h2>Provenance</h2><dl><Field label="Producer">{item.provenance.producer}</Field><Field label="Build">{item.provenance.created_by_build_version}</Field><Field label="Source">{item.provenance.source_description || "—"}</Field><Field label="Raw logical source">{item.provenance.raw_source_logical_name || "—"}</Field><Field label="Normalization">{item.provenance.normalization_policy_version || "—"}</Field></dl></article>
-      </section>
-      <section className="panel"><h2>Axes / Coverage</h2><table><thead><tr><th>Axis</th><th>Count</th><th>Minimum</th><th>Maximum</th><th>Unit</th></tr></thead><tbody>{Object.entries(item.axes).map(([name, axis]) => <tr key={name}><td>{name}</td><td>{axis.count}</td><td>{axis.minimum}</td><td>{axis.maximum}</td><td>{axis.unit}</td></tr>)}</tbody></table></section>
-    </>
-  );
+  return <Navigate replace to={`/workspace/environment?source=${encodeURIComponent(params[0])}`} />;
 }
 
 function latestVersions<T extends { version: string }>(items: T[]): string {
@@ -166,12 +156,7 @@ export function ExperimentDetailPage() {
   return <><PageHeader title={`${item.name} · v${item.version}`} detail="完整 backend DTO，只读；Run 仅提交 Experiment identity/version。" /><section className="panel action-panel"><div><strong>{profile}</strong><p>Experiment → Start Run → Monitor → Result → Acceptance</p></div><RunExperimentButton experiment={item} /></section><section className="two-column"><article className="panel"><h2>Protocol</h2><dl><Field label="Scenario"><Link to={`/scenarios/${item.scenario.scenario_id}/versions/${item.scenario.version}`}>{item.scenario.scenario_id} · v{item.scenario.version}</Link></Field><Field label="Routing">{item.routing.mode}</Field><Field label="MAC">{item.mac.mode}</Field><Field label="Slot / Guard">{formatNanoseconds(item.mac.slot_duration_ns)} / {formatNanoseconds(item.mac.guard_interval_ns)}</Field><Field label="Fusion period limit">{formatNanoseconds(item.fusion.maximum_fusion_period_ns)}</Field></dl></article><article className="panel"><h2>PHY / Execution</h2><dl><Field label="Rate">{item.phy.bit_rate_bits_per_second} bit/s</Field><Field label="Center / Bandwidth">{formatFrequency(item.phy.center_frequency_hz)} / {formatFrequency(item.phy.occupied_bandwidth_hz)}</Field><Field label="Source / noise">{item.phy.source_level_db_re_1upa_at_1m} dB / {item.phy.equivalent_noise_power_db_re_1upa2} dB</Field><Field label="BER evidence">{item.phy.rx_quality_mode}</Field><Field label="Cycles / Seed">{item.simulation_cycle_count} / {item.deterministic_seed}</Field></dl></article></section></>;
 }
 
-export function RunCatalogPage() {
-  const query = useQuery({ ...queries.runs(), refetchInterval: 1000 });
-  if (query.isPending || query.error) return <QueryState query={query} />;
-  return <><PageHeader title="仿真运行" detail="查看真实 Run 生命周期，进入运行控制台观察正式仿真时间、通信拓扑和事件趋势。" />{!query.data.length ? <EmptyState>暂无仿真运行，请从案例或已发布实验开始。</EmptyState> : <section className="panel"><table><thead><tr><th>运行标识</th><th>实验</th><th>状态</th><th>正式结果</th><th>失败原因</th></tr></thead><tbody>{query.data.map((item) => <tr key={item.run_id}><td><Link to={`/runs/${item.run_id}`}>{item.run_id}</Link></td><td>{item.experiment_id} · v{item.experiment_version}</td><td><Status value={item.lifecycle} /></td><td>{item.result_available ? <Link to={`/results/${item.run_id}`}>查看结果</Link> : "—"}</td><td>{item.failure ? `${item.failure.code}: ${item.failure.message}` : "—"}</td></tr>)}</tbody></table></section>}</>;
-}
-
+export { RunCatalogPage } from "./runLibrary";
 function eventIdentity(event: RunEventDto): string {
   const trace = event.trace;
   if (trace.kind === "CycleCommit") return `Cycle ${trace.payload.cycle_id}`;
