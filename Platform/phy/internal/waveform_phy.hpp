@@ -20,6 +20,7 @@ struct WaveformPhyConfig final {
   ModulationConfig modulation;
   double occupied_bandwidth_hz;
   NoiseProfile noise;
+  ChannelEqualizationConfig equalization;
   bool ideal_phase_synchronization;
   WaveformFrameFormat frame_format;
   std::size_t maximum_samples;
@@ -34,10 +35,14 @@ struct WaveformPhyConfig final {
   if(!std::isfinite(c.occupied_bandwidth_hz) ||
      c.occupied_bandwidth_hz <= 0.0 ||
      c.occupied_bandwidth_hz / 2.0 >= c.modulation.acoustic_carrier_hz ||
+     (c.equalization.mode != ChannelEqualizationMode::kDisabled &&
+      c.equalization.mode !=
+          ChannelEqualizationMode::kIdealFrequencyDomainMmse) ||
      c.frame_format != WaveformFrameFormat::kPayloadWithCrc32 ||
      c.maximum_samples / *samples < 40U) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,
-                                 "Invalid waveform band, frame or sample limit"});
+                                 "Invalid waveform band, equalizer, frame or "
+                                 "sample limit"});
   }
   auto noise = GenerateNoise(c.noise, 1, c.modulation.sample_rate_hz,
                              c.modulation.acoustic_carrier_hz);
@@ -197,7 +202,7 @@ class WaveformRxPhy final : public contracts::IRxPhy {
     }, noise);
     auto received = ReceiveWaveform(
         transmitted, frame_bit_count, config_.modulation, *taps, noise,
-        config_.ideal_phase_synchronization);
+        config_.equalization, config_.ideal_phase_synchronization);
     if(!received) return std::unexpected(received.error());
     auto frame = RecoverPayloadBytes(received->recovered);
     if(!frame) return std::unexpected(frame.error());

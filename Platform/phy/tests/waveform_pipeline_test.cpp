@@ -30,6 +30,7 @@ using ns3_factory::contracts::SimDuration;
 using ns3_factory::contracts::TransmissionId;
 using ns3_factory::contracts::UnicastDestination;
 using ns3_factory::phy::internal::ApplyMultipath;
+using ns3_factory::phy::internal::ChannelEqualizationMode;
 using ns3_factory::phy::internal::AwgnNoiseConfig;
 using ns3_factory::phy::internal::BitFrame;
 using ns3_factory::phy::internal::BuildMultipathTaps;
@@ -41,6 +42,7 @@ using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::MultipathTap;
 using ns3_factory::phy::internal::NoiseProfile;
+using ns3_factory::phy::internal::NoNoiseConfig;
 using ns3_factory::phy::internal::RecoverPayloadBytes;
 using ns3_factory::phy::internal::RunWaveformPipeline;
 using ns3_factory::phy::internal::WaveformBuffer;
@@ -131,6 +133,43 @@ auto TestChannelPathAdapterAndFractionalDelay() -> bool {
                "Fractional-delay second sample");
 }
 
+auto TestKnownChannelEqualizationRemovesStrongMultipath() -> bool {
+  const auto source = BitFrame::Create(
+      {0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0});
+  if(!source) return Check(false, "Equalizer source bits");
+
+  const ModulationConfig modulation{ModulationScheme::kBpsk,
+                                    8'000.0,
+                                    1'000.0,
+                                    1.0e4,
+                                    12'000.0,
+                                    0.0};
+  const std::vector<MultipathTap> taps{
+      MultipathTap{0.0, {0.35, 0.0}},
+      MultipathTap{8.0 / modulation.sample_rate_hz, {1.0, 0.0}}};
+  const WaveformPipelineConfig unequalized{
+      modulation,
+      taps,
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kDisabled},
+      true};
+  const WaveformPipelineConfig equalized{
+      modulation,
+      taps,
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
+      true};
+
+  const auto before = RunWaveformPipeline(*source, unequalized);
+  const auto after = RunWaveformPipeline(*source, equalized);
+  return Check(before && before->bit_error_count() > 0U,
+               "Strong multipath creates errors without equalization") &&
+         Check(after && after->recovered() == *source,
+               "Known-channel equalizer restores BPSK bits") &&
+         Check(after && after->bit_error_count() == 0U,
+               "Known-channel equalizer removes noiseless multipath errors");
+}
+
 auto TestBpskAwgnRoundTrip() -> bool {
   const DigitalPacket packet{PacketId{20},
                              NodeId{1},
@@ -153,6 +192,7 @@ auto TestBpskAwgnRoundTrip() -> bool {
        MultipathTap{2.0 / modulation.sample_rate_hz,
                     std::polar(0.05, -0.2)}},
       NoiseProfile{AwgnNoiseConfig{-30.0, 1234U}},
+      {ChannelEqualizationMode::kDisabled},
       true};
   const auto result = RunWaveformPipeline(*source, config);
   if(!result) {
@@ -196,6 +236,7 @@ auto TestBfskWenzRoundTrip() -> bool {
        MultipathTap{2.0 / modulation.sample_rate_hz,
                     std::polar(0.03, 0.7)}},
       NoiseProfile{WenzNoiseConfig{0.4, 4.0, 5678U}},
+      {ChannelEqualizationMode::kDisabled},
       true};
   const auto result = RunWaveformPipeline(*source, config);
   if(!result) {
@@ -292,6 +333,7 @@ int main() {
       TestDigitalPacketPayloadExtraction() &&
       TestChannelPathAdapterAndFractionalDelay() &&
       TestBpskAwgnRoundTrip() &&
+      TestKnownChannelEqualizationRemovesStrongMultipath() &&
       TestBfskWenzRoundTrip() &&
       TestNoiseDeterminismAndSelection() &&
       TestMultiPacketStatistics() &&

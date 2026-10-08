@@ -153,7 +153,9 @@ auto ExecuteDemo(const Options& options) -> int {
                        6'000.0, 60.0,
                        std::pow(10.0, experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
                        25'000.0, 30.0},
-      4'000.0, noise, true, WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
+      4'000.0, noise,
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+      WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor executor{repository, WaveformExecutionOptions{config, &observer}};
   NullTraceSink trace;
   const auto run_id = Require(RunId::Create("channel2-feature-demo"));
@@ -165,7 +167,8 @@ auto ExecuteDemo(const Options& options) -> int {
             << "asset=" << (options.asset_root / "bellhop/reference_shallow_water_v1.arr")
             << "\nchannel_source=Bellhop-derived .arr; reference environment, NOT field measurement"
             << "\nmodulation=" << options.modulation << " noise=" << options.noise
-            << " seed=" << options.seed << " ideal_sync=true fs=6000 carrier=25000 rate=60"
+            << " seed=" << options.seed
+            << " equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60"
             << " slot_seconds=6\n";
   if(options.noise == "awgn") {
     std::cout << "noise_psd_db_re_1upa2_per_hz=" << options.psd_db << '\n';

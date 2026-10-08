@@ -221,7 +221,8 @@ auto RunPair(const EnvironmentAssetRepository& repository,
           experiment.phy().center_frequency_hz, 30.0},
       experiment.phy().occupied_bandwidth_hz,
       AwgnNoiseConfig{options.noise_psd_db, seed},
-      true, WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+      WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor waveform{
       repository, WaveformExecutionOptions{
                       waveform_config, &waveform_observer}};
@@ -308,6 +309,7 @@ auto Run(const Options& options) -> void {
   std::cout << std::setprecision(10);
   std::cout << "Channel 1/2 paired BPSK-AWGN comparison (experiment only)\n"
             << "source=Bellhop-derived reference .arr; NOT field-measured\n"
+            << "channel2_equalization=ideal-known-channel-frequency-domain-mmse\n"
             << "repetitions=" << options.repetitions
             << " cycles_per_run=" << options.cycles
             << " first_seed=" << options.first_seed

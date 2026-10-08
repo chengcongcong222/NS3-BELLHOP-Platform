@@ -23,7 +23,8 @@ struct Observer : IWaveformReceptionObserver {
 auto Config(ModulationScheme scheme = ModulationScheme::kBpsk)
     -> WaveformPhyConfig {
   return {{scheme, 6'000.0, 60.0, 1'000.0, 25'000.0, 30.0},
-          4'000.0, NoNoiseConfig{}, true,
+          4'000.0, NoNoiseConfig{},
+          {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
           WaveformFrameFormat::kPayloadWithCrc32, 1'000'000U};
 }
 
@@ -134,6 +135,11 @@ auto InvalidProfiles() -> bool {
   config.maximum_samples = 1;
   if(!Check(!WaveformTxPhy::Create(config, store), "small sample limit rejected")) return false;
   config = Config();
+  config.equalization.mode =
+      static_cast<ChannelEqualizationMode>(255U);
+  if(!Check(!WaveformTxPhy::Create(config, store),
+            "unknown equalization mode rejected")) return false;
+  config = Config();
   config.modulation.sample_rate_hz = 1e300;
   config.modulation.symbol_rate_baud = 1e-300;
   return Check(!WaveformTxPhy::Create(config, store),
@@ -151,7 +157,8 @@ auto NoiseAfterChannel() -> bool {
   for(const NoiseProfile& noise : {
           NoiseProfile{AwgnNoiseConfig{10.0, 52}},
           NoiseProfile{WenzNoiseConfig{0.5, 4.0, 52}}}) {
-    auto out = ReceiveWaveform(*x, 4, config, taps, noise, false);
+    auto out = ReceiveWaveform(
+        *x, 4, config, taps, noise, {ChannelEqualizationMode::kDisabled}, false);
     auto n = GenerateNoise(noise, x->sample_count(), x->sample_rate_hz(),
                             config.acoustic_carrier_hz);
     if(!out || !n) return false;

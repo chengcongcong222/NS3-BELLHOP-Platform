@@ -174,7 +174,8 @@ auto TestRealRunsShareTargetPacketBasis() -> bool {
           std::pow(10.0,
                    experiment->phy().source_level_db_re_1upa_at_1m / 20.0),
           25'000.0, 30.0},
-      4'000.0, NoNoiseConfig{}, true,
+      4'000.0, NoNoiseConfig{},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor waveform{
       *repository,

@@ -32,6 +32,7 @@ using ns3_factory::contracts::TransmissionId;
 using ns3_factory::phy::internal::ApplyMultipath;
 using ns3_factory::phy::internal::BitFrame;
 using ns3_factory::phy::internal::BuildBasebandMultipathTaps;
+using ns3_factory::phy::internal::ChannelEqualizationMode;
 using ns3_factory::phy::internal::BuildDelayAlignmentMatrix;
 using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
@@ -270,6 +271,7 @@ auto TestChannel3ReusesWaveformPipeline() -> bool {
       WaveformPipelineConfig{modulation,
                              *taps,
                              NoiseProfile{NoNoiseConfig{}},
+                             {ChannelEqualizationMode::kDisabled},
                              true});
   return Check(result && result->recovered() == *source,
                "External CIR reuses waveform modules") &&

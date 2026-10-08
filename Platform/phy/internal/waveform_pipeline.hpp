@@ -22,6 +22,7 @@ struct WaveformPipelineConfig final {
   ModulationConfig modulation;
   std::vector<MultipathTap> channel_taps;
   NoiseProfile noise;
+  ChannelEqualizationConfig equalization;
   bool ideal_phase_synchronization;
 
   auto operator==(const WaveformPipelineConfig&) const -> bool = default;
@@ -97,7 +98,7 @@ class WaveformPipelineResult final {
   }
   auto reception = ReceiveWaveform(
       *transmitted, source.bit_count(), config.modulation, config.channel_taps,
-      config.noise, config.ideal_phase_synchronization);
+      config.noise, config.equalization, config.ideal_phase_synchronization);
   if(!reception) return std::unexpected(reception.error());
 
   std::size_t bit_error_count = 0U;

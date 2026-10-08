@@ -32,7 +32,8 @@ void TestFeatureRoundTrip(const AcousticFieldChannelProvider& channel,
       UnicastDestination{NodeId{99}}, {bytes.begin(), bytes.end()}};
   const WaveformPhyConfig config{
       {scheme, 6000.0, 60.0, std::pow(10.0, 110.0 / 20.0), 25000.0, 30.0},
-      4000.0, NoNoiseConfig{}, true,
+      4000.0, NoNoiseConfig{},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   TransmissionWaveformStore store;
   const auto tx = Require(WaveformTxPhy::Create(config, store));

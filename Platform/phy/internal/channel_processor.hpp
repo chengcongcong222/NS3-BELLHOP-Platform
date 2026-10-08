@@ -179,15 +179,31 @@ struct DelayAlignmentMatrix final {
   return DelayAlignmentMatrix{row_count, taps.size(), std::move(entries)};
 }
 
+// Convert provider paths into the causal complex impulse response sampled on
+// the waveform grid. Fractional path delays are distributed over adjacent
+// samples by the same sparse alignment matrix used during propagation.
+[[nodiscard]] inline auto BuildSampledImpulseResponse(
+    std::span<const MultipathTap> taps, double waveform_sample_rate_hz)
+    -> Result<std::vector<std::complex<double>>> {
+  const auto alignment =
+      BuildDelayAlignmentMatrix(taps, waveform_sample_rate_hz);
+  if(!alignment) return std::unexpected(alignment.error());
+
+  std::vector<std::complex<double>> gains;
+  gains.reserve(taps.size());
+  for(const auto& tap : taps) gains.push_back(tap.pressure_gain);
+  return alignment->Multiply(gains);
+}
+
 // Provider path gains are absolute. Aggregate transmission loss is not
 // applied again here. First h_wave = R * h_path, then y = h_wave * x.
 [[nodiscard]] inline auto ApplyMultipath(
     const WaveformBuffer& transmitted,
     std::span<const MultipathTap> taps) -> Result<WaveformBuffer> {
-  const auto alignment =
-      BuildDelayAlignmentMatrix(taps, transmitted.sample_rate_hz());
-  if(!alignment) return std::unexpected(alignment.error());
-  const auto tail_samples = alignment->row_count - 1U;
+  const auto impulse_response =
+      BuildSampledImpulseResponse(taps, transmitted.sample_rate_hz());
+  if(!impulse_response) return std::unexpected(impulse_response.error());
+  const auto tail_samples = impulse_response->size() - 1U;
   if(tail_samples >
      std::numeric_limits<std::size_t>::max() - transmitted.sample_count()) {
     return std::unexpected(
@@ -195,24 +211,19 @@ struct DelayAlignmentMatrix final {
               "Multipath delay exceeds waveform addressable range"});
   }
 
-  std::vector<std::complex<double>> gains;
-  gains.reserve(taps.size());
-  for(const auto& tap : taps) gains.push_back(tap.pressure_gain);
-  const auto aligned = alignment->Multiply(gains);
-  if(!aligned) return std::unexpected(aligned.error());
-
   std::vector<WaveformBuffer::Sample> received(
       transmitted.sample_count() + tail_samples,
       WaveformBuffer::Sample{});
 
-  for(std::size_t delay_index = 0; delay_index < aligned->size();
+  for(std::size_t delay_index = 0; delay_index < impulse_response->size();
       ++delay_index) {
-    if((*aligned)[delay_index] == WaveformBuffer::Sample{}) continue;
+    if((*impulse_response)[delay_index] == WaveformBuffer::Sample{}) continue;
     for(std::size_t source_index = 0;
         source_index < transmitted.sample_count();
         ++source_index) {
       received[source_index + delay_index] +=
-          transmitted.samples()[source_index] * (*aligned)[delay_index];
+          transmitted.samples()[source_index] *
+          (*impulse_response)[delay_index];
     }
   }
 
