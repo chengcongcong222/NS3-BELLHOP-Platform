@@ -38,6 +38,25 @@ it("requires an explicit environment name before saving and focuses its input", 
   expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
 });
 
+it("saves explicitly applied uniform depths through the real authoring adapter", async () => {
+  installApi({ "/authoring/drafts?kind=environment": { body: [] } });
+  const save = vi.spyOn(apiClient, "createDraft").mockImplementation(async (kind, name, payload) => ({
+    kind, name, payload, draft_id: "uniform-depths", revision: 1, created_at: "", updated_at: "", validation_issues: [],
+  }));
+  renderRoute("/workspace/environment");
+  fireEvent.change(await screen.findByLabelText("环境名称"), { target: { value: "均分采样海域" } });
+  fireEvent.change(screen.getByLabelText("发送深度起点（m）"), { target: { value: "10" } });
+  fireEvent.change(screen.getByLabelText("发送深度终点（m）"), { target: { value: "70" } });
+  fireEvent.change(screen.getByLabelText("发送深度采样点数"), { target: { value: "4" } });
+  fireEvent.click(screen.getAllByRole("button", { name: "应用均分", hidden: true })[0]);
+  await userEvent.click(screen.getByRole("button", { name: "保存草稿" }));
+  await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+  const bellhop = save.mock.calls[0][2].bellhop as Record<string, unknown>;
+  expect(bellhop.source_depths_meters).toEqual([10, 30, 50, 70]);
+  expect(bellhop.receiver_depths_meters).toEqual([8, 20, 40, 60, 75]);
+  save.mockRestore();
+});
+
 it("keeps failed save feedback visible and clears the pending message", async () => {
   installApi({ "/authoring/drafts?kind=environment": { body: [] } });
   const save = vi.spyOn(apiClient, "createDraft").mockRejectedValue(new Error("保存服务暂不可用"));

@@ -24,7 +24,7 @@ const plot = await api(`/environments/${environmentId}/acoustic-plots?source_ind
 assert(plot.available && plot.ray_plot.available && plot.impulse.length > 0);
 assert.equal(plot.ray_plot.source_depth_m, 60);
 assert(plot.ray_plot.rays.every(ray => ray.points[0][1] === 60));
-// A real one-depth Bellhop build exercises the curve presentation; no fixture is
+// A real one-depth Bellhop build exercises the same ray-only presentation; no fixture is
 // substituted for API data in this browser check.
 const singleDepthDraft = await api("/authoring/drafts", { kind: "environment", name: `单深度信道图验证 ${stamp}`,
   payload: { ...env.payload, bellhop: { ...env.payload.bellhop, receiver_depths_meters: [8] } } });
@@ -97,12 +97,12 @@ try{
   await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
   await go("/");await shot("01-workbench.png");
   await go("/environments");await shot("02-environments.png");
-  await go(`/workspace/environment?source=${environmentId}`);await wait("!!document.querySelector('[aria-label=\"非相干传输损失距离深度图\"]')");
-  assert.equal(await ev("[...document.querySelectorAll('[role=tab]')].some(tab=>tab.textContent==='冲激响应')"),false);
-  await shot("03-loss-field-shallow.png");
+  await go(`/workspace/environment?source=${environmentId}`);await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"]')");
+  assert.equal(await ev("!!document.querySelector('.acoustic-plots [role=tab]')"),false);
+  await shot("03-rays-shallow.png");
   await ev(`(()=>{const s=document.querySelector('.acoustic-selectors label:first-child select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'1');s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
-  await wait("!!document.querySelector('[aria-label=\"非相干传输损失距离深度图\"]') && document.querySelector('.acoustic-plots').textContent.includes('发射深度 60 m')");
-  await shot("04-loss-field.png");await click("声线路径");await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"]')");
+  await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"]') && document.querySelector('.acoustic-plots').textContent.includes('发射深度 60 m')");
+  await shot("04-rays-deep.png");
   assert(await ev("document.querySelector('.acoustic-plots').textContent.includes('发射深度 60 m')"));await shot("05-rays.png");
   await click("输入与计算参数");await shot("06-environment-inputs.png");
   await go(`/workspace/experiment?draft=${runs[0].draftId}`);await wait("!!document.querySelector('[aria-label=\"可编辑场景画布\"]')");await shot("07-experiment.png");
@@ -130,9 +130,9 @@ try{
   for(const [width,height] of [[1440,900],[1920,1080],[2553,1264]]) {
     await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
     await go("/");await recordLayout(`workbench-${width}`);await shot(`13-${width}-workbench.png`);
-    await go(`/workspace/environment?source=${environmentId}`);await wait("!!document.querySelector('[aria-label=\"非相干传输损失距离深度图\"]')");await recordLayout(`loss-field-${width}`);await shot(`14-${width}-loss-field.png`);
-    await go(`/workspace/environment?source=${singleDepthEnvironmentId}`);await wait("!!document.querySelector('[aria-label=\"单深度传输损失距离曲线\"]')");
-    await wait("!!document.querySelector('[aria-label=\"单深度传输损失距离曲线\"] circle')");await recordLayout(`single-depth-${width}`);await shot(`15-${width}-single-depth.png`);
+    await go(`/workspace/environment?source=${environmentId}`);await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"]')");await recordLayout(`rays-${width}`);await shot(`14-${width}-rays.png`);
+    await go(`/workspace/environment?source=${singleDepthEnvironmentId}`);await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"]')");
+    await wait("!!document.querySelector('[aria-label=\"Bellhop 真实声线路径\"] polyline')");await recordLayout(`single-depth-${width}`);await shot(`15-${width}-single-depth.png`);
     await go(`/runs/${runs[0].runId}`);await wait("!!document.querySelector('.runtime-workspace')");await recordLayout(`runtime-${width}`);await shot(`16-${width}-runtime.png`);
   }
   await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});

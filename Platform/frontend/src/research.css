@@ -229,3 +229,77 @@ svg text { fill: #334c60; font-family: inherit; }
 .scenario-target { cursor: move; touch-action: none; }
 .scenario-target:focus { outline: none; }
 .scenario-target:focus > circle:first-of-type { stroke-width: 4; }
+
+/* Task-level shells: distinguish page, panel, heading and content without
+   nesting a card around every field. Keep the same contrast in print. */
+:root { --research-page:#eaf0f5; --research-border:#b8c9d7; --research-heading:#e4edf5; }
+.app-shell > main { background:var(--research-page); }
+.app-shell :is(.wb-panel,.wb-case-card,.experiment-run-group,.build-step,.build-console,.acoustic-plots,.research-panel) {
+  border:1px solid var(--research-border); border-radius:6px; background:#fff;
+}
+.app-shell :is(.wb-panel > header,.experiment-run-group > header,.studio-pane-title,.studio-pane-heading) {
+  background:var(--research-heading); border-bottom:1px solid var(--research-border); color:#193d59;
+}
+.app-shell .result-analysis-paper .analysis-section { border:1px solid var(--research-border); border-radius:6px; background:#fff; margin-block:12px; padding:12px; }
+.app-shell .analysis-section h3 { border-bottom:1px solid #d3dfe9; padding-bottom:9px; }
+.app-shell .acoustic-plots > header { background:var(--research-heading); margin:-14px -18px 12px; padding:10px 18px; border-radius:6px 6px 0 0; }
+.ray-legend { display:flex; gap:14px; flex-wrap:wrap; padding:8px 0; font-size:13px; }
+.ray-legend > span:first-child { color:#a52636; }
+.ray-legend > span:nth-child(2) { color:#176b87; }
+.ray-legend small { color:#526477; }
+.depth-sampling { grid-column:1 / -1; min-width:0; margin:0; padding:10px; border:1px solid #bccddd; border-radius:5px; background:#f8fafc; }
+.depth-sampling legend { font-size:14px; font-weight:600; color:#214b6b; }
+.sampling-inputs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-items:end; }
+.sampling-inputs button { grid-column:1 / -1; justify-self:end; }
+.focused-environment .sampling-inputs input { min-width:0; padding:7px 5px; background:#fff; }
+.depth-sampling :is(small,summary,p) { font-size:12px; line-height:1.5; }
+.depth-sampling small { display:block; margin-top:8px; color:#3d5468; }
+.depth-sampling details { margin-top:6px; }
+.depth-sampling [role=alert] { color:#a52636; }
+.depth-sampling [role=status] { color:#246446; }
+.bellhop-advanced,.sampling-summary { grid-column:1 / -1; }
+.bellhop-advanced { border-top:1px solid #cbd8e3; padding:10px 0; }
+.bellhop-advanced summary { cursor:pointer; font-weight:600; }
+.bellhop-advanced p,.sampling-summary { font-size:13px; color:#465c70; line-height:1.5; }
+
+.runtime-workspace .cooperation-status {
+  height:32px; min-height:32px; max-height:32px; flex:0 0 32px;
+  flex-wrap:nowrap; align-items:center; overflow:hidden; box-sizing:border-box;
+}
+.runtime-workspace .cooperation-status > * { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.runtime-workspace .cooperation-status strong { flex-shrink:0; }
+.runtime-workspace .runtime-observation-panel { background:#edf2f7; padding:8px; gap:8px; }
+.runtime-workspace .research-panel { min-width:0; overflow:hidden; }
+.runtime-workspace .runtime-metrics-panel { flex:0 0 auto; }
+.runtime-workspace .runtime-stat-heading,.runtime-workspace .runtime-log-panel > .inspector-heading {
+  padding:8px 10px; min-height:38px; background:var(--research-heading); border-bottom:1px solid var(--research-border); margin:0;
+}
+.runtime-workspace .runtime-metrics-panel .live-metric-strip { margin:10px; background:#fff; }
+.runtime-workspace .runtime-metrics-panel .live-metric-strip > span { background:#fff; padding:8px; }
+.runtime-workspace .runtime-metrics-panel .live-metric-strip > span:nth-child(-n+3) { background:#eef5fb; }
+.runtime-workspace .runtime-metrics-panel .live-metric-strip > span:nth-child(-n+3) b { font-size:20px; font-weight:650; }
+.runtime-workspace .runtime-metrics-panel :is(.quality-basis,.quality-coverage) { padding:7px 10px; background:#f5f8fb; margin:0; }
+.runtime-workspace .runtime-log-panel { display:flex; flex-direction:column; flex:1 1 220px; min-height:180px; }
+.runtime-workspace .runtime-log-panel > .inspector-heading { flex-shrink:0; }
+.runtime-workspace .runtime-log-panel .event-stack { min-height:0; padding:0 6px; }
+.runtime-workspace .event-stack button { border:0; border-bottom:1px solid #dce5ed; border-radius:0; border-left:3px solid transparent; }
+.runtime-workspace .event-stack button:nth-child(even) { background:#f6f9fc; }
+.runtime-workspace .event-stack button.selected { background:#e4f0fc; border-left-color:#176ab2; }
+.runtime-workspace .event-stack button:hover { background:#edf4fb; }
+.runtime-workspace .event-stack button small { justify-self:start; border:1px solid #ccd9e4; border-radius:3px; padding:1px 5px; font-size:12px; }
+
+/* Right-hand observation column uses the height freed from the timeline. */
+@media screen and (min-width:1200px) and (min-height:701px) {
+  .studio-product.runtime-workspace { grid-template-columns:minmax(200px,.55fr) minmax(0,1.8fr) minmax(350px,.9fr); grid-template-rows:minmax(0,1fr) auto; }
+  .runtime-workspace .r4-studio-layout { display:contents; }
+  .runtime-workspace .runtime-experiment-panel { grid-column:1; grid-row:1; }
+  .runtime-workspace .studio-surface { grid-column:2; grid-row:1; }
+  .runtime-workspace .runtime-observation-panel { grid-column:3; grid-row:1 / span 2; }
+  .runtime-workspace .studio-history { grid-column:1 / span 2; grid-row:2; }
+  .runtime-workspace .studio-history-controls { flex-wrap:wrap; }
+}
+@media print {
+  .app-shell .research-panel { border-color:#777; break-inside:avoid; background:#fff; }
+  .runtime-workspace .runtime-log-panel { display:block; height:auto; min-height:0; overflow:visible; }
+  .runtime-workspace .runtime-metrics-panel .live-metric-strip > span { background:#fff; }
+}

@@ -18,7 +18,6 @@ export function AcousticPlots({ environmentId, buildId }: { environmentId?: stri
 
 function ResourcePlots({ environmentId, buildId }: { environmentId?: string; buildId?: string }) {
   const [source, setSource] = useState(0);
-  const [tab, setTab] = useState("field");
   const [rayAngle, setRayAngle] = useState("all");
   const query = useQuery({ queryKey: ["acoustic-plots", environmentId, buildId, source],
     queryFn: async () => {
@@ -28,7 +27,6 @@ function ResourcePlots({ environmentId, buildId }: { environmentId?: string; bui
       return await response.json() as Plot;
     }, retry: false });
   const data = query.data;
-  const curve = data?.receiver_depths_m?.length === 1;
   const ray = data?.ray_plot;
   // A stale server/legacy artifact must not relabel the first saved source as
   // the depth selected by the user. The API also validates this association.
@@ -37,16 +35,15 @@ function ResourcePlots({ environmentId, buildId }: { environmentId?: string; bui
   const selectedRays = matchingRay ? ray.rays.filter(r => rayAngle === "all" || String(r.angle_degrees) === rayAngle) : [];
   return <section className="acoustic-plots" aria-label="Bellhop 信道图">
     <header><div><h2>水声信道</h2><small>{data?.available ? `${compactNumber(data.frequency_hz / 1000)} kHz · 离线计算结果` : "读取正式离线计算结果"}</small></div>
-      <div role="tablist" aria-label="声学图类型">{[["field", "传输损失"], ["rays", "声线路径"]].map(([id, label]) => <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div></header>
+      <strong>声线路径</strong></header>
     {query.isPending && <p role="status">正在读取信道图…</p>}{query.error && <><ErrorState error={query.error} /><button onClick={() => query.refetch()}>重试</button></>}
     {data && !data.available && <p>{data.reason}</p>}
     {data?.available && <>
       <div className="acoustic-selectors"><label>发射深度<select value={source} onChange={e => { setSource(Number(e.target.value)); setRayAngle("all"); }}>{data.source_depths_m.map((v, i) => <option key={i} value={i}>{v} m</option>)}</select></label>
-        {tab === "rays" && matchingRay && <label>发射角（已计算声线）<select value={rayAngle} onChange={e => setRayAngle(e.target.value)}><option value="all">全部（{ray!.rays.length} 条）</option>{[...new Set(ray!.rays.map(r => r.angle_degrees))].sort((a, b) => a - b).map(angle => <option key={angle} value={String(angle)}>{compactNumber(angle, 3)}°</option>)}</select></label>}
+        {matchingRay && <label>发射角（已计算声线）<select value={rayAngle} onChange={e => setRayAngle(e.target.value)}><option value="all">全部（{ray!.rays.length} 条）</option>{[...new Set(ray!.rays.map(r => r.angle_degrees))].sort((a, b) => a - b).map(angle => <option key={angle} value={String(angle)}>{compactNumber(angle, 3)}°</option>)}</select></label>}
       </div>
-      {tab === "field" && <><p>发射深度 {compactNumber(data.source_depths_m[source])} m · 频率 {compactNumber(data.frequency_hz / 1000)} kHz</p><p>收发距离采样 {compactNumber(data.ranges_m[0])}～{compactNumber(data.ranges_m.at(-1)!)} m · 接收深度 {compactNumber(data.receiver_depths_m[0])}～{compactNumber(data.receiver_depths_m.at(-1)!)} m · 传输损失 / dB</p><LossField data={data} /><small>{curve ? `仅计算了接收深度 ${data.receiver_depths_m[0]} m，显示该深度的距离曲线。` : "距离—深度分布 · 灰色为无到达"}</small></>}
-      {tab === "rays" && (matchingRay ? <><Rays data={{ ...ray!, rays: selectedRays }} /><p>发射深度 {ray!.source_depth_m} m · {compactNumber(ray!.frequency_hz / 1000)} kHz · 显示 {selectedRays.length} / {ray!.rays.length} 条真实声线。发射角仅筛选已计算声线，不触发重算；仅绘制声线，不绘制简化地形。</p></> : <p>{ray?.available ? `未保存发射深度 ${data.source_depths_m[source]} m 的声线；请另存并重新计算，不以其他深度的声线替代。` : ray?.reason}</p>)}
-      <details><summary>计算说明与数据来源</summary><p>{data.tl_definition}</p><p>修改频率、环境或采样范围后需要重新计算。</p><code>到达数据 SHA256 {data.arrivals_sha256}</code>{matchingRay && <p><code>声线数据 SHA256 {ray!.sha256}</code></p>}</details>
+      {matchingRay ? <><Rays data={ray!} selectedRays={selectedRays} /><p>发射深度 {ray!.source_depth_m} m · {compactNumber(ray!.frequency_hz / 1000)} kHz · 显示 {selectedRays.length} / {ray!.rays.length} 条真实声线。</p><div className="ray-legend"><span>红色：初始朝海面</span><span>蓝色：初始水平或朝海底</span><small>颜色区分发射方向，不表示声强。</small></div></> : <p>{ray?.available ? `未保存发射深度 ${data.source_depths_m[source]} m 的声线；请另存并重新计算，不以其他深度的声线替代。` : ray?.reason}</p>}
+      <details><summary>计算说明与数据来源</summary><p>仅绘制已保存的声线；筛选角度不重算、不改变坐标轴范围。修改频率、环境或采样范围后需要重新计算。</p><code>到达数据 SHA256 {data.arrivals_sha256}</code>{matchingRay && <p><code>声线数据 SHA256 {ray!.sha256}</code></p>}</details>
     </>}
   </section>;
 }
@@ -54,7 +51,8 @@ function ResourcePlots({ environmentId, buildId }: { environmentId?: string; bui
 function Axes({ xmax, ymax, xLabel, yLabel, down = false, ymin = 0 }: { xmax: number; ymax: number; xLabel: string; yLabel: string; down?: boolean; ymin?: number }) {
   return <g className="acoustic-axes"><text x="14" y="19">{yLabel}</text><text x="335" y="276" textAnchor="middle">{xLabel}</text>{[0, .25, .5, .75, 1].map(f => <g key={f}><path d={`M65 ${45 + f * 190} H605 M${65 + f * 540} 45 V235`} fill="none" stroke="#dde5eb" /><text x="57" y={49 + f * 190} textAnchor="end">{compactNumber(ymin + (ymax - ymin) * (down ? f : 1 - f))}</text><text x={65 + f * 540} y="254" textAnchor="middle">{compactNumber(xmax * f)}</text></g>)}</g>;
 }
-function LossField({ data }: { data: Plot }) {
+// Frozen presentation retained for historical component regression only. No product route exposes it.
+export function FrozenLossField({ data }: { data: Pick<Plot, "receiver_depths_m" | "ranges_m" | "field"> }) {
   if (data.receiver_depths_m.length === 1) return <LossCurve data={data} />;
   const xs = data.ranges_m, ys = data.receiver_depths_m;
   const xmax = Math.max(1, xs.at(-1)!), ymax = Math.max(1, ys.at(-1)!);
@@ -66,7 +64,7 @@ function LossField({ data }: { data: Plot }) {
     <Axes xmax={xmax} ymax={ymax} xLabel="收发距离 / m" yLabel="接收深度 / m" down />
   </svg><div className="tl-legend">{vals.length ? <><span>{compactNumber(low, 1)} dB</span><i /><span>{compactNumber(high, 1)} dB</span></> : "本深度网格均无到达"}<small>颜色越浅，传播损失越大</small></div></>;
 }
-function LossCurve({ data, receiverIndex = 0 }: { data: Plot; receiverIndex?: number }) {
+function LossCurve({ data, receiverIndex = 0 }: { data: Pick<Plot, "receiver_depths_m" | "ranges_m" | "field">; receiverIndex?: number }) {
   const cells = data.field.filter(cell => cell.receiver_index === receiverIndex).sort((a, b) => a.range_index - b.range_index);
   const valid = cells.filter((cell): cell is typeof cell & { tl_db: number } => cell.tl_db !== null);
   if (!valid.length) return <p role="status">该接收深度的所有距离采样均无到达，无法绘制损失曲线。</p>;
@@ -84,10 +82,10 @@ function LossCurve({ data, receiverIndex = 0 }: { data: Plot; receiverIndex?: nu
     </g>; })}
   </svg>;
 }
-function Rays({ data }: { data: Plot["ray_plot"] }) {
+function Rays({ data, selectedRays }: { data: Plot["ray_plot"]; selectedRays: Plot["ray_plot"]["rays"] }) {
   let xmax = 1, ymax = 1;
   for (const ray of data.rays) for (const [x, y] of ray.points) { xmax = Math.max(xmax, x); ymax = Math.max(ymax, y); }
   return <svg viewBox="0 0 660 285" role="img" aria-label="Bellhop 真实声线路径"><Axes xmax={xmax} ymax={ymax} xLabel="传播距离 / m" yLabel="深度 / m" down />
-    {data.rays.map((r, i) => <polyline key={i} points={r.points.map(([x, y]) => `${65 + x / xmax * 540},${45 + y / ymax * 190}`).join(" ")} fill="none" stroke="#285b76" strokeWidth=".8"><title>发射角 {compactNumber(r.angle_degrees, 1)}°</title></polyline>)}
+    {selectedRays.map((r, i) => <polyline key={i} points={r.points.map(([x, y]) => `${65 + x / xmax * 540},${45 + y / ymax * 190}`).join(" ")} fill="none" stroke={r.angle_degrees < 0 ? "#b32636" : "#176b87"} strokeWidth=".8"><title>发射角 {compactNumber(r.angle_degrees, 1)}°</title></polyline>)}
   </svg>;
 }

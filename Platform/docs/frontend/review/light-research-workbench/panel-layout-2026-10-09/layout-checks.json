@@ -1,0 +1,375 @@
+{
+  "runId": "run-42503892796d4426949049ba99a91d1e",
+  "environment": "reference-shallow-water-v1",
+  "rayEnvironment": "1008-environment-0155b4ca973c-r1",
+  "checks": [
+    {
+      "width": 1440,
+      "height": 900,
+      "initial": {
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "canvas": {
+          "x": 374.4375,
+          "y": 130,
+          "width": 696.5625,
+          "height": 287.703125,
+          "right": 1071,
+          "bottom": 417.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 691.5,
+          "width": 920,
+          "height": 176.5,
+          "right": 1072,
+          "bottom": 868
+        },
+        "observation": {
+          "x": 1080,
+          "y": 62,
+          "width": 350,
+          "height": 806,
+          "right": 1430,
+          "bottom": 868
+        },
+        "log": {
+          "x": 1089,
+          "y": 618.1875,
+          "width": 317,
+          "height": 240.8125,
+          "right": 1406,
+          "bottom": 859
+        },
+        "slot": {
+          "x": 374.4375,
+          "y": 98,
+          "width": 696.5625,
+          "height": 32,
+          "right": 1071,
+          "bottom": 130
+        }
+      },
+      "arrival": {
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "canvas": {
+          "x": 374.4375,
+          "y": 130,
+          "width": 696.5625,
+          "height": 287.703125,
+          "right": 1071,
+          "bottom": 417.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 691.5,
+          "width": 920,
+          "height": 176.5,
+          "right": 1072,
+          "bottom": 868
+        },
+        "observation": {
+          "x": 1080,
+          "y": 62,
+          "width": 350,
+          "height": 806,
+          "right": 1430,
+          "bottom": 868
+        },
+        "log": {
+          "x": 1089,
+          "y": 618.1875,
+          "width": 317,
+          "height": 240.8125,
+          "right": 1406,
+          "bottom": 859
+        },
+        "slot": {
+          "x": 374.4375,
+          "y": 98,
+          "width": 696.5625,
+          "height": 32,
+          "right": 1071,
+          "bottom": 130
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "initial": {
+        "viewport": 1920,
+        "scrollWidth": 1920,
+        "canvas": {
+          "x": 455.796875,
+          "y": 130,
+          "width": 962.796875,
+          "height": 467.703125,
+          "right": 1418.59375,
+          "bottom": 597.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 871.5,
+          "width": 1267.59375,
+          "height": 176.5,
+          "right": 1419.59375,
+          "bottom": 1048
+        },
+        "observation": {
+          "x": 1427.59375,
+          "y": 62,
+          "width": 482.390625,
+          "height": 986,
+          "right": 1909.984375,
+          "bottom": 1048
+        },
+        "log": {
+          "x": 1436.59375,
+          "y": 585.59375,
+          "width": 449.390625,
+          "height": 453.40625,
+          "right": 1885.984375,
+          "bottom": 1039
+        },
+        "slot": {
+          "x": 455.796875,
+          "y": 98,
+          "width": 962.796875,
+          "height": 32,
+          "right": 1418.59375,
+          "bottom": 130
+        }
+      },
+      "arrival": {
+        "viewport": 1920,
+        "scrollWidth": 1920,
+        "canvas": {
+          "x": 455.796875,
+          "y": 130,
+          "width": 962.796875,
+          "height": 467.703125,
+          "right": 1418.59375,
+          "bottom": 597.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 871.5,
+          "width": 1267.59375,
+          "height": 176.5,
+          "right": 1419.59375,
+          "bottom": 1048
+        },
+        "observation": {
+          "x": 1427.59375,
+          "y": 62,
+          "width": 482.390625,
+          "height": 986,
+          "right": 1909.984375,
+          "bottom": 1048
+        },
+        "log": {
+          "x": 1436.59375,
+          "y": 585.59375,
+          "width": 449.390625,
+          "height": 453.40625,
+          "right": 1885.984375,
+          "bottom": 1039
+        },
+        "slot": {
+          "x": 455.796875,
+          "y": 98,
+          "width": 962.796875,
+          "height": 32,
+          "right": 1418.59375,
+          "bottom": 130
+        }
+      }
+    },
+    {
+      "width": 2553,
+      "height": 1264,
+      "initial": {
+        "viewport": 2553,
+        "scrollWidth": 2553,
+        "canvas": {
+          "x": 562.921875,
+          "y": 130,
+          "width": 1313.375,
+          "height": 651.703125,
+          "right": 1876.296875,
+          "bottom": 781.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 1055.5,
+          "width": 1725.296875,
+          "height": 176.5,
+          "right": 1877.296875,
+          "bottom": 1232
+        },
+        "observation": {
+          "x": 1885.296875,
+          "y": 62,
+          "width": 657.6875,
+          "height": 1170,
+          "right": 2542.984375,
+          "bottom": 1232
+        },
+        "log": {
+          "x": 1894.296875,
+          "y": 585.59375,
+          "width": 624.6875,
+          "height": 637.40625,
+          "right": 2518.984375,
+          "bottom": 1223
+        },
+        "slot": {
+          "x": 562.921875,
+          "y": 98,
+          "width": 1313.375,
+          "height": 32,
+          "right": 1876.296875,
+          "bottom": 130
+        }
+      },
+      "arrival": {
+        "viewport": 2553,
+        "scrollWidth": 2553,
+        "canvas": {
+          "x": 562.921875,
+          "y": 130,
+          "width": 1313.375,
+          "height": 651.703125,
+          "right": 1876.296875,
+          "bottom": 781.703125
+        },
+        "timeline": {
+          "x": 152,
+          "y": 1055.5,
+          "width": 1725.296875,
+          "height": 176.5,
+          "right": 1877.296875,
+          "bottom": 1232
+        },
+        "observation": {
+          "x": 1885.296875,
+          "y": 62,
+          "width": 657.6875,
+          "height": 1170,
+          "right": 2542.984375,
+          "bottom": 1232
+        },
+        "log": {
+          "x": 1894.296875,
+          "y": 585.59375,
+          "width": 624.6875,
+          "height": 637.40625,
+          "right": 2518.984375,
+          "bottom": 1223
+        },
+        "slot": {
+          "x": 562.921875,
+          "y": 98,
+          "width": 1313.375,
+          "height": 32,
+          "right": 1876.296875,
+          "bottom": 130
+        }
+      }
+    },
+    {
+      "width": 1000,
+      "height": 800,
+      "initial": {
+        "viewport": 1000,
+        "scrollWidth": 985,
+        "canvas": {
+          "x": 285,
+          "y": 130,
+          "width": 431,
+          "height": 266.203125,
+          "right": 716,
+          "bottom": 396.203125
+        },
+        "timeline": {
+          "x": 68,
+          "y": 670,
+          "width": 907,
+          "height": 178.5,
+          "right": 975,
+          "bottom": 848.5
+        },
+        "observation": {
+          "x": 725,
+          "y": 62,
+          "width": 250,
+          "height": 600,
+          "right": 975,
+          "bottom": 662
+        },
+        "log": {
+          "x": 734,
+          "y": 708.1875,
+          "width": 217,
+          "height": 180,
+          "right": 951,
+          "bottom": 888.1875
+        },
+        "slot": {
+          "x": 285,
+          "y": 98,
+          "width": 431,
+          "height": 32,
+          "right": 716,
+          "bottom": 130
+        }
+      },
+      "arrival": {
+        "viewport": 1000,
+        "scrollWidth": 985,
+        "canvas": {
+          "x": 285,
+          "y": 130,
+          "width": 431,
+          "height": 266.203125,
+          "right": 716,
+          "bottom": 396.203125
+        },
+        "timeline": {
+          "x": 68,
+          "y": 670,
+          "width": 907,
+          "height": 178.5,
+          "right": 975,
+          "bottom": 848.5
+        },
+        "observation": {
+          "x": 725,
+          "y": 62,
+          "width": 250,
+          "height": 600,
+          "right": 975,
+          "bottom": 662
+        },
+        "log": {
+          "x": 734,
+          "y": 708.1875,
+          "width": 217,
+          "height": 180,
+          "right": 951,
+          "bottom": 888.1875
+        },
+        "slot": {
+          "x": 285,
+          "y": 98,
+          "width": 431,
+          "height": 32,
+          "right": 716,
+          "bottom": 130
+        }
+      }
+    }
+  ]
+}

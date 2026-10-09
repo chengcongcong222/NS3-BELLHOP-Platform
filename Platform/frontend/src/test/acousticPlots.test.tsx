@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
-import { AcousticPlots } from "../components/AcousticPlots";
+import { AcousticPlots, FrozenLossField } from "../components/AcousticPlots";
 import { installApi } from "./render";
 
 const plot = { available: true, frequency_hz: 25000, source_depths_m: [10, 20], receiver_depths_m: [30], ranges_m: [500],
@@ -11,24 +11,15 @@ const plot = { available: true, frequency_hz: 25000, source_depths_m: [10, 20], 
   ray_plot: { available: false, reason: "此历史环境未保留声线文件。" } };
 function show() { render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><AcousticPlots environmentId="env-real" /></QueryClientProvider>); }
 
-it("offers only TL and rays, defaults to TL and requests exact source samples", async () => {
+it("freezes loss and impulse tabs while retaining exact source selection", async () => {
   const fetch = installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: plot },
     "/environments/env-real/acoustic-plots?source_index=1&receiver_index=0&range_index=0": { body: plot } });
-  show();
-  const svg = await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
-  expect(svg.querySelectorAll("circle")).toHaveLength(1);
-  expect(screen.getAllByRole("tab")).toHaveLength(2);
-  expect(screen.queryByRole("tab", { name: "冲激响应" })).toBeNull();
-  expect(screen.getByRole("tab", { name: "传输损失" }).getAttribute("aria-selected")).toBe("true");
-  expect(screen.getByText(/收发距离采样 500～500 m/).textContent).toContain("传输损失 / dB");
+  show(); await screen.findByLabelText("发射深度");
+  expect(screen.queryByRole("tab")).toBeNull();
+  expect(screen.queryByRole("img")).toBeNull();
   await userEvent.selectOptions(screen.getByLabelText("发射深度"), "1");
   await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes("source_index=1"))).toBe(true));
-  await userEvent.click(screen.getByRole("tab", { name: "传输损失" }));
-  expect(screen.getByText("发射深度 20 m · 频率 25 kHz")).toBeTruthy();
-  expect(screen.getByText(/非相干多径能量损失，不是相干声场/)).toBeTruthy();
-  await userEvent.click(screen.getByRole("tab", { name: "声线路径" }));
   expect(screen.getByText("此历史环境未保留声线文件。")).toBeTruthy();
-  expect(screen.queryByRole("img")).toBeNull();
 });
 
 it("does not synthesize a channel plot when immutable calculation artifacts are unavailable", async () => {
@@ -38,24 +29,21 @@ it("does not synthesize a channel plot when immutable calculation artifacts are 
 });
 
 it("uses a distance curve for a single receiver depth without filling no-arrival gaps", async () => {
-  installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { ...plot,
-    ranges_m: [100, 200, 300, 400], field: [40, 45, null, 55].map((tl_db, range_index) => ({ receiver_index: 0, range_index, tl_db })) } } });
-  show(); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
+  render(<FrozenLossField data={{ ...plot,
+    ranges_m: [100, 200, 300, 400], field: [40, 45, null, 55].map((tl_db, range_index) => ({ receiver_index: 0, range_index, tl_db })) }} />); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
   const svg = screen.getByRole("img", { name: "单深度传输损失距离曲线" });
   expect(svg.querySelectorAll("circle")).toHaveLength(3);
   expect(svg.querySelectorAll("line")).toHaveLength(1);
   expect(svg.querySelectorAll("rect")).toHaveLength(0);
   expect(svg.textContent).toContain("非相干传输损失 / dB");
   expect(svg.textContent).toContain("300 m · 无到达（不表示零损失）");
-  expect(screen.getByText(/仅计算了接收深度 30 m/)).toBeTruthy();
   const points = [...svg.querySelectorAll("circle")];
   expect(points.map(p => Number(p.getAttribute("cx")))).toEqual([200, 335, 605]);
   expect(Number(points[0].getAttribute("cy"))).toBeGreaterThan(Number(points[2].getAttribute("cy")));
 });
 
 it("shows one loss sample as a visible point, not a zero-height heatmap", async () => {
-  installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: plot } });
-  show(); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
+  render(<FrozenLossField data={plot} />); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
   const point = screen.getByRole("img", { name: "单深度传输损失距离曲线" }).querySelector("circle")!;
   expect(Number(point.getAttribute("r"))).toBeGreaterThanOrEqual(4);
   expect(Number(point.getAttribute("cy"))).toBe(140);
@@ -63,17 +51,15 @@ it("shows one loss sample as a visible point, not a zero-height heatmap", async 
 });
 
 it("does not draw a loss curve when every distance sample has no arrival", async () => {
-  installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { ...plot,
-    field: [{ receiver_index: 0, range_index: 0, tl_db: null }] } } });
-  show(); await screen.findByText(/所有距离采样均无到达/);
+  render(<FrozenLossField data={{ ...plot,
+    field: [{ receiver_index: 0, range_index: 0, tl_db: null }] }} />); await screen.findByText(/所有距离采样均无到达/);
   expect(screen.getByRole("status").textContent).toContain("所有距离采样均无到达");
   expect(screen.queryByRole("img")).toBeNull();
 });
 
 it("retains real distance-depth samples for multiple receiver depths", async () => {
-  installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { ...plot,
-    receiver_depths_m: [30, 60], ranges_m: [100, 200], field: [40, null, 50, 60].map((tl_db, i) => ({ receiver_index: Math.floor(i / 2), range_index: i % 2, tl_db })) } } });
-  show(); await screen.findByRole("img", { name: "非相干传输损失距离深度图" });
+  render(<FrozenLossField data={{ ...plot,
+    receiver_depths_m: [30, 60], ranges_m: [100, 200], field: [40, null, 50, 60].map((tl_db, i) => ({ receiver_index: Math.floor(i / 2), range_index: i % 2, tl_db })) }} />); await screen.findByRole("img", { name: "非相干传输损失距离深度图" });
   const svg = screen.getByRole("img", { name: "非相干传输损失距离深度图" });
   expect(svg.querySelectorAll("rect")).toHaveLength(4);
   expect(svg.querySelectorAll('rect[fill="#d8d8d8"]')).toHaveLength(1);
@@ -88,7 +74,7 @@ it("resets sampling indices when switching to a different immutable environment"
   });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(<QueryClientProvider client={client}><AcousticPlots environmentId="env-real" /></QueryClientProvider>);
-  await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
+  await screen.findByLabelText("发射深度");
   await userEvent.selectOptions(screen.getByLabelText("发射深度"), "1");
   await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes("source_index=1"))).toBe(true));
   view.rerender(<QueryClientProvider client={client}><AcousticPlots environmentId="env-next" /></QueryClientProvider>);
@@ -104,8 +90,7 @@ it("changes actual ray source and filters only computed launch angles", async ()
     rays: [{ angle_degrees: -10, points: [[0, 20], [500, 40]] }, { angle_degrees: 10, points: [[0, 20], [500, 50]] }] } };
   const fetch = installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: withRays },
     "/environments/env-real/acoustic-plots?source_index=1&receiver_index=0&range_index=0": { body: deep } });
-  show(); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
-  await userEvent.click(screen.getByRole("tab", { name: "声线路径" }));
+  show(); await screen.findByRole("img", { name: "Bellhop 真实声线路径" });
   expect(screen.getByRole("img", { name: "Bellhop 真实声线路径" }).querySelectorAll("polyline")).toHaveLength(1);
   const shallowPoints = screen.getByRole("img", { name: "Bellhop 真实声线路径" }).querySelector("polyline")!.getAttribute("points");
   expect(screen.getByText(/发射深度 10 m · 25 kHz/)).toBeTruthy();
@@ -129,8 +114,7 @@ it("does not show first-source rays under a different selected depth on a legacy
     rays: [{ angle_degrees: -10, points: [[0, 10], [500, 30]] }] } };
   installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: legacy },
     "/environments/env-real/acoustic-plots?source_index=1&receiver_index=0&range_index=0": { body: legacy } });
-  show(); await screen.findByRole("img", { name: "单深度传输损失距离曲线" });
-  await userEvent.click(screen.getByRole("tab", { name: "声线路径" }));
+  show(); await screen.findByRole("img", { name: "Bellhop 真实声线路径" });
   await userEvent.selectOptions(screen.getByLabelText("发射深度"), "1");
   await screen.findByText(/未保存发射深度 20 m 的声线/);
   expect(screen.queryByRole("img")).toBeNull();
@@ -138,16 +122,15 @@ it("does not show first-source rays under a different selected depth on a legacy
   expect(screen.queryByLabelText("发射角（已计算声线）")).toBeNull();
 });
 
-it("uses the distance-depth view without a redundant display selector", async () => {
-  const fetch = installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { ...plot,
-    receiver_depths_m: [30, 60], ranges_m: [100, 200], field: [40, null, 50, 60].map((tl_db, i) => ({ receiver_index: Math.floor(i / 2), range_index: i % 2, tl_db })) } } });
-  show(); await screen.findByRole("img", { name: "非相干传输损失距离深度图" });
-  expect(screen.queryByLabelText("展示方式")).toBeNull();
-  expect(screen.queryByLabelText("接收深度")).toBeNull();
-  const svg = screen.getByRole("img", { name: "非相干传输损失距离深度图" });
-  expect(svg.querySelectorAll("rect")).toHaveLength(4);
-  expect(svg.textContent).toContain("100 m · 深度 60 m · 50 dB");
-  expect(svg.textContent).toContain("200 m · 深度 60 m · 60 dB");
-  expect(screen.getByText(/收发距离采样 100～200 m/).textContent).toContain("接收深度 30～60 m");
-  expect(fetch.mock.calls).toHaveLength(1);
+it("keeps fixed axes when filtering computed rays", async () => {
+  const rays = { available: true, source_depth_m: 10, frequency_hz: 25000, sha256: "rays",
+    rays: [{ angle_degrees: -10, points: [[0,10],[500,80]] }, { angle_degrees: 10, points: [[0,10],[100,30]] }] };
+  installApi({ "/environments/env-real/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { ...plot, ray_plot: rays } } });
+  show(); const svg = await screen.findByRole("img", {name:"Bellhop 真实声线路径"});
+  const axes = svg.querySelector('.acoustic-axes')!.textContent;
+  const points = svg.querySelectorAll('polyline')[1].getAttribute('points');
+  await userEvent.selectOptions(screen.getByLabelText("发射角（已计算声线）"), "10");
+  expect(svg.querySelector('.acoustic-axes')!.textContent).toBe(axes);
+  expect(svg.querySelector('polyline')!.getAttribute('points')).toBe(points);
+  expect(screen.getByText('颜色区分发射方向，不表示声强。')).toBeTruthy();
 });

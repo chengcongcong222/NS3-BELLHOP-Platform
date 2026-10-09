@@ -1,4 +1,5 @@
 import { AcousticPlots } from "../components/AcousticPlots";
+import { DepthSamplingInput } from "../components/DepthSamplingInput";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -580,22 +581,19 @@ export function EnvironmentAuthoringPage() {
                     }
                   />
                 </label>
-                <label>
-                  计算模式
-                  <select>
-                    <option>多径到达结果</option>
-                  </select>
-                </label>
-                <label>发送深度采样（m，逗号分隔）<input value={buildParameters.sourceDepths} onChange={e => setBuildParameters({ ...buildParameters, sourceDepths: e.target.value })} /></label>
-                <label>接收深度采样（m，逗号分隔）<input value={buildParameters.receiverDepths} onChange={e => setBuildParameters({ ...buildParameters, receiverDepths: e.target.value })} /></label>
+                <DepthSamplingInput label="发送" value={buildParameters.sourceDepths} waterDepth={value.maximumDepthMeters} onChange={sourceDepths => setBuildParameters(current => ({ ...current, sourceDepths }))} />
+                <DepthSamplingInput label="接收" value={buildParameters.receiverDepths} waterDepth={value.maximumDepthMeters} onChange={receiverDepths => setBuildParameters(current => ({ ...current, receiverDepths }))} />
                 <label>距离采样数<input type="number" min="2" max="1000" value={buildParameters.rangeSampleCount} onChange={e => setBuildParameters({ ...buildParameters, rangeSampleCount: Number(e.target.value) })} /></label>
+                <p className="sampling-summary">收发水平距离 0～{value.maximumRangeMeters} m，{Number.isInteger(buildParameters.rangeSampleCount) && buildParameters.rangeSampleCount >= 2 ? `每隔 ${Number((value.maximumRangeMeters / (buildParameters.rangeSampleCount - 1)).toPrecision(5))} m 计算一个位置（含两端）` : "请填写至少 2 个采样点"}。点数不是节点数；未经过精度验证的网格不能保证任意位置查询准确。</p>
                 {capabilities.data?.bellhop_available === false && <p role="status">本机未配置 Bellhop 离线计算程序。可以保存草稿，但不会用参考声场代替计算。</p>}
+                <details className="bellhop-advanced"><summary>海底材料与声线计算参数</summary><p>海底材料是模型配置，不来自 WOA。以下保留当前设置，修改后需重新计算。</p><div className="form-grid">
                 <label>海底声速（m/s）<input type="number" value={buildParameters.bottomSoundSpeed} onChange={(event) => setBuildParameters({...buildParameters, bottomSoundSpeed: Number(event.target.value)})} /></label>
                 <label>海底密度（g/cm³）<input type="number" step="0.1" value={buildParameters.bottomDensity} onChange={(event) => setBuildParameters({...buildParameters, bottomDensity: Number(event.target.value)})} /></label>
                 <label>海底衰减（dB/λ）<input type="number" step="0.1" value={buildParameters.bottomAttenuation} onChange={(event) => setBuildParameters({...buildParameters, bottomAttenuation: Number(event.target.value)})} /></label>
                 <label>波束数<input type="number" min="1" value={buildParameters.beamCount} onChange={(event) => setBuildParameters({...buildParameters, beamCount: Number(event.target.value)})} /></label>
                 <label>最小发射角（°）<input type="number" value={buildParameters.minimumAngle} onChange={(event) => setBuildParameters({...buildParameters, minimumAngle: Number(event.target.value)})} /></label>
                 <label>最大发射角（°）<input type="number" value={buildParameters.maximumAngle} onChange={(event) => setBuildParameters({...buildParameters, maximumAngle: Number(event.target.value)})} /></label>
+                </div><p>波束数是计算使用的发射方向数量；角度以水平为 0°，负角朝海面、正角朝海底。</p></details>
               </div>
               <p>按当前声速、计算边界和底质重新计算声场。声速在采样点之间线性插值，不外推。发布后可在实验中选择。</p>
               <button

@@ -8,7 +8,7 @@ export function PublishedEnvironmentProfile({ environment }: { environment: Envi
 export function DraftEnvironmentProfile({ draft }: { draft: EnvironmentDraft }) {
   return <div className="profile-pair">
     <NumericProfile name="草稿声速剖面" label="声速剖面" xLabel="声速（m/s）" line="profile-line" values={draft.soundSpeedProfile.map(p => [p.speedMetersPerSecond, p.depthMeters])} />
-    <div className="environment-input-note"><strong>水文输入与信道计算</strong><p>声速剖面描述声速随水深的变化，不是水声传播结果。</p><p>完成计算后，查看传输损失与真实声线路径。地形采集与编辑已冻结。</p></div>
+    <div className="environment-input-note"><strong>水文输入与信道计算</strong><p>声速剖面描述声速随水深的变化，不是水声传播结果。</p><p>完成计算后可查看真实声线路径。</p></div>
   </div>;
 }
 

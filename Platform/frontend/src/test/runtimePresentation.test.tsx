@@ -50,6 +50,16 @@ async function prepare(lifecycle: "Completed" | "Running" | "Failed" = "Complete
 afterEach(() => vi.useRealTimers());
 
 describe("new run progressive observation", () => {
+  it("retains a permanent communication slot and distinct statistics/log shells", async () => {
+    await prepare();
+    const slot = screen.getByLabelText("当前通信过程");
+    expect(slot.textContent).toContain("当前无选中通信事件");
+    expect(screen.getByRole("region", {name:"运行统计面板"})).toBeTruthy();
+    expect(screen.getByRole("region", {name:"事件日志面板"})).toBeTruthy();
+    act(() => ObservedStream.current!.emit("1", "Transmission", "0", tx));
+    fireEvent.click(screen.getByRole("button", {name:"实时跟随"}));
+    expect(screen.getByLabelText("当前通信过程")).toBe(slot);
+  });
   it("leaves historical node capabilities unknown when the frozen definition is unavailable", async () => {
     await prepare("Completed", {
       [`/runs/${run.run_id}/definition-context`]: { status: 404, body: { detail: "Not Found" } },
