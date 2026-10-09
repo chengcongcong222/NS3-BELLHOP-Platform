@@ -1,0 +1,4368 @@
+{
+  "environmentId": "1790659709867-environment-a2cb16509bf5-r1",
+  "buildId": "env-build-da51e77a8ba5",
+  "sceneId": "scenario-212f63b02eb7",
+  "runs": [
+    {
+      "runId": "run-c2f94049355b4b3fa69e229181a93551",
+      "draftId": "experiment-e8aeb70aed44",
+      "mode": "Channel1Abstract",
+      "noisy": false,
+      "result": {
+        "run_id": "run-c2f94049355b4b3fa69e229181a93551",
+        "experiment_id": "experiment-e8aeb70aed44-r1",
+        "experiment_version": "1",
+        "scenario_id": "scenario-212f63b02eb7-r1",
+        "scenario_version": "1",
+        "environment_asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+        "environment_format_version": "1",
+        "projection": {
+          "simulation_started_at_ns": "0",
+          "simulation_ended_at_ns": "36000000000",
+          "simulation_duration_ns": "36000000000",
+          "final_snapshot_version": "2",
+          "cycle_count": "2",
+          "node_count": "4",
+          "transmission_count": "6",
+          "channel_signal_count": "18",
+          "channel_no_arrival_count": "0",
+          "reception_count": "18",
+          "local_delivery_count": "6"
+        },
+        "acceptance_report": {
+          "network_node_count": "Pass",
+          "communication_rate": "Pass",
+          "bit_error_rate": "Pass",
+          "feature_level_fusion": "Pass",
+          "bearing_point_count": "Pass",
+          "fusion_period": "Pass",
+          "overall": "Pass",
+          "evaluated_target_receptions": "6",
+          "missing_ber_evidence_count": "0",
+          "maximum_ber": 1.6870472538380845e-210,
+          "mean_ber": 2.8117454230634802e-211,
+          "required_maximum_ber": 0.0001,
+          "minimum_bearing_points": "6",
+          "required_minimum_bearing_points": "5",
+          "maximum_fusion_period_ns": "36000000000",
+          "required_maximum_fusion_period_ns": "180000000000",
+          "ber_reason": "Complete auditable target-link BER coverage."
+        },
+        "fusion_results": [
+          {
+            "fusion_sequence": "1",
+            "started_at_ns": "0",
+            "completed_at_ns": "36000000000",
+            "fusion_period_ns": "36000000000",
+            "observation_count": "6",
+            "estimated_target_x_meters": 199.90996545038027,
+            "estimated_target_y_meters": 150.0547938755088
+          }
+        ],
+        "nodes": [
+          {
+            "node_id": "0",
+            "x_meters": 20,
+            "y_meters": 0,
+            "z_meters": -8,
+            "is_fusion_center": true
+          },
+          {
+            "node_id": "1",
+            "x_meters": 164.4,
+            "y_meters": 10,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "2",
+            "x_meters": 414.4,
+            "y_meters": 40,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "3",
+            "x_meters": 714.4,
+            "y_meters": -50,
+            "z_meters": -60,
+            "is_fusion_center": false
+          }
+        ],
+        "visualization": {
+          "positions_complete": true,
+          "generated_feature_count": "6",
+          "positions": [
+            {
+              "node_id": "0",
+              "at_ns": "0",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "0",
+              "x_meters": 150,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "0",
+              "x_meters": 400,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "0",
+              "x_meters": 700,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "93718118",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "93718118",
+              "x_meters": 150.0374872472,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "93718118",
+              "x_meters": 400.0374872472,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "93718118",
+              "x_meters": 700.0374872472,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "168196659",
+              "x_meters": 150.0672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "168196659",
+              "x_meters": 400.0672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "168196659",
+              "x_meters": 700.0672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "369572091",
+              "x_meters": 150.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "369572091",
+              "x_meters": 400.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "369572091",
+              "x_meters": 700.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2097896769",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2097896769",
+              "x_meters": 150.8391587076,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2097896769",
+              "x_meters": 400.8391587076,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2097896769",
+              "x_meters": 700.8391587076,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2185613375",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2185613375",
+              "x_meters": 150.87424535,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2185613375",
+              "x_meters": 400.87424535,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2185613375",
+              "x_meters": 700.87424535,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2377689201",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2377689201",
+              "x_meters": 150.9510756804,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2377689201",
+              "x_meters": 400.9510756804,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2377689201",
+              "x_meters": 700.9510756804,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6000000000",
+              "x_meters": 152.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6000000000",
+              "x_meters": 402.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6000000000",
+              "x_meters": 702.4,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6168196659",
+              "x_meters": 152.4672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6168196659",
+              "x_meters": 402.4672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6168196659",
+              "x_meters": 702.4672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6209220563",
+              "x_meters": 152.4836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6209220563",
+              "x_meters": 402.4836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6209220563",
+              "x_meters": 702.4836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6258948502",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6258948502",
+              "x_meters": 152.5035794008,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6258948502",
+              "x_meters": 402.5035794008,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6258948502",
+              "x_meters": 702.5035794008,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8185613375",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8185613375",
+              "x_meters": 153.27424535,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8185613375",
+              "x_meters": 403.27424535,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8185613375",
+              "x_meters": 703.27424535,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8223531653",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8223531653",
+              "x_meters": 153.2894126612,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8223531653",
+              "x_meters": 403.2894126612,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8223531653",
+              "x_meters": 703.2894126612,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8260555145",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8260555145",
+              "x_meters": 153.304222058,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8260555145",
+              "x_meters": 403.304222058,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8260555145",
+              "x_meters": 703.304222058,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12000000000",
+              "x_meters": 154.8,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12000000000",
+              "x_meters": 404.8,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12000000000",
+              "x_meters": 704.8,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12209220563",
+              "x_meters": 154.8836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12209220563",
+              "x_meters": 404.8836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12209220563",
+              "x_meters": 704.8836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12369572091",
+              "x_meters": 154.9478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12369572091",
+              "x_meters": 404.9478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12369572091",
+              "x_meters": 704.9478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12459566346",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12459566346",
+              "x_meters": 154.9838265384,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12459566346",
+              "x_meters": 404.9838265384,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12459566346",
+              "x_meters": 704.9838265384,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14223531653",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14223531653",
+              "x_meters": 155.6894126612,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14223531653",
+              "x_meters": 405.6894126612,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14223531653",
+              "x_meters": 705.6894126612,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14377689201",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14377689201",
+              "x_meters": 155.7510756804,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14377689201",
+              "x_meters": 405.7510756804,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14377689201",
+              "x_meters": 705.7510756804,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14460402092",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14460402092",
+              "x_meters": 155.7841608368,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14460402092",
+              "x_meters": 405.7841608368,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14460402092",
+              "x_meters": 705.7841608368,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18000000000",
+              "x_meters": 157.2,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18000000000",
+              "x_meters": 407.2,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18000000000",
+              "x_meters": 707.2,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18098165933",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18098165933",
+              "x_meters": 157.2392663732,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18098165933",
+              "x_meters": 407.2392663732,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18098165933",
+              "x_meters": 707.2392663732,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18168196659",
+              "x_meters": 157.2672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18168196659",
+              "x_meters": 407.2672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18168196659",
+              "x_meters": 707.2672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18369572091",
+              "x_meters": 157.3478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18369572091",
+              "x_meters": 407.3478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18369572091",
+              "x_meters": 707.3478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20102344584",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20102344584",
+              "x_meters": 158.0409378336,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20102344584",
+              "x_meters": 408.0409378336,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20102344584",
+              "x_meters": 708.0409378336,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20185613375",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20185613375",
+              "x_meters": 158.07424535,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20185613375",
+              "x_meters": 408.07424535,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20185613375",
+              "x_meters": 708.07424535,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20377689201",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20377689201",
+              "x_meters": 158.1510756804,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20377689201",
+              "x_meters": 408.1510756804,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20377689201",
+              "x_meters": 708.1510756804,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24000000000",
+              "x_meters": 159.6,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24000000000",
+              "x_meters": 409.6,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24000000000",
+              "x_meters": 709.6,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24168196659",
+              "x_meters": 159.6672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24168196659",
+              "x_meters": 409.6672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24168196659",
+              "x_meters": 709.6672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24209220563",
+              "x_meters": 159.6836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24209220563",
+              "x_meters": 409.6836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24209220563",
+              "x_meters": 709.6836882252001,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24263686527",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24263686527",
+              "x_meters": 159.7054746108,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24263686527",
+              "x_meters": 409.7054746108,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24263686527",
+              "x_meters": 709.7054746108,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26185613375",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26185613375",
+              "x_meters": 160.47424535,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26185613375",
+              "x_meters": 410.47424535,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26185613375",
+              "x_meters": 710.47424535,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26223531653",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26223531653",
+              "x_meters": 160.4894126612,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26223531653",
+              "x_meters": 410.4894126612,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26223531653",
+              "x_meters": 710.4894126612,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26265208502",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26265208502",
+              "x_meters": 160.5060834008,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26265208502",
+              "x_meters": 410.5060834008,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26265208502",
+              "x_meters": 710.5060834008,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30000000000",
+              "x_meters": 162,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30000000000",
+              "x_meters": 412,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30000000000",
+              "x_meters": 712,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30209220563",
+              "x_meters": 162.0836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30209220563",
+              "x_meters": 412.0836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30209220563",
+              "x_meters": 712.0836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30369572091",
+              "x_meters": 162.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30369572091",
+              "x_meters": 412.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30369572091",
+              "x_meters": 712.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30464344634",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30464344634",
+              "x_meters": 162.1857378536,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30464344634",
+              "x_meters": 412.1857378536,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30464344634",
+              "x_meters": 712.1857378536,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32223531653",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32223531653",
+              "x_meters": 162.8894126612,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32223531653",
+              "x_meters": 412.8894126612,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32223531653",
+              "x_meters": 712.8894126612,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32377689201",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32377689201",
+              "x_meters": 162.9510756804,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32377689201",
+              "x_meters": 412.9510756804,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32377689201",
+              "x_meters": 712.9510756804,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32465148731",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32465148731",
+              "x_meters": 162.9860594924,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32465148731",
+              "x_meters": 412.9860594924,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32465148731",
+              "x_meters": 712.9860594924,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "36000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "36000000000",
+              "x_meters": 164.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "36000000000",
+              "x_meters": 414.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "36000000000",
+              "x_meters": 714.4,
+              "y_meters": -50,
+              "z_meters": -60
+            }
+          ],
+          "fusion_sources": [
+            {
+              "fusion_sequence": "1",
+              "node_id": "1",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "1",
+              "observation_sequence": "2"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "2",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "2",
+              "observation_sequence": "2"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "3",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "3",
+              "observation_sequence": "2"
+            }
+          ],
+          "waveform": []
+        },
+        "provenance": {
+          "definition_sha256": "f67a8e329175523fa101a61fefb6ea3d180484a16798c628f4a1e2122eea12d4",
+          "experiment": {
+            "id": "experiment-e8aeb70aed44-r1",
+            "version": 1
+          },
+          "scenario": {
+            "id": "scenario-212f63b02eb7-r1",
+            "version": 1
+          },
+          "environment": {
+            "asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+            "checksum": "64e02b405ab1fb2b",
+            "format_version": 1
+          },
+          "physical_layer": "Channel1Abstract",
+          "deterministic_seed": 23,
+          "trajectory_bindings": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 3,
+              "track_id": "N3",
+              "version": 1
+            }
+          ],
+          "trajectory_assets": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "version": 1,
+              "checksum_sha256": "df8083d7f764bd24d74097c05359bad2734e697a81ee6cdeff7186cc365dc97d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "runId": "run-756c1351def0491a9d7a95658de5abbc",
+      "draftId": "experiment-b450f0ec8046",
+      "mode": "Channel2Waveform",
+      "noisy": false,
+      "result": {
+        "run_id": "run-756c1351def0491a9d7a95658de5abbc",
+        "experiment_id": "experiment-b450f0ec8046-r1",
+        "experiment_version": "1",
+        "scenario_id": "scenario-212f63b02eb7-r1",
+        "scenario_version": "1",
+        "environment_asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+        "environment_format_version": "1",
+        "projection": {
+          "simulation_started_at_ns": "0",
+          "simulation_ended_at_ns": "36000000000",
+          "simulation_duration_ns": "36000000000",
+          "final_snapshot_version": "2",
+          "cycle_count": "2",
+          "node_count": "4",
+          "transmission_count": "6",
+          "channel_signal_count": "18",
+          "channel_no_arrival_count": "0",
+          "reception_count": "18",
+          "local_delivery_count": "6"
+        },
+        "acceptance_report": {
+          "network_node_count": "Pass",
+          "communication_rate": "Pass",
+          "bit_error_rate": "NotEvaluated",
+          "feature_level_fusion": "Pass",
+          "bearing_point_count": "Pass",
+          "fusion_period": "Pass",
+          "overall": "NotFullyEvaluated",
+          "evaluated_target_receptions": "0",
+          "missing_ber_evidence_count": "6",
+          "maximum_ber": null,
+          "mean_ber": null,
+          "required_maximum_ber": 0.0001,
+          "minimum_bearing_points": "6",
+          "required_minimum_bearing_points": "5",
+          "maximum_fusion_period_ns": "36000000000",
+          "required_maximum_fusion_period_ns": "180000000000",
+          "ber_reason": "Incomplete auditable BER coverage."
+        },
+        "fusion_results": [
+          {
+            "fusion_sequence": "1",
+            "started_at_ns": "0",
+            "completed_at_ns": "36000000000",
+            "fusion_period_ns": "36000000000",
+            "observation_count": "6",
+            "estimated_target_x_meters": 199.90996545038027,
+            "estimated_target_y_meters": 150.0547938755088
+          }
+        ],
+        "nodes": [
+          {
+            "node_id": "0",
+            "x_meters": 20,
+            "y_meters": 0,
+            "z_meters": -8,
+            "is_fusion_center": true
+          },
+          {
+            "node_id": "1",
+            "x_meters": 164.4,
+            "y_meters": 10,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "2",
+            "x_meters": 414.4,
+            "y_meters": 40,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "3",
+            "x_meters": 714.4,
+            "y_meters": -50,
+            "z_meters": -60,
+            "is_fusion_center": false
+          }
+        ],
+        "visualization": {
+          "positions_complete": true,
+          "generated_feature_count": "6",
+          "positions": [
+            {
+              "node_id": "0",
+              "at_ns": "0",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "0",
+              "x_meters": 150,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "0",
+              "x_meters": 400,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "0",
+              "x_meters": 700,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "93718118",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "93718118",
+              "x_meters": 150.0374872472,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "93718118",
+              "x_meters": 400.0374872472,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "93718118",
+              "x_meters": 700.0374872472,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "168196659",
+              "x_meters": 150.0672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "168196659",
+              "x_meters": 400.0672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "168196659",
+              "x_meters": 700.0672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "369572091",
+              "x_meters": 150.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "369572091",
+              "x_meters": 400.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "369572091",
+              "x_meters": 700.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2631230103",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2631230103",
+              "x_meters": 151.0524920412,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2631230103",
+              "x_meters": 401.0524920412,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2631230103",
+              "x_meters": 701.0524920412,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2718946709",
+              "x_meters": 151.0875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2718946709",
+              "x_meters": 401.0875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2718946709",
+              "x_meters": 701.0875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2911022535",
+              "x_meters": 151.164409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2911022535",
+              "x_meters": 401.164409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2911022535",
+              "x_meters": 701.164409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6000000000",
+              "x_meters": 152.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6000000000",
+              "x_meters": 402.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6000000000",
+              "x_meters": 702.4,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6168196659",
+              "x_meters": 152.4672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6168196659",
+              "x_meters": 402.4672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6168196659",
+              "x_meters": 702.4672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6209220563",
+              "x_meters": 152.4836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6209220563",
+              "x_meters": 402.4836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6209220563",
+              "x_meters": 702.4836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6258948502",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6258948502",
+              "x_meters": 152.5035794008,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6258948502",
+              "x_meters": 402.5035794008,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6258948502",
+              "x_meters": 702.5035794008,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8718946709",
+              "x_meters": 153.4875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8718946709",
+              "x_meters": 403.4875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8718946709",
+              "x_meters": 703.4875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8756864987",
+              "x_meters": 153.5027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8756864987",
+              "x_meters": 403.5027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8756864987",
+              "x_meters": 703.5027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8793888479",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8793888479",
+              "x_meters": 153.5175553916,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8793888479",
+              "x_meters": 403.5175553916,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8793888479",
+              "x_meters": 703.5175553916,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12000000000",
+              "x_meters": 154.8,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12000000000",
+              "x_meters": 404.8,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12000000000",
+              "x_meters": 704.8,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12209220563",
+              "x_meters": 154.8836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12209220563",
+              "x_meters": 404.8836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12209220563",
+              "x_meters": 704.8836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12369572091",
+              "x_meters": 154.9478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12369572091",
+              "x_meters": 404.9478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12369572091",
+              "x_meters": 704.9478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12459566346",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12459566346",
+              "x_meters": 154.9838265384,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12459566346",
+              "x_meters": 404.9838265384,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12459566346",
+              "x_meters": 704.9838265384,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14756864987",
+              "x_meters": 155.9027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14756864987",
+              "x_meters": 405.9027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14756864987",
+              "x_meters": 705.9027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14911022535",
+              "x_meters": 155.964409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14911022535",
+              "x_meters": 405.964409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14911022535",
+              "x_meters": 705.964409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14993735426",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14993735426",
+              "x_meters": 155.9974941704,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14993735426",
+              "x_meters": 405.9974941704,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14993735426",
+              "x_meters": 705.9974941704,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18000000000",
+              "x_meters": 157.2,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18000000000",
+              "x_meters": 407.2,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18000000000",
+              "x_meters": 707.2,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18098165933",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18098165933",
+              "x_meters": 157.2392663732,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18098165933",
+              "x_meters": 407.2392663732,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18098165933",
+              "x_meters": 707.2392663732,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18168196659",
+              "x_meters": 157.2672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18168196659",
+              "x_meters": 407.2672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18168196659",
+              "x_meters": 707.2672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18369572091",
+              "x_meters": 157.3478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18369572091",
+              "x_meters": 407.3478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18369572091",
+              "x_meters": 707.3478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20635677918",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20635677918",
+              "x_meters": 158.2542711672,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20635677918",
+              "x_meters": 408.2542711672,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20635677918",
+              "x_meters": 708.2542711672,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20718946709",
+              "x_meters": 158.2875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20718946709",
+              "x_meters": 408.2875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20718946709",
+              "x_meters": 708.2875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20911022535",
+              "x_meters": 158.364409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20911022535",
+              "x_meters": 408.364409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20911022535",
+              "x_meters": 708.364409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24000000000",
+              "x_meters": 159.6,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24000000000",
+              "x_meters": 409.6,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24000000000",
+              "x_meters": 709.6,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24168196659",
+              "x_meters": 159.6672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24168196659",
+              "x_meters": 409.6672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24168196659",
+              "x_meters": 709.6672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24209220563",
+              "x_meters": 159.6836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24209220563",
+              "x_meters": 409.6836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24209220563",
+              "x_meters": 709.6836882252001,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24263686527",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24263686527",
+              "x_meters": 159.7054746108,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24263686527",
+              "x_meters": 409.7054746108,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24263686527",
+              "x_meters": 709.7054746108,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26718946709",
+              "x_meters": 160.6875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26718946709",
+              "x_meters": 410.6875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26718946709",
+              "x_meters": 710.6875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26756864987",
+              "x_meters": 160.7027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26756864987",
+              "x_meters": 410.7027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26756864987",
+              "x_meters": 710.7027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26798541836",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26798541836",
+              "x_meters": 160.7194167344,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26798541836",
+              "x_meters": 410.7194167344,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26798541836",
+              "x_meters": 710.7194167344,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30000000000",
+              "x_meters": 162,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30000000000",
+              "x_meters": 412,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30000000000",
+              "x_meters": 712,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30209220563",
+              "x_meters": 162.0836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30209220563",
+              "x_meters": 412.0836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30209220563",
+              "x_meters": 712.0836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30369572091",
+              "x_meters": 162.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30369572091",
+              "x_meters": 412.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30369572091",
+              "x_meters": 712.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30464344634",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30464344634",
+              "x_meters": 162.1857378536,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30464344634",
+              "x_meters": 412.1857378536,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30464344634",
+              "x_meters": 712.1857378536,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32756864987",
+              "x_meters": 163.1027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32756864987",
+              "x_meters": 413.1027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32756864987",
+              "x_meters": 713.1027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32911022535",
+              "x_meters": 163.164409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32911022535",
+              "x_meters": 413.164409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32911022535",
+              "x_meters": 713.1644090140001,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32998482065",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32998482065",
+              "x_meters": 163.199392826,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32998482065",
+              "x_meters": 413.199392826,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32998482065",
+              "x_meters": 713.199392826,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "36000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "36000000000",
+              "x_meters": 164.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "36000000000",
+              "x_meters": 414.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "36000000000",
+              "x_meters": 714.4,
+              "y_meters": -50,
+              "z_meters": -60
+            }
+          ],
+          "fusion_sources": [
+            {
+              "fusion_sequence": "1",
+              "node_id": "1",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "1",
+              "observation_sequence": "2"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "2",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "2",
+              "observation_sequence": "2"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "3",
+              "observation_sequence": "1"
+            },
+            {
+              "fusion_sequence": "1",
+              "node_id": "3",
+              "observation_sequence": "2"
+            }
+          ],
+          "waveform": [
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "0",
+              "crc_ok": true
+            }
+          ]
+        },
+        "provenance": {
+          "definition_sha256": "0b90eef7b8b12850b1a10bc321ab8858f0de03bb2c5f4d0dce4e663f44bcc778",
+          "experiment": {
+            "id": "experiment-b450f0ec8046-r1",
+            "version": 1
+          },
+          "scenario": {
+            "id": "scenario-212f63b02eb7-r1",
+            "version": 1
+          },
+          "environment": {
+            "asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+            "checksum": "64e02b405ab1fb2b",
+            "format_version": 1
+          },
+          "physical_layer": "Channel2Waveform",
+          "deterministic_seed": 23,
+          "trajectory_bindings": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 3,
+              "track_id": "N3",
+              "version": 1
+            }
+          ],
+          "trajectory_assets": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "version": 1,
+              "checksum_sha256": "df8083d7f764bd24d74097c05359bad2734e697a81ee6cdeff7186cc365dc97d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "runId": "run-5f4d137bf1c94d30b4cb4d63d0b621dc",
+      "draftId": "experiment-cb55ee8ec559",
+      "mode": "Channel2Waveform",
+      "noisy": true,
+      "result": {
+        "run_id": "run-5f4d137bf1c94d30b4cb4d63d0b621dc",
+        "experiment_id": "experiment-cb55ee8ec559-r1",
+        "experiment_version": "1",
+        "scenario_id": "scenario-212f63b02eb7-r1",
+        "scenario_version": "1",
+        "environment_asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+        "environment_format_version": "1",
+        "projection": {
+          "simulation_started_at_ns": "0",
+          "simulation_ended_at_ns": "36000000000",
+          "simulation_duration_ns": "36000000000",
+          "final_snapshot_version": "2",
+          "cycle_count": "2",
+          "node_count": "4",
+          "transmission_count": "6",
+          "channel_signal_count": "18",
+          "channel_no_arrival_count": "0",
+          "reception_count": "18",
+          "local_delivery_count": "0"
+        },
+        "acceptance_report": {
+          "network_node_count": "Pass",
+          "communication_rate": "Pass",
+          "bit_error_rate": "NotEvaluated",
+          "feature_level_fusion": "Pass",
+          "bearing_point_count": "Fail",
+          "fusion_period": "Fail",
+          "overall": "Fail",
+          "evaluated_target_receptions": "0",
+          "missing_ber_evidence_count": "6",
+          "maximum_ber": null,
+          "mean_ber": null,
+          "required_maximum_ber": 0.0001,
+          "minimum_bearing_points": null,
+          "required_minimum_bearing_points": "5",
+          "maximum_fusion_period_ns": null,
+          "required_maximum_fusion_period_ns": "180000000000",
+          "ber_reason": "Incomplete auditable BER coverage."
+        },
+        "fusion_results": [],
+        "nodes": [
+          {
+            "node_id": "0",
+            "x_meters": 20,
+            "y_meters": 0,
+            "z_meters": -8,
+            "is_fusion_center": true
+          },
+          {
+            "node_id": "1",
+            "x_meters": 164.4,
+            "y_meters": 10,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "2",
+            "x_meters": 414.4,
+            "y_meters": 40,
+            "z_meters": -60,
+            "is_fusion_center": false
+          },
+          {
+            "node_id": "3",
+            "x_meters": 714.4,
+            "y_meters": -50,
+            "z_meters": -60,
+            "is_fusion_center": false
+          }
+        ],
+        "visualization": {
+          "positions_complete": true,
+          "generated_feature_count": "6",
+          "positions": [
+            {
+              "node_id": "0",
+              "at_ns": "0",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "0",
+              "x_meters": 150,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "0",
+              "x_meters": 400,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "0",
+              "x_meters": 700,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "93718118",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "93718118",
+              "x_meters": 150.0374872472,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "93718118",
+              "x_meters": 400.0374872472,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "93718118",
+              "x_meters": 700.0374872472,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "168196659",
+              "x_meters": 150.0672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "168196659",
+              "x_meters": 400.0672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "168196659",
+              "x_meters": 700.0672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "369572091",
+              "x_meters": 150.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "369572091",
+              "x_meters": 400.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "369572091",
+              "x_meters": 700.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2631230103",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2631230103",
+              "x_meters": 151.0524920412,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2631230103",
+              "x_meters": 401.0524920412,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2631230103",
+              "x_meters": 701.0524920412,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2718946709",
+              "x_meters": 151.0875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2718946709",
+              "x_meters": 401.0875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2718946709",
+              "x_meters": 701.0875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "2911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "2911022535",
+              "x_meters": 151.164409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "2911022535",
+              "x_meters": 401.164409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "2911022535",
+              "x_meters": 701.164409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6000000000",
+              "x_meters": 152.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6000000000",
+              "x_meters": 402.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6000000000",
+              "x_meters": 702.4,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6168196659",
+              "x_meters": 152.4672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6168196659",
+              "x_meters": 402.4672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6168196659",
+              "x_meters": 702.4672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6209220563",
+              "x_meters": 152.4836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6209220563",
+              "x_meters": 402.4836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6209220563",
+              "x_meters": 702.4836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "6258948502",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "6258948502",
+              "x_meters": 152.5035794008,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "6258948502",
+              "x_meters": 402.5035794008,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "6258948502",
+              "x_meters": 702.5035794008,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8718946709",
+              "x_meters": 153.4875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8718946709",
+              "x_meters": 403.4875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8718946709",
+              "x_meters": 703.4875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8756864987",
+              "x_meters": 153.5027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8756864987",
+              "x_meters": 403.5027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8756864987",
+              "x_meters": 703.5027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "8793888479",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "8793888479",
+              "x_meters": 153.5175553916,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "8793888479",
+              "x_meters": 403.5175553916,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "8793888479",
+              "x_meters": 703.5175553916,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12000000000",
+              "x_meters": 154.8,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12000000000",
+              "x_meters": 404.8,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12000000000",
+              "x_meters": 704.8,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12209220563",
+              "x_meters": 154.8836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12209220563",
+              "x_meters": 404.8836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12209220563",
+              "x_meters": 704.8836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12369572091",
+              "x_meters": 154.9478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12369572091",
+              "x_meters": 404.9478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12369572091",
+              "x_meters": 704.9478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "12459566346",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "12459566346",
+              "x_meters": 154.9838265384,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "12459566346",
+              "x_meters": 404.9838265384,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "12459566346",
+              "x_meters": 704.9838265384,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14756864987",
+              "x_meters": 155.9027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14756864987",
+              "x_meters": 405.9027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14756864987",
+              "x_meters": 705.9027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14911022535",
+              "x_meters": 155.964409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14911022535",
+              "x_meters": 405.964409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14911022535",
+              "x_meters": 705.964409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "14993735426",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "14993735426",
+              "x_meters": 155.9974941704,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "14993735426",
+              "x_meters": 405.9974941704,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "14993735426",
+              "x_meters": 705.9974941704,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18000000000",
+              "x_meters": 157.2,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18000000000",
+              "x_meters": 407.2,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18000000000",
+              "x_meters": 707.2,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18098165933",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18098165933",
+              "x_meters": 157.2392663732,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18098165933",
+              "x_meters": 407.2392663732,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18098165933",
+              "x_meters": 707.2392663732,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18168196659",
+              "x_meters": 157.2672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18168196659",
+              "x_meters": 407.2672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18168196659",
+              "x_meters": 707.2672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "18369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "18369572091",
+              "x_meters": 157.3478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "18369572091",
+              "x_meters": 407.3478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "18369572091",
+              "x_meters": 707.3478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20635677918",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20635677918",
+              "x_meters": 158.2542711672,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20635677918",
+              "x_meters": 408.2542711672,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20635677918",
+              "x_meters": 708.2542711672,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20718946709",
+              "x_meters": 158.2875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20718946709",
+              "x_meters": 408.2875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20718946709",
+              "x_meters": 708.2875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "20911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "20911022535",
+              "x_meters": 158.364409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "20911022535",
+              "x_meters": 408.364409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "20911022535",
+              "x_meters": 708.364409014,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24000000000",
+              "x_meters": 159.6,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24000000000",
+              "x_meters": 409.6,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24000000000",
+              "x_meters": 709.6,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24168196659",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24168196659",
+              "x_meters": 159.6672786636,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24168196659",
+              "x_meters": 409.6672786636,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24168196659",
+              "x_meters": 709.6672786636,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24209220563",
+              "x_meters": 159.6836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24209220563",
+              "x_meters": 409.6836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24209220563",
+              "x_meters": 709.6836882252001,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "24263686527",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "24263686527",
+              "x_meters": 159.7054746108,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "24263686527",
+              "x_meters": 409.7054746108,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "24263686527",
+              "x_meters": 709.7054746108,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26718946709",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26718946709",
+              "x_meters": 160.6875786836,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26718946709",
+              "x_meters": 410.6875786836,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26718946709",
+              "x_meters": 710.6875786836,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26756864987",
+              "x_meters": 160.7027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26756864987",
+              "x_meters": 410.7027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26756864987",
+              "x_meters": 710.7027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "26798541836",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "26798541836",
+              "x_meters": 160.7194167344,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "26798541836",
+              "x_meters": 410.7194167344,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "26798541836",
+              "x_meters": 710.7194167344,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30000000000",
+              "x_meters": 162,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30000000000",
+              "x_meters": 412,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30000000000",
+              "x_meters": 712,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30209220563",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30209220563",
+              "x_meters": 162.0836882252,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30209220563",
+              "x_meters": 412.0836882252,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30209220563",
+              "x_meters": 712.0836882252,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30369572091",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30369572091",
+              "x_meters": 162.1478288364,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30369572091",
+              "x_meters": 412.1478288364,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30369572091",
+              "x_meters": 712.1478288364,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "30464344634",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "30464344634",
+              "x_meters": 162.1857378536,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "30464344634",
+              "x_meters": 412.1857378536,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "30464344634",
+              "x_meters": 712.1857378536,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32756864987",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32756864987",
+              "x_meters": 163.1027459948,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32756864987",
+              "x_meters": 413.1027459948,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32756864987",
+              "x_meters": 713.1027459948,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32911022535",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32911022535",
+              "x_meters": 163.164409014,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32911022535",
+              "x_meters": 413.164409014,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32911022535",
+              "x_meters": 713.1644090140001,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "32998482065",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "32998482065",
+              "x_meters": 163.199392826,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "32998482065",
+              "x_meters": 413.199392826,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "32998482065",
+              "x_meters": 713.199392826,
+              "y_meters": -50,
+              "z_meters": -60
+            },
+            {
+              "node_id": "0",
+              "at_ns": "36000000000",
+              "x_meters": 20,
+              "y_meters": 0,
+              "z_meters": -8
+            },
+            {
+              "node_id": "1",
+              "at_ns": "36000000000",
+              "x_meters": 164.4,
+              "y_meters": 10,
+              "z_meters": -60
+            },
+            {
+              "node_id": "2",
+              "at_ns": "36000000000",
+              "x_meters": 414.4,
+              "y_meters": 40,
+              "z_meters": -60
+            },
+            {
+              "node_id": "3",
+              "at_ns": "36000000000",
+              "x_meters": 714.4,
+              "y_meters": -50,
+              "z_meters": -60
+            }
+          ],
+          "fusion_sources": [],
+          "waveform": [
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "54",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "62",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1000",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "64",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "56",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "46",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1001",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "52",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "46",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "64",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1002",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "68",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "64",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "51",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1003",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "69",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "60",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "3",
+              "payload_bit_count": "120",
+              "bit_error_count": "63",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1004",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "66",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "2",
+              "payload_bit_count": "120",
+              "bit_error_count": "61",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "1",
+              "payload_bit_count": "120",
+              "bit_error_count": "62",
+              "crc_ok": false
+            },
+            {
+              "transmission_id": "1005",
+              "receiver_node_id": "0",
+              "payload_bit_count": "120",
+              "bit_error_count": "64",
+              "crc_ok": false
+            }
+          ]
+        },
+        "provenance": {
+          "definition_sha256": "af4bf54fd961ba7a370eae70662afe0478d9b39a8eff7ac33db81d3701465ce4",
+          "experiment": {
+            "id": "experiment-cb55ee8ec559-r1",
+            "version": 1
+          },
+          "scenario": {
+            "id": "scenario-212f63b02eb7-r1",
+            "version": 1
+          },
+          "environment": {
+            "asset_id": "1790659709867-environment-a2cb16509bf5-r1",
+            "checksum": "64e02b405ab1fb2b",
+            "format_version": 1
+          },
+          "physical_layer": "Channel2Waveform",
+          "deterministic_seed": 23,
+          "trajectory_bindings": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            },
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "node_id": 3,
+              "track_id": "N3",
+              "version": 1
+            }
+          ],
+          "trajectory_assets": [
+            {
+              "asset_id": "research-tracks-1790659709867",
+              "version": 1,
+              "checksum_sha256": "df8083d7f764bd24d74097c05359bad2734e697a81ee6cdeff7186cc365dc97d"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "arrivals_sha256": "74811b44214fdf3f9016496896e8b7d1fdd1f171693c9ca66fe3ed6a90ba6f1a",
+  "ray_sha256": "a6d250c1f3a7c4e90a7b096e0f4452c046893b5b96d150b822c104f64cb40699"
+}

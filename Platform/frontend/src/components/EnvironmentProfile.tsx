@@ -8,7 +8,7 @@ export function PublishedEnvironmentProfile({ environment }: { environment: Envi
 export function DraftEnvironmentProfile({ draft }: { draft: EnvironmentDraft }) {
   return <div className="profile-pair">
     <NumericProfile name="草稿声速剖面" label="声速剖面" xLabel="声速（m/s）" line="profile-line" values={draft.soundSpeedProfile.map(p => [p.speedMetersPerSecond, p.depthMeters])} />
-    <NumericProfile name="草稿海底地形" label="海底地形" xLabel="水平距离（m）" line="bathymetry-line" values={draft.bathymetry.map(p => [p.rangeMeters, p.depthMeters])} />
+    <div className="environment-input-note"><strong>水文输入与信道计算</strong><p>声速剖面描述声速随水深的变化，不是水声传播结果。</p><p>完成计算后，查看传输损失与真实声线路径。地形采集与编辑已冻结。</p></div>
   </div>;
 }
 
@@ -23,12 +23,12 @@ function NumericProfile({ name, label, xLabel, values, line }: { name: string; l
   const point = ([x, y]: [number, number]) => [58 + (x - minimum) / span * 362, 32 + y / depth * 170];
   return <figure className="numeric-profile"><figcaption>{label}</figcaption>
     <svg viewBox="0 0 460 255" role="img" aria-label={name}>
-      <rect width="460" height="255" fill="#091e2e" />
+      <rect width="460" height="255" fill="#ffffff" />
       <g fill="#d8eaf4" fontSize="13" fontFamily="sans-serif">
         <text x="12" y="19">深度（m，向下）</text><text x="230" y="249" textAnchor="middle">{xLabel}</text>
         {valid ? <>
           {[0, .25, .5, .75, 1].map(fraction => <g key={fraction}>
-            <path d={`M58 ${32 + fraction * 170} H420 M${58 + fraction * 362} 32 V202`} stroke="#254557" fill="none" />
+            <path d={`M58 ${32 + fraction * 170} H420 M${58 + fraction * 362} 32 V202`} stroke="#d3dfe8" fill="none" />
             <text x="49" y={36 + fraction * 170} textAnchor="end">{(depth * fraction).toFixed(0)}</text>
             <text x={58 + fraction * 362} y="223" textAnchor="middle">{(minimum + fraction * span).toFixed(maximum < 100 ? 1 : 0)}</text>
           </g>)}

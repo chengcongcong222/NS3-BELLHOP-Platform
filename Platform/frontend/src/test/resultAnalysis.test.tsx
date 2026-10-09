@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { ResultDto, RunEventDto } from "../api/types";
-import { matchingRunExperiment, physicalMode, resultEventStatistics, sampleSummary, targetBerReference, waveformSummary } from "../domain/resultAnalysis";
+import { matchingRunExperiment, physicalMode, resultEventStatistics, sampleSummary, targetBerReference, waveformSignalToNoise, waveformSummary } from "../domain/resultAnalysis";
 import { ResultAnalysis } from "../features/resultAnalysis";
 import { acceptance4Result } from "./acceptance4Golden";
 import { experiment } from "./fixtures";
@@ -20,6 +20,14 @@ const events: RunEventDto[] = [
 ];
 
 describe("result statistics retain measurement scope", () => {
+  it("computes waveform SNR from recorded powers without replacing absent or unbounded values with zero", () => {
+    expect(waveformSignalToNoise({ signal_power_upa2: 1000, noise_power_upa2: 1 })).toBe(30);
+    expect(waveformSignalToNoise({ signal_power_upa2: 1e300, noise_power_upa2: 1e-300 })).toBe(6000);
+    expect(waveformSignalToNoise({ signal_power_upa2: 1, noise_power_upa2: 0 })).toBe("no-noise");
+    expect(waveformSignalToNoise({ signal_power_upa2: 0, noise_power_upa2: 1 })).toBe("no-signal");
+    expect(waveformSignalToNoise()).toBeNull();
+    expect(waveformSignalToNoise({ signal_power_upa2: -1, noise_power_upa2: 1 })).toBeNull();
+  });
   it("does not mistake missing waveform evidence for mode A", () => {
     expect(physicalMode(result)).toBe("unknown");
     expect(physicalMode(result, "Channel1Abstract")).toBe("A");
@@ -84,6 +92,49 @@ describe("result statistics retain measurement scope", () => {
 });
 
 describe("mode-aware scientific result presentation", () => {
+  it("limits ordinary dB and second displays but preserves small BER and exact time evidence", () => {
+    const precise = events.map(event => event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "Signal"
+      ? { ...event, trace: { ...event.trace, payload: { ...event.trace.payload, outcome: { ...event.trace.payload.outcome,
+        aggregate_transmission_loss_db: 49.9515, first_arrival_delay_ns: "712345678",
+      } } } } : event.trace.kind === "Reception" && event.trace.payload.quality ? { ...event, trace: { ...event.trace, payload: { ...event.trace.payload,
+        quality: { ...event.trace.payload.quality, bit_error_rate: 1.2341e-9 },
+      } } } : event);
+    const preciseResult = { ...result, projection: { ...result.projection, simulation_duration_ns: "180123456789" } };
+    render(<ResultAnalysis result={preciseResult} events={precise} physicalLayer="Channel1Abstract" />);
+    expect(within(screen.getByText("平均信号衰减").closest("div")!).getByText("49.95")).toBeTruthy();
+    expect(within(screen.getByText("平均信号传播用时").closest("div")!).getByText("0.712")).toBeTruthy();
+    expect(screen.getByTitle("180.123456789 s (180123456789 ns)").textContent).toBe("180.123 s");
+    expect(screen.getAllByText("1.234e-9").length).toBeGreaterThan(0);
+  });
+
+  it("uses waveform rather than modeled SNR in mode B and reports the partial power coverage", () => {
+    const withPowers = events.map(event => event.trace.kind === "Reception" && event.trace.payload.receiver_node_id === "2"
+      ? { ...event, trace: { ...event.trace, payload: { ...event.trace.payload, waveform: {
+        payload_bit_count: "100", bit_error_count: "2", crc_ok: false, signal_power_upa2: 1000, noise_power_upa2: 1,
+      } } } } : event);
+    const stats = resultEventStatistics(result, withPowers);
+    expect(stats.snr).toEqual([20]);
+    expect(stats.waveformSnr).toEqual([30]);
+    expect(stats.waveformPowerMissing).toBe(1);
+    render(<ResultAnalysis result={result} events={withPowers} physicalLayer="Channel2Waveform" />);
+    const summary = screen.getByText("信号比背景噪声强多少？").closest("div")!;
+    expect(within(summary).getByText("30")).toBeTruthy();
+    expect(within(summary).queryByText("20")).toBeNull();
+    expect(screen.getByText(/波形信噪比：1 次可计算，0 次未加噪声，0 次无信号功率，1 次未保存功率/)).toBeTruthy();
+  });
+
+  it("labels noiseless mode B frames without inventing a finite SNR sample", () => {
+    const noiseless = events.map(event => event.trace.kind === "Reception"
+      ? { ...event, trace: { ...event.trace, payload: { ...event.trace.payload, waveform: {
+        payload_bit_count: "100", bit_error_count: "0", crc_ok: true, signal_power_upa2: 1, noise_power_upa2: 0,
+      } } } } : event);
+    render(<ResultAnalysis result={result} events={noiseless} physicalLayer="Channel2Waveform" />);
+    const summary = screen.getByText("信号比背景噪声强多少？").closest("div")!;
+    expect(within(summary).getByText("未加噪声")).toBeTruthy();
+    expect(screen.queryByRole("rowheader", { name: "接收信噪比 dB" })).toBeNull();
+    expect(screen.getByText(/波形信噪比：0 次可计算，2 次未加噪声/)).toBeTruthy();
+  });
+
   it("shows readable seconds in the overview and keeps exact nanoseconds in technical detail", () => {
     render(<ResultAnalysis result={result} />);
     const duration = within(document.querySelector<HTMLElement>(".analysis-summary")!).getByTitle("180 s (180000000000 ns)");

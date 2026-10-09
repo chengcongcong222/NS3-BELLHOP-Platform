@@ -34,7 +34,7 @@ describe("paired scene depth view", () => {
     for (const [width, height] of [[1380, 780], [740, 480]]) {
       act(() => resize!([{ contentRect: { width, height } } as ResizeObserverEntry], {} as ResizeObserver));
       expect(screen.getByRole("img", { name: "可编辑场景画布" }).getAttribute("viewBox")).toBe(`0 0 ${width} ${height}`);
-      const section = screen.getByRole("img", { name: "节点与海底同坐标剖面" });
+      const section = screen.getByRole("img", { name: "节点深度分布（X 坐标）" });
       expect(section.getAttribute("viewBox")).toBe(`0 0 ${width} 190`);
       const expected = createBoundedSceneView(draft.spatialDomain!, { width, height, padding: 50 });
       const planX = Number(screen.getByRole("button", { name: "选择节点 N1" }).getAttribute("transform")!.match(/translate\(([^ ]+)/)![1]);
@@ -46,20 +46,20 @@ describe("paired scene depth view", () => {
     expect(change).not.toHaveBeenCalled();
   });
 
-  it("uses one terrain/node plot and the exact plan X pixels only with an explicit bounded domain", () => {
+  it("keeps shared X pixels while removing simplified terrain", () => {
     const domain = { model: "ProfileExtrusion" as const, x_min_m: 0, x_max_m: 600,
       y_min_m: -100, y_max_m: 500, surface_clearance_m: 1, bottom_clearance_m: 5 };
     const view = createBoundedSceneView(domain, { width: 980, height: 320, padding: 45 });
     render(<SceneDepthProfile nodes={nodes} selectedNodeIds={["1", "2"]} environmentInputs={environment}
       spatialDomain={domain} xDomain={view.xDomain} plotWidth={980} plotPadding={45} />);
-    const svg = screen.getByRole("img", { name: "节点与海底同坐标剖面" });
+    const svg = screen.getByRole("img", { name: "节点深度分布（X 坐标）" });
     expect(screen.queryByRole("img", { name: "独立环境采样剖面" })).toBeNull();
     expect(screen.queryByRole("img", { name: "链路剖面" })).toBeNull();
-    expect(svg.querySelector(".depth-terrain-line")).not.toBeNull();
+    expect(svg.querySelector(".depth-terrain-line")).toBeNull();
     const actualX = Number(svg.querySelector(".depth-node")!.getAttribute("transform")!.match(/translate\(([^,]+)/)![1]);
     expect(actualX).toBeCloseTo(view.point(nodes[0].position).x, 10);
     expect(svg.getAttribute("preserveAspectRatio")).toBe("none");
-    expect(screen.getByText(/这不是实测三维海底/)).toBeTruthy();
+    expect(screen.getByText(/按 X 展示深度/)).toBeTruthy();
   });
   it("accepts real Runtime samples with string identity/time metadata alongside coordinates", () => {
     const sample = { node_id: "1", at_ns: "2000000000", x_meters: 130, y_meters: 0, z_meters: -60 };
@@ -72,22 +72,19 @@ describe("paired scene depth view", () => {
     const first = screen.getByRole("img", { name: "深度节点 N1 · 30 m" });
     expect(first.getAttribute("data-x-meters")).toBe("100");
     expect(first.getAttribute("data-y-meters")).toBe("20");
-    expect(screen.getByText("仿真时间 1.000000001 s · 与上方节点位置同步")).toBeTruthy();
+    expect(screen.getByText("仿真时间 1 s · 与上方节点位置同步")).toBeTruthy();
+    expect(screen.getByLabelText("场景深度与环境剖面").getAttribute("data-simulation-time-ns")).toBe("1000000001");
     rerender(<SceneDepthProfile nodes={[{ ...nodes[0], position: { x_meters: 140, y_meters: 25, z_meters: -45 } }]} simulationTimeNs="5000000000" xDomain={[-500, 500]} />);
     expect(screen.getByRole("img", { name: "深度节点 N1 · 45 m" }).getAttribute("data-x-meters")).toBe("140");
     expect(screen.queryByRole("img", { name: "深度节点 N1 · 30 m" })).toBeNull();
     expect(screen.getByLabelText("场景深度与环境剖面").getAttribute("data-simulation-time-ns")).toBe("5000000000");
   });
 
-  it("keeps preserved one-dimensional terrain separate without a scenario georeference", () => {
+  it("removes the standalone simplified terrain display", () => {
     render(<SceneDepthProfile nodes={nodes} environmentInputs={environment} />);
     const nodePlot = screen.getByRole("img", { name: "节点深度分布（X 坐标）" });
-    const sourcePlot = screen.getByRole("img", { name: "独立环境采样剖面" });
     expect(nodePlot.querySelector(".depth-terrain-line")).toBeNull();
-    expect(sourcePlot.querySelector(".depth-terrain-line")?.getAttribute("data-sample-count")).toBe("2");
-    expect(sourcePlot.querySelector(".depth-node")).toBeNull();
-    expect(screen.getByText(/一维地形，尚未与场景坐标对齐/)).toBeTruthy();
-    expect(screen.getByText("测线南区")).toBeTruthy();
+    expect(screen.queryByRole("img", { name: "独立环境采样剖面" })).toBeNull();
   });
 
   it("does not infer a sea floor from environment coverage, malformed samples, or geography alone", () => {
@@ -125,7 +122,7 @@ describe("paired scene depth view", () => {
     render(<SceneDepthProfile nodes={[{ node_id: "7", position: { x_meters: 0, y_meters: 0, z_meters: 5 } }]}
       environmentInputs={{ ...environment, payload: { ...environment.payload, acquisition: { useReferenceCache: true } } }} />);
     expect(screen.getByRole("img", { name: "深度节点 N7 · -5 m" })).toBeTruthy();
-    expect(screen.getByText("参考环境地形样本")).toBeTruthy();
+    expect(screen.queryByText("参考环境地形样本")).toBeNull();
   });
 
   it("retains upper plan, lower depth, and selection linkage in the actual ScenarioDesigner", () => {

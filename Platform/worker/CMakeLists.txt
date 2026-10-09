@@ -149,6 +149,19 @@ if(PLATFORM_NS3_AVAILABLE)
   )
 
   if(BUILD_TESTING)
+    add_executable(platform_worker_authored_planning_validation_test
+      tests/authored_planning_validation_test.cpp)
+    target_include_directories(platform_worker_authored_planning_validation_test PRIVATE
+      "${PROJECT_SOURCE_DIR}/worker" "${PROJECT_SOURCE_DIR}/application"
+      "${PROJECT_SOURCE_DIR}/assembly" "${PROJECT_SOURCE_DIR}/environment"
+      "${PROJECT_SOURCE_DIR}/kernel" "${PROJECT_SOURCE_DIR}/phy"
+      "${PROJECT_SOURCE_DIR}/planning" "${PROJECT_SOURCE_DIR}/runtime"
+      "${PROJECT_SOURCE_DIR}/structure")
+    target_link_libraries(platform_worker_authored_planning_validation_test PRIVATE
+      Platform::worker Platform::assembly Platform::environment Platform::third_party_nlohmann_json)
+    add_test(NAME platform_worker_authored_planning_validation_test
+      COMMAND platform_worker_authored_planning_validation_test)
+
     add_executable(
       platform_worker_crash_fixture
       tests/worker_crash_fixture.cpp

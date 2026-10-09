@@ -57,6 +57,8 @@ describe("run-scoped edit, repeat and experiment history", () => {
     renderRoute(`/runs/${id}`);
     expect((await screen.findByRole("link", { name: "修改本实验" })).getAttribute("href"))
       .toBe("/workspace/experiment?draft=experiment-specific-27");
+    expect(screen.getByRole("link", { name: "修改本实验" }).title).toContain("可能已包含本次运行之后的修改");
+    expect(document.querySelector(".run-action-meaning")?.textContent).toContain("本次冻结配置");
     expect(screen.queryByRole("link", { name: "新建实验" })).toBeNull();
   });
 

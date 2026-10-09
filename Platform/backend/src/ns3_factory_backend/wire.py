@@ -248,6 +248,20 @@ class QualitySummary(WireModel):
     source: Literal["Modeled", "Measured", "External"]
 
 
+class ReceptionWaveform(WireModel):
+    payload_bit_count: PositiveUIntDecimal
+    bit_error_count: UIntDecimal
+    crc_ok: bool
+    signal_power_upa2: FiniteFloat
+    noise_power_upa2: FiniteFloat
+
+    @model_validator(mode="after")
+    def valid_measurement(self):
+        if int(self.bit_error_count) > int(self.payload_bit_count) or self.signal_power_upa2 < 0 or self.noise_power_upa2 < 0:
+            raise ValueError("Invalid waveform measurement")
+        return self
+
+
 class ReceptionPayload(WireModel):
     reception_id: UIntDecimal
     transmission_id: UIntDecimal
@@ -257,6 +271,7 @@ class ReceptionPayload(WireModel):
         "NotDecoded", "Overheard", "LocalDelivery", "RelayEnqueue"
     ]
     quality: QualitySummary | None
+    waveform: ReceptionWaveform | None = None
 
 
 class SignalArrivalPayload(WireModel):

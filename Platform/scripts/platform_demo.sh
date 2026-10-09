@@ -41,6 +41,20 @@ preflight() {
     --frontend-port "${frontend_port}"
 }
 
+prepare_ocean_authoring() {
+  if "${backend_python}" -c 'import numpy, netCDF4, cftime' >/dev/null 2>&1; then
+    return
+  fi
+  local wheel_dir="${PLATFORM_OCEAN_WHEELHOUSE:-${platform_root}/.runtime/ocean-wheels}"
+  if [[ -d "${wheel_dir}" ]]; then
+    PLATFORM_DEMO_BUILD_DIR="${build_dir}" \
+      bash "${platform_root}/scripts/setup_ocean_authoring.sh"
+  else
+    echo "WOA_READER_UNAVAILABLE: 未提供离线科学计算 wheels；仍可复用已保存剖面、导入文件或明确选择参考案例。" >&2
+    echo "可使用 scripts/setup_ocean_authoring.sh 配置 WOA 读取依赖。" >&2
+  fi
+}
+
 prepare() {
   if [[ -z "${PLATFORM_NS3_PREFIX:-}" ]]; then
     echo "PREPARE_NS3_PREFIX_REQUIRED: set PLATFORM_NS3_PREFIX to the ns-3.47 install prefix" >&2
@@ -50,6 +64,7 @@ prepare() {
     -DBUILD_TESTING=ON -DPLATFORM_ENABLE_NS3=ON \
     -DCMAKE_PREFIX_PATH="${PLATFORM_NS3_PREFIX}"
   cmake --build "${build_dir}"
+  prepare_ocean_authoring
   ctest --test-dir "${build_dir}" --output-on-failure
   (
     cd "${platform_root}/frontend"
@@ -68,6 +83,7 @@ start() {
     echo "START_ALREADY_RUNNING" >&2
     exit 2
   fi
+  prepare_ocean_authoring
   preflight
   # A delivery/worktree directory can legitimately be copied without its Git
   # administration directory.  The demo must remain runnable in that state:

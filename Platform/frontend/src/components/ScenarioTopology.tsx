@@ -42,7 +42,7 @@ export function ScenarioTopology({ scenario }: { scenario: ScenarioDto }) {
         })}
       </svg>
       <div className="topology-legend" aria-label="Topology legend">
-        <span><i className="legend-fusion" />{fusionCenter && isMoving(fusionCenter) ? "移动融合中心" : "固定融合中心"}</span>
+        {fusionCenter && <span><i className="legend-fusion" />案例应用接收节点</span>}
         <span><i className="legend-node" />参与节点</span>
         <span>箭头：轨迹生成输入速度非零</span>
         <small>仅显示 Scenario DTO 的初始 x/y 几何；不表示实时轨迹。深度见节点表（m）。</small>

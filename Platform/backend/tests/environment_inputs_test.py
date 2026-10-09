@@ -61,6 +61,9 @@ def test_current_input_files_are_deterministic_and_preserve_source(tmp_path: Pat
     env = (tmp_path / "one/environment.env").read_text()
     # Terminal SSP is interpolated within the original 0..200 m domain, not flattened.
     assert "110 1494.5 /" in env
+    # The numerical tracing box must not terminate rays at the physical bed.
+    assert one["tracing_box_depth_meters"] > 110
+    assert float(env.strip().splitlines()[-1].split()[1]) > 110
     assert "1700 0 1.8" in env  # halfspace shear speed is separate from density
     assert "1 110" in (tmp_path / "one/environment.bty").read_text()  # ranges: km
     assert json.loads((tmp_path / "one/input.json").read_text()) == payload

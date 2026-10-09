@@ -397,6 +397,9 @@ P0-UX-R4-03 的 NodePosition 必须来自正式轨迹在现有 ns-3 事件时刻
 SignalArrival 必须来自实际到达 callback；前端播放控制不得形成第二套仿真时钟。
 P0-EXP-01 的普通 authored run 必须遵循 ADR-0006：先冻结通用
 RunExecutionDefinition；Acceptance 只能是显式 preset adapter，不能成为隐式 workload。
+新的 `PlanningV1` 执行遵循 ADR-0008：业务输入在固定周期开始入队，
+规划器只读快照与需求，每周期采用新计划；不改旧 v1/preset 的冻结执行语义。
+自适应 TDMA 是使用全局仿真信息的集中规划基准，不冒称分布式协商或动态汇聚选举。
 
 必须优先：
 

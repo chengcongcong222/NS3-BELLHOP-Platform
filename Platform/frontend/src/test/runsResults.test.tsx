@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { experiment, result, resultSummary, run, runSummary } from "./fixtures";
@@ -23,11 +23,11 @@ describe("authoritative Run and Result views", () => {
     expect(document.body.textContent).toContain(run.run_id);
     expect(screen.getAllByText(experiment.name).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(new RegExp(run.environment_asset_id))).toBeTruthy();
-    const transmissionFilter = screen.getByRole("button", { name: "发送" });
-    expect(transmissionFilter.getAttribute("aria-pressed")).toBe("true");
-    await userEvent.click(transmissionFilter);
-    expect(document.querySelector(".lane-transmission")).toBeNull();
+    const transmissionFilter = screen.getByRole("button", { name: "开始发送" });
     expect(transmissionFilter.getAttribute("aria-pressed")).toBe("false");
+    await userEvent.click(transmissionFilter);
+    expect(document.querySelector(".lane-transmission")).not.toBeNull();
+    expect(transmissionFilter.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("keeps Run lifecycle authoritative when SSE disagrees or fails", async () => {
@@ -45,6 +45,7 @@ describe("authoritative Run and Result views", () => {
     renderRoute(`/runs/${run.run_id}`);
     expect(await screen.findByText("Running")).toBeTruthy();
     await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
+    for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
     act(() => {
       ControlledEventSource.current?.listener?.({
         lastEventId: "1",
@@ -89,6 +90,7 @@ describe("authoritative Run and Result views", () => {
     renderRoute(`/runs/${run.run_id}`);
     await screen.findByText("Running");
     await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
+    for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
     act(() => {
       ControlledEventSource.current?.emit("1", {
         occurred_at_ns: "20",
@@ -105,7 +107,7 @@ describe("authoritative Run and Result views", () => {
     expect(screen.getByText(/信道计算不是到达事件/)).toBeTruthy();
     expect(screen.queryByTestId("communication-arrow")).toBeNull();
     expect(document.querySelector(".link-inspector")?.textContent).toContain("节点 2");
-    expect(document.querySelector('.event-stack time[title="0.00000001 s (10 ns)"]')?.textContent).toBe("0.00000001 s");
+    expect(document.querySelector('.event-stack time[title="0.00000001 s (10 ns)"]')?.textContent).toBe("1.00e-8 s");
     expect(document.querySelector(".event-stack")?.textContent).toContain("节点 2");
   });
 
@@ -124,6 +126,7 @@ describe("authoritative Run and Result views", () => {
     renderRoute(`/runs/${run.run_id}`);
     await screen.findByText("Completed");
     await waitFor(() => expect(ControlledEventSource.current).not.toBeNull());
+    for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
     act(() => {
       ControlledEventSource.current?.emit("1", { occurred_at_ns: "20", kind: "Transmission", payload: { transmission_id: "7", packet_id: "3", sender_node_id: "0", target: { type: "Unicast", node_id: "2" }, started_at_ns: "20", ended_at_ns: "30" } });
       ControlledEventSource.current?.emit("2", { occurred_at_ns: "30", kind: "ChannelOutcome", payload: { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } } });

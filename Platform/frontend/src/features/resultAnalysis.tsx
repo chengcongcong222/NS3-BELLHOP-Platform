@@ -41,9 +41,11 @@ export function StudioResultPage() {
   </div>;
 }
 
-const number = (value: number) => value === 0 ? "0" : Math.abs(value) < 0.001 ? value.toExponential(3) : value.toLocaleString("zh-CN", { maximumFractionDigits: 4 });
+const number = (value: number, digits = 3) => value === 0 ? "0" : Math.abs(value) < 10 ** -digits ? value.toExponential(3) : value.toLocaleString("zh-CN", { maximumFractionDigits: digits });
+const berNumber = (value: number) => value !== 0 && Math.abs(value) < 0.001 ? value.toExponential(3) : number(value, 4);
+const quantity = (value: number, unit: string) => unit === "BER" || unit === "无量纲" ? berNumber(value) : number(value, unit === "dB" ? 2 : 3);
 const percent = (value: number) => `${number(value * 100)}%`;
-const seconds = (nanoseconds: string) => formatNanoseconds(nanoseconds).split(" (")[0];
+const seconds = (nanoseconds: string) => `${number(Number(BigInt(nanoseconds)) / 1e9)} s`;
 const berSourceLabel: Record<BerEvidenceSource, string> = {
   Modeled: "模型估计", Measured: "接收质量实测记录", External: "外部质量记录",
   Waveform: "接收波形逐比特统计（仿真，非硬件实测）", Unspecified: "正式报告（未附证据来源）",
@@ -60,7 +62,7 @@ function ExplainedValues({ rows }: { rows: Array<{ label: string; value: string 
 function SampleTable({ rows }: { rows: Array<[string, string, readonly number[]]> }) {
   const populated = rows.flatMap(([label, unit, values]) => { const summary = sampleSummary(values); return summary ? [{ label, unit, ...summary }] : []; });
   if (!populated.length) return <p className="analysis-note">正在载入事件记录；下方只展示已保存的汇总，不补造缺失样本。</p>;
-  return <table className="analysis-samples"><thead><tr><th>统计量 / 单位</th><th>样本数 n</th><th>最小值</th><th>均值</th><th>最大值</th></tr></thead><tbody>{populated.map(row => <tr key={row.label}><th scope="row">{row.label}<small>{row.unit}</small></th><td>{row.count}</td><td>{number(row.minimum)}</td><td>{number(row.mean)}</td><td>{number(row.maximum)}</td></tr>)}</tbody></table>;
+  return <table className="analysis-samples"><thead><tr><th>统计量 / 单位</th><th>样本数 n</th><th>最小值</th><th>均值</th><th>最大值</th></tr></thead><tbody>{populated.map(row => <tr key={row.label}><th scope="row">{row.label}<small>{row.unit}</small></th><td>{row.count}</td><td>{quantity(row.minimum, row.unit)}</td><td>{quantity(row.mean, row.unit)}</td><td>{quantity(row.maximum, row.unit)}</td></tr>)}</tbody></table>;
 }
 
 function ObservedChart({ title, unit, points, step = false }: { title: string; unit: string; points: readonly TrendPoint[]; step?: boolean }) {
@@ -72,9 +74,9 @@ function ObservedChart({ title, unit, points, step = false }: { title: string; u
   const coords = points.map(point => ({ x: 64 + Number(BigInt(point.timeNs) - start) / Number(end - start || 1n) * 422, y: 161 - (point.value - low) / (high - low || 1) * 132 }));
   const path = coords.map((point, i) => i === 0 ? `M${point.x},${point.y}` : step ? `H${point.x}V${point.y}` : `L${point.x},${point.y}`).join(" ");
   return <figure className="analysis-figure"><figcaption>{title} <span>{unit}</span></figcaption><svg viewBox="0 0 520 210" role="img" aria-label={`${title}趋势`}>
-    {[0, 0.5, 1].map(ratio => <g key={ratio}><line x1="64" x2="486" y1={161 - ratio * 132} y2={161 - ratio * 132} className="analysis-grid-line" /><text x="54" y={165 - ratio * 132} textAnchor="end">{number(low + (high - low) * ratio)}</text></g>)}
+    {[0, 0.5, 1].map(ratio => <g key={ratio}><line x1="64" x2="486" y1={161 - ratio * 132} y2={161 - ratio * 132} className="analysis-grid-line" /><text x="54" y={165 - ratio * 132} textAnchor="end">{quantity(low + (high - low) * ratio, unit)}</text></g>)}
     <path d="M64 20V161H486" className="analysis-axis" />{step && <path d={path} className="analysis-curve" />}
-    {coords.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r={step ? 2.3 : 3} className="analysis-point"><title>{`${number(points[index].value)} ${unit} · ${formatNanoseconds(points[index].timeNs)}`}</title></circle>)}
+    {coords.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r={step ? 2.3 : 3} className="analysis-point"><title>{`${quantity(points[index].value, unit)} ${unit} · ${formatNanoseconds(points[index].timeNs)}`}</title></circle>)}
     <text x="64" y="184">{number(Number(start) / 1e9)}</text><text x="486" y="184" textAnchor="end">{number(Number(end) / 1e9)}</text><text x="274" y="203" textAnchor="middle">仿真时间 / s</text>
   </svg></figure>;
 }
@@ -90,7 +92,10 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
   const sources = result.visualization?.fusion_sources.filter(item => item.fusion_sequence === fused?.fusion_sequence);
   const distinctSources = sources ? [...new Set(sources.map(item => item.node_id))] : null;
   const communicationOnly = experiment?.fusion.workload === "CommunicationOnly";
-  const delaySummary = sampleSummary(stats.delay), lossSummary = sampleSummary(stats.loss), snrSummary = sampleSummary(stats.snr);
+  const observedSnr = mode === "B" ? stats.waveformSnr : mode === "A" ? stats.snr : [];
+  const delaySummary = sampleSummary(stats.delay), lossSummary = sampleSummary(stats.loss), snrSummary = sampleSummary(observedSnr);
+  const unavailableSnr = mode === "B" && stats.waveformNoNoise > 0 && stats.waveformNoSignal === 0 && stats.waveformPowerMissing === 0
+    ? "未加噪声" : mode === "B" && stats.waveformNoSignal > 0 && stats.waveformNoNoise === 0 && stats.waveformPowerMissing === 0 ? "无信号功率" : "尚无可计算记录";
   const modeled = stats.events.flatMap(event => event.trace.kind === "Reception" && event.trace.payload.quality?.source === "Modeled" ? [{ timeNs: event.trace.occurred_at_ns, value: event.trace.payload.quality.bit_error_rate }] : []);
   const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", "水声链路"], ...(mode === "B" ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
   return <article className="result-analysis-paper">
@@ -118,20 +123,22 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
       <section id="analysis-acoustic" className="analysis-section"><h3><span aria-hidden="true">03</span>水声链路</h3>
         <div className={mode === "B" ? "analysis-acoustic-overview" : "analysis-acoustic-overview analysis-two-column"}><ExplainedValues rows={[
           { label: "平均信号传播用时", value: delaySummary ? number(delaySummary.mean) : "尚无记录", unit: delaySummary ? "s" : undefined, explanation: "声波从发出到第一条传播路径抵达的平均用时，不含排队和发送数据所需时间。" },
-          ...(lossSummary ? [{ label: "平均信号衰减", value: number(lossSummary.mean), unit: "dB", explanation: "信号经过水中环境后的衰减。同样的发送条件下，数值越大，接收信号通常越弱。" }] : []),
-          ...(snrSummary ? [{ label: "信号比背景噪声强多少？", value: number(snrSummary.mean), unit: "dB", explanation: "接收信号与噪声的平均强弱差，数值越大通常越容易辨认，但不单独决定能否解码。" }] : []),
+          ...(lossSummary ? [{ label: "平均信号衰减", value: number(lossSummary.mean, 2), unit: "dB", explanation: "信号经过水中环境后的衰减。同样的发送条件下，数值越大，接收信号通常越弱。" }] : []),
+          { label: "信号比背景噪声强多少？", value: snrSummary ? number(snrSummary.mean, 2) : unavailableSnr, unit: snrSummary ? "dB" : undefined,
+            explanation: mode === "B" ? "由接收波形记录的信号功率与本次生成噪声功率计算；只对可计算的接收帧取平均，不用抽象模型代替。" : "接收信号与噪声的平均强弱差，数值越大通常越容易辨认，但不单独决定能否解码。" },
         ]} />
         {trends.delay.length > 0 && <ObservedChart title="信号传播用时" unit="s" points={trends.delay} />}</div>
         <p className="analysis-note">每个点对应一次接收节点的传播记录；统计也包括不是本次发送目标的节点，不把不同链路连成一条变化曲线。</p>
+        {mode === "B" && <p className="analysis-note">波形信噪比：{stats.waveformSnr.length} 次可计算，{stats.waveformNoNoise} 次未加噪声，{stats.waveformNoSignal} 次无信号功率，{stats.waveformPowerMissing} 次未保存功率；未加噪声和缺失记录均不按 0 dB 计入均值。</p>}
         <details className="analysis-diagnostic"><summary>查看传播记录、误码模型与详细统计</summary><div className="analysis-inline-stats"><span>存在传播路径的接收节点记录 <b>{p.channel_signal_count}</b></span><span>没有传播路径的记录 <b>{p.channel_no_arrival_count}</b></span></div>
         <p className="analysis-note">“没有传播路径”表示声波未能有效到达，不等于“声波到了但数据没有解出来”。两种情况分开记录。</p>
-        <SampleTable rows={[["首条路径传播时延", "s", stats.delay], ["传播损失", "dB", stats.loss], ["多径数量", "条", stats.paths], ["接收信噪比", "dB", stats.snr], ...(mode === "A" ? [["理论误码率（BPSK 白噪声模型）", "无量纲", stats.modeledBer] as [string, string, readonly number[]]] : [])]} />
+        <SampleTable rows={[["首条路径传播时延", "s", stats.delay], ["传播损失", "dB", stats.loss], ["多径数量", "条", stats.paths], ["接收信噪比", "dB", observedSnr], ...(mode === "A" ? [["理论误码率（BPSK 白噪声模型）", "无量纲", stats.modeledBer] as [string, string, readonly number[]]] : [])]} />
         <div className="analysis-charts"><ObservedChart title="传播损失" unit="dB" points={trends.loss} />{mode === "A" && modeled.length > 0 && <ObservedChart title="理论误码率" unit="BER" points={modeled} />}</div>
         {mode === "A" && <p className="analysis-note">模式 A 使用抽象接收模型；理论误码率不是逐比特波形解调结果，因此不显示波形帧 CRC 或实际误码数。</p>}
         <details><summary>逐链路观测记录</summary><div className="analysis-scroll"><table><thead><tr><th>仿真时间 / s</th><th>发送序号</th><th>发送 → 接收节点</th><th>传播时延 / s</th><th>传播损失 / dB</th><th>多径 / 条</th></tr></thead><tbody>{stats.events.map(event => {
           if (event.trace.kind !== "ChannelOutcome" || event.trace.payload.outcome.type !== "Signal") return null;
           const item = event.trace.payload, outcome = event.trace.payload.outcome, tx = stats.transmissions.get(item.transmission_id);
-          return <tr key={event.sequence}><td>{number(Number(BigInt(event.trace.occurred_at_ns)) / 1e9)}</td><td>{item.transmission_id}</td><td>{tx ? `N${tx.payload.sender_node_id}` : "未载入发送记录"} → N{item.receiver_node_id}</td><td>{number(Number(BigInt(outcome.first_arrival_delay_ns)) / 1e9)}</td><td>{number(outcome.aggregate_transmission_loss_db)}</td><td>{outcome.path_count}</td></tr>;
+          return <tr key={event.sequence}><td>{number(Number(BigInt(event.trace.occurred_at_ns)) / 1e9)}</td><td>{item.transmission_id}</td><td>{tx ? `N${tx.payload.sender_node_id}` : "未载入发送记录"} → N{item.receiver_node_id}</td><td>{number(Number(BigInt(outcome.first_arrival_delay_ns)) / 1e9)}</td><td>{number(outcome.aggregate_transmission_loss_db, 2)}</td><td>{outcome.path_count}</td></tr>;
         })}</tbody></table></div><p className="analysis-note">来源为信道查询结果，不将查询时间称为信号到达时间；含非目标接收节点。</p></details></details>
       </section>
       {mode === "B" && <section id="analysis-waveform" className="analysis-section"><h3><span aria-hidden="true">04</span>波形通信</h3>{waveform.frames ? <><ExplainedValues rows={[
@@ -140,8 +147,8 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
         { label: "数据完整性检查", value: `${waveform.crcPassed} 次通过 / ${waveform.crcFailed} 次未通过`, explanation: "使用随数据携带的校验码（CRC）检查是否损坏。通过只表示校验未检出问题，不表示已交给业务程序。" },
       ]} /><p className="analysis-note">这里统计所有接收节点，包括旁听。因此校验通过次数与上面的“数据送达”次数可能不同。</p>
       <details className="analysis-diagnostic"><summary>查看逐次接收的数据校验记录</summary><Facts rows={[
-        ["接收帧记录", waveform.frames, "每次发送 × 接收节点，含旁听"], ["实际误码数 / 比较比特数", `${waveform.errors} / ${waveform.bits}`, "各接收帧相加"], ["加权实际误码率 BER", waveform.ber === null ? "—" : number(waveform.ber), "Σ 误码数 / Σ 比较比特数"], ["帧 CRC 通过 / 失败", `${waveform.crcPassed} / ${waveform.crcFailed}`, "帧完整性检查，不等于上层交付"], ["帧 CRC 通过比例", percent(waveform.crcPassed / waveform.frames), "已记录接收帧"],
-      ]} /><h4>逐帧误码与校验</h4><p className="analysis-note">一帧是一次接收的数据块；同一次发送在两个节点被接收，会留下两行记录。</p><div className="analysis-scroll"><table><thead><tr><th>发送 / 接收节点</th><th>实际误码数 / 比较比特数（bit）</th><th>实际 BER</th><th>帧 CRC</th></tr></thead><tbody>{result.visualization?.waveform.map((item, index) => <tr key={`${item.transmission_id}-${item.receiver_node_id}-${index}`}><td>{item.transmission_id} / N{item.receiver_node_id}</td><td>{item.bit_error_count} / {item.payload_bit_count}</td><td>{BigInt(item.payload_bit_count) ? number(Number(item.bit_error_count) / Number(item.payload_bit_count)) : "—"}</td><td><span className={item.crc_ok ? "crc-intact" : "crc-damaged"}>{item.crc_ok ? "通过" : "失败"}</span></td></tr>)}</tbody></table></div></details></> : <p className="analysis-note">本次选择模式 B，但结果未保存波形接收帧；没有记录不表示误码为零。</p>}<p className="analysis-note">这些数值来自接收波形解调与发送比特比较，不是硬件实测。</p></section>}
+        ["接收帧记录", waveform.frames, "每次发送 × 接收节点，含旁听"], ["实际误码数 / 比较比特数", `${waveform.errors} / ${waveform.bits}`, "各接收帧相加"], ["加权实际误码率 BER", waveform.ber === null ? "—" : berNumber(waveform.ber), "Σ 误码数 / Σ 比较比特数"], ["帧 CRC 通过 / 失败", `${waveform.crcPassed} / ${waveform.crcFailed}`, "帧完整性检查，不等于上层交付"], ["帧 CRC 通过比例", percent(waveform.crcPassed / waveform.frames), "已记录接收帧"],
+      ]} /><h4>逐帧误码与校验</h4><p className="analysis-note">一帧是一次接收的数据块；同一次发送在两个节点被接收，会留下两行记录。</p><div className="analysis-scroll"><table><thead><tr><th>发送 / 接收节点</th><th>实际误码数 / 比较比特数（bit）</th><th>实际 BER</th><th>帧 CRC</th></tr></thead><tbody>{result.visualization?.waveform.map((item, index) => <tr key={`${item.transmission_id}-${item.receiver_node_id}-${index}`}><td>{item.transmission_id} / N{item.receiver_node_id}</td><td>{item.bit_error_count} / {item.payload_bit_count}</td><td>{BigInt(item.payload_bit_count) ? berNumber(Number(item.bit_error_count) / Number(item.payload_bit_count)) : "—"}</td><td><span className={item.crc_ok ? "crc-intact" : "crc-damaged"}>{item.crc_ok ? "通过" : "失败"}</span></td></tr>)}</tbody></table></div></details></> : <p className="analysis-note">本次选择模式 B，但结果未保存波形接收帧；没有记录不表示误码为零。</p>}<p className="analysis-note">这些数值来自接收波形解调与发送比特比较，不是硬件实测。</p></section>}
       <section id="analysis-fusion" className="analysis-section"><h3><span aria-hidden="true">{mode === "B" ? "05" : "04"}</span>探测与融合</h3>{communicationOnly ? <p className="analysis-note">本实验未启用融合业务。网络、声学与适用模式的波形统计正常展示，无融合不代表运行失败。</p> : <>
         <div className="analysis-process"><span>产生特征报告 <b>{result.visualization?.generated_feature_count ?? "—"}</b></span><i>→</i><span>网络交付后筛选有效观测</span><i>→</i><span>形成融合结果 <b>{result.fusion_results.length}</b> 轮</span></div>
         {fused ? <div className="analysis-fusion-layout"><div className="analysis-fusion-list">{result.fusion_results.map(item => <button key={item.fusion_sequence} type="button" aria-pressed={item.fusion_sequence === fused.fusion_sequence} onClick={() => selectFusion(item.fusion_sequence)}><strong>第 {item.fusion_sequence} 轮结果</strong><span title={formatNanoseconds(item.completed_at_ns)}>{seconds(item.completed_at_ns)} · {item.observation_count} 条观测</span></button>)}</div><div><ExplainedValues rows={[
@@ -156,7 +163,7 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
       <div className="analysis-reference-table"><table aria-label="参考要求与本次记录"><thead><tr><th>对照内容</th><th>参考要求</th><th>本次记录与含义</th></tr></thead><tbody>
         <tr><th scope="row">多节点协同</th><td>{acceptanceReference.network_node_count_minimum}–{acceptanceReference.network_node_count_maximum} 个节点</td><td>{p.node_count} 个节点<small>来自本次运行结果，不代表每个节点都已成功交付数据。</small></td></tr>
         <tr><th scope="row">节点发送速率</th><td>{acceptanceReference.communication_rate_bits_per_second} bit/s</td><td>{experiment ? `${experiment.phy.bit_rate_bits_per_second} bit/s` : "本次配置快照未提供"}<small>来自本次运行冻结的实验配置，不用接收数量或吞吐量替代。</small></td></tr>
-        <tr><th scope="row">误码率</th><td>BER ≤ {acceptanceReference.maximum_bit_error_rate.toExponential()}</td><td>{referenceBer.groups.length ? referenceBer.groups.map(group => <div key={group.source}>{berSourceLabel[group.source]}：最大 <b>{number(group.maximum)}</b><small>{group.count} 个已记录目标接收；不含旁听。</small></div>) : "尚无可核对的目标接收误码记录"}{!referenceBer.complete && <small>目标接收证据尚不完整，已有样本不能代表整次运行。</small>}</td></tr>
+        <tr><th scope="row">误码率</th><td>BER ≤ {acceptanceReference.maximum_bit_error_rate.toExponential()}</td><td>{referenceBer.groups.length ? referenceBer.groups.map(group => <div key={group.source}>{berSourceLabel[group.source]}：最大 <b>{berNumber(group.maximum)}</b><small>{group.count} 个已记录目标接收；不含旁听。</small></div>) : "尚无可核对的目标接收误码记录"}{!referenceBer.complete && <small>目标接收证据尚不完整，已有样本不能代表整次运行。</small>}</td></tr>
         <tr><th scope="row">特征级融合</th><td>网络传输后融合特征</td><td>{communicationOnly ? "本实验未启用融合业务" : result.fusion_results.length ? `已形成 ${result.fusion_results.length} 轮结果` : "尚未形成融合结果"}<small>输入是成功送达融合中心的方位与位置特征，不是直接把各节点的原始波形合并。</small></td></tr>
         <tr><th scope="row">有效方位观测</th><td>每轮不少于 {acceptanceReference.minimum_bearing_points} 点</td><td>{result.fusion_results.length ? <div className="analysis-reference-rounds">{result.fusion_results.map(item => <span key={item.fusion_sequence}>第 {item.fusion_sequence} 轮：{item.observation_count} 条</span>)}</div> : communicationOnly ? "本实验未启用" : "尚无已完成窗口"}<small>“点”按节点编号与观测序号去重；同一节点不同时刻可以贡献多点，不要求五个不同节点。</small></td></tr>
         <tr><th scope="row">完整探测周期</th><td>≤ {String(BigInt(acceptanceReference.maximum_fusion_period_ns) / 60_000_000_000n)} min（{seconds(acceptanceReference.maximum_fusion_period_ns)}）</td><td>{communicationOnly ? "本实验未启用融合业务" : "尚未单独保存完整探测周期"}{result.fusion_results.length > 0 && <small>已记录的是融合窗口耗时：{result.fusion_results.map(item => `第 ${item.fusion_sequence} 轮 ${seconds(item.fusion_period_ns)}`).join("；")}。</small>}</td></tr>

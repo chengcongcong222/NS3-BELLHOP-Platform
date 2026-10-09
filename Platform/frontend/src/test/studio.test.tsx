@@ -13,7 +13,7 @@ describe("R4 real-evidence studio", () => {
     expect(positionAt(points, "1", "20")).toBeNull();
   });
   it("adapts the deterministic canvas curve without legacy DTOs", () => {
-    expect(eventCurve({ x: 0, y: 0 }, { x: 100, y: 0 })).toBe("M 0.0 0.0 Q 50.0 16.0 100.0 0.0");
+    expect(eventCurve({ x: 0, y: 0 }, { x: 100, y: 0 })).toBe("M 28.5 9.1 Q 50.0 16.0 71.5 9.1");
   });
   it("keeps channel query separate from physical arrival and preserves trace identity", () => {
     const event: RunEventDto = { run_id: "r", sequence: "9007199254740993", trace: { kind: "ChannelOutcome", occurred_at_ns: "1000000000", payload: { transmission_id: "0", receiver_node_id: "1", outcome: { type: "Signal", first_arrival_delay_ns: "10000000", aggregate_transmission_loss_db: 30, path_count: "2" } } } };

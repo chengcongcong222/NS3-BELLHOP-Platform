@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Literal
 
-from pydantic import ValidationError
+from pydantic import Field, ValidationError, model_validator
 
 from .catalog import CatalogError, RunSnapshot
 from .evidence import RunManifest
@@ -31,12 +31,37 @@ class RunMobilitySummary(ResourceModel):
 
 class RunScenarioResource(ScenarioResource):
     mobility: RunMobilitySummary
+    fusion_center_node_id: UIntDecimal | None
     trajectory_bindings: tuple[TrajectoryBindingSummary, ...] = ()
     spatial_domain: dict | None = None
 
 
 class RunRoutingSummary(ResourceModel):
-    mode: Literal["DirectToFusionCenter", "ShortestPath"]
+    mode: Literal["Direct", "DirectToFusionCenter", "ShortestPath"]
+
+
+class RunMacSummary(ResourceModel):
+    mode: Literal["Tdma", "AdaptiveTdma"]
+    slot_duration_ns: PositiveUIntDecimal | None = None
+    guard_interval_ns: UIntDecimal | None = None
+
+    @model_validator(mode="after")
+    def validate_mode_parameters(self):
+        if self.mode == "Tdma" and (self.slot_duration_ns is None or self.guard_interval_ns is None):
+            raise ValueError("configured TDMA requires its captured timing")
+        if self.mode == "AdaptiveTdma" and (self.slot_duration_ns is not None or self.guard_interval_ns is not None):
+            raise ValueError("adaptive TDMA has no configured slot or guard")
+        return self
+
+
+class RunAdaptiveTdmaSummary(ResourceModel):
+    safety_margin_ns: UIntDecimal
+
+
+class RunCommunicationFlow(ResourceModel):
+    source_node_id: UIntDecimal
+    destination_node_id: UIntDecimal
+    packets_per_cycle: int = Field(ge=1, le=1000)
 
 
 class RunPhySummary(PhySummary):
@@ -53,8 +78,14 @@ class RunFusionSummary(FusionSummary):
 
 class RunExperimentResource(ExperimentResource):
     routing: RunRoutingSummary
+    mac: RunMacSummary
     phy: RunPhySummary
     fusion: RunFusionSummary
+    execution_mode: Literal["PlanningV1"] | None = None
+    planning_cycle_duration_ns: PositiveUIntDecimal | None = None
+    adaptive_tdma: RunAdaptiveTdmaSummary | None = None
+    flows: tuple[RunCommunicationFlow, ...] = ()
+    fusion_receiver_node_id: UIntDecimal | None = None
 
 
 class RunDefinitionContext(ResourceModel):
@@ -77,7 +108,9 @@ def load_captured_definition(snapshot: RunSnapshot) -> dict:
         if hashlib.sha256(encoded).hexdigest() != snapshot.authored_definition_sha256:
             raise ValueError("definition checksum mismatch")
         definition = json.loads(encoded)
-        if (definition["schema"] != "ns3-factory-authored-run-v1"
+        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2"}
+                or (definition["schema"] == "ns3-factory-authored-run-v2"
+                    and definition.get("execution_mode") != "PlanningV1")
                 or definition["scenario_id"] != snapshot.scenario_id
                 or definition["experiment_id"] != snapshot.experiment_id
                 or str(definition["version"]) != snapshot.scenario_version
@@ -154,6 +187,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
     definition = load_captured_definition(snapshot)
     try:
         config = definition["experiment"]
+        planning = definition["schema"] == "ns3-factory-authored-run-v2"
         # These fields occur in both the definition and the command. They must
         # agree; read endpoints must not repair or silently select either one.
         for key in ("physical_layer", "waveform_modulation", "waveform_noise",
@@ -175,7 +209,8 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
             "environment": {"environment_asset_id": snapshot.environment_asset_id,
                             "asset_format_version": snapshot.environment_format_version},
             "mobility": {"model": "TrajectoryDriven"},
-            "fusion_center_node_id": str(definition["fusion_center_node_id"]),
+            "fusion_center_node_id": (str(definition["fusion_center_node_id"])
+                                      if definition["fusion_center_node_id"] is not None else None),
             "trajectory_bindings": tuple({**binding, "node_id": str(binding["node_id"]),
                                            "version": str(binding["version"])}
                                           for binding in definition["trajectory_bindings"]),
@@ -185,8 +220,9 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
             "name": config["name"],
             "scenario": {"scenario_id": snapshot.scenario_id, "version": snapshot.scenario_version},
             "routing": {"mode": config["routing_mode"]},
-            "mac": {"mode": config["mac_mode"], "slot_duration_ns": str(config["slot_duration_ns"]),
-                    "guard_interval_ns": str(config["guard_interval_ns"])},
+            "mac": {"mode": config["mac_mode"],
+                    "slot_duration_ns": (str(config["slot_duration_ns"]) if config["mac_mode"] == "Tdma" else None),
+                    "guard_interval_ns": (str(config["guard_interval_ns"]) if config["mac_mode"] == "Tdma" else None)},
             "phy": {"bit_rate_bits_per_second": str(config["bit_rate_bps"]),
                     "center_frequency_hz": config["center_frequency_hz"],
                     "occupied_bandwidth_hz": config["occupied_bandwidth_hz"],
@@ -199,6 +235,16 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
             "network_update_interval_cycles": str(config["network_update_interval_cycles"]),
             "simulation_cycle_count": execution.simulation_cycle_count,
             "deterministic_seed": execution.deterministic_seed,
+            **({
+                "execution_mode": definition["execution_mode"],
+                "planning_cycle_duration_ns": str(config["planning_cycle_duration_ns"]),
+                "adaptive_tdma": ({"safety_margin_ns": str(config["adaptive_tdma"]["safety_margin_ns"])}
+                                  if config["adaptive_tdma"] is not None else None),
+                "flows": tuple({**flow, "source_node_id": str(flow["source_node_id"]),
+                                "destination_node_id": str(flow["destination_node_id"])} for flow in config["flows"]),
+                "fusion_receiver_node_id": (str(config["fusion_receiver_node_id"])
+                                            if config["fusion_receiver_node_id"] is not None else None),
+            } if planning else {}),
         })
         return RunDefinitionContext(run_id=snapshot.run_id, source="AuthoredDefinition",
                                     definition_sha256=snapshot.authored_definition_sha256,

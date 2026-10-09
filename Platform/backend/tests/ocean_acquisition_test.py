@@ -133,7 +133,8 @@ def test_existing_truncated_netcdf_is_preserved_and_replaced_by_a_complete_downl
         two = acquire_woa(request, tmp_path, tmp_path, progress.append)
     assert download.call_count == 2
     assert one["sound_speed_profile"] == two["sound_speed_profile"]
-    assert two["cache_files_reused"] == 2
+    assert two["result_cache_reused"] is True
+    assert two["cache_files_reused"] == 0  # No NetCDF file was reopened.
     assert any(p["stage"] == "repair" for p in progress)
     assert next(tmp_path.glob("*.invalid")).read_bytes() == b"interrupted cache"
 

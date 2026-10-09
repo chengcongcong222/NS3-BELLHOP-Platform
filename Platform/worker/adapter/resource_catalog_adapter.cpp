@@ -132,7 +132,7 @@ auto ScenarioResource(const application::ScenarioDefinition& scenario) -> Json {
          Decimal(scenario.environment().asset_format_version)}}},
       {"mobility", Json{{"model", "ConstantVelocity"}}},
       {"fusion_center_node_id",
-       Decimal(scenario.fusion_center_node_id().value())}};
+       scenario.fusion_center_node_id() ? Json(Decimal(scenario.fusion_center_node_id()->value())) : Json(nullptr)}};
 }
 
 auto ExperimentResource(const application::ExperimentDefinition& experiment)

@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { experiment, run, scenario } from "./fixtures";
+import { experiment, result, run, scenario } from "./fixtures";
 import { installApi, renderRoute } from "./render";
 
 class ObservedStream {
@@ -42,12 +42,177 @@ async function prepare(lifecycle: "Completed" | "Running" | "Failed" = "Complete
   renderRoute(`/runs/${run.run_id}?presentation=live`);
   await screen.findByRole("img", { name: "运行画布" });
   await waitFor(() => expect(ObservedStream.current).not.toBeNull());
+  // Explicit diagnostic display for exhaustive playback tests.
+  for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
   return fetch;
 }
 
 afterEach(() => vi.useRealTimers());
 
 describe("new run progressive observation", () => {
+  it("leaves historical node capabilities unknown when the frozen definition is unavailable", async () => {
+    await prepare("Completed", {
+      [`/runs/${run.run_id}/definition-context`]: { status: 404, body: { detail: "Not Found" } },
+      [`/runs/${run.run_id}/results`]: { body: { ...result, visualization: { positions_complete: true,
+        generated_feature_count: "0", fusion_sources: [], waveform: [], positions: [
+          { node_id: "9", at_ns: "0", x_meters: 0, y_meters: 0, z_meters: -20 },
+        ] } } },
+    });
+    const list = document.querySelector<HTMLElement>(".runtime-node-list")!;
+    expect(within(list).getByText("能力未记录 · 已发送 0 次")).toBeTruthy();
+    expect(within(list).queryByText(/^收发|^仅接收|^仅发送|^停用/)).toBeNull();
+  });
+
+  it("shows frozen hardware capabilities and prefix send counts independently of the display filters", async () => {
+    const capabilities = [[false, true], [true, false], [true, true], [false, false]];
+    const frozenScene = { ...scenario, fusion_center_node_id: "0", nodes: capabilities.map(([can_transmit, can_receive], i) => ({
+      ...scenario.nodes[0], node_id: String(i), can_transmit, can_receive,
+      initial_position: { x_meters: i * 100, y_meters: 0, z_meters: -20 },
+    })) };
+    await prepare("Completed", {
+      [`/runs/${run.run_id}/definition-context`]: { body: { run_id: run.run_id, source: "AuthoredDefinition", definition_sha256: "d".repeat(64),
+        scenario: frozenScene, experiment: { ...experiment, execution_mode: "PlanningV1", fusion_receiver_node_id: "2", fusion: { ...experiment.fusion, workload: "BearingFusion" } }, execution: {}, limitations: [] } },
+    });
+    vi.useFakeTimers();
+    act(() => {
+      ObservedStream.current!.emit("1", "Transmission", "0", { ...tx, sender_node_id: "1" });
+      ObservedStream.current!.emit("2", "Transmission", "1000000000", { ...tx, transmission_id: "8", sender_node_id: "2", target: { type: "Unicast", node_id: "0" }, started_at_ns: "1000000000", ended_at_ns: "2000000000" });
+      ObservedStream.current!.emit("3", "CycleCommit", "2000000000", commit);
+      ObservedStream.current!.end("3");
+    });
+    const list = document.querySelector<HTMLElement>(".runtime-node-list")!;
+    const nodeButton = (id: string) => within(list).getByText(`N${id}`, { selector: "strong" }).closest("button")!;
+    expect(within(nodeButton("0")).getByText("仅接收 · 已发送 0 次")).toBeTruthy();
+    expect(within(nodeButton("1")).getByText("仅发送 · 已发送 0 次")).toBeTruthy();
+    expect(within(nodeButton("2")).getByText("收发 · 已发送 0 次")).toBeTruthy();
+    expect(within(nodeButton("3")).getByText("停用 · 已发送 0 次")).toBeTruthy();
+    expect(within(nodeButton("2")).getByText("当前融合处理节点")).toBeTruthy();
+    expect(within(nodeButton("0")).queryByText("当前融合处理节点")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "完整回放" }));
+    expect(within(nodeButton("1")).getByText("仅发送 · 已发送 1 次")).toBeTruthy();
+    expect(within(nodeButton("2")).getByText("收发 · 已发送 0 次")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "实时跟随" }));
+    expect(within(nodeButton("2")).getByText("收发 · 已发送 1 次")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "开始发送" }));
+    fireEvent.change(screen.getByLabelText("通信观测层"), { target: { value: "physical" } });
+    expect(within(nodeButton("1")).getByText("仅发送 · 已发送 1 次")).toBeTruthy();
+    expect(within(nodeButton("2")).getByText("收发 · 已发送 1 次")).toBeTruthy();
+    expect(within(nodeButton("0")).getByText("仅接收 · 已发送 0 次")).toBeTruthy();
+  });
+
+  it("explains a completed NoArrival-only run without enabling hidden kinds or inventing arrivals", async () => {
+    await prepare();
+    for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
+    act(() => {
+      ObservedStream.current!.emit("1", "Transmission", "0", tx);
+      ObservedStream.current!.emit("2", "ChannelOutcome", "0", { transmission_id: "7", receiver_node_id: "2", outcome: { type: "NoArrival" } });
+      ObservedStream.current!.emit("3", "CycleCommit", "2000000000", commit);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "实时跟随" }));
+    expect(screen.getByText("等待首个事件，或使用下方时间轴开始观看。")).toBeTruthy();
+    act(() => ObservedStream.current!.end("3"));
+    expect(screen.getByText(/当前显示类型没有事件；可在下方显示设置中启用/)).toBeTruthy();
+    expect(screen.getByText(/当前观看进度已记录 1 次无传播路径/)).toBeTruthy();
+    expect(screen.queryByText("等待首个事件，或使用下方时间轴开始观看。")).toBeNull();
+    expect(screen.getByRole("button", { name: "开始发送" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "信道计算" }).getAttribute("aria-pressed")).toBe("false");
+    expect(eventDots()).toHaveLength(0);
+    expect(screen.queryAllByTestId("communication-arrow")).toHaveLength(0);
+    const metrics = screen.getByRole("region", { name: "当前展示进度统计" });
+    expect(within(within(metrics).getByText("累计发送").parentElement!).getByText("1")).toBeTruthy();
+    expect(within(within(metrics).getByText("解码失败").parentElement!).getByText("0")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "信道计算" }));
+    expect(screen.getByRole("button", { name: "检查事件序列 2" })).toBeTruthy();
+    expect(screen.queryByText(/当前显示类型没有事件/)).toBeNull();
+  });
+
+  it("keeps the waiting state for a genuinely Running run even if its current event stream ended", async () => {
+    await prepare("Running");
+    act(() => ObservedStream.current!.end("0"));
+    expect(screen.getByText("等待首个事件，或使用下方时间轴开始观看。")).toBeTruthy();
+    expect(screen.queryByText(/当前显示类型没有事件/)).toBeNull();
+    expect(screen.getByText("Running")).toBeTruthy();
+  });
+
+  it("plays and seeks only displayed events while retaining hidden transmissions and final cycle statistics", async () => {
+    await prepare();
+    for (const name of ["开始发送", "信道计算", "周期完成"]) fireEvent.click(screen.getByRole("button", { name }));
+    vi.useFakeTimers();
+    act(() => {
+      ObservedStream.current!.emit("1", "Transmission", "0", tx);
+      ObservedStream.current!.emit("2", "SignalArrival", "500000000", arrival);
+      ObservedStream.current!.emit("3", "SignalArrival", "750000000", { ...arrival, receiver_node_id: "3" });
+      ObservedStream.current!.emit("4", "Reception", "1000000000", reception);
+      ObservedStream.current!.emit("5", "CycleCommit", "2000000000", commit);
+    });
+    await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+    expect(visibleCount()).toBe("2");
+    expect(document.querySelector(".run-topology")?.classList.contains("phase-signalarrival")).toBe(true);
+    expect(eventDots()).toHaveLength(1);
+    const metrics = screen.getByRole("region", { name: "当前展示进度统计" });
+    expect(within(within(metrics).getByText("累计发送").parentElement!).getByText("1")).toBeTruthy();
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(visibleCount()).toBe("4");
+    expect(document.querySelector(".run-topology")?.classList.contains("phase-reception")).toBe(true);
+    expect(eventDots()).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "检查事件序列 3" })).toBeNull();
+    act(() => ObservedStream.current!.end("5"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    expect(visibleCount()).toBe("5");
+    expect(screen.getByText("已展示周期").parentElement?.textContent).toContain("1");
+    expect(screen.getByRole("button", { name: "播放" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("按仿真时间定位"), { target: { value: "0" } });
+    expect(visibleCount()).toBe("2");
+    expect(document.querySelector(".run-topology")?.classList.contains("phase-signalarrival")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "完整回放" }));
+    expect(visibleCount()).toBe("2");
+  });
+
+  it("applies the fusion display switch to the canvas, log and event details together", async () => {
+    await prepare(); vi.useFakeTimers();
+    const center = scenario.nodes[0].node_id;
+    act(() => {
+      ObservedStream.current!.emit("1", "Fusion", "1000000000", { fusion_sequence: "1", fusion_center_node_id: center,
+        started_at_ns: "0", completed_at_ns: "1000000000", observation_count: "6", estimated_target_x_meters: 10, estimated_target_y_meters: 20 });
+      ObservedStream.current!.end("1");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "实时跟随" }));
+    expect(document.querySelector(".fusion-summary")).not.toBeNull();
+    expect(screen.getByRole("img", { name: "运行画布" }).textContent).toContain(`N${center} · 融合完成`);
+    const metrics = screen.getByRole("region", { name: "当前展示进度统计" }).textContent;
+    fireEvent.click(screen.getByRole("button", { name: "融合结果" }));
+    expect(document.querySelector(".fusion-summary, .event-technical, .lane-fusion")).toBeNull();
+    expect(screen.getByRole("img", { name: "运行画布" }).textContent).not.toContain("融合完成");
+    expect(screen.getByRole("region", { name: "当前展示进度统计" }).textContent).toBe(metrics);
+  });
+
+  it("uses captured historical waveform mode consistently and reports actual bit sample coverage", async () => {
+    await prepare("Completed", {
+      [`/runs/${run.run_id}/definition-context`]: { body: { run_id: run.run_id, source: "Preset", definition_sha256: null,
+        scenario, experiment: { ...experiment, phy: { ...experiment.phy, physical_layer: undefined } }, execution: {}, limitations: [] } },
+      [`/runs/${run.run_id}/results`]: { body: { ...result, provenance: { physical_layer: "Channel2Waveform" } } },
+    });
+    vi.useFakeTimers();
+    act(() => {
+      ObservedStream.current!.emit("1", "Transmission", "0", tx);
+      ObservedStream.current!.emit("2", "SignalArrival", "500000000", arrival);
+      ObservedStream.current!.emit("3", "Reception", "1000000000", { ...reception, waveform: { payload_bit_count: "100", bit_error_count: "2", crc_ok: false, signal_power_upa2: 100, noise_power_upa2: 1 } });
+      ObservedStream.current!.end("3");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "实时跟随" }));
+    expect(screen.getByText("实际误码率 BER")).toBeTruthy();
+    expect(screen.queryByText("理论误码率 BER")).toBeNull();
+    expect(screen.getByText("0.02")).toBeTruthy();
+    expect(screen.getByText(/错误比特 2 \/ 已比较比特 100/)).toBeTruthy();
+    expect(screen.getByText(/1\/1 次已处理目标接收有质量记录/)).toBeTruthy();
+    const progress = screen.getByRole("region", { name: "当前发送的接收进度" });
+    expect(within(progress).getByText("0.5 s")).toBeTruthy();
+    expect(within(progress).getByText("数据已交付")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "接收完成" }));
+    expect(screen.queryByRole("region", { name: "当前发送的接收进度" })).toBeNull();
+    expect(screen.getByText("0.02")).toBeTruthy();
+  });
+
   it("keeps experiment controls and observation tools in the sidebars, leaving the canvas and timeline as main regions", async () => {
     await prepare("Completed", { [`/runs/${run.run_id}/actions`]: { body: {
       run_id: run.run_id, edit: { available: true, experiment_draft_id: "original-draft" },
@@ -168,8 +333,8 @@ describe("new run progressive observation", () => {
     fireEvent.click(screen.getByRole("button", { name: "下一事件" }));
     expect(visibleCount()).toBe("2"); expect(eventDots()).toHaveLength(2);
     fireEvent.change(screen.getByLabelText("通信观测层"), { target: { value: "protocol" } });
-    expect(visibleCount()).toBe("1"); expect(eventDots()).toHaveLength(1);
-    expect(document.querySelector(".run-topology")?.classList.contains("phase-transmission")).toBe(true);
+    expect(visibleCount()).toBe("2"); expect(eventDots()).toHaveLength(1);
+    expect(document.querySelector(".run-topology")?.classList.contains("phase-idle")).toBe(true);
   });
 
   it("uses the frozen spatial domain and matching plan/profile X coordinates even after a displayed resize", async () => {

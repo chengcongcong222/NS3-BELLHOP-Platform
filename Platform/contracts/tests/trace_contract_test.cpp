@@ -172,6 +172,13 @@ auto TestInvariantsAndNullSink() -> bool {
 }  // namespace
 
 auto main() -> int {
+  ReceptionTrace measured{ReceptionId{1}, TransmissionId{2}, PacketId{3}, NodeId{0}, TraceReceptionDisposition::kNotDecoded, std::nullopt, TraceWaveformSummary{100, 3, false, 4., 0.}};
+  if(!TraceEvent::Create(Seconds(1), measured)) return EXIT_FAILURE;
+  measured.waveform->bit_error_count = 101;
+  if(TraceEvent::Create(Seconds(1), measured)) return EXIT_FAILURE;
+  measured.waveform->bit_error_count = 0;
+  measured.waveform->noise_power_upa2 = -1;
+  if(TraceEvent::Create(Seconds(1), measured)) return EXIT_FAILURE;
   return TestTypedPayloadsAndKinds() && TestInvariantsAndNullSink()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;

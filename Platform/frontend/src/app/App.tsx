@@ -36,6 +36,11 @@ function ScenarioEditorRedirect() {
   return <Navigate replace to={`/workspace/experiment${draft ? `?scenario=${encodeURIComponent(draft)}` : ""}`} />;
 }
 
+function ExperimentEditorRoute() {
+  const [params] = useSearchParams();
+  return <ExperimentAuthoringPage key={JSON.stringify([params.get("draft"), params.get("scenario")])} />;
+}
+
 export function AppRoutes() {
   return (
     <AppShell>
@@ -54,7 +59,7 @@ export function AppRoutes() {
         <Route path="/workspace/scenario" element={<ScenarioEditorRedirect />} />
         <Route path="/experiments" element={<ExperimentCatalogPage />} />
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
-        <Route path="/workspace/experiment" element={<ExperimentAuthoringPage />} />
+        <Route path="/workspace/experiment" element={<ExperimentEditorRoute />} />
         <Route path="/runs" element={<RunCatalogPage />} />
         <Route path="/runs/:runId" element={<StudioRunPage />} />
         <Route path="/results" element={<ResultCatalogPage />} />

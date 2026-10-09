@@ -1,13 +1,14 @@
 import type { TrajectoryAssetDto } from "../api/types";
 import type { ScenarioDraft } from "./workspace";
 
-/** Current TDMA planner assigns one slot per non-centre node. Guard is
- * inside the slot, not added again. This is a preflight, not a new clock. */
+/** PlanningV1 uses the explicit business-cycle horizon. Historical TDMA uses
+ * one slot per non-centre node with guard inside each slot. Read-only preflight. */
 export function trajectoryRunCoverage(scene: ScenarioDraft, assets: readonly TrajectoryAssetDto[],
-  cycles: string, slotDurationNs: string, mac: string): { endNs: bigint | null; issues: string[] } {
-  if (mac !== "Tdma") return { endNs: null, issues: ["当前时间覆盖检查仅支持已开放的 TDMA。"] };
-  if (!/^[1-9]\d*$/.test(cycles) || !/^[1-9]\d*$/.test(slotDurationNs)) return { endNs: null, issues: ["通信周期数与时隙长度必须为正整数。"] };
-  const endNs = BigInt(cycles) * BigInt(slotDurationNs) * BigInt(Math.max(0, scene.nodes.length - 1));
+  cycles: string, slotDurationNs: string, mac: string, planningCycleDurationNs?: string): { endNs: bigint | null; issues: string[] } {
+  if (mac !== "Tdma" && !(mac === "AdaptiveTdma" && planningCycleDurationNs !== undefined)) return { endNs: null, issues: ["当前时间覆盖检查仅支持已开放的 TDMA。"] };
+  const duration = planningCycleDurationNs ?? slotDurationNs;
+  if (!/^[1-9]\d*$/.test(cycles) || !/^[1-9]\d*$/.test(duration)) return { endNs: null, issues: [planningCycleDurationNs === undefined ? "通信周期数与时隙长度必须为正整数。" : "通信周期数与业务周期长度必须为正整数。"] };
+  const endNs = BigInt(cycles) * BigInt(duration) * (planningCycleDurationNs === undefined ? BigInt(Math.max(0, scene.nodes.length - 1)) : 1n);
   if (endNs > 9223372036854775807n) return { endNs: null, issues: ["总仿真时长超出运行时间范围。"] };
   const issues: string[] = [];
   for (const node of scene.nodes) {

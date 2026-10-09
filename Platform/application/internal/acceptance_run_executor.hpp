@@ -40,6 +40,7 @@
 #include "internal/structure_builder.hpp"
 #include "internal/world_state_store.hpp"
 #include "internal/waveform_phy.hpp"
+#include "internal/planning_execution.hpp"
 
 namespace ns3_factory::application::internal {
 
@@ -59,7 +60,28 @@ class RecordingTraceSink final : public ITraceSink {
     node_ids_ = std::move(node_ids);
   }
 
-  auto Emit(const TraceEvent& event) noexcept -> Status override {
+  void BindWaveformSource(const std::vector<phy::internal::WaveformReceptionSummary>& rows) noexcept {
+    waveform_rows_ = &rows;
+  }
+
+  auto Emit(const TraceEvent& original) noexcept -> Status override {
+    // Attach already observed waveform measurements to their own reception.
+    // A missing/invalid observation cannot change the causal record or outcome.
+    auto event = original;
+    if(waveform_rows_) {
+      if(const auto* reception = std::get_if<ReceptionTrace>(&original.payload())) {
+        const auto found = std::find_if(waveform_rows_->rbegin(), waveform_rows_->rend(),
+            [&](const auto& w) { return w.transmission_id == reception->transmission_id &&
+                                       w.receiver_node_id == reception->receiver_node_id; });
+        if(found != waveform_rows_->rend()) {
+          auto payload = *reception;
+          payload.waveform = TraceWaveformSummary{found->payload_bit_count, found->bit_error_count,
+              found->crc_ok, found->channel_output_power_upa2, found->noise_power_upa2};
+          auto enriched = TraceEvent::Create(original.occurred_at(), payload);
+          if(enriched) event = std::move(*enriched);
+        }
+      }
+    }
     if(trajectories_ != nullptr &&
        (!last_position_time_ || *last_position_time_ != event.occurred_at())) {
       for(const auto node_id : node_ids_) {
@@ -97,6 +119,7 @@ class RecordingTraceSink final : public ITraceSink {
 
  private:
   std::reference_wrapper<ITraceSink> downstream_;
+  const std::vector<phy::internal::WaveformReceptionSummary>* waveform_rows_{nullptr};
   const INodeTrajectory* trajectories_{nullptr};
   std::vector<NodeId> node_ids_;
   std::optional<SimTime> last_position_time_;
@@ -341,18 +364,34 @@ class RunExecutionExecutor final : public IRunExecutor {
     const auto maximum_depth = std::max(
         (*asset)->source_depth_m().back(),
         (*asset)->receiver_depth_m().back());
-    auto config = BuildAcceptanceConfig(
+    const auto workload_payload_bytes =
+        experiment.fusion().workload == ApplicationWorkload::kCommunicationOnly
+            ? assembly::internal::kCommunicationTrafficPayload.size()
+            : assembly::internal::kDetectionFeatureV1PayloadBytes;
+    const bool planning_execution = experiment.planning().has_value();
+    if(experiment.scenario().scenario_id != scenario.scenario_id() ||
+       experiment.scenario().scenario_version != scenario.version())
+      return std::unexpected(Error{ErrorCode::kFailedPrecondition,
+          "Experiment does not reference the supplied Scenario version"});
+    std::optional<assembly::internal::AcceptanceScenarioConfig> config;
+    if(!planning_execution) {
+    auto legacy_config = BuildAcceptanceConfig(
         scenario, experiment, *asset_id, maximum_depth,
-        assembly::internal::kDetectionFeatureV1PayloadBytes +
+        workload_payload_bytes +
             (waveform_ ? phy::internal::kWaveformCrcBytes : 0U));
-    if(!config) return std::unexpected(config.error());
+    if(!legacy_config) return std::unexpected(legacy_config.error());
+    config.emplace(std::move(*legacy_config));
+    }
     auto frequency_policy =
         environment::internal::DiscreteFrequencySelectionPolicy::Create(0.0);
     if(!frequency_policy) return std::unexpected(frequency_policy.error());
     auto channel = environment::internal::AcousticFieldChannelProvider::Create(
         *asset, *frequency_policy);
     if(!channel) return std::unexpected(channel.error());
-    auto initial_snapshot = config->InitialWorldSnapshot();
+    auto initial_snapshot = planning_execution
+        ? WorldSnapshot::Create(SnapshotVersion{0}, SimTime::Zero(),
+            {scenario.nodes().begin(), scenario.nodes().end()})
+        : config->InitialWorldSnapshot();
     if(!initial_snapshot) return std::unexpected(initial_snapshot.error());
     std::vector<contracts::NodeId> node_ids;
     for(const auto& node : initial_snapshot->nodes()) {
@@ -380,9 +419,11 @@ class RunExecutionExecutor final : public IRunExecutor {
     struct ResultObserver final : phy::internal::IWaveformReceptionObserver {
       phy::internal::IWaveformReceptionObserver* downstream = nullptr;
       std::vector<WaveformSummary> rows;
+      std::vector<phy::internal::WaveformReceptionSummary> measurements;
       void Observe(const phy::internal::WaveformReceptionSummary& row) noexcept override {
         if(downstream) downstream->Observe(row);
         try {
+          measurements.push_back(row);
           rows.push_back({row.transmission_id, row.receiver_node_id,
                           row.payload_bit_count, row.bit_error_count, row.crc_ok});
         } catch(...) { /* Best-effort observation must not affect decoding. */ }
@@ -418,37 +459,81 @@ class RunExecutionExecutor final : public IRunExecutor {
       waveform_rx.emplace(std::move(*created_rx));
     }
     RecordingTraceSink trace{event_sink};
+    trace.BindWaveformSource(result_observer.measurements);
     const bool bearing_fusion =
         experiment.fusion().workload != ApplicationWorkload::kCommunicationOnly;
-    auto feature_application = assembly::internal::AcceptanceFeatureApplication::Create(
+    const auto receiver = planning_execution ? experiment.planning()->fusion_receiver_node_id
+                                             : scenario.fusion_center_node_id();
+    std::vector<NodeId> report_sources;
+    for(const auto& node : scenario.nodes())
+      if(node.capability.can_transmit && node.node_id != receiver) report_sources.push_back(node.node_id);
+    if(planning_execution) {
+      auto endpoint = [&](NodeId id, bool transmit) {
+        const auto node = initial_snapshot->FindNode(id);
+        return node && (transmit ? node->get().capability.can_transmit : node->get().capability.can_receive);
+      };
+      if(bearing_fusion && (!receiver || !endpoint(*receiver, false) || report_sources.empty()))
+        return std::unexpected(Error{ErrorCode::kInvalidArgument, "Invalid bearing application receiver or sources"});
+      for(const auto& flow : experiment.planning()->flows)
+        if(!endpoint(flow.source_node_id, true) || !endpoint(flow.destination_node_id, false))
+          return std::unexpected(Error{ErrorCode::kInvalidArgument, "Traffic flow endpoint capability is unavailable"});
+    }
+    std::optional<assembly::internal::AcceptanceFeatureApplication> feature_application;
+    if(bearing_fusion) {
+      auto created = planning_execution
+        ? assembly::internal::AcceptanceFeatureApplication::Create(
+            assembly::internal::BearingFeatureConfiguration{report_sources, *receiver,
+              experiment.fusion().minimum_bearing_points, experiment.fusion().maximum_fusion_period,
+              experiment.fusion().target_x_meters, experiment.fusion().target_y_meters},
+            *queues, *deliveries, SimTime::Zero(), PacketId{1'000'000}, &trace)
+        : assembly::internal::AcceptanceFeatureApplication::Create(
             *config,
             *queues,
             *deliveries,
             contracts::SimTime::Zero(),
             contracts::PacketId{1'000'000},
             &trace);
-    if(bearing_fusion && !feature_application) {
-      return std::unexpected(feature_application.error());
+      if(!created) return std::unexpected(created.error());
+      feature_application.emplace(std::move(*created));
     }
     std::optional<assembly::internal::CommunicationTrafficApplication> traffic_application;
     if(!bearing_fusion) {
+      if(planning_execution) {
+        std::vector<assembly::internal::CommunicationTrafficFlow> flows;
+        for(const auto& flow : experiment.planning()->flows)
+          flows.push_back({flow.source_node_id, flow.destination_node_id, flow.packets_per_cycle});
+        traffic_application.emplace(std::move(flows), *queues);
+      } else {
       traffic_application.emplace(
           std::vector<contracts::NodeId>{config->sensor_node_ids().begin(),
                                          config->sensor_node_ids().end()},
           config->fusion_center_node_id(), *queues);
+      }
     }
 
     kernel::internal::Ns3KernelGateway gateway;
     runtime::internal::WorldStateStore world{std::move(*initial_snapshot)};
     runtime::internal::CommunicationIdAllocator ids{
         contracts::TransmissionId{1'000}, contracts::ReceptionId{2'000}};
-    FusionCenterEstimator estimator{config->fusion_center_node_id()};
+    std::optional<FusionCenterEstimator> legacy_estimator;
+    if(config) legacy_estimator.emplace(config->fusion_center_node_id());
+    CapabilityLinkEstimator generic_estimator;
+    std::vector<RoleBinding> role_bindings;
+    if(config) role_bindings = config->RoleBindings();
+    else for(const auto& node : scenario.nodes()) role_bindings.push_back({node.node_id, ProtocolRole::kMember});
     structure::internal::ConfiguredRoleAssignmentPolicy roles{
-        config->RoleBindings()};
+        std::move(role_bindings)};
     structure::internal::SingleSinkStarTopologyPolicy topology;
+    DirectedConnectivityTopology generic_topology;
     structure::internal::StructureBuilder structure_builder{
-        *connectivity, estimator, roles, topology};
-    ConfiguredPlanner planner{*config, experiment.routing().mode};
+        *connectivity,
+        planning_execution ? static_cast<const ILinkFeasibilityEstimator&>(generic_estimator)
+                           : static_cast<const ILinkFeasibilityEstimator&>(*legacy_estimator),
+        roles, planning_execution ? static_cast<const structure::internal::ILogicalTopologyPolicy&>(generic_topology)
+                                  : static_cast<const structure::internal::ILogicalTopologyPolicy&>(topology)};
+    std::optional<ConfiguredPlanner> legacy_planner;
+    if(config) legacy_planner.emplace(*config, experiment.routing().mode);
+    PlanningExecutionPlanner generic_planner{experiment};
     ConstantNoise noise{
         experiment.phy().equivalent_noise_power_db_re_1upa2};
     DeterministicRxPhy deterministic_rx;
@@ -472,15 +557,37 @@ class RunExecutionExecutor final : public IRunExecutor {
         *deliveries,
         ids,
         structure_builder,
-        planner,
+        planning_execution ? static_cast<const planning::internal::IProtocolCyclePlanner&>(generic_planner)
+                           : static_cast<const planning::internal::IProtocolCyclePlanner&>(*legacy_planner),
         composition,
         contracts::PlanningCycleId{0},
         &trace,
         experiment.network_update_interval_cycles(),
         bearing_fusion
             ? static_cast<assembly::internal::IScenarioCycleApplication*>(&*feature_application)
-            : static_cast<assembly::internal::IScenarioCycleApplication*>(&*traffic_application)};
-    const auto duration_ns = config->communication_cycle_duration().nanoseconds();
+            : static_cast<assembly::internal::IScenarioCycleApplication*>(&*traffic_application),
+        planning_execution ? assembly::internal::MacScheduleUpdatePolicy::kEveryCycle
+                           : assembly::internal::MacScheduleUpdatePolicy::kNetworkUpdateCycle};
+    if(planning_execution) {
+      const auto airtime = phy::internal::ComputePayloadAirtime(
+          workload_payload_bytes + (waveform_ ? phy::internal::kWaveformCrcBytes : 0U),
+          experiment.phy().bit_rate_bits_per_second);
+      if(!airtime) return std::unexpected(airtime.error());
+      const auto tail = MaximumAssetPropagationTail(**asset);
+      if(!tail) return std::unexpected(tail.error());
+      auto occupied = CheckedAdd(*airtime, *tail);
+      if(occupied) occupied = CheckedAdd(*occupied, experiment.planning()->safety_margin);
+      if(!occupied || *occupied > experiment.planning()->cycle_duration)
+        return std::unexpected(Error{ErrorCode::kFailedPrecondition,
+            "Planning cycle cannot contain one encoded packet plus acoustic propagation tail and safety margin"});
+      std::vector<NodeAirtime> airtimes;
+      for(const auto& n : scenario.nodes()) airtimes.push_back({n.node_id,
+          n.capability.can_transmit ? *airtime : SimDuration::Zero()});
+      const auto bound_inputs = runtime.BindPlanningInputs(std::move(airtimes), *tail);
+      if(!bound_inputs) return std::unexpected(bound_inputs.error());
+    }
+    const auto duration_ns = planning_execution ? experiment.planning()->cycle_duration.nanoseconds()
+                                               : config->communication_cycle_duration().nanoseconds();
     if(experiment.simulation_cycle_count() >
        static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max() / duration_ns))
       return std::unexpected(Error{ErrorCode::kOverflow, "Trajectory run horizon overflow"});
@@ -488,6 +595,8 @@ class RunExecutionExecutor final : public IRunExecutor {
         duration_ns * static_cast<std::int64_t>(experiment.simulation_cycle_count()));
     std::shared_ptr<const contracts::INodeTrajectory> trajectories = trajectories_;
     if(!trajectories) {
+      if(planning_execution) return std::unexpected(Error{ErrorCode::kFailedPrecondition,
+          "Planning execution requires exact bound trajectory assets; no generated fallback"});
       auto generated = trajectory::BindGenerated(world.current_snapshot(), trajectory_end);
       if(!generated) return std::unexpected(generated.error());
       trajectories = *generated;
@@ -502,11 +611,15 @@ class RunExecutionExecutor final : public IRunExecutor {
     const assembly::internal::FusionResultStore empty_fusion_results;
     const auto& fusion_store = bearing_fusion
         ? feature_application->fusion_result_store() : empty_fusion_results;
-    auto projection = assembly::internal::AcceptanceRunProjection::Build(
+    std::optional<assembly::internal::AcceptanceRunProjection> projection;
+    if(config) {
+    auto projected = assembly::internal::AcceptanceRunProjection::Build(
         *config, experiment.phy().bit_rate_bits_per_second, trace.events,
         fusion_store, world.current_snapshot());
-    if(!projection) return std::unexpected(projection.error());
-    const auto report = bearing_fusion
+    if(!projected) return std::unexpected(projected.error());
+    projection.emplace(std::move(*projected));
+    }
+    const auto report = bearing_fusion && projection
         ? assembly::internal::BuildAcceptanceRunReport(*projection)
         : std::optional<assembly::internal::AcceptanceRunReport>{};
 
@@ -528,7 +641,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       nodes.push_back(NodeSummary{
           node.node_id,
           node.motion.position,
-          node.node_id == scenario.fusion_center_node_id()});
+          bearing_fusion && node.node_id == receiver});
     }
     RunVisualization visualization;
     visualization.generated_feature_count = bearing_fusion
@@ -540,7 +653,22 @@ class RunExecutionExecutor final : public IRunExecutor {
             identity.sender_node_id, identity.observation_sequence});
       }
     }
-    std::vector<contracts::SimTime> sample_times{projection->run_started_at(), projection->run_ended_at()};
+    RunProjectionSummary summary{SimTime::Zero(), world.current_snapshot().committed_at(),
+        SimDuration::FromNanoseconds(world.current_snapshot().committed_at().nanoseconds()),
+        world.current_snapshot().version(), 0, world.current_snapshot().nodes().size(), 0, 0, 0, 0, 0};
+    for(const auto& event : trace.events) {
+      if(std::holds_alternative<CycleCommitTrace>(event.payload())) ++summary.cycle_count;
+      if(std::holds_alternative<TransmissionTrace>(event.payload())) ++summary.transmission_count;
+      if(const auto* channel_event = std::get_if<ChannelOutcomeTrace>(&event.payload())) {
+        if(std::holds_alternative<TraceSignalChannelOutcome>(channel_event->outcome)) ++summary.channel_signal_count;
+        else ++summary.channel_no_arrival_count;
+      }
+      if(const auto* reception = std::get_if<ReceptionTrace>(&event.payload())) {
+        ++summary.reception_count;
+        if(reception->disposition == TraceReceptionDisposition::kLocalDelivery) ++summary.local_delivery_count;
+      }
+    }
+    std::vector<contracts::SimTime> sample_times{summary.simulation_started_at, summary.simulation_ended_at};
     for(const auto& event : trace.events) sample_times.push_back(event.occurred_at());
     for(const auto& fused : fusion_results_view) sample_times.push_back(fused.completed_at);
     std::sort(sample_times.begin(), sample_times.end());
@@ -560,18 +688,7 @@ class RunExecutionExecutor final : public IRunExecutor {
     }
     return RunResult{
         run_id,
-        RunProjectionSummary{
-            projection->run_started_at(),
-            projection->run_ended_at(),
-            projection->simulation_duration(),
-            projection->final_snapshot_version(),
-            projection->cycle_count(),
-            projection->node_count(),
-            projection->transmission_count(),
-            projection->channel_signal_count(),
-            projection->channel_no_arrival_count(),
-            projection->reception_count(),
-            projection->local_delivery_count()},
+        summary,
         report ? std::optional{ToAcceptanceSummary(*report)} : std::nullopt,
         std::move(fusion_results),
         std::move(nodes), std::move(visualization)};

@@ -30,6 +30,15 @@ export function sampleSummary(values: readonly number[]) {
   };
 }
 
+/** Received waveform powers, never a scalar channel-model substitute. */
+export function waveformSignalToNoise(powers?: { signal_power_upa2: number; noise_power_upa2: number } | null): number | "no-noise" | "no-signal" | null {
+  if (!powers || !Number.isFinite(powers.signal_power_upa2) || !Number.isFinite(powers.noise_power_upa2)
+      || powers.signal_power_upa2 < 0 || powers.noise_power_upa2 < 0) return null;
+  if (powers.noise_power_upa2 === 0) return "no-noise";
+  if (powers.signal_power_upa2 === 0) return "no-signal";
+  return 10 * (Math.log10(powers.signal_power_upa2) - Math.log10(powers.noise_power_upa2));
+}
+
 export function waveformSummary(result: ResultDto) {
   const records = result.visualization?.waveform ?? [];
   const bits = records.reduce((sum, item) => sum + BigInt(item.payload_bit_count), 0n);
@@ -59,6 +68,8 @@ export function resultEventStatistics(result: ResultDto, input: readonly RunEven
   const deliveredPairs = new Set<string>();
   const receiveDurationSeconds: number[] = [];
   const delay: number[] = [], loss: number[] = [], paths: number[] = [], snr: number[] = [], modeledBer: number[] = [];
+  const waveformSnr: number[] = [];
+  let waveformNoNoise = 0, waveformNoSignal = 0, waveformPowerMissing = 0;
   let localDelivery = 0, overheard = 0, notDecoded = 0, relay = 0;
   for (const { trace } of events) {
     if (trace.kind === "ChannelOutcome" && trace.payload.outcome.type === "Signal") {
@@ -69,6 +80,11 @@ export function resultEventStatistics(result: ResultDto, input: readonly RunEven
     if (trace.kind !== "Reception") continue;
     const payload = trace.payload;
     const tx = transmissions.get(payload.transmission_id);
+    const receivedSnr = waveformSignalToNoise(payload.waveform);
+    if (typeof receivedSnr === "number") waveformSnr.push(receivedSnr);
+    else if (receivedSnr === "no-noise") waveformNoNoise++;
+    else if (receivedSnr === "no-signal") waveformNoSignal++;
+    else waveformPowerMissing++;
     if (payload.quality) {
       snr.push(payload.quality.signal_to_noise_ratio_db);
       if (payload.quality.source === "Modeled") modeledBer.push(payload.quality.bit_error_rate);
@@ -99,7 +115,8 @@ export function resultEventStatistics(result: ResultDto, input: readonly RunEven
     events, transmissions, links, targetAttempts, targetsDecoded: targetsDecoded.size,
     targetDecodeRatio: complete && targetAttempts ? targetsDecoded.size / targetAttempts : null,
     deliveredPairs: deliveredPairs.size, localDelivery, overheard, notDecoded, relay,
-    delay, loss, paths, snr, modeledBer, receiveDurationSeconds, complete,
+    delay, loss, paths, snr, waveformSnr, waveformNoNoise, waveformNoSignal, waveformPowerMissing,
+    modeledBer, receiveDurationSeconds, complete,
   };
 }
 

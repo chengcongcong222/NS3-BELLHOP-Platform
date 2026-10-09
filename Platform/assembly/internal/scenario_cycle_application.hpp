@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include <cstdint>
 
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
@@ -10,12 +11,28 @@
 
 namespace ns3_factory::assembly::internal {
 
+enum class ApplicationInputTiming {
+  kLegacyFirstTxOpportunity,
+  kCycleStart,
+};
+
 class IScenarioCycleApplication {
  public:
   virtual ~IScenarioCycleApplication() = default;
 
   [[nodiscard]] virtual auto input_node_ids() const noexcept
       -> std::span<const contracts::NodeId> = 0;
+
+  [[nodiscard]] virtual auto input_timing() const noexcept
+      -> ApplicationInputTiming {
+    return ApplicationInputTiming::kLegacyFirstTxOpportunity;
+  }
+
+  // Pure forecast of packets to be enqueued at this cycle's INPUT_READY event.
+  // It neither generates packets nor advances any application state.
+  [[nodiscard]] virtual auto forecast_packet_count(
+      contracts::PlanningCycleId, contracts::NodeId) const
+      -> contracts::Result<std::uint64_t> { return std::uint64_t{0}; }
 
   [[nodiscard]] virtual auto OnInputReady(
       contracts::PlanningCycleId cycle_id,

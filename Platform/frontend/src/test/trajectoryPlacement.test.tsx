@@ -8,6 +8,7 @@ import type { TrajectoryAssetDto } from "../api/types";
 import type { ScenarioDraft } from "../domain/workspace";
 import { scenario } from "./fixtures";
 import { installApi } from "./render";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const source: TrajectoryAssetDto = {
   asset_id: "survey-original", version: 3, name: "巡测路径", source: "test-fixture",
@@ -44,6 +45,74 @@ async function enterPosition() {
 }
 
 describe("explicit immutable trajectory placement", () => {
+  it("opens trajectory authoring in the node dialog, saves through the API and binds the exact returned asset", async () => {
+    const fetch = installApi({ "GET /trajectories": { body: [] }, "POST /authoring/trajectories/generate": { body: derived } });
+    const created = vi.fn();
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><Harness created={created} /></QueryClientProvider>);
+    const opener = screen.getByRole("button", { name: "新增轨迹" });
+    await userEvent.click(opener);
+    expect(await screen.findByRole("dialog", { name: "节点轨迹" })).toBeTruthy();
+    expect(screen.getByText("N99 · 节点运动路径")).toBeTruthy();
+    expect((screen.getByLabelText("初始X（m）") as HTMLInputElement).value).toBe("10");
+    await userEvent.click(screen.getByRole("button", { name: "生成并保存" }));
+    const savedNotice = await screen.findByText(/已保存“巡测路径 · N99 布设”/);
+    expect(savedNotice.textContent).toContain("尚未绑定到节点");
+    expect(savedNotice.textContent).toContain("点击“应用此轨迹到节点”");
+    expect(savedNotice.textContent).toContain("然后在工作台保存实验");
+    expect(savedNotice.textContent).not.toContain("可前往实验工作台绑定");
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!).trajectoryBindings).toEqual(initial.trajectoryBindings);
+    await userEvent.click(screen.getByRole("button", { name: "应用此轨迹到节点" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!).trajectoryBindings).toEqual([{ node_id: "99", asset_id: derived.asset_id, version: 1, track_id: "route", placement_mode: "RelativeToNodeStart" }]);
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!).nodes[0].initial_position).toEqual(initial.nodes[0].initial_position);
+    expect(created).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("closing trajectory authoring preserves the node and resource binding", async () => {
+    installApi({ "GET /trajectories": { body: [source] } });
+    render(<QueryClientProvider client={new QueryClient()}><Harness /></QueryClientProvider>);
+    const opener = screen.getByRole("button", { name: "新增轨迹" });
+    await userEvent.click(opener);
+    await screen.findByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: "关闭" }));
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!)).toEqual(initial);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("identifies NodeId zero as the target and keeps application configuration separate from hardware", async () => {
+    installApi({ "GET /trajectories": { body: [source] } });
+    const zero: ScenarioDraft = { ...initial, fusionCenterNodeId: null, trajectoryBindings: [], nodes: [{ ...initial.nodes[0], node_id: "0" }] };
+    render(<QueryClientProvider client={new QueryClient()}><Harness start={zero} /></QueryClientProvider>);
+    expect(screen.getByText(/通信流与应用接收点在“环境与实验参数 → 网络”中配置/)).toBeTruthy();
+    expect(screen.queryByText(/业务角色在/)).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "新增轨迹" }));
+    expect(await screen.findByRole("dialog", { name: "节点轨迹" })).toBeTruthy();
+    expect(screen.getByText("N0 · 节点运动路径")).toBeTruthy();
+    expect(screen.getByText("选择或生成要绑定的轨迹")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "应用此轨迹到节点" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "XY 平面轨迹" })).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: /巡测路径.*v3/ }));
+    await userEvent.click(screen.getByRole("button", { name: "应用此轨迹到节点" }));
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!).trajectoryBindings[0].node_id).toBe("0");
+  });
+
+  it("closing after generation keeps the saved asset separate from the unchanged node binding", async () => {
+    const fetch = installApi({ "GET /trajectories": { body: [] }, "POST /authoring/trajectories/generate": { body: derived } });
+    const updated = vi.fn(), created = vi.fn();
+    render(<QueryClientProvider client={new QueryClient()}><Harness updated={updated} created={created} /></QueryClientProvider>);
+    await userEvent.click(screen.getByRole("button", { name: "新增轨迹" }));
+    await userEvent.click(await screen.findByRole("button", { name: "生成并保存" }));
+    await screen.findByText(/已保存“巡测路径 · N99 布设”/);
+    expect(screen.getByText(/直接关闭不会修改节点绑定/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "关闭" }));
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!)).toEqual(initial);
+    expect(updated).not.toHaveBeenCalled(); expect(created).not.toHaveBeenCalled();
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);
+    expect(fetch.mock.calls.some(([, init]) => init?.method === "DELETE" || init?.method === "PUT")).toBe(false);
+  });
+
   it("binds a reusable path relative to the scene start and keeps coordinates directly editable", async () => {
     const fetch = installApi({}), before = JSON.stringify(source);
     const start: ScenarioDraft = { ...initial, trajectoryBindings: [], nodes: [{ ...initial.nodes[0],
@@ -130,6 +199,19 @@ describe("explicit immutable trajectory placement", () => {
     await userEvent.click(screen.getByRole("button", { name: "另存新轨迹并绑定" }));
     expect((await screen.findByRole("alert")).textContent).toContain("平移请求校验失败");
     expect(updated).not.toHaveBeenCalled(); expect(created).not.toHaveBeenCalled();
+    expect(JSON.parse(screen.getByTestId("saved-binding").textContent!)).toEqual(initial);
+  });
+
+  it("explains failed placement in Chinese while keeping backend diagnostics collapsed", async () => {
+    installApi({ "POST /authoring/trajectories/translate": { status: 422, body: { error: {
+      code: "InvalidTrajectory", message: "TrajectoryTrack point was outside supported coordinates.",
+    } } } });
+    render(<Harness />);
+    await enterPosition();
+    await userEvent.click(screen.getByRole("button", { name: "另存新轨迹并绑定" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.querySelector("span")!.textContent).toBe("轨迹另存失败，原绑定和节点位置未改变。请检查起点设置后重试。");
+    expect(screen.getByText("TrajectoryTrack point was outside supported coordinates.").closest("details")?.open).toBe(false);
     expect(JSON.parse(screen.getByTestId("saved-binding").textContent!)).toEqual(initial);
   });
 

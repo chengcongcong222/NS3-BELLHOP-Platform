@@ -13,8 +13,9 @@ const fixture = { "/environments": { body: [environment] }, "/scenarios": { body
   "/experiments": { body: [experiment] }, "/trajectories": { body: [trajectory] },
   "/authoring/drafts?kind=scenario": { body: [] }, "/authoring/drafts?kind=experiment": { body: [] } };
 
-function server() {
+function server(legacy = false) {
   const records = new Map<string, AuthoringDraftDto>();
+  if (legacy) records.set("experiment", { kind: "experiment", draft_id: "experiment-exact", name: "旧配置式实验", revision: 0, payload: {}, created_at: "2026-09-17", updated_at: "2026-09-17", validation_issues: [] });
   const fetchMock = installApi(fixture);
   const base = fetchMock.getMockImplementation()!;
   fetchMock.mockImplementation(async (input, init) => {
@@ -92,6 +93,9 @@ it("saves scene then experiment and freezes the exact scene revision before a re
   }
   await userEvent.click(screen.getByRole("button", { name: "环境与实验参数" }));
   await userEvent.selectOptions(screen.getByLabelText("业务负载"), "CommunicationOnly");
+  await userEvent.click(screen.getByRole("button", { name: "添加单向通信流" }));
+  await userEvent.selectOptions(screen.getByLabelText("源节点 1"), "0");
+  await userEvent.selectOptions(screen.getByLabelText("目的节点 1"), "1");
   await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
   await waitFor(() => expect(records.get("experiment")?.payload.scenario_revision).toBe(1));
   expect(records.get("scenario")?.payload.trajectory_bindings).toEqual([0, 1, 2].map(node_id => ({ node_id: String(node_id), asset_id: "chosen-track", version: 3, track_id: "N0", placement_mode: "RelativeToNodeStart" })));
@@ -121,7 +125,7 @@ it("rejects a missing requested experiment instead of silently editing a default
 });
 
 it("saves unsupported node counts but cannot quietly replace them with a runnable preset", async () => {
-  const { records, fetchMock } = server(); renderRoute("/workspace/experiment");
+  const { records, fetchMock } = server(true); renderRoute("/workspace/experiment?draft=experiment-exact");
   await userEvent.click(await screen.findByRole("button", { name: "保存并运行" }));
   expect((await screen.findByRole("alert")).textContent).toContain("仅支持 3～6 个节点");
   expect(records.get("scenario")?.payload.nodes).toHaveLength(1);
@@ -133,7 +137,7 @@ it("saves unsupported node counts but cannot quietly replace them with a runnabl
 });
 
 it("persists advanced execution parameters, uses the chosen slot for coverage and reopens without preset replacement", async () => {
-  const { records, fetchMock } = server(); const page = renderRoute("/workspace/experiment");
+  const { records, fetchMock } = server(true); const page = renderRoute("/workspace/experiment?draft=experiment-exact");
   await userEvent.selectOptions(await screen.findByLabelText("实验环境"), environment.environment_asset_id);
   fireEvent.pointerDown(screen.getByRole("button", { name: "选择节点 N0" }));
   await userEvent.selectOptions(screen.getByLabelText("绑定轨迹资源"), JSON.stringify(["chosen-track", 3, "N0"]));
@@ -144,20 +148,22 @@ it("persists advanced execution parameters, uses the chosen slot for coverage an
   await userEvent.click(screen.getByRole("button", { name: "环境与实验参数" }));
   await userEvent.click(screen.getByRole("button", { name: "网络" }));
   await userEvent.selectOptions(screen.getByLabelText("业务负载"), "BearingFusion");
-  expect(screen.getByText(/观测数不等于节点数/)).toBeTruthy();
-  expect(screen.getByText(/不是说最小二乘数学上必然需要 5 个节点/)).toBeTruthy();
-  const minimum = screen.getByLabelText("算法最少有效观测数");
+  expect(screen.getByText(/条数不是节点数/)).toBeTruthy();
+  expect(screen.queryByText(/这是算法策略，不是预计的实测结果/)).toBeNull();
+  const minimum = screen.getByLabelText("本算法的报告积累门槛");
   expect(minimum.getAttribute("min")).toBe("5");
   expect(minimum.closest("details")?.open).toBe(false);
-  await userEvent.click(screen.getByText(/融合算法设置 · 当前至少/));
+  await userEvent.click(screen.getByText("定位算法 · 集中式方位交汇"));
   fireEvent.change(minimum, { target: { value: "6" } });
-  await userEvent.click(screen.getByText("结果对照条件 · 不控制仿真"));
-  expect(screen.getByText(/不是 CPU 计算耗时、定时器或自动终止条件/)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("报告收集与融合耗时参考（s）"), { target: { value: "45" } });
-  await userEvent.click(screen.getByText("探测目标 · 合成观测的参考位置"));
+  expect(screen.queryByText("结果对照条件 · 不控制仿真")).toBeNull();
+  await userEvent.click(screen.getByText("探测目标位置"));
   fireEvent.change(screen.getByLabelText("目标 X（m）"), { target: { value: "520" } });
   fireEvent.change(screen.getByLabelText("目标 Y（m）"), { target: { value: "-190" } });
-  await userEvent.click(screen.getByText(/网络刷新策略 · 每/));
+  const targetMarker = screen.getByRole("button", { name: "探测目标（拖动或方向键调整）" });
+  fireEvent.keyDown(targetMarker, { key: "ArrowRight" });
+  expect((screen.getByLabelText("目标 X（m）") as HTMLInputElement).value).toBe("521");
+  fireEvent.keyDown(targetMarker, { key: "ArrowLeft" });
+  await userEvent.click(screen.getByText("配置式 TDMA · 私有高级参数"));
   fireEvent.change(screen.getByLabelText("重新规划间隔（周期）"), { target: { value: "3" } });
   await userEvent.click(screen.getByRole("button", { name: "物理模式" }));
   await userEvent.click(screen.getByText("通信设备参数 · 高级设置"));
@@ -168,7 +174,7 @@ it("persists advanced execution parameters, uses the chosen slot for coverage an
   fireEvent.change(screen.getByLabelText(/等效接收噪声功率/), { target: { value: "58" } });
   await userEvent.click(screen.getByRole("button", { name: "运行" }));
   expect(screen.getByText("0～24 s")).toBeTruthy();
-  await userEvent.click(screen.getByText("TDMA 时序 · 高级设置"));
+  await userEvent.click(screen.getByRole("button", { name: "网络" }));
   fireEvent.change(screen.getByLabelText("每个时隙（s）"), { target: { value: "40" } });
   expect(screen.getByText("0～160 s")).toBeTruthy();
   expect(screen.getByText("轨迹覆盖待检查 · 3 项")).toBeTruthy();
@@ -180,7 +186,7 @@ it("persists advanced execution parameters, uses the chosen slot for coverage an
   await waitFor(() => expect(records.get("experiment")?.payload.slot_duration_ns).toBe("8000000000"));
   expect(records.get("experiment")?.payload).toMatchObject({
     scenario_id: "scenario-exact", scenario_revision: 1, workload: "BearingFusion", minimum_bearing_points: "6",
-    maximum_fusion_period_ns: "45000000000", network_update_interval_cycles: "3",
+    maximum_fusion_period_ns: "180000000000", network_update_interval_cycles: "3",
     bit_rate_bits_per_second: "120", center_frequency_hz: 26000, occupied_bandwidth_hz: 2400,
     source_level_db: 185, equivalent_noise_power_db_re_1upa2: 58, guard_interval_ns: "1200000000",
     slot_duration_ns: "8000000000", target_x_m: 520, target_y_m: -190,
@@ -193,6 +199,6 @@ it("persists advanced execution parameters, uses the chosen slot for coverage an
   expect((screen.getByLabelText(/等效接收噪声功率/) as HTMLInputElement).value).toBe("58");
   expect((screen.getByLabelText("目标 X（m）") as HTMLInputElement).value).toBe("520");
   expect((screen.getByLabelText("目标 Y（m）") as HTMLInputElement).value).toBe("-190");
-  expect((screen.getByLabelText("报告收集与融合耗时参考（s）") as HTMLInputElement).value).toBe("45");
+  expect(screen.queryByLabelText("报告收集与融合耗时参考（s）")).toBeNull();
   expect(screen.getByText("0～32 s")).toBeTruthy();
 });

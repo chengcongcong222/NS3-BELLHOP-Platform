@@ -53,7 +53,7 @@ class ScenarioDefinition final {
       std::vector<contracts::NodeCommittedState> nodes,
       EnvironmentReference environment,
       MobilityModel mobility_model,
-      contracts::NodeId fusion_center_node_id)
+      std::optional<contracts::NodeId> fusion_center_node_id)
       -> contracts::Result<ScenarioDefinition>;
 
   [[nodiscard]] constexpr auto scenario_id() const noexcept
@@ -79,7 +79,7 @@ class ScenarioDefinition final {
     return mobility_model_;
   }
   [[nodiscard]] constexpr auto fusion_center_node_id() const noexcept
-      -> contracts::NodeId {
+      -> std::optional<contracts::NodeId> {
     return fusion_center_node_id_;
   }
 
@@ -92,7 +92,7 @@ class ScenarioDefinition final {
                      std::vector<contracts::NodeCommittedState> nodes,
                      EnvironmentReference environment,
                      MobilityModel mobility_model,
-                     contracts::NodeId fusion_center_node_id)
+                     std::optional<contracts::NodeId> fusion_center_node_id)
       : scenario_id_(std::move(scenario_id)),
         version_(version),
         name_(std::move(name)),
@@ -107,16 +107,19 @@ class ScenarioDefinition final {
   std::vector<contracts::NodeCommittedState> nodes_;
   EnvironmentReference environment_;
   MobilityModel mobility_model_;
-  contracts::NodeId fusion_center_node_id_;
+  // Compatibility metadata for explicit presets, not a hardware property.
+  std::optional<contracts::NodeId> fusion_center_node_id_;
 };
 
 enum class RoutingMode : std::uint8_t {
   kDirectToFusionCenter = 1,
   kShortestPath = 2,
+  kDirect = 3,
 };
 
 enum class MacMode : std::uint8_t {
   kTdma = 1,
+  kAdaptiveTdma = 2,
 };
 
 enum class RxQualityMode : std::uint8_t {
@@ -174,6 +177,23 @@ struct FusionConfiguration final {
   auto operator==(const FusionConfiguration&) const -> bool = default;
 };
 
+struct TrafficFlow final {
+  contracts::NodeId source_node_id;
+  contracts::NodeId destination_node_id;
+  std::size_t packets_per_cycle;
+  auto operator==(const TrafficFlow&) const -> bool = default;
+};
+
+// Explicit opt-in. Absence preserves the frozen preset/v1 execution path.
+// These are run inputs; queue ownership and algorithm state stay in Runtime.
+struct PlanningExecutionConfiguration final {
+  contracts::SimDuration cycle_duration;
+  contracts::SimDuration safety_margin;
+  std::vector<TrafficFlow> flows;
+  std::optional<contracts::NodeId> fusion_receiver_node_id;
+  auto operator==(const PlanningExecutionConfiguration&) const -> bool = default;
+};
+
 class ExperimentDefinition final {
  public:
   [[nodiscard]] static auto Create(
@@ -187,7 +207,8 @@ class ExperimentDefinition final {
       FusionConfiguration fusion,
       std::size_t network_update_interval_cycles,
       std::size_t simulation_cycle_count,
-      std::uint64_t deterministic_seed)
+      std::uint64_t deterministic_seed,
+      std::optional<PlanningExecutionConfiguration> planning = std::nullopt)
       -> contracts::Result<ExperimentDefinition>;
 
   [[nodiscard]] constexpr auto experiment_id() const noexcept
@@ -233,6 +254,9 @@ class ExperimentDefinition final {
     return deterministic_seed_;
   }
 
+  [[nodiscard]] auto planning() const noexcept
+      -> const std::optional<PlanningExecutionConfiguration>& { return planning_; }
+
   auto operator==(const ExperimentDefinition&) const -> bool = default;
 
  private:
@@ -247,7 +271,8 @@ class ExperimentDefinition final {
       FusionConfiguration fusion,
       std::size_t network_update_interval_cycles,
       std::size_t simulation_cycle_count,
-      std::uint64_t deterministic_seed)
+      std::uint64_t deterministic_seed,
+      std::optional<PlanningExecutionConfiguration> planning)
       : experiment_id_(std::move(experiment_id)),
         version_(version),
         name_(std::move(name)),
@@ -258,7 +283,7 @@ class ExperimentDefinition final {
         fusion_(fusion),
         network_update_interval_cycles_(network_update_interval_cycles),
         simulation_cycle_count_(simulation_cycle_count),
-        deterministic_seed_(deterministic_seed) {}
+        deterministic_seed_(deterministic_seed), planning_(std::move(planning)) {}
 
   ExperimentId experiment_id_;
   ResourceVersion version_;
@@ -271,6 +296,7 @@ class ExperimentDefinition final {
   std::size_t network_update_interval_cycles_;
   std::size_t simulation_cycle_count_;
   std::uint64_t deterministic_seed_;
+  std::optional<PlanningExecutionConfiguration> planning_;
 };
 
 inline auto ScenarioDefinition::Create(
@@ -280,7 +306,7 @@ inline auto ScenarioDefinition::Create(
     std::vector<contracts::NodeCommittedState> nodes,
     EnvironmentReference environment,
     MobilityModel mobility_model,
-    contracts::NodeId fusion_center_node_id)
+    std::optional<contracts::NodeId> fusion_center_node_id)
     -> contracts::Result<ScenarioDefinition> {
   if(version == 0U || name.empty() || nodes.empty() ||
      environment.asset_id.empty() || environment.asset_format_version == 0U ||
@@ -320,10 +346,11 @@ inline auto ScenarioDefinition::Create(
         contracts::Error{contracts::ErrorCode::kAlreadyExists,
                          "Scenario contains duplicate NodeId"});
   }
+  if(fusion_center_node_id) {
   const auto fusion_center = std::lower_bound(
       nodes.begin(),
       nodes.end(),
-      fusion_center_node_id,
+      *fusion_center_node_id,
       [](const auto& node, contracts::NodeId id) {
         return node.node_id < id;
       });
@@ -333,6 +360,7 @@ inline auto ScenarioDefinition::Create(
     return std::unexpected(
         contracts::Error{contracts::ErrorCode::kInvalidArgument,
                          "Scenario fusion center is outside node universe"});
+  }
   }
   return ScenarioDefinition{std::move(scenario_id),
                             version,
@@ -354,13 +382,16 @@ inline auto ExperimentDefinition::Create(
     FusionConfiguration fusion,
     std::size_t network_update_interval_cycles,
     std::size_t simulation_cycle_count,
-    std::uint64_t deterministic_seed)
+    std::uint64_t deterministic_seed,
+    std::optional<PlanningExecutionConfiguration> planning)
     -> contracts::Result<ExperimentDefinition> {
   if(version == 0U || scenario.scenario_version == 0U || name.empty() ||
      (routing.mode != RoutingMode::kDirectToFusionCenter &&
-      routing.mode != RoutingMode::kShortestPath) ||
-     mac.mode != MacMode::kTdma ||
-     mac.slot_duration <= contracts::SimDuration::Zero() ||
+      routing.mode != RoutingMode::kShortestPath &&
+      !(planning && routing.mode == RoutingMode::kDirect)) ||
+     (mac.mode != MacMode::kTdma &&
+      !(planning && mac.mode == MacMode::kAdaptiveTdma)) ||
+     (mac.mode == MacMode::kTdma && mac.slot_duration <= contracts::SimDuration::Zero()) ||
      mac.guard_interval < contracts::SimDuration::Zero() ||
      phy.bit_rate_bits_per_second == 0U ||
      !std::isfinite(phy.center_frequency_hz) ||
@@ -387,6 +418,35 @@ inline auto ExperimentDefinition::Create(
         contracts::Error{contracts::ErrorCode::kInvalidArgument,
                          "Experiment definition is invalid"});
   }
+  if(planning) {
+    if(planning->cycle_duration <= contracts::SimDuration::Zero() ||
+       planning->safety_margin < contracts::SimDuration::Zero() ||
+       routing.mode == RoutingMode::kDirectToFusionCenter ||
+       fusion.workload == ApplicationWorkload::kAcceptanceBearingFusion ||
+       (mac.mode == MacMode::kAdaptiveTdma &&
+        (mac.slot_duration != contracts::SimDuration::Zero() ||
+         mac.guard_interval != contracts::SimDuration::Zero())) ||
+       (fusion.workload == ApplicationWorkload::kCommunicationOnly
+            ? (planning->flows.empty() || planning->fusion_receiver_node_id.has_value())
+            : (!planning->flows.empty() || !planning->fusion_receiver_node_id))) {
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+          "Planning execution needs explicit workload destinations and valid cycle timing"});
+    }
+    std::sort(planning->flows.begin(), planning->flows.end(), [](const auto& a, const auto& b) {
+      if(a.source_node_id != b.source_node_id) return a.source_node_id < b.source_node_id;
+      return a.destination_node_id < b.destination_node_id;
+    });
+    for(std::size_t i = 0; i < planning->flows.size(); ++i) {
+      const auto& f = planning->flows[i];
+      if(f.source_node_id == f.destination_node_id || f.packets_per_cycle == 0 ||
+         f.packets_per_cycle > 1000 || (i &&
+         planning->flows[i-1].source_node_id == f.source_node_id &&
+         planning->flows[i-1].destination_node_id == f.destination_node_id)) {
+        return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+            "Traffic flows must have distinct endpoints, unique pairs and 1..1000 packets"});
+      }
+    }
+  }
   return ExperimentDefinition{std::move(experiment_id),
                               version,
                               std::move(name),
@@ -397,7 +457,7 @@ inline auto ExperimentDefinition::Create(
                               fusion,
                               network_update_interval_cycles,
                               simulation_cycle_count,
-                              deterministic_seed};
+                              deterministic_seed, std::move(planning)};
 }
 
 }  // namespace ns3_factory::application

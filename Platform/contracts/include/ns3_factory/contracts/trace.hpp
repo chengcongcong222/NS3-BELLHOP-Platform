@@ -109,6 +109,16 @@ struct ChannelOutcomeTrace final {
   auto operator==(const ChannelOutcomeTrace&) const -> bool = default;
 };
 
+// Observation only; never consulted for decoding or delivery decisions.
+struct TraceWaveformSummary final {
+  std::uint64_t payload_bit_count;
+  std::uint64_t bit_error_count;
+  bool crc_ok;
+  double signal_power_upa2;
+  double noise_power_upa2;
+  constexpr auto operator==(const TraceWaveformSummary&) const noexcept -> bool = default;
+};
+
 struct ReceptionTrace final {
   ReceptionId reception_id;
   TransmissionId transmission_id;
@@ -116,6 +126,7 @@ struct ReceptionTrace final {
   NodeId receiver_node_id;
   TraceReceptionDisposition disposition;
   std::optional<TraceRxQualitySummary> quality;
+  std::optional<TraceWaveformSummary> waveform{};
 
   constexpr auto operator==(const ReceptionTrace&) const noexcept
       -> bool = default;
@@ -244,6 +255,15 @@ inline auto TraceEvent::Create(SimTime occurred_at,
       return std::unexpected(
           Error{ErrorCode::kInvalidArgument,
                 "ReceptionTrace disposition is invalid"});
+    }
+    if(reception->waveform) {
+      const auto& w = *reception->waveform;
+      if(w.payload_bit_count == 0 || w.bit_error_count > w.payload_bit_count ||
+         !std::isfinite(w.signal_power_upa2) || w.signal_power_upa2 < 0 ||
+         !std::isfinite(w.noise_power_upa2) || w.noise_power_upa2 < 0) {
+        return std::unexpected(Error{ErrorCode::kInvalidArgument,
+                                    "ReceptionTrace waveform summary is invalid"});
+      }
     }
     if(reception->quality) {
       const auto& quality = *reception->quality;

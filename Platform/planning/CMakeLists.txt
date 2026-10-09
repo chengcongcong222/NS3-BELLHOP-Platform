@@ -7,6 +7,10 @@ target_include_directories(
 target_link_libraries(platform_planning INTERFACE Platform::contracts)
 
 if(BUILD_TESTING)
+  add_executable(platform_planning_adaptive_planning_test tests/adaptive_planning_test.cpp)
+  target_link_libraries(platform_planning_adaptive_planning_test PRIVATE Platform::planning)
+  add_test(NAME platform_planning_adaptive_planning_test COMMAND platform_planning_adaptive_planning_test)
+
   add_executable(
     platform_planning_direct_to_sink_routing_planner_test
     tests/direct_to_sink_routing_planner_test.cpp

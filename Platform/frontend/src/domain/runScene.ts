@@ -1,4 +1,4 @@
-import type { PositionSample, ResultDto, ScenarioDto } from "../api/types";
+import type { PositionSample, ResultDto, RunDefinitionContextDto, ScenarioDto } from "../api/types";
 
 export type RunScene = Pick<ScenarioDto, "name"> & {
   nodes: Array<Pick<ScenarioDto["nodes"][number], "node_id" | "initial_position">>;
@@ -6,6 +6,14 @@ export type RunScene = Pick<ScenarioDto, "name"> & {
   observationsOnly?: boolean;
   spatial_domain?: ScenarioDto["spatial_domain"];
 };
+
+/** An application destination is configuration, not a hardware or elected role. */
+export function definitionRunScene(context: RunDefinitionContextDto): RunScene {
+  const experiment = context.experiment;
+  return { ...context.scenario, fusion_center_node_id: experiment.execution_mode === "PlanningV1"
+    ? experiment.fusion.workload === "BearingFusion" ? experiment.fusion_receiver_node_id ?? null : null
+    : context.scenario.fusion_center_node_id };
+}
 
 /** Older running servers have no definition endpoint. Observations permit a
  * limited replay, never reconstruction of capabilities, bindings or settings. */

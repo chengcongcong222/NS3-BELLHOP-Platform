@@ -136,6 +136,8 @@ auto TestObservabilityEventRoundTrips() -> bool {
   const auto at = contracts::SimTime::FromNanoseconds(2'000'000'000);
   const auto started = contracts::SimTime::FromNanoseconds(1'000'000'000);
   const std::vector<contracts::TracePayload> payloads{
+      contracts::ReceptionTrace{contracts::ReceptionId{1}, contracts::TransmissionId{8}, contracts::PacketId{3}, contracts::NodeId{2}, contracts::TraceReceptionDisposition::kNotDecoded, std::nullopt, contracts::TraceWaveformSummary{100, 3, false, 4., 0.}},
+      contracts::ReceptionTrace{contracts::ReceptionId{2}, contracts::TransmissionId{8}, contracts::PacketId{3}, contracts::NodeId{2}, contracts::TraceReceptionDisposition::kLocalDelivery, std::nullopt},
       contracts::SignalArrivalTrace{
           contracts::TransmissionId{8}, contracts::NodeId{2}},
       contracts::NodePositionTrace{

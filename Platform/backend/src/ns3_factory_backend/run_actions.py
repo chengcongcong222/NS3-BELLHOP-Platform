@@ -133,6 +133,9 @@ def _timing(definition: dict | None, command: StartRunCommand,
             manifest: RunManifest | None) -> RunTimingDiagnostic | None:
     try:
         config = definition["experiment"] if definition is not None else None
+        if config and config["mac_mode"] == "AdaptiveTdma":
+            # Slot boundaries are planner output, not a user-configured input.
+            return None
         rate = int(config["bit_rate_bps"] if config else manifest.experiment.phy.bit_rate_bits_per_second)
         guard = int(config["guard_interval_ns"] if config else manifest.experiment.mac.guard_interval_ns)
         slot = int(config["slot_duration_ns"] if config else (
@@ -140,13 +143,12 @@ def _timing(definition: dict | None, command: StartRunCommand,
             else manifest.experiment.mac.slot_duration_ns))
         if rate <= 0 or guard < 0 or slot <= 0:
             return None
-        # Current RunExecutionExecutor passes 15-byte maximum planned payload
-        # plus the actual four-byte waveform CRC to BuildAcceptanceConfig.
+        payload_bytes = 4 if config and config["workload"] == "CommunicationOnly" else 15
         overhead = 4 if command.execution.physical_layer == "Channel2Waveform" else 0
-        encoded = 15 + overhead
+        encoded = payload_bytes + overhead
         airtime = (encoded * 8 * 1_000_000_000 + rate - 1) // rate
         minimum = airtime + guard
-        return RunTimingDiagnostic(planned_payload_bytes="15", frame_overhead_bytes=str(overhead),
+        return RunTimingDiagnostic(planned_payload_bytes=str(payload_bytes), frame_overhead_bytes=str(overhead),
             encoded_bytes=str(encoded), bit_rate_bits_per_second=str(rate),
             minimum_airtime_ns=str(airtime), guard_interval_ns=str(guard),
             minimum_slot_duration_ns=str(minimum), configured_slot_duration_ns=str(slot),

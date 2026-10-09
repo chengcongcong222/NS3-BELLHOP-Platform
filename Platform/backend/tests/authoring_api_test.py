@@ -55,7 +55,7 @@ def test_server_workspace_import_build_and_immutable_publish(tmp_path: Path) -> 
                 json={"filename": "terrain.json", "content": '{"range_m":[0,1000],"depth_m":[100,110]}'},
             )
             assert hydrology.status_code == 200
-            assert terrain.status_code == 200
+            assert terrain.status_code == 410
             reference_ssp, reference_terrain = _reference_data(Path(__file__).resolve().parents[2] / "environment/assets/reference_shallow_water_v1")
             payload = {
                 "center_frequency_hz": 25000,
@@ -126,8 +126,8 @@ def test_reference_woa_and_terrain_acquisition_are_real_cached_sources(tmp_path:
             assert woa.status_code == 200
             assert woa.json()["source"] == "cached-real-data"
             assert len(woa.json()["sound_speed_profile"]) >= 2
-            assert gebco.status_code == 200
-            assert len(gebco.json()["bathymetry"]) >= 2
+            assert gebco.status_code == 410
+            assert gebco.json()["error"]["code"] == "TerrainFeatureFrozen"
 
     asyncio.run(run())
 

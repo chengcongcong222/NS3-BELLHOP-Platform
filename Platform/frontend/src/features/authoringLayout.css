@@ -17,24 +17,24 @@
 .authoring-layout .unified-experiment-toolbar > label,
 .authoring-layout .unified-experiment-toolbar > [role=status] { grid-column: 1 / -1; }
 .authoring-layout .unified-experiment-toolbar h1 { font-size: 20px; line-height: 1.4; }
-.authoring-layout .unified-experiment-toolbar small { display: block; margin-top: 4px; color: #b9d0de; font-size: 12px; }
+.authoring-layout .unified-experiment-toolbar small { display: block; margin-top: 4px; color: #243b50; font-size: 12px; }
 .authoring-layout .unified-experiment-toolbar label { display: grid; align-items: start; gap: 6px; font-size: 13px; }
 .authoring-layout .unified-experiment-toolbar input { width: 100%; min-width: 0; height: 34px; padding: 6px 8px; font-size: 14px; }
-.authoring-layout .unified-experiment-toolbar [role=status] { margin: 0; padding: 6px 0; border-bottom: 1px solid #29485a; color: #b9d8e5; }
+.authoring-layout .unified-experiment-toolbar [role=status] { margin: 0; padding: 6px 0; border-bottom: 1px solid #cbd5df; color: #243b50; }
 .authoring-layout .unified-experiment-toolbar button { padding: 6px; min-height: 34px; font-size: 13px; }
-.authoring-layout .unified-experiment-toolbar .primary-button { color: #e9fbff; background: #11556d; border-color: #3686a0; }
+.authoring-layout .unified-experiment-toolbar .primary-button { color: #243b50; background: #eaf1f7; border-color: #3686a0; }
 .authoring-layout .studio-save-note,
 .authoring-layout .studio-save-error { margin: 10px 0; padding: 8px; font-size: 12px; line-height: 1.6; border-left: 2px solid #41758d; overflow-wrap: anywhere; }
 .authoring-layout .studio-save-error { border-left-color: #f09282; }
-.authoring-layout .experiment-control-help { margin: 10px 0 14px; color: #adc9d9; font-size: 12px; line-height: 1.6; }
-.authoring-layout .studio-tools > .studio-pane-title { position: static; padding: 6px 0; margin: 0; min-height: 38px; border-top: 1px solid #29485a; background: transparent; }
+.authoring-layout .experiment-control-help { margin: 10px 0 14px; color: #243b50; font-size: 12px; line-height: 1.6; }
+.authoring-layout .studio-tools > .studio-pane-title { position: static; padding: 6px 0; margin: 0; min-height: 38px; border-top: 1px solid #cbd5df; background: transparent; }
 .authoring-layout .studio-pane-title button { display: block; width: auto; height: auto; min-height: 28px; padding: 3px 7px; font-size: 13px; }
 .authoring-layout .node-tool-list { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; padding: 10px 0; }
-.authoring-layout .node-tool-list button { min-height: 49px; color: #e0eef7; background: #0c293c; border: 1px solid #2b4b5e; border-radius: 3px; }
-.authoring-layout .node-tool-list button.selected { background: #124055; border-color: #41c5d9; }
+.authoring-layout .node-tool-list button { min-height: 49px; color: #243b50; background: #f5f8fb; border: 1px solid #cbd5df; border-radius: 3px; }
+.authoring-layout .node-tool-list button.selected { background: #eaf1f7; border-color: #41c5d9; }
 .authoring-layout .node-tool-list strong { font-size: 14px; }
-.authoring-layout .node-tool-list small { color: #b6cddc; font-size: 12px; }
-.authoring-layout .tool-help { margin: 0; padding: 10px 0; border-color: #29485a; color: #b0cad9; font-size: 12px; }
+.authoring-layout .node-tool-list small { color: #243b50; font-size: 12px; }
+.authoring-layout .tool-help { margin: 0; padding: 10px 0; border-color: #cbd5df; color: #243b50; font-size: 12px; }
 .authoring-layout .unified-scene .studio-canvas { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; border-radius: 4px; }
 .authoring-layout .studio-canvas > * { flex-shrink: 0; }
 .authoring-layout .unified-scene .studio-canvas > svg { flex: 1 1 0; min-width: 0; min-height: 180px; height: 0; width: 100%; }
@@ -44,11 +44,11 @@
 .authoring-layout .studio-axis-label { font: 14px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #c8dde9; }
 .authoring-layout .node-label { font: 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
 .authoring-layout .node-depth { font: 12px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-.authoring-layout .studio-canvas .scene-depth-profile > header { min-height: 32px; gap: 8px; padding: 4px 10px; border-bottom: 1px solid #365162; }
+.authoring-layout .studio-canvas .scene-depth-profile > header { min-height: 32px; gap: 8px; padding: 4px 10px; border-bottom: 1px solid #cbd5df; }
 .authoring-layout .scene-depth-profile .scene-depth-plots { padding-block: 4px; }
 .authoring-layout .unified-scene .scene-depth-profile .scene-node-depth svg { height: 190px; min-height: 0; max-height: 190px; }
 .authoring-layout .scene-depth-profile .scene-node-depth svg text { font: 13px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-.authoring-layout .studio-statusbar { min-height: 30px; padding: 5px 9px; gap: 5px 12px; flex-wrap: wrap; color: #b9d5e4; font-size: 12px; }
+.authoring-layout .studio-statusbar { min-height: 30px; padding: 5px 9px; gap: 5px 12px; flex-wrap: wrap; color: #243b50; font-size: 12px; }
 .authoring-layout .property-panel > .studio-pane-title,
 .authoring-layout .experiment-inspector > .studio-pane-title { min-height: 35px; margin-top: -12px; margin-bottom: 8px; }
 .authoring-layout .inspector-tabs { flex-wrap: wrap; padding-bottom: 8px; }

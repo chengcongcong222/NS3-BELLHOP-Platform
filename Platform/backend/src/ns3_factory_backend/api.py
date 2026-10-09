@@ -29,6 +29,8 @@ from .catalog import (
 )
 from .gateway import WorkerGateway
 from .acquisition_stream import acquisition_stream
+from .ocean_cache import (store_hydrology_profile, list_hydrology_profiles,
+                          get_hydrology_profile, woa_selection)
 from .evidence import (
     AcceptanceEvidenceBundle,
     RunManifest,
@@ -228,6 +230,9 @@ _ERROR_STATUS = {
     "InvalidReference": status.HTTP_409_CONFLICT,
     "EvidenceUnavailable": status.HTTP_409_CONFLICT,
     "DraftNotFound": status.HTTP_404_NOT_FOUND,
+    "HydrologyCacheNotFound": status.HTTP_404_NOT_FOUND,
+    "InvalidHydrologyCache": status.HTTP_422_UNPROCESSABLE_ENTITY,
+    "TerrainFeatureFrozen": status.HTTP_410_GONE,
     "BuildNotFound": status.HTTP_404_NOT_FOUND,
     "DraftConflict": status.HTTP_409_CONFLICT,
     "InvalidDraft": status.HTTP_400_BAD_REQUEST,
@@ -606,17 +611,48 @@ def create_app(
             points = parse_two_column_text(request.content, "ssp")
         except ValueError as error:
             raise CatalogError("InvalidHydrologyFile", str(error)) from error
-        return {"source": "file", "filename": request.filename,
-                "point_count": len(points), "sound_speed_profile": points}
+        result = {"source": "file", "filename": request.filename,
+                  "point_count": len(points), "sound_speed_profile": points}
+        record = store_hydrology_profile(authoring_root / "cache" / "woa23" / "profiles", result)
+        return {**result, "cache_id": record["cache_id"]}
+
+    @app.get("/authoring/environment/hydrology-cache")
+    async def hydrology_cache() -> list[dict]:
+        root = authoring_root / "cache" / "woa23" / "profiles"
+        # Migrate only known saved inputs, never scan arbitrary directories or
+        # invent a coordinate for an imported profile. Originals stay intact.
+        for draft in authoring.list("environment"):
+            payload = draft.payload
+            points = payload.get("sound_speed_profile")
+            if not points:
+                continue
+            sources = payload.get("sources")
+            source = sources.get("ssp") if isinstance(sources, dict) else None
+            metadata = dict(source) if isinstance(source, dict) else {}
+            request = metadata.pop("request", None)
+            metadata.setdefault("source", "saved-draft")
+            if metadata["source"] == "saved-draft":
+                metadata["filename"] = draft.name
+            try:
+                selection = woa_selection(request) if isinstance(request, dict) and metadata["source"] == "online-real-data" else None
+                store_hydrology_profile(root, {**metadata, "sound_speed_profile": points}, selection=selection)
+            except (ValueError, TypeError, KeyError):
+                # Incomplete legacy drafts are not offered as valid profiles.
+                continue
+        return list_hydrology_profiles(root)
+
+    @app.get("/authoring/environment/hydrology-cache/{cache_id}")
+    async def hydrology_cache_item(cache_id: str) -> dict:
+        try:
+            return get_hydrology_profile(authoring_root / "cache" / "woa23" / "profiles", cache_id)
+        except KeyError as error:
+            raise CatalogError("HydrologyCacheNotFound", "所选水文数据不存在，请刷新列表。") from error
+        except ValueError as error:
+            raise CatalogError("InvalidHydrologyCache", str(error)) from error
 
     @app.post("/authoring/import/terrain")
     async def import_terrain(request: TextImportRequest) -> dict[str, object]:
-        try:
-            points = parse_two_column_text(request.content, "bathymetry")
-        except ValueError as error:
-            raise CatalogError("InvalidTerrainFile", str(error)) from error
-        return {"source": "file", "filename": request.filename,
-                "point_count": len(points), "bathymetry": points}
+        raise CatalogError("TerrainFeatureFrozen", "地形导入已冻结；已有环境及历史运行输入不受影响。")
 
     @app.post("/authoring/acquisition/woa")
     async def fetch_woa(request: OceanAcquisitionRequest) -> dict[str, object]:
@@ -637,10 +673,7 @@ def create_app(
 
     @app.post("/authoring/acquisition/terrain")
     async def fetch_terrain(request: TerrainAcquisitionRequest) -> dict[str, object]:
-        try:
-            return await run_in_threadpool(acquire_terrain, request, reference_asset_root)
-        except (ValueError, RuntimeError) as error:
-            raise CatalogError("TerrainAcquisitionFailed", str(error)) from error
+        raise CatalogError("TerrainFeatureFrozen", "地形获取已冻结；新环境请明确选择声学计算边界。")
 
     @app.post("/authoring/environment-builds", response_model=EnvironmentBuildResource, status_code=202)
     async def create_environment_build(request: BuildRequest) -> EnvironmentBuildResource:
@@ -664,7 +697,8 @@ def create_app(
     async def environment_capabilities() -> dict[str, object]:
         missing = [name for name in ("numpy", "netCDF4") if importlib.util.find_spec(name) is None]
         executable = os.environ.get("PLATFORM_BELLHOP_EXECUTABLE", "")
-        return {"woa_online_available": not missing,
+        return {"woa_online_available": not missing, "terrain_authoring_available": False,
+                "hydrology_cache_available": True,
                 "woa_unavailable_reason": "在线水文获取尚未配置科学计算依赖；可导入文件或明确选择内置参考案例" if missing else None,
                 "bellhop_available": bool(executable and Path(executable).is_file() and os.access(executable, os.X_OK))}
 
@@ -745,10 +779,16 @@ def create_app(
         if draft.validation_issues:
             raise CatalogError("DraftValidationFailed", "; ".join(draft.validation_issues))
         payload = draft.payload
+        planning = payload.get("execution_mode") == "PlanningV1"
+        current_issues = validate_payload("experiment", payload)
+        if current_issues:
+            raise CatalogError("DraftValidationFailed", "; ".join(current_issues))
         scenario_id = str(payload.get("scenario_id", ""))
         try:
             scenario_draft = authoring.get("scenario", scenario_id)
         except KeyError as error:
+            if planning:
+                raise CatalogError("InvalidReference", "规划执行需要绑定具有正式轨迹的场景草稿，请先从预置案例派生场景。") from error
             # A named catalog Scenario is an explicit preset selection, not a
             # fallback. Preserve that compatibility path while authored
             # Scenario IDs are always resolved only from the authoring store.
@@ -819,24 +859,41 @@ def create_app(
         if not isinstance(bindings, list) or not bindings:
             raise CatalogError("InvalidReference", "Every authored node requires a trajectory binding.")
         nodes = scenario_payload.get("nodes", [])
+        if planning:
+            from .planning_authoring import planning_issues
+            issues = planning_issues(payload, nodes)
+            if issues:
+                raise CatalogError("DraftValidationFailed", "; ".join(issues))
         node_ids = {str(node.get("node_id")) for node in nodes if isinstance(node, dict)}
         if {str(binding.get("node_id")) for binding in bindings if isinstance(binding, dict)} != node_ids:
             raise CatalogError("InvalidReference", "Trajectory bindings must cover every Scenario node exactly.")
         from .scenario_trajectories import compile_bindings
         bindings, assets = compile_bindings(nodes, bindings, trajectories)
+        fusion_center = scenario_payload.get("fusion_center_node_id")
+        if fusion_center is None and not planning:
+            raise CatalogError("InvalidReference", "旧版执行场景必须保留融合中心；无中心通信请明确使用 PlanningV1 和业务流。")
+        if fusion_center is not None:
+            if planning and (not isinstance(fusion_center, str) or fusion_center not in node_ids):
+                raise CatalogError("InvalidReference", "场景兼容融合中心必须引用已有节点或为空。")
+            try:
+                fusion_center = int(fusion_center)
+            except (TypeError, ValueError) as error:
+                raise CatalogError("InvalidReference", "场景兼容融合中心编号无效。") from error
         spatial_domain = None
-        if environment_resource is not None or scenario_payload.get("spatial_domain") is not None:
+        if planning or environment_resource is not None or scenario_payload.get("spatial_domain") is not None:
             from .scene_domain import validate_paths
-            if environment_resource is None:
+            if environment_resource is None and scenario_payload.get("spatial_domain") is not None:
                 environment_resource = current_resources().get_environment(environment_id)
-            duration_ns = int(payload["simulation_cycle_count"]) * int(payload.get("slot_duration_ns", 6_000_000_000)) * max(0, len(nodes) - 1)
+            duration_ns = (int(payload["simulation_cycle_count"]) * int(payload["planning_cycle_duration_ns"])
+                           if planning else int(payload["simulation_cycle_count"]) * int(payload.get("slot_duration_ns", 6_000_000_000)) * max(0, len(nodes) - 1))
             spatial_domain = validate_paths(nodes, bindings, assets, environment_resource,
-                await environment_authoring_inputs(environment_id), scenario_payload.get("spatial_domain"), duration_ns)
+                await environment_authoring_inputs(environment_id) if environment_resource is not None else None,
+                scenario_payload.get("spatial_domain"), duration_ns)
         scenario_publication = authoring.publish_draft("scenario", scenario_draft.draft_id)
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
         definition = {
-            "schema": "ns3-factory-authored-run-v1",
+            "schema": "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
             "scenario_id": scenario_publication["published_id"],
             "scenario_source_revision": scenario_draft.revision,
             "scenario_name": scenario_draft.name,
@@ -846,7 +903,7 @@ def create_app(
             "version": definition_version,
             "environment": {"asset_id": environment_id, "format_version": environment_version,
                             "checksum": environment_checksum},
-            "fusion_center_node_id": int(scenario_payload["fusion_center_node_id"]),
+            "fusion_center_node_id": fusion_center,
             "nodes": [{
                 "node_id": int(node["node_id"]),
                 "can_transmit": bool(node["can_transmit"]),
@@ -870,7 +927,7 @@ def create_app(
             "experiment": {
                 "name": draft.name,
                 "routing_mode": str(payload.get("routing_mode", "DirectToFusionCenter")),
-                "mac_mode": "Tdma",
+                "mac_mode": payload["mac_mode"] if planning else "Tdma",
                 "workload": str(payload.get("workload", "BearingFusion")),
                 "physical_layer": physical_layer,
                 "waveform_modulation": modulation,
@@ -883,7 +940,7 @@ def create_app(
                 "center_frequency_hz": float(payload.get("center_frequency_hz", 25_000)),
                 "occupied_bandwidth_hz": float(payload.get("occupied_bandwidth_hz", 4_000)),
                 "source_level_db": float(payload.get("source_level_db", payload.get("source_level_db_re_1upa_at_1m", 110))),
-                "network_update_interval_cycles": int(payload.get("network_update_interval_cycles", 10)),
+                "network_update_interval_cycles": (1 if planning else int(payload.get("network_update_interval_cycles", 10))),
                 "minimum_bearing_points": int(payload.get("minimum_bearing_points", 5)),
                 "maximum_fusion_period_ns": int(payload.get("maximum_fusion_period_ns", 180_000_000_000)),
                 "target_x_m": float(payload.get("target_x_m", 200.0)),
@@ -891,6 +948,13 @@ def create_app(
                 "maximum_ber": float(payload.get("maximum_ber", 0.0001)),
             },
         }
+        if planning:
+            from .planning_authoring import freeze_planning_configuration
+            definition["execution_mode"] = "PlanningV1"
+            definition["experiment"].update(freeze_planning_configuration(payload))
+            if payload["mac_mode"] == "AdaptiveTdma":
+                definition["experiment"].pop("slot_duration_ns")
+                definition["experiment"].pop("guard_interval_ns")
         encoded = json.dumps(definition, ensure_ascii=False, sort_keys=True,
                              separators=(",", ":")).encode()
         digest = hashlib.sha256(encoded).hexdigest()
@@ -946,6 +1010,39 @@ def create_app(
     @app.get("/environments/{environment_id}", response_model=EnvironmentResource)
     async def get_environment(environment_id: str) -> EnvironmentResource:
         return current_resources().get_environment(environment_id)
+
+    async def acoustic_plot_response(artifact: dict, source_index: int, receiver_index: int, range_index: int) -> dict:
+        from .acoustic_plots import arrivals_plot, ray_plot_for_source
+        try:
+            plot = await run_in_threadpool(arrivals_plot, Path(artifact["arrivals_path"]), artifact["arrivals_sha256"], source_index, receiver_index, range_index)
+            ray = artifact.get("ray_plot", {})
+            plot["ray_plot"] = await run_in_threadpool(ray_plot_for_source, ray, plot["source_depths_m"][source_index], plot["frequency_hz"])
+            return plot
+        except (ValueError, OSError, KeyError) as error:
+            raise CatalogError("InvalidAcousticPlot", "声学图读取失败，请检查离线产物及采样选择。") from error
+
+    @app.get("/environments/{environment_id}/acoustic-plots")
+    async def environment_acoustic_plots(environment_id: str, source_index: int = 0, receiver_index: int = 0, range_index: int = 0) -> dict:
+        current_resources().get_environment(environment_id)
+        artifact = authoring.environment_plot_artifact(environment_id)
+        if artifact is None and environment_id == "reference-shallow-water-v1":
+            path = reference_asset_root / "bellhop/reference_shallow_water_v1.arr"
+            # Verify the bundled input against its tracked validation report.
+            manifest = json.loads((reference_asset_root / "bellhop/config.json").read_text())
+            artifact = {"arrivals_path": str(path), "arrivals_sha256": manifest["files"]["arrival_sha256"]}
+        if artifact is None:
+            return {"available": False, "reason": "这个历史环境未保存绘图所需到达产物；请另存并重新计算"}
+        return await acoustic_plot_response(artifact, source_index, receiver_index, range_index)
+
+    @app.get("/authoring/environment-builds/{build_id}/acoustic-plots")
+    async def build_acoustic_plots(build_id: str, source_index: int = 0, receiver_index: int = 0, range_index: int = 0) -> dict:
+        try:
+            build = authoring.get_build(build_id)
+        except KeyError as error:
+            raise CatalogError("BuildNotFound", "环境计算不存在") from error
+        if build.state != "Completed" or not build.artifact:
+            return {"available": False, "reason": "环境计算完成后可查看信道图"}
+        return await acoustic_plot_response(build.artifact, source_index, receiver_index, range_index)
 
     @app.get("/environments/{environment_id}/authoring-inputs")
     async def environment_authoring_inputs(environment_id: str) -> dict[str, object]:

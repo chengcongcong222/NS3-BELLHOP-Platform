@@ -105,7 +105,7 @@ export interface ScenarioDto {
     asset_format_version: DecimalString;
   };
   mobility: { model: string };
-  fusion_center_node_id: DecimalString;
+  fusion_center_node_id: DecimalString | null;
 }
 
 export interface SceneSpatialDomain {
@@ -115,6 +115,11 @@ export interface SceneSpatialDomain {
 }
 
 export interface ExperimentDto {
+  execution_mode?: "PlanningV1";
+  planning_cycle_duration_ns?: DecimalString;
+  adaptive_tdma?: { safety_margin_ns: DecimalString } | null;
+  flows?: CommunicationFlowDto[];
+  fusion_receiver_node_id?: DecimalString | null;
   experiment_id: string;
   version: DecimalString;
   name: string;
@@ -122,8 +127,8 @@ export interface ExperimentDto {
   routing: { mode: string };
   mac: {
     mode: string;
-    slot_duration_ns: DecimalString;
-    guard_interval_ns: DecimalString;
+    slot_duration_ns: DecimalString | null;
+    guard_interval_ns: DecimalString | null;
   };
   phy: {
     physical_layer?: "Channel1Abstract" | "Channel2Waveform";
@@ -157,6 +162,12 @@ export interface RunDefinitionContextDto {
   experiment: ExperimentDto;
   execution: Record<string, unknown>;
   limitations: string[];
+}
+
+export interface CommunicationFlowDto {
+  source_node_id: DecimalString;
+  destination_node_id: DecimalString;
+  packets_per_cycle: number;
 }
 
 export interface RunDto {
@@ -369,6 +380,14 @@ export interface ChannelOutcomeTraceDto {
   };
 }
 
+export interface ReceptionWaveformDto {
+  payload_bit_count: DecimalString;
+  bit_error_count: DecimalString;
+  crc_ok: boolean;
+  signal_power_upa2: number;
+  noise_power_upa2: number;
+}
+
 export interface ReceptionTraceDto {
   occurred_at_ns: DecimalString;
   kind: "Reception";
@@ -378,6 +397,7 @@ export interface ReceptionTraceDto {
     packet_id: DecimalString;
     receiver_node_id: DecimalString;
     disposition: "NotDecoded" | "Overheard" | "LocalDelivery" | "RelayEnqueue";
+    waveform?: ReceptionWaveformDto | null;
     quality: {
       signal_to_noise_ratio_db: number;
       eb_n0_db: number;

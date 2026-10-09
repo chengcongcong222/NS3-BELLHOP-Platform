@@ -219,6 +219,10 @@ function isReception(payload: Record<string, unknown>): boolean {
       !["NotDecoded", "Overheard", "LocalDelivery", "RelayEnqueue"].includes(String(payload.disposition))) {
     return false;
   }
+  const w = payload.waveform;
+  if (w !== undefined && w !== null && (!isObject(w) || !isUnsigned(w.payload_bit_count) || w.payload_bit_count === "0" ||
+      !isUnsigned(w.bit_error_count) || BigInt(w.bit_error_count) > BigInt(w.payload_bit_count) || typeof w.crc_ok !== "boolean" ||
+      !isFiniteNumber(w.signal_power_upa2) || w.signal_power_upa2 < 0 || !isFiniteNumber(w.noise_power_upa2) || w.noise_power_upa2 < 0)) return false;
   if (payload.quality === null) return true;
   return isObject(payload.quality) &&
     isFiniteNumber(payload.quality.signal_to_noise_ratio_db) &&

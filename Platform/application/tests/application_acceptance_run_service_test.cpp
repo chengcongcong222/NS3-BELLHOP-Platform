@@ -1,6 +1,8 @@
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
@@ -48,14 +50,21 @@ class TemporaryRepositoryRoot final {
   std::filesystem::path path_;
 };
 
-auto MakeAsset() -> Result<AcousticFieldAsset> {
+auto MakeAsset(bool path_aware = false) -> Result<AcousticFieldAsset> {
   auto frame = EnvironmentCoordinateFrame::Create(
       0.0, VerticalAxisDirection::kPositiveUp);
   if(!frame) return std::unexpected(frame.error());
   std::vector<AcousticFieldCell> cells;
+  std::vector<PropagationPath> paths;
+  if(path_aware) {
+    const auto path = PropagationPath::Create(
+        SimDuration::Zero(), std::pow(10.0, -70.0 / 20.0), 0.0);
+    if(!path) return std::unexpected(path.error());
+    paths.push_back(*path);
+  }
   for(std::size_t index = 0; index < 8U; ++index) {
     cells.push_back(AcousticFieldSignalCell{
-        70.0, SimDuration::FromNanoseconds(500'000'000), {}});
+        70.0, SimDuration::FromNanoseconds(500'000'000), paths});
   }
   return AcousticFieldAsset::Create(1,
                                     "application acceptance fixture",
@@ -410,11 +419,187 @@ auto TestMissingEnvironmentProducesFailedLifecycle() -> bool {
          record->failure->message.starts_with("Environment asset missing:");
 }
 
+auto TestCommunicationOnlyUsesActualPayloadAirtime() -> bool {
+  TemporaryRepositoryRoot temporary;
+  auto environments = EnvironmentAssetRepository::Open(temporary.path());
+  // Explicit one-path test fixture supports both physical implementations.
+  // Production Channel2 must not invent a path for scalar-only assets.
+  auto asset = MakeAsset(true);
+  auto provenance = MakeProvenance();
+  auto asset_id = EnvironmentAssetId::Create("communication-airtime-field");
+  auto scenario_id = ScenarioId::Create("communication-airtime-scenario");
+  auto experiment_id = ExperimentId::Create("communication-airtime-experiment");
+  auto run_id = RunId::Create("communication-airtime-run");
+  if(!environments || !asset || !provenance || !asset_id || !scenario_id ||
+     !experiment_id || !run_id ||
+     !environments->Register(*asset_id, *asset, *provenance)) return false;
+  const auto scenario = MakeAcceptanceScenarioPreset(
+      AcceptanceProfile::kAcceptance4Node, *scenario_id, 1,
+      "Communication airtime fixture", {asset_id->value(), 1});
+  if(!scenario) return false;
+  const auto preset = MakeAcceptanceExperimentPreset(
+      AcceptanceProfile::kAcceptance4Node, *experiment_id, 1,
+      "Communication airtime fixture",
+      {scenario->scenario_id(), scenario->version()}, 1);
+  if(!preset) return false;
+  static_assert(assembly::internal::kCommunicationTrafficPayload.size() == 4U);
+  const auto payload_bytes = assembly::internal::kCommunicationTrafficPayload.size();
+  const auto guard = preset->mac().guard_interval;
+  for(const bool waveform : {false, true}) {
+    const auto airtime = phy::internal::ComputePayloadAirtime(
+        payload_bytes + (waveform ? phy::internal::kWaveformCrcBytes : 0U),
+        preset->phy().bit_rate_bits_per_second);
+    if(!airtime) return false;
+    const auto minimum_slot = CheckedAdd(*airtime, guard);
+    if(!minimum_slot) return false;
+    const auto make_experiment = [&](ApplicationWorkload workload,
+                                     SimDuration slot) {
+      auto fusion = preset->fusion();
+      fusion.workload = workload;
+      auto phy = preset->phy();
+      // Mode B reports actual waveform evidence; the abstract BPSK/AWGN
+      // observer is not a legal configuration for a waveform executor.
+      if(waveform) phy.quality_mode = RxQualityMode::kNone;
+      return ExperimentDefinition::Create(
+          *experiment_id, 1, "Workload-specific airtime", preset->scenario(),
+          preset->routing(), {MacMode::kTdma, slot, guard}, phy, fusion,
+          preset->network_update_interval_cycles(), 1, preset->deterministic_seed());
+    };
+    std::optional<WaveformExecutionOptions> options;
+    if(waveform) {
+      options.emplace(WaveformExecutionOptions{
+          {{phy::internal::ModulationScheme::kBpsk, 6000, 60,
+            std::pow(10.0, preset->phy().source_level_db_re_1upa_at_1m / 20.0),
+            25000, 30},
+           4000, phy::internal::NoNoiseConfig{}, true,
+           phy::internal::WaveformFrameFormat::kPayloadWithCrc32, 1'000'000}});
+    }
+    RunExecutionExecutor executor{*environments, nullptr, options};
+    NullTraceSink trace;
+    const auto experiment = make_experiment(ApplicationWorkload::kCommunicationOnly,
+                                            *minimum_slot);
+    if(!experiment) return false;
+    const auto result = executor.Execute(*run_id, *scenario, *experiment, trace);
+    if(!result) {
+      std::cerr << "COMM airtime fixture mode " << (waveform ? 'B' : 'A')
+                << " failed: " << result.error().message << '\n';
+      return false;
+    }
+    if(result->projection.transmission_count != 3U ||
+       result->projection.local_delivery_count != 3U ||
+       !result->fusion_results.empty() || !result->visualization) {
+      std::cerr << "COMM airtime fixture mode " << (waveform ? 'B' : 'A')
+                << " unexpected counts: transmissions="
+                << result->projection.transmission_count << " deliveries="
+                << result->projection.local_delivery_count << '\n';
+      return false;
+    }
+    if(waveform && (result->visualization->waveform.empty() ||
+       !std::ranges::all_of(result->visualization->waveform, [payload_bytes](const auto& row) {
+         return row.payload_bit_count == payload_bytes * 8U &&
+                row.bit_error_count == 0U && row.crc_ok;
+       }))) {
+      std::cerr << "COMM airtime fixture mode B has unexpected waveform evidence\n";
+      return false;
+    }
+    // Guard is part of the configured slot. A one-nanosecond shortfall
+    // must still fail; a feature packet must not inherit COMM's smaller size.
+    const auto too_short = make_experiment(
+        ApplicationWorkload::kCommunicationOnly,
+        SimDuration::FromNanoseconds(minimum_slot->nanoseconds() - 1));
+    const auto feature = make_experiment(ApplicationWorkload::kBearingFusion,
+                                        *minimum_slot);
+    if(!too_short || !feature) return false;
+    for(const auto& invalid : {*too_short, *feature}) {
+      const auto rejected = executor.Execute(*run_id, *scenario, invalid, trace);
+      if(rejected || rejected.error().code != ErrorCode::kFailedPrecondition ||
+         rejected.error().message !=
+             "TDMA slot cannot contain maximum packet airtime and guard") {
+        std::cerr << "COMM airtime rejection mismatch mode " << (waveform ? 'B' : 'A')
+                  << ": " << (rejected ? "unexpected success" : rejected.error().message)
+                  << '\n';
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+auto TestMixedCellPropagationTail() -> bool {
+  auto frame = EnvironmentCoordinateFrame::Create(0.0, VerticalAxisDirection::kPositiveUp);
+  auto direct = PropagationPath::Create(SimDuration::Zero(), 1.0, 0.0);
+  auto late = PropagationPath::Create(SimDuration::FromNanoseconds(10'000'000'000), 0.5, 0.0);
+  if(!frame || !direct || !late) return false;
+  auto asset = AcousticFieldAsset::Create(1, "mixed interpolation bound fixture", *frame,
+      {25000}, {40}, {40}, {0, 1000}, {
+        AcousticFieldSignalCell{0, SimDuration::Zero(), {*direct, *late}},
+        AcousticFieldSignalCell{0, SimDuration::FromNanoseconds(10'000'000'000), {*direct}}});
+  if(!asset) return false;
+  const auto bound = MaximumAssetPropagationTail(*asset);
+  // max(first+excess)=10 s is unsafe: interpolated first + nearest paths can exceed it.
+  return bound && bound->nanoseconds() == 20'000'000'000;
+}
+
+auto TestGenericPlanningWithoutSink() -> bool {
+  TemporaryRepositoryRoot temporary;
+  auto environments = EnvironmentAssetRepository::Open(temporary.path());
+  auto asset = MakeAsset(true);
+  auto provenance = MakeProvenance();
+  auto asset_id = EnvironmentAssetId::Create("planning-field-v1");
+  if(!environments || !asset || !provenance || !asset_id ||
+     !environments->Register(*asset_id, *asset, *provenance)) return false;
+  const std::vector<NodeCommittedState> nodes{
+      {NodeId{0}, {true, true, DuplexMode::kHalfDuplex}, {{0, 0, -40}, {0, 0, 0}}},
+      {NodeId{1}, {true, true, DuplexMode::kHalfDuplex}, {{500, 0, -40}, {1, 0, 0}}},
+      {NodeId{2}, {false, true, DuplexMode::kHalfDuplex}, {{1000, 100, -40}, {0, 0, 0}}}};
+  auto scenario = ScenarioDefinition::Create(*ScenarioId::Create("planning-no-sink"), 1,
+      "Explicit traffic", nodes, {asset_id->value(), 1}, MobilityModel::kTrajectoryDriven, std::nullopt);
+  if(!scenario || scenario->fusion_center_node_id()) return false;
+  const PlanningExecutionConfiguration planning{SimDuration::FromNanoseconds(6'000'000'000),
+      SimDuration::Zero(), {{NodeId{0}, NodeId{1}, 1}, {NodeId{1}, NodeId{0}, 1},
+                           {NodeId{0}, NodeId{2}, 2}}, std::nullopt};
+  auto experiment = ExperimentDefinition::Create(*ExperimentId::Create("planning-traffic"), 1,
+      "Automatic slots", {scenario->scenario_id(), 1}, {RoutingMode::kDirect},
+      {MacMode::kAdaptiveTdma, SimDuration::Zero(), SimDuration::Zero()},
+      {60, 25000, 4000, 110, 45, RxQualityMode::kModeledBpskAwgn},
+      {ApplicationWorkload::kCommunicationOnly, AcceptanceProfile::kAcceptance4Node,
+       5, SimDuration::FromNanoseconds(180'000'000'000), 200, 150, 1e-4}, 1, 2, 42, planning);
+  if(!experiment) return false;
+  auto snapshot = WorldSnapshot::Create(SnapshotVersion{0}, SimTime::Zero(), nodes);
+  auto trajectories = trajectory::BindGenerated(*snapshot, SimTime::FromNanoseconds(12'000'000'000));
+  if(!trajectories) return false;
+  NullTraceSink trace;
+  RunExecutionExecutor executor{*environments, *trajectories};
+  const auto run = *RunId::Create("planning-traffic-run");
+  auto first = executor.Execute(run, *scenario, *experiment, trace);
+  auto second = executor.Execute(run, *scenario, *experiment, trace);
+  if(!first || !second) {
+    std::cerr << "Generic planning failed: " << (!first ? first.error().message : second.error().message) << '\n';
+    return false;
+  }
+  if(!SameSimulationResult(*first, *second) || first->projection.cycle_count != 2 ||
+     first->projection.transmission_count != 8 || first->projection.local_delivery_count != 8 ||
+     first->projection.simulation_ended_at.nanoseconds() != 12'000'000'000 ||
+     first->acceptance_report || !first->fusion_results.empty() ||
+     std::ranges::any_of(first->nodes, [](const auto& n) { return n.is_fusion_center; })) return false;
+  // A user-authored planning run may not generate missing trajectories.
+  RunExecutionExecutor missing{*environments};
+  if(missing.Execute(run, *scenario, *experiment, trace)) return false;
+  auto invalid_planning = planning;
+  invalid_planning.flows.front().destination_node_id = NodeId{999};
+  auto invalid = ExperimentDefinition::Create(experiment->experiment_id(), 1, experiment->name(),
+      experiment->scenario(), experiment->routing(), experiment->mac(), experiment->phy(), experiment->fusion(),
+      1, 2, 42, invalid_planning);
+  return invalid && !executor.Execute(run, *scenario, *invalid, trace);
+}
+
 }  // namespace
 
 auto main() -> int {
   return TestAcceptanceRunServiceAndMissingEvidence() &&
-                 TestMissingEnvironmentProducesFailedLifecycle()
+                 TestMissingEnvironmentProducesFailedLifecycle() &&
+                 TestCommunicationOnlyUsesActualPayloadAirtime() &&
+                 TestMixedCellPropagationTail() && TestGenericPlanningWithoutSink()
              ? EXIT_SUCCESS
              : EXIT_FAILURE;
 }

@@ -100,6 +100,11 @@ def write_bellhop_inputs(payload: dict[str, Any], job_root: Path) -> dict[str, A
     if len(sources) * len(receivers) * count > 200_000:
         raise ValueError("声场网格过大，请减少深度或距离采样数量")
     clipped = clip_profile(ssp, bottom_depth)
+    # The numerical ray-termination box is NOT the physical seabed. Bellhopcxx
+    # terminates at depth >= Box.z, including a point just reflected at the bed.
+    # Enclose the bed strictly so reflected paths can continue. This does not
+    # extend the SSP or change the physical bottom/receiver coverage.
+    tracing_depth = bottom_depth + max(1.0, bottom_depth * 0.01)
     number = lambda n: format(n, ".17g")
     axis = lambda values: f"{len(values)}\n" + " ".join(number(n) for n in values) + " /"
     content = ["'User authored acoustic environment'", number(payload["center_frequency_hz"]), "1", "'CVW'",
@@ -108,7 +113,7 @@ def write_bellhop_inputs(payload: dict[str, Any], job_root: Path) -> dict[str, A
     content += ["'A*' 0", f"{number(bottom_depth)} {number(cp)} 0 {number(density)} {number(attenuation)} /",
                 axis(sources), axis(receivers), f"{count}\n0 {number(range_m / 1000)} /",
                 "'A'", str(beams), f"{number(low)} {number(high)} /",
-                f"0 {number(bottom_depth)} {number(range_m / 1000)}"]
+                f"0 {number(tracing_depth)} {number(range_m / 1000)}"]
     files = {
         "environment.env": "\n".join(content) + "\n",
         "environment.bty": "'L'\n" + str(len(terrain)) + "\n" + "\n".join(
@@ -121,6 +126,7 @@ def write_bellhop_inputs(payload: dict[str, Any], job_root: Path) -> dict[str, A
     return {
         "input_files_sha256": {name: hashlib.sha256(data.encode()).hexdigest() for name, data in files.items()},
         "frequency_hz": payload["center_frequency_hz"], "water_depth_meters": bottom_depth,
+        "tracing_box_depth_meters": tracing_depth,
         "maximum_range_meters": range_m, "source_depths_meters": sources,
         "receiver_depths_meters": receivers, "range_sample_count": count,
         "ssp_interpolation": "linear-with-in-domain-bottom-interpolation",

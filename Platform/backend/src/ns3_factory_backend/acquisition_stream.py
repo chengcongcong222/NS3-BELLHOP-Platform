@@ -34,7 +34,7 @@ async def acquisition_stream(lock: asyncio.Lock, operation: Callable[[Progress],
     task = asyncio.create_task(run())
     try:
         yield json.dumps({"type": "progress", "stage": "queued",
-                          "message": "正在等待水文读取任务；首次获取该月份需下载温度和盐度两个文件"}, ensure_ascii=False) + "\n"
+                          "message": "正在等待水文读取任务；优先复用已保存剖面和月度数据，缺少时才下载"}, ensure_ascii=False) + "\n"
         while True:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=5)

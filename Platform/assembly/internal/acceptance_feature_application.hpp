@@ -35,6 +35,23 @@ struct GeneratedFeatureReport final {
   auto operator==(const GeneratedFeatureReport&) const -> bool = default;
 };
 
+// Business configuration, independent of protocol roles, MAC and preset size.
+struct BearingFeatureConfiguration final {
+  std::vector<contracts::NodeId> sources;
+  contracts::NodeId receiver;
+  std::size_t minimum_observations;
+  contracts::SimDuration period_reference;
+  double target_x;
+  double target_y;
+  bool cycle_start_inputs = true;
+  auto sensor_node_ids() const { return std::span<const contracts::NodeId>{sources}; }
+  auto fusion_center_node_id() const { return receiver; }
+  auto minimum_bearing_points() const { return minimum_observations; }
+  auto maximum_fusion_period() const { return period_reference; }
+  auto target_x_meters() const { return target_x; }
+  auto target_y_meters() const { return target_y; }
+};
+
 class AcceptanceFeatureApplication final
     : public IScenarioCycleApplication {
  public:
@@ -47,9 +64,27 @@ class AcceptanceFeatureApplication final
       contracts::ITraceSink* trace_sink = nullptr)
       -> contracts::Result<AcceptanceFeatureApplication>;
 
+  [[nodiscard]] static auto Create(
+      BearingFeatureConfiguration config,
+      runtime::internal::PacketQueueStore& queue_store,
+      const runtime::internal::ApplicationDeliveryStore& delivery_store,
+      contracts::SimTime run_started_at,
+      contracts::PacketId first_packet_id = contracts::PacketId{1'000'000},
+      contracts::ITraceSink* trace_sink = nullptr)
+      -> contracts::Result<AcceptanceFeatureApplication>;
+
   [[nodiscard]] auto input_node_ids() const noexcept
       -> std::span<const contracts::NodeId> override {
-    return config_.get().sensor_node_ids();
+    return config_.sensor_node_ids();
+  }
+
+  [[nodiscard]] auto input_timing() const noexcept -> ApplicationInputTiming override {
+    return config_.cycle_start_inputs ? ApplicationInputTiming::kCycleStart
+                                     : ApplicationInputTiming::kLegacyFirstTxOpportunity;
+  }
+  [[nodiscard]] auto forecast_packet_count(contracts::PlanningCycleId,
+      contracts::NodeId node) const -> contracts::Result<std::uint64_t> override {
+    return std::binary_search(config_.sources.begin(), config_.sources.end(), node) ? 1U : 0U;
   }
 
   [[nodiscard]] auto OnInputReady(
@@ -100,7 +135,7 @@ class AcceptanceFeatureApplication final
   };
 
   AcceptanceFeatureApplication(
-      const AcceptanceScenarioConfig& config,
+      BearingFeatureConfiguration config,
       runtime::internal::PacketQueueStore& queue_store,
       const runtime::internal::ApplicationDeliveryStore& delivery_store,
       contracts::SimTime run_started_at,
@@ -108,7 +143,7 @@ class AcceptanceFeatureApplication final
       FeatureFusionAccumulator fusion_accumulator,
       std::vector<SensorSequence> sensor_sequences,
       contracts::ITraceSink* trace_sink) noexcept
-      : config_(config),
+      : config_(std::move(config)),
         queue_store_(queue_store),
         delivery_store_(delivery_store),
         run_started_at_(run_started_at),
@@ -117,7 +152,7 @@ class AcceptanceFeatureApplication final
         sensor_sequences_(std::move(sensor_sequences)),
         trace_sink_(trace_sink) {}
 
-  std::reference_wrapper<const AcceptanceScenarioConfig> config_;
+  BearingFeatureConfiguration config_;
   std::reference_wrapper<runtime::internal::PacketQueueStore> queue_store_;
   std::reference_wrapper<
       const runtime::internal::ApplicationDeliveryStore> delivery_store_;
@@ -139,6 +174,29 @@ inline auto AcceptanceFeatureApplication::Create(
     contracts::PacketId first_packet_id,
     contracts::ITraceSink* trace_sink)
     -> contracts::Result<AcceptanceFeatureApplication> {
+  return Create(BearingFeatureConfiguration{
+      {config.sensor_node_ids().begin(), config.sensor_node_ids().end()},
+      config.fusion_center_node_id(), config.minimum_bearing_points(),
+      config.maximum_fusion_period(), config.target_x_meters(), config.target_y_meters(), false},
+      queue_store, delivery_store, run_started_at, first_packet_id, trace_sink);
+}
+
+inline auto AcceptanceFeatureApplication::Create(
+    BearingFeatureConfiguration config,
+    runtime::internal::PacketQueueStore& queue_store,
+    const runtime::internal::ApplicationDeliveryStore& delivery_store,
+    contracts::SimTime run_started_at,
+    contracts::PacketId first_packet_id,
+    contracts::ITraceSink* trace_sink)
+    -> contracts::Result<AcceptanceFeatureApplication> {
+  std::sort(config.sources.begin(), config.sources.end());
+  if(config.sources.empty() ||
+     std::adjacent_find(config.sources.begin(), config.sources.end()) != config.sources.end() ||
+     std::binary_search(config.sources.begin(), config.sources.end(), config.receiver) ||
+     !std::isfinite(config.target_x) || !std::isfinite(config.target_y)) {
+    return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+        "Bearing report sources and application receiver must be explicit and distinct"});
+  }
   const auto queue_nodes = queue_store.node_ids();
   const auto delivery_nodes = delivery_store.node_ids();
   for(const auto sensor : config.sensor_node_ids()) {
@@ -224,8 +282,8 @@ inline auto AcceptanceFeatureApplication::OnInputReady(
       now,
       projected->motion.position.x_meters,
       projected->motion.position.y_meters,
-      config_.get().target_x_meters(),
-      config_.get().target_y_meters());
+      config_.target_x_meters(),
+      config_.target_y_meters());
   if(!report) return std::unexpected(report.error());
   const auto bytes = EncodeDetectionFeatureReportV1(*report);
   if(!bytes) return std::unexpected(bytes.error());
@@ -237,7 +295,7 @@ inline auto AcceptanceFeatureApplication::OnInputReady(
           packet_id,
           node_id,
           contracts::UnicastDestination{
-              config_.get().fusion_center_node_id()},
+              config_.fusion_center_node_id()},
           std::move(payload)});
   if(!queued) return queued;
   generated_cycle_inputs_.insert(generated_position, input);
@@ -253,9 +311,9 @@ inline auto AcceptanceFeatureApplication::OnRuntimeDecision(
     contracts::SimTime now,
     const runtime::internal::CycleWorkingState& working_state)
     -> contracts::Status {
-  const auto sensors = config_.get().sensor_node_ids();
+  const auto sensors = config_.sensor_node_ids();
   for(const auto& delivery : delivery_store_.get().deliveries()) {
-    if(delivery.receiver_node_id != config_.get().fusion_center_node_id() ||
+    if(delivery.receiver_node_id != config_.fusion_center_node_id() ||
        !std::binary_search(
            sensors.begin(), sensors.end(), delivery.packet.source_node_id)) {
       continue;
@@ -263,7 +321,7 @@ inline auto AcceptanceFeatureApplication::OnRuntimeDecision(
     const auto* destination = std::get_if<contracts::UnicastDestination>(
         &delivery.packet.destination);
     if(destination == nullptr ||
-       destination->node_id != config_.get().fusion_center_node_id()) {
+       destination->node_id != config_.fusion_center_node_id()) {
       continue;
     }
     const auto payload = std::span<const std::byte>{delivery.packet.payload};
@@ -279,7 +337,7 @@ inline auto AcceptanceFeatureApplication::OnRuntimeDecision(
     if(!ingested) return std::unexpected(ingested.error());
   }
   const auto fusion_center = working_state.ProjectNodeState(
-      config_.get().fusion_center_node_id(), now);
+      config_.fusion_center_node_id(), now);
   if(!fusion_center) return std::unexpected(fusion_center.error());
   const auto fused = fusion_accumulator_.TryFuse(
       now,
@@ -289,7 +347,7 @@ inline auto AcceptanceFeatureApplication::OnRuntimeDecision(
   if(*fused) {
     const auto trace = contracts::FusionTrace{
         (**fused).fusion_sequence,
-        config_.get().fusion_center_node_id(),
+        config_.fusion_center_node_id(),
         (**fused).started_at,
         (**fused).completed_at,
         static_cast<std::uint64_t>((**fused).observation_count),

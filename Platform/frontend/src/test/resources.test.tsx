@@ -18,7 +18,8 @@ describe("real resource routes", () => {
       "/results": { body: [resultSummary, latestResult] },
     });
     renderRoute("/");
-    expect(await screen.findByText("a-latest-run")).toBeTruthy();
+    expect(await screen.findByTitle("a-latest-run")).toBeTruthy();
+    expect(screen.queryByText("a-latest-run")).toBeNull();
     expect(screen.getByText("运行失败")).toBeTruthy();
     expect(screen.getByRole("link", { name: "打开运行工作台" }).getAttribute("href")).toBe("/runs/a-latest-run");
     expect(screen.queryByRole("link", { name: "查看最近结果" })).toBeNull();

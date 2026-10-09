@@ -59,6 +59,11 @@ enum class ScenarioRuntimeState {
   kFailed,
 };
 
+enum class MacScheduleUpdatePolicy {
+  kNetworkUpdateCycle,
+  kEveryCycle,
+};
+
 class ScenarioRuntime final {
  public:
   // Non-null caller-provided trace/application hooks must outlive this
@@ -78,7 +83,9 @@ class ScenarioRuntime final {
       contracts::PlanningCycleId first_cycle_id,
       contracts::ITraceSink* trace_sink = nullptr,
       std::size_t network_update_interval_cycles = 1,
-      IScenarioCycleApplication* cycle_application = nullptr) noexcept
+      IScenarioCycleApplication* cycle_application = nullptr,
+      MacScheduleUpdatePolicy mac_update_policy =
+          MacScheduleUpdatePolicy::kNetworkUpdateCycle) noexcept
       : gateway_(gateway),
         world_store_(world_store),
         queue_store_(queue_store),
@@ -94,7 +101,8 @@ class ScenarioRuntime final {
         first_cycle_id_(first_cycle_id),
         trace_sink_(trace_sink == nullptr ? &null_trace_sink_ : trace_sink),
         network_update_interval_cycles_(network_update_interval_cycles),
-        cycle_application_(cycle_application) {}
+        cycle_application_(cycle_application),
+        mac_update_policy_(mac_update_policy) {}
 
   ScenarioRuntime(
       kernel::internal::Ns3KernelGateway& gateway,
@@ -108,7 +116,9 @@ class ScenarioRuntime final {
       contracts::PlanningCycleId first_cycle_id,
       contracts::ITraceSink* trace_sink = nullptr,
       std::size_t network_update_interval_cycles = 1,
-      IScenarioCycleApplication* cycle_application = nullptr) noexcept
+      IScenarioCycleApplication* cycle_application = nullptr,
+      MacScheduleUpdatePolicy mac_update_policy =
+          MacScheduleUpdatePolicy::kNetworkUpdateCycle) noexcept
       : ScenarioRuntime(gateway,
                         world_store,
                         queue_store,
@@ -123,7 +133,8 @@ class ScenarioRuntime final {
                         first_cycle_id,
                         trace_sink,
                         network_update_interval_cycles,
-                        cycle_application) {
+                        cycle_application,
+                        mac_update_policy) {
     physical_artifact_lifecycle_ = phy.artifact_lifecycle();
     if(phy.path() == PhyExecutionPath::kWaveform) {
       rx_phy_ = required_payload_rx_;
@@ -149,6 +160,37 @@ class ScenarioRuntime final {
         world_store_.current_snapshot().committed_at(), trajectories);
     if(!validation) return std::unexpected(validation.error());
     trajectories_ = std::move(trajectories);
+    return {};
+  }
+
+  // Explicit immutable physical declarations for planned algorithms. The
+  // assembly caller derives these bounds from its selected workload/PHY and
+  // already loaded field; runtime/planners do not query either here.
+  [[nodiscard]] auto BindPlanningInputs(
+      std::vector<contracts::NodeAirtime> airtimes,
+      contracts::SimDuration maximum_propagation_tail) -> contracts::Status {
+    if(state_ != ScenarioRuntimeState::kReady || planning_airtimes_ ||
+       maximum_propagation_tail < contracts::SimDuration::Zero()) {
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Planning inputs require a ready run, a single binding and a non-negative tail"});
+    }
+    std::sort(airtimes.begin(), airtimes.end(), [](const auto& a, const auto& b) {
+      return a.node_id < b.node_id;
+    });
+    const auto nodes = world_store_.current_snapshot().nodes();
+    if(airtimes.size() != nodes.size()) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kInvalidArgument, "Planning airtime universe is incomplete"});
+    for(std::size_t i = 0; i < nodes.size(); ++i) {
+      if(airtimes[i].node_id != nodes[i].node_id ||
+         airtimes[i].maximum_packet_airtime < contracts::SimDuration::Zero() ||
+         (nodes[i].capability.can_transmit &&
+          airtimes[i].maximum_packet_airtime == contracts::SimDuration::Zero())) {
+        return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+            "Planning airtime identity or duration is invalid"});
+      }
+    }
+    planning_airtimes_ = std::move(airtimes);
+    maximum_propagation_tail_ = maximum_propagation_tail;
     return {};
   }
 
@@ -236,6 +278,9 @@ class ScenarioRuntime final {
   contracts::ITraceSink* trace_sink_;
   std::size_t network_update_interval_cycles_;
   IScenarioCycleApplication* cycle_application_;
+  MacScheduleUpdatePolicy mac_update_policy_;
+  std::optional<std::vector<contracts::NodeAirtime>> planning_airtimes_;
+  contracts::SimDuration maximum_propagation_tail_{contracts::SimDuration::Zero()};
   phy::internal::IPhysicalArtifactLifecycle*
       physical_artifact_lifecycle_{nullptr};
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
@@ -316,8 +361,36 @@ inline auto ScenarioRuntime::RunOneCycle(
             "Non-update cycle has no applied network structure"});
   }
   if(!structure) return std::unexpected(structure.error());
-  auto candidate_result = cycle_planner_.Build(snapshot, *structure);
+  std::optional<contracts::PlanningInput> planning_input;
+  if(planning_airtimes_) {
+    std::vector<contracts::NodeTrafficDemand> demands;
+    for(const auto& airtime : *planning_airtimes_) {
+      const auto queued = queue_store_.size(airtime.node_id);
+      if(!queued) return std::unexpected(queued.error());
+      contracts::Result<std::uint64_t> ready = std::uint64_t{0};
+      if(cycle_application_ != nullptr) {
+        ready = cycle_application_->forecast_packet_count(cycle_id, airtime.node_id);
+      }
+      if(!ready) return std::unexpected(ready.error());
+      demands.push_back({airtime.node_id, *queued, *ready, airtime.maximum_packet_airtime});
+    }
+    auto input = contracts::PlanningInput::Create(cycle_id, snapshot.version(),
+        snapshot.committed_at(), std::move(demands), maximum_propagation_tail_);
+    if(!input) return std::unexpected(input.error());
+    planning_input = std::move(*input);
+    const auto valid_input = contracts::ValidatePlanningInput(
+        *planning_input, snapshot, *structure);
+    if(!valid_input) return valid_input;
+  }
+  auto candidate_result = planning_input
+      ? cycle_planner_.Build(snapshot, *structure, *planning_input)
+      : cycle_planner_.Build(snapshot, *structure);
   if(!candidate_result) return std::unexpected(candidate_result.error());
+  if(planning_input) {
+    const auto admitted = contracts::ValidatePlanningPlan(
+        *candidate_result, *planning_input, snapshot, *structure);
+    if(!admitted) return admitted;
+  }
   ++candidate_plan_build_count_;
   std::optional<contracts::ProtocolCyclePlan> candidate_plan{
       std::move(*candidate_result)};
@@ -337,8 +410,10 @@ inline auto ScenarioRuntime::RunOneCycle(
   if(!candidate_schedule) {
     return std::unexpected(candidate_schedule.error());
   }
+  const bool apply_candidate_mac = is_network_update_cycle ||
+      mac_update_policy_ == MacScheduleUpdatePolicy::kEveryCycle;
   contracts::Result<contracts::ProtocolCyclePlan> execution_result =
-      is_network_update_cycle
+      apply_candidate_mac
           ? contracts::Result<contracts::ProtocolCyclePlan>{*candidate_plan}
           : applied_mac_schedule_
                 ? applied_mac_schedule_->Bind(
@@ -410,7 +485,21 @@ inline auto ScenarioRuntime::RunOneCycle(
     auto* const application = cycle_application_;
     auto* const current_working_state = &*working_state;
     auto* const gateway = &gateway_;
-    for(const auto& opportunity : plan->mac_plan().tx_opportunities()) {
+    std::vector<contracts::TxOpportunity> input_opportunities;
+    if(application->input_timing() == ApplicationInputTiming::kCycleStart) {
+      for(const auto node_id : input_nodes) {
+        const auto node = snapshot.FindNode(node_id);
+        if(!node || !node->get().capability.can_transmit) {
+          return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+              "Cycle application input node cannot transmit"});
+        }
+        input_opportunities.push_back({node_id, plan->timing().starts_at()});
+      }
+    } else {
+      const auto opportunities = plan->mac_plan().tx_opportunities();
+      input_opportunities.assign(opportunities.begin(), opportunities.end());
+    }
+    for(const auto& opportunity : input_opportunities) {
       if(!std::binary_search(input_nodes.begin(),
                              input_nodes.end(),
                              opportunity.sender_node_id) ||
@@ -522,8 +611,10 @@ inline auto ScenarioRuntime::RunOneCycle(
   if(is_network_update_cycle) {
     previous_connectivity_ = structure->connectivity_graph();
     applied_structure_ = std::move(*structure);
-    applied_mac_schedule_ = std::move(*candidate_schedule);
     ++network_refresh_count_;
+  }
+  if(apply_candidate_mac) {
+    applied_mac_schedule_ = std::move(*candidate_schedule);
     ++applied_schedule_update_count_;
   }
   ++completed_cycle_count_;
@@ -546,6 +637,17 @@ inline auto ScenarioRuntime::RunCycles(std::size_t cycle_count)
     return Fail(contracts::Error{
         contracts::ErrorCode::kInvalidArgument,
         "ScenarioRuntime network update interval must be positive"});
+  }
+  if(mac_update_policy_ != MacScheduleUpdatePolicy::kNetworkUpdateCycle &&
+     mac_update_policy_ != MacScheduleUpdatePolicy::kEveryCycle) {
+    return Fail(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+        "ScenarioRuntime MAC update policy is unsupported"});
+  }
+  if(cycle_application_ != nullptr &&
+     cycle_application_->input_timing() != ApplicationInputTiming::kCycleStart &&
+     cycle_application_->input_timing() != ApplicationInputTiming::kLegacyFirstTxOpportunity) {
+    return Fail(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+        "ScenarioRuntime application input timing is unsupported"});
   }
   if(cycle_count == 0) {
     return Fail(contracts::Error{

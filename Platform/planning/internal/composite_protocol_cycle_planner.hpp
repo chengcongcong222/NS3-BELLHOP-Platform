@@ -27,6 +27,12 @@ class CompositeProtocolCyclePlanner final : public IProtocolCyclePlanner {
       const contracts::StructureSnapshot& structure_snapshot) const
       -> contracts::Result<contracts::ProtocolCyclePlan> override;
 
+  [[nodiscard]] auto Build(
+      const contracts::WorldSnapshot& world_snapshot,
+      const contracts::StructureSnapshot& structure_snapshot,
+      const contracts::PlanningInput& input) const
+      -> contracts::Result<contracts::ProtocolCyclePlan> override;
+
  private:
   std::reference_wrapper<const IRoutingPlanner> routing_planner_;
   std::reference_wrapper<const IMacPlanner> mac_planner_;
@@ -94,6 +100,31 @@ inline auto CompositeProtocolCyclePlanner::Build(
 
   return contracts::ProtocolCyclePlan::Create(
       std::move(*routing_plan), timing, mac_result->mac_plan());
+}
+
+inline auto CompositeProtocolCyclePlanner::Build(
+    const contracts::WorldSnapshot& world,
+    const contracts::StructureSnapshot& structure,
+    const contracts::PlanningInput& input) const
+    -> contracts::Result<contracts::ProtocolCyclePlan> {
+  const auto valid = contracts::ValidatePlanningInput(input, world, structure);
+  if(!valid) return std::unexpected(valid.error());
+  auto routing = routing_planner_.get().Build(structure);
+  if(!routing) return std::unexpected(routing.error());
+  if(routing->cycle_id() != input.cycle_id() ||
+     routing->base_snapshot_version() != input.base_snapshot_version()) {
+    return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition,
+        "Routing planner output provenance does not match planning input"});
+  }
+  auto mac = mac_planner_.get().Build(world, structure, input);
+  if(!mac) return std::unexpected(mac.error());
+  auto plan = contracts::ProtocolCyclePlan::Create(
+      std::move(*routing), mac->timing(), mac->mac_plan());
+  if(!plan) return std::unexpected(plan.error());
+  const auto accepted = contracts::ValidatePlanningPlan(*plan, input, world, structure);
+  if(!accepted) return std::unexpected(accepted.error());
+  return plan;
 }
 
 }  // namespace ns3_factory::planning::internal

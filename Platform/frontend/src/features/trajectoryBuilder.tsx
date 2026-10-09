@@ -63,16 +63,20 @@ function TrajectoryCharts({ points, time }: { points: TrajectoryPointDto[]; time
   </>;
 }
 
-export function TrajectoryAuthoringPage() {
+export function TrajectoryAuthoringPage({ embedded = false, onChoose, initialPosition }: {
+  embedded?: boolean;
+  onChoose?: (asset: TrajectoryAssetDto, trackId: string) => void;
+  initialPosition?: { x_meters: number; y_meters: number; z_meters: number };
+} = {}) {
   const client = useQueryClient();
   const catalog = useQuery({ queryKey: ["trajectories"], queryFn: apiClient.listTrajectories });
   const [asset, setAsset] = useState<TrajectoryAssetDto | null>(null), [selectedTrack, setSelectedTrack] = useState("");
   const [filter, setFilter] = useState(""), [kind, setKind] = useState<Kind>("ConstantVelocity"), [name, setName] = useState("新建直线轨迹");
   const [duration, setDuration] = useState(60), [dt, setDt] = useState(1), [time, setTime] = useState<number | null>(null);
-  const [trackId, setTrackId] = useState("N1"), [initial, setInitial] = useState<Triple>([0, 0, 20]), [velocity, setVelocity] = useState<Triple>([1, 0, 0]);
+  const [trackId, setTrackId] = useState("N1"), [initial, setInitial] = useState<Triple>(initialPosition ? [initialPosition.x_meters, initialPosition.y_meters, -initialPosition.z_meters] : [0, 0, 20]), [velocity, setVelocity] = useState<Triple>([1, 0, 0]);
   const [waypoints, setWaypoints] = useState<Triple[]>([[30, 20, 30], [60, 0, 20]]), [controller, setController] = useState("WaypointPid"), [speed, setSpeed] = useState(1);
   const [direct, setDirect] = useState([100, 0, 0, 0, 8]), [csv, setCsv] = useState(""), [fileError, setFileError] = useState<string | null>(null);
-  const shown = asset ?? catalog.data?.[0] ?? null;
+  const shown = asset ?? (embedded ? null : catalog.data?.[0] ?? null);
   const track = shown?.tracks.find(t => t.track_id === selectedTrack) ?? shown?.tracks[0];
   const start = track?.points[0]?.time_s ?? 0, end = track?.points.at(-1)?.time_s ?? 0;
   const previewTime = time ?? start;
@@ -105,7 +109,7 @@ export function TrajectoryAuthoringPage() {
   const selectKind = (value: Kind) => { setKind(value); create.reset(); if (value === "Uuv5Dof") setDt(.1); };
   const catalogItems = (catalog.data ?? []).filter(item => `${item.name} ${item.asset_id}`.toLowerCase().includes(filter.toLowerCase()));
   return <section className="trajectory-builder" aria-label="轨迹建设工作台">
-    <header className="trj-header"><div><h1>轨迹建设</h1><p>先生成位置随时间的记录，再在实验工作台中为节点绑定。</p></div><Link className="trj-link" to="/workspace/experiment">进入实验工作台 →</Link></header>
+    <header className="trj-header"><div><h1>{embedded ? "新增或选择轨迹" : "轨迹资源"}</h1><p>{embedded ? "生成后预览，再应用到当前节点；原有轨迹与实验不会被覆盖。" : "轨迹在实验工作台的节点面板内创建与绑定。"}</p></div>{!embedded && <Link className="trj-link" to="/workspace/experiment">进入实验工作台 →</Link>}</header>
     <div className="trj-layout">
       <aside className="trj-catalog" aria-label="已保存轨迹目录"><div className="trj-panel-title"><h2>已保存轨迹</h2><span>{catalog.data?.length ?? 0} 条</span></div><input type="search" aria-label="搜索轨迹" placeholder="搜索名称" value={filter} onChange={e => setFilter(e.target.value)} />
         <div className="trj-catalog-list">{catalog.isPending && <p>正在加载轨迹…</p>}{catalog.error && <ErrorState error={catalog.error} />}{!catalog.isPending && !catalog.error && !catalogItems.length && <p className="trj-hint">{filter ? "没有匹配的轨迹。" : "尚无轨迹。填写右侧参数并生成保存后，可在这里查看。"}</p>}
@@ -117,9 +121,10 @@ export function TrajectoryAuthoringPage() {
           <div className="trj-charts"><TrajectoryCharts points={track.points} time={previewTime} /></div>
           <div className="trj-scrubber"><label htmlFor="trj-time">位置预览</label><input id="trj-time" aria-label="轨迹时间" type="range" min={start} max={end} step="any" value={previewTime} onChange={e => setTime(Number(e.target.value))} /><output>t = {number(previewTime)} s</output></div>
           <dl className="trj-readout"><div><dt>X</dt><dd>{position ? number(position.x_m) : "—"} m</dd></div><div><dt>Y</dt><dd>{position ? number(position.y_m) : "—"} m</dd></div><div><dt>深度</dt><dd>{position ? number(-position.z_m) : "—"} m</dd></div></dl>
-          <p className="trj-hint trj-view-note">滑块只预览已保存数据，点间采用线性插值；不播放、不推进仿真。</p>
+          <p className="trj-hint trj-view-note">滑块仅预览路径，不改变仿真。应用后可在场景中设置节点起点。</p>
+          {onChoose && <button type="button" className="trj-primary" onClick={() => onChoose(shown, track.track_id)}>应用此轨迹到节点</button>}
           <details className="trj-resource-details"><summary>资源标识与来源</summary><dl><dt>资源编号 / 版本</dt><dd>{shown.asset_id} / {shown.version}</dd><dt>坐标</dt><dd>局部直角坐标，单位米；存储的 Z 轴向上为正。</dd><dt>来源</dt><dd>{sourceName(shown.source)}</dd><dt>校验值</dt><dd>{shown.checksum_sha256}</dd></dl>{shown.source_notice && <p>{shown.source_notice}</p>}</details>
-        </> : <div className="trj-empty"><strong>这里显示真实生成的轨迹</strong><p>选择左侧已有轨迹，或填写右侧参数后点击“生成并保存”。</p><p>未生成前不绘制示意运动，也不会用示例数据替代。</p></div>}
+        </> : <div className="trj-empty"><strong>{embedded ? "选择或生成要绑定的轨迹" : "这里显示真实生成的轨迹"}</strong><p>选择左侧已有轨迹，或填写右侧参数后点击“生成并保存”。</p>{!embedded && <p>未生成前不绘制示意运动，也不会用示例数据替代。</p>}</div>}
       </section>
       <form className="trj-controls" onSubmit={event => { event.preventDefault(); create.mutate(); }}>
         <div className="trj-panel-title"><h2>生成 / 导入</h2><span>保存为新轨迹</span></div>
@@ -133,7 +138,7 @@ export function TrajectoryAuthoringPage() {
             <details className="trj-control-group"><summary>路径编号</summary><label>编号<input value={trackId} onChange={e => setTrackId(e.target.value)} /></label><p className="trj-hint">用于在一个资源内区分路径，名称不要求与实验节点编号相同。</p></details>
           </>}
         </fieldset>
-        <div className="trj-save"><p className="trj-hint">有效期须覆盖最后一次接收。越界明确报错，不自动续航或停在终点。</p>{invalid && <p className="trj-validation" role="status">{invalid}</p>}<button className="trj-primary" type="submit" disabled={Boolean(invalid) || create.isPending}>{create.isPending ? "正在生成并保存…" : kind === "Csv" ? "导入并保存" : "生成并保存"}</button>{create.isSuccess && <p className="trj-success" role="status">已保存“{create.data.name}”，可前往实验工作台绑定。</p>}{create.error && <ErrorState error={create.error} />}</div>
+        <div className="trj-save"><p className="trj-hint">有效期须覆盖最后一次接收。越界明确报错，不自动续航或停在终点。</p>{invalid && <p className="trj-validation" role="status">{invalid}</p>}<button className="trj-primary" type="submit" disabled={Boolean(invalid) || create.isPending}>{create.isPending ? "正在生成并保存…" : kind === "Csv" ? "导入并保存" : "生成并保存"}</button>{create.isSuccess && <p className="trj-success" role="status">已保存“{create.data.name}”。{embedded ? "尚未绑定到节点：请确认预览后点击“应用此轨迹到节点”，然后在工作台保存实验。直接关闭不会修改节点绑定。" : "可前往实验工作台绑定。"}</p>}{create.error && <ErrorState error={create.error} />}</div>
       </form>
     </div>
   </section>;

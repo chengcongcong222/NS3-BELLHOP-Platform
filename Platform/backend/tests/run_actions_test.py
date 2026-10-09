@@ -57,9 +57,10 @@ def test_failed_run_actions_and_exact_rerun_ignore_later_draft_edits(tmp_path: P
             assert before["edit"]["scenario_draft_id"] == scene["draft_id"]
             assert before["edit"]["captured_revision"] == 1
             assert before["edit"]["available"] and before["rerun"]["available"]
-            assert before["timing"]["encoded_bytes"] == "19"
-            assert before["timing"]["minimum_airtime_ns"] == "2533333334"
-            assert before["timing"]["minimum_slot_duration_ns"] == "4533333334"
+            assert before["timing"]["planned_payload_bytes"] == "4"
+            assert before["timing"]["encoded_bytes"] == "8"
+            assert before["timing"]["minimum_airtime_ns"] == "1066666667"
+            assert before["timing"]["minimum_slot_duration_ns"] == "3066666667"
             for draft in [scene, experiment]:
                 response = await client.put(f"/authoring/drafts/{draft['kind']}/{draft['draft_id']}",
                     headers={"If-Match": "1"}, json={"kind": draft["kind"], "name": "Later edits", "payload": {}})

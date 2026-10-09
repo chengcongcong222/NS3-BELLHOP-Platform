@@ -134,7 +134,7 @@ class FakeRunExecutor final : public IRunExecutor {
       nodes.push_back(NodeSummary{node.node_id,
                                   node.motion.position,
                                   node.node_id ==
-                                      scenario.fusion_center_node_id()});
+                                      *scenario.fusion_center_node_id()});
     }
     return RunResult{
         run_id,

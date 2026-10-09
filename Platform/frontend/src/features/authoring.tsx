@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AcousticPlots } from "../components/AcousticPlots";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "../api/client";
@@ -14,9 +15,10 @@ import type {
 export { TrajectoryAuthoringPage } from "./trajectoryBuilder";
 import { DraftEnvironmentProfile } from "../components/EnvironmentProfile";
 import { ScenarioDesigner } from "../components/ScenarioDesigner";
-import { SceneDomainEditor } from "../components/SceneDomainEditor";
+import { ExperimentParticipation } from "../components/ExperimentParticipation";
 import { isSceneDomain } from "../domain/sceneSpatial";
 import { trajectoryRunCoverage } from "../domain/trajectoryCoverage";
+import { planningConfigurationIssues, planningNanosecondsInput, planningSecondsInput } from "../domain/planningConfiguration";
 import {
   EmptyState,
   ErrorState,
@@ -35,7 +37,7 @@ const now = () => new Date().toISOString();
 const environmentInitial: EnvironmentDraft = {
   kind: "environment",
   id: "",
-  name: "未命名水声环境",
+  name: "",
   description: "",
   provenance: { kind: "new", label: "新建" },
   maximumDepthMeters: 200,
@@ -63,8 +65,9 @@ const defaultBuildParameters: EnvironmentBuildParameters = {
   minimumAngle: -30, maximumAngle: 30,
   sourceDepths: "8, 20, 40, 60, 75", receiverDepths: "8, 20, 40, 60, 75", rangeSampleCount: 26,
 };
-const acquisitionInitial = { latitudeDeg: 18, longitudeDeg: 110, month: 4, requestedSspDepthMeters: 200,
+const acquisitionInitial = { latitudeDeg: 18, longitudeDeg: 110, month: 4 as number | null, requestedSspDepthMeters: 200,
   bearingDeg: 90, requestedRangeMeters: 10000, terrainSamples: 41, useReferenceCache: false };
+const flatBottomSource = { kind: "ideal-flat-bottom", description: "平坦海底计算假设，非实测地形" };
 type AcquisitionParameters = typeof acquisitionInitial;
 const sourceQuery = (p: AcquisitionParameters, kind: "ssp" | "terrain") => kind === "ssp"
   ? { latitude_deg: p.latitudeDeg, longitude_deg: p.longitudeDeg, month: p.month, maximum_depth_meters: p.requestedSspDepthMeters, use_reference_cache: p.useReferenceCache }
@@ -78,7 +81,9 @@ const toEnvironmentPayload = (value: EnvironmentDraft, parameters = defaultBuild
     depth_meters: point.depthMeters,
     speed_meters_per_second: point.speedMetersPerSecond,
   })),
-  bathymetry: value.bathymetry.map((point) => ({
+  bathymetry: (sources.bottom_boundary?.kind === "ideal-flat-bottom"
+    ? [{ rangeMeters: 0, depthMeters: value.maximumDepthMeters }, { rangeMeters: value.maximumRangeMeters, depthMeters: value.maximumDepthMeters }]
+    : value.bathymetry).map((point) => ({
     range_meters: point.rangeMeters,
     depth_meters: point.depthMeters,
   })),
@@ -108,8 +113,8 @@ const fromEnvironmentDraft = (draft: AuthoringDraftDto): EnvironmentDraft => {
     id: draft.draft_id,
     name: draft.name,
     description: String(p.description ?? ""),
-    maximumDepthMeters: Array.isArray(p.bathymetry) && p.bathymetry.length ? Math.max(...p.bathymetry.map((x: any) => Number(x.depth_meters))) : 0,
-    maximumRangeMeters: Array.isArray(p.bathymetry) && p.bathymetry.length ? Math.max(...p.bathymetry.map((x: any) => Number(x.range_meters))) : 0,
+    maximumDepthMeters: Array.isArray(p.bathymetry) && p.bathymetry.length ? Math.max(...p.bathymetry.map((x: any) => Number(x.depth_meters))) : Number(p.maximum_depth_meters ?? 200),
+    maximumRangeMeters: Array.isArray(p.bathymetry) && p.bathymetry.length ? Math.max(...p.bathymetry.map((x: any) => Number(x.range_meters))) : Number(p.maximum_range_meters ?? 10000),
     centerFrequencyHz: Number(p.center_frequency_hz ?? 25000),
     soundSpeedProfile: Array.isArray(p.sound_speed_profile)
       ? p.sound_speed_profile.map((x: any) => ({
@@ -133,7 +138,6 @@ function StepRail({ current, select }: { current: number; select: (step: number)
       {[
         "基本信息",
         "水文来源",
-        "地形来源",
         "数据预览",
         "Bellhop 配置",
         "构建与发布",
@@ -180,26 +184,54 @@ export function EnvironmentAuthoringPage() {
   );
   const [step, setStep] = useState(2);
   const sourceId = params.get("source") ?? "";
+  const [showPlots, setShowPlots] = useState(Boolean(sourceId));
   const source = useQuery({ queryKey: ["environment-inputs", sourceId], queryFn: () => apiClient.environmentInputs(sourceId), enabled: !!sourceId });
   const loadedSource = useRef("");
   const [hydrologySource, setHydrologySource] = useState<
     "woa" | "file"
   >("woa");
-  const [terrainSource, setTerrainSource] = useState<
-    "gebco" | "file"
-  >("gebco");
   const [build, setBuild] = useState<EnvironmentBuildDto | null>(null);
   const [builtInput, setBuiltInput] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const nameInput = useRef<HTMLInputElement>(null);
+  const [nameError, setNameError] = useState("");
+  const [publishedBuildId, setPublishedBuildId] = useState("");
+  const requireName = () => {
+    if (value.name.trim() && value.name.trim() !== "未命名水声环境") { setNameError(""); return true; }
+    setNameError("请先填写环境名称。"); nameInput.current?.focus(); return false;
+  };
+  const [importError, setImportError] = useState<unknown>(null);
   const [buildParameters, setBuildParameters] = useState(defaultBuildParameters);
   const [acquisition, setAcquisition] = useState(acquisitionInitial);
-  const [sources, setSources] = useState<Record<string, any>>({});
+  const [sources, setSources] = useState<Record<string, any>>({ bottom_boundary: flatBottomSource });
+  const currentInput = JSON.stringify([value.name, toEnvironmentPayload(value, buildParameters, acquisition, sources)]);
+  const currentInputRef = useRef(currentInput); currentInputRef.current = currentInput;
   const acquisitionRef = useRef(acquisition); acquisitionRef.current = acquisition;
   const woaAbort = useRef<AbortController | null>(null);
   const [woaProgress, setWoaProgress] = useState<AcquisitionProgress | null>(null);
   const [woaElapsed, setWoaElapsed] = useState(0);
   useEffect(() => () => woaAbort.current?.abort(), []);
   const capabilities = useQuery({ queryKey: ["environment-capabilities"], queryFn: () => apiClient.environmentCapabilities() });
+  const hydrologyCache = useQuery({ queryKey: ["hydrology-cache"], queryFn: () => apiClient.hydrologyCache(), enabled: capabilities.data?.hydrology_cache_available === true });
+  const [selectedProfile, setSelectedProfile] = useState("");
+  const reuseProfile = useMutation({
+    mutationFn: (id: string) => apiClient.hydrologyProfile(id),
+    onSuccess: record => {
+      const result = record.result as any;
+      const selection = record.selection as any;
+      const points = result.sound_speed_profile as Array<any>;
+      const { sound_speed_profile: _, ...metadata } = result;
+      const request = selection ? { latitude_deg: selection.latitude_deg, longitude_deg: selection.longitude_deg,
+        month: selection.month, maximum_depth_meters: selection.maximum_depth_meters, use_reference_cache: selection.use_reference_cache } : undefined;
+      if (selection) setAcquisition(current => ({ ...current, latitudeDeg: selection.latitude_deg, longitudeDeg: selection.longitude_deg,
+        month: selection.month, requestedSspDepthMeters: selection.maximum_depth_meters, useReferenceCache: false }));
+      setSources(current => ({ ...current, ssp: { ...metadata, ...(request ? { request } : {}), cache_id: record.cache_id } }));
+      setValue(current => ({ ...current, soundSpeedProfile: points.map(point => ({ depthMeters: point.depth_meters, speedMetersPerSecond: point.speed_meters_per_second })),
+        maximumDepthMeters: current.bathymetry.length ? current.maximumDepthMeters : points.at(-1)!.depth_meters }));
+      setNotice("已复用服务器保存的水文剖面，没有重新下载。来源与原查询条件随草稿保存。");
+      setStep(3);
+    },
+  });
   useEffect(() => {
     let selected = drafts.data?.find(
       (item) => item.draft_id === params.get("draft"),
@@ -214,8 +246,8 @@ export function EnvironmentAuthoringPage() {
       if (selected.draft_id) setServerDraft(selected);
       setValue(fromEnvironmentDraft(selected));
       const p = selected.payload as any;
-      setAcquisition({ ...acquisitionInitial, ...p.acquisition });
-      setSources(p.sources ?? {});
+      setAcquisition({ ...acquisitionInitial, ...p.acquisition, useReferenceCache: false });
+      setSources(p.bathymetry?.length ? p.sources ?? {} : { ...p.sources, bottom_boundary: flatBottomSource });
       setBuildParameters({
         bottomSoundSpeed: p.bottom?.sound_speed_meters_per_second ?? defaultBuildParameters.bottomSoundSpeed,
         bottomDensity: p.bottom?.density_grams_per_cubic_centimeter ?? defaultBuildParameters.bottomDensity,
@@ -230,8 +262,11 @@ export function EnvironmentAuthoringPage() {
     }
   }, [drafts.data, params, serverDraft?.draft_id, source.data, sourceId]);
   const save = useMutation({
-    mutationFn: async () =>
-      serverDraft
+    onError: () => setNotice(""),
+    mutationFn: async () => {
+      if (!requireName()) throw new Error("请先填写环境名称。");
+      const submittedInput = currentInput;
+      const draft = serverDraft
         ? apiClient.updateDraft(
             serverDraft,
             value.name,
@@ -241,11 +276,19 @@ export function EnvironmentAuthoringPage() {
             "environment",
             value.name,
             toEnvironmentPayload(value, buildParameters, acquisition, sources),
-          ),
-    onSuccess: async (draft) => {
+          );
+      return { draft: await draft, submittedInput };
+    },
+    onSuccess: async ({ draft, submittedInput }) => {
+      const editedWhileSaving = currentInputRef.current !== submittedInput;
       setServerDraft(draft);
-      setValue(fromEnvironmentDraft(draft));
-      setNotice("草稿已保存到服务器工作区");
+      // The response acknowledges the submitted revision, not subsequent edits.
+      setValue(current => editedWhileSaving
+        ? { ...current, id: draft.draft_id, updatedAt: draft.updated_at }
+        : fromEnvironmentDraft(draft));
+      setNotice(editedWhileSaving
+        ? "上次提交的内容已保存；保存期间的新修改仍保留在页面，请再次保存。"
+        : "草稿已保存到服务器工作区");
       await client.invalidateQueries({ queryKey: ["authoring-drafts"] });
     },
   });
@@ -281,44 +324,23 @@ export function EnvironmentAuthoringPage() {
       const availableDepth = Math.max(...points.map((x) => Number(x.depth_meters)));
       setValue((current) => ({
         ...current,
-        maximumDepthMeters: current.bathymetry.length ? Math.max(...current.bathymetry.map((x) => x.depthMeters)) : availableDepth,
+        maximumDepthMeters: !current.soundSpeedProfile.length && !current.bathymetry.length ? availableDepth : current.maximumDepthMeters,
         soundSpeedProfile: points.map((x) => ({
           depthMeters: Number(x.depth_meters),
           speedMetersPerSecond: Number(x.speed_meters_per_second),
         })),
       }));
-      setNotice(`已从 ${result.provider} 获取 ${points.length} 个水文采样点`);
+      setNotice(result.result_cache_reused ? `已复用本地 ${result.provider} 剖面，共 ${points.length} 个采样点；没有重新下载。` : `已从 ${result.provider} 获取 ${points.length} 个水文采样点`);
+      void client.invalidateQueries({ queryKey: ["hydrology-cache"] });
       setWoaProgress({ stage: "completed", message: `已获取 ${points.length} 个声速采样点${result.cache_files_reused === 2 ? "，使用已缓存的 NOAA 月度数据" : ""}` });
       setStep(3);
     },
   });
-  const terrain = useMutation({
-    mutationFn: (request: Record<string, unknown>) => apiClient.acquireTerrain(request),
-    onSuccess: (result, request) => {
-      if (JSON.stringify(request) !== JSON.stringify(sourceQuery(acquisitionRef.current, "terrain"))) return;
-      const { bathymetry: _, ...metadata } = result;
-      setSources(current => ({ ...current, terrain: { ...metadata, request } }));
-      const points = result.bathymetry as Array<any>;
-      setValue((current) => ({
-        ...current,
-        maximumDepthMeters: Math.max(...points.map((x) => Number(x.depth_meters))),
-        maximumRangeMeters: Math.max(...points.map((x) => Number(x.range_meters))),
-        bathymetry: points.map((x) => ({
-          rangeMeters: Number(x.range_meters),
-          depthMeters: Number(x.depth_meters),
-        })),
-      }));
-      setNotice(`已从 ${result.provider} 获取 ${points.length} 个地形采样点`);
-      setStep(4);
-    },
-  });
-  const importFile = async (file: File, kind: "ssp" | "terrain") => {
-    const result =
-      kind === "ssp"
-        ? await apiClient.importSsp(file.name, await file.text())
-        : await apiClient.importTerrain(file.name, await file.text());
-    setSources(current => ({ ...current, [kind]: { source: "file", filename: file.name } }));
-    if (kind === "ssp") {
+  const importFile = async (file: File) => {
+    setImportError(null);
+    try {
+    const result = await apiClient.importSsp(file.name, await file.text());
+    setSources(current => ({ ...current, ssp: { source: "file", filename: file.name, cache_id: result.cache_id } }));
       const points = result.sound_speed_profile as Array<any>;
       setValue({
         ...value,
@@ -328,23 +350,16 @@ export function EnvironmentAuthoringPage() {
           speedMetersPerSecond: Number(x.speed_meters_per_second),
         })),
       });
-    } else {
-      const points = result.bathymetry as Array<any>;
-      setValue({
-        ...value,
-        maximumDepthMeters: Math.max(...points.map(x => Number(x.depth_meters))),
-        maximumRangeMeters: Math.max(...points.map(x => Number(x.range_meters))),
-        bathymetry: points.map((x) => ({
-          rangeMeters: Number(x.range_meters),
-          depthMeters: Number(x.depth_meters),
-        })),
-      });
-    }
     setNotice(`${file.name} 已解析并通过基础检查`);
+    void client.invalidateQueries({ queryKey: ["hydrology-cache"] });
+    } catch (error) { setImportError(error); }
   };
   const startBuild = useMutation({
+    onError: () => setNotice(""),
     mutationFn: async () => {
-      setBuiltInput(JSON.stringify(toEnvironmentPayload(value, buildParameters, acquisition, sources)));
+      if (!requireName()) throw new Error("请先填写环境名称。");
+      setNotice("正在保存输入并计算声场…");
+      setBuiltInput(currentInput);
       const saved = serverDraft
         ? await apiClient.updateDraft(
             serverDraft,
@@ -361,31 +376,36 @@ export function EnvironmentAuthoringPage() {
     },
     onSuccess: (result) => {
       setBuild(result);
-      setStep(6);
+      setStep(5);
+      setShowPlots(true);
+      setNotice(result.state === "Completed" ? "声场计算完成，可以发布。" : "声场计算未完成，请查看错误信息。");
     },
   });
   const publish = useMutation({
+    onError: () => setNotice(""),
     mutationFn: () => apiClient.publishEnvironmentBuild(build!.build_id),
     onSuccess: async (artifact) => {
-      setNotice(`正式环境 ${String(artifact.environment_asset_id ?? "")} 已发布并可被新 Run 精确引用；发布版本不可变。`);
+      setPublishedBuildId(build!.build_id);
+      setNotice(`“${value.name}”已发布，可在实验工作台选择。`);
       await client.invalidateQueries({ queryKey: ["environments"] });
     },
   });
   if (drafts.error || source.error) return <ErrorState error={drafts.error || source.error} />;
   if (drafts.isPending || (sourceId && source.isPending)) return <LoadingState />;
   const sspMaximumDepth = value.soundSpeedProfile.length ? Math.max(...value.soundSpeedProfile.map((point) => point.depthMeters)) : 0;
-  const terrainMaximumDepth = value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.depthMeters)) : 0;
-  const terrainMaximumRange = value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.rangeMeters)) : 0;
-  const hasEnvironmentSamples = value.soundSpeedProfile.length >= 2 && value.bathymetry.length >= 2;
+  const flatBoundary = sources.bottom_boundary?.kind === "ideal-flat-bottom";
+  const terrainMaximumDepth = flatBoundary ? value.maximumDepthMeters : value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.depthMeters)) : 0;
+  const terrainMaximumRange = flatBoundary ? value.maximumRangeMeters : value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.rangeMeters)) : 0;
+  const hasEnvironmentSamples = value.soundSpeedProfile.length >= 2 && (flatBoundary || value.bathymetry.length >= 2) && terrainMaximumDepth > 0 && terrainMaximumRange > 0;
   const profileCoversTerrain = hasEnvironmentSamples && sspMaximumDepth >= terrainMaximumDepth;
-  const staleSources = (["ssp", "terrain"] as const).filter(kind => sources[kind]?.request && JSON.stringify(sources[kind].request) !== JSON.stringify(sourceQuery(acquisition, kind)));
+  const staleSources = (["ssp"] as const).filter(kind => sources[kind]?.request && JSON.stringify({ ...sources[kind].request, use_reference_cache: false }) !== JSON.stringify(sourceQuery(acquisition, kind)));
   const inputReady = hasEnvironmentSamples && profileCoversTerrain && !staleSources.length;
-  const matchesBuild = builtInput === JSON.stringify(toEnvironmentPayload(value, buildParameters, acquisition, sources));
+  const matchesBuild = builtInput === currentInput;
   return (
-    <div className="environment-builder classic-environment-page focused-environment" data-step={step}>
+    <div className="environment-builder classic-environment-page focused-environment" data-step={step} data-view={showPlots ? "plots" : "inputs"}>
       <section className="environment-classic-heading">
-        <div><p className="eyebrow">Bellhop 环境管理</p><h1>环境建设</h1><span>在同一工作区准备 SSP、海底地形与传播参数，再由正式 Build Job 固定产物。</span></div>
-        <div className="environment-classic-state"><b>{drafts.data?.length ?? 0}</b><span>服务器草稿</span><small>{serverDraft ? `当前 revision ${serverDraft.revision}` : "当前未保存"}</small></div>
+        <div><p className="eyebrow">Bellhop 环境管理</p><h1>环境建设</h1><span>选择水文剖面与声学计算范围，离线计算并保存水声信道。</span></div>
+        <div className="environment-classic-state"><b>{drafts.data?.length ?? 0}</b><span>服务器草稿</span><small>{serverDraft ? `当前修订 ${serverDraft.revision}` : "当前未保存"}</small></div>
       </section>
       <section className="workspace-toolbar environment-classic-toolbar">
         <div>
@@ -395,27 +415,35 @@ export function EnvironmentAuthoringPage() {
         <label>
           环境名称
           <input
+            ref={nameInput} required placeholder="请输入环境名称" aria-invalid={!!nameError}
             value={value.name}
-            onChange={(event) =>
-              setValue({ ...value, name: event.target.value })
-            }
+            onChange={(event) => { setNameError(""); setValue({ ...value, name: event.target.value }); }}
           />
         </label>
         <button
           type="button"
-          onClick={() => save.mutate()}
+          onClick={() => { if (requireName()) { setNotice("正在保存…"); save.mutate(); } }}
           disabled={save.isPending || startBuild.isPending}
         >
-          保存草稿
+          {save.isPending ? "正在保存…" : "保存草稿"}
         </button>
+        {build?.state === "Completed" && <button className="primary-button" disabled={publish.isPending || startBuild.isPending || !matchesBuild || publishedBuildId === build.build_id} onClick={() => { if (requireName()) { setNotice("正在发布…"); publish.mutate(); } }}>{publish.isPending ? "正在发布…" : publishedBuildId === build.build_id ? "已发布" : "发布为正式环境"}</button>}
       </section>
+      <div className="environment-action-feedback" aria-live="polite">
+        {nameError && <p role="alert">{nameError}</p>}
+        {notice && <p role="status">{notice}</p>}
+        {(save.error || startBuild.error || publish.error) && <ErrorState error={save.error || startBuild.error || publish.error} />}
+        {build?.state === "Completed" && !matchesBuild && <p>输入已修改，请重新计算后发布。</p>}
+      </div>
+      {(sourceId || build?.state === "Completed") && <div className="environment-view-tabs"><button aria-pressed={!showPlots} onClick={() => setShowPlots(false)}>输入与计算参数</button><button aria-pressed={showPlots} onClick={() => setShowPlots(true)}>信道计算结果</button></div>}
+      {showPlots && (sourceId || build?.state === "Completed") && <AcousticPlots key={build?.build_id ?? sourceId} environmentId={sourceId || undefined} buildId={build?.state === "Completed" ? build.build_id : undefined} />}
       <div className="builder-layout">
         <aside>
           <StepRail current={step} select={setStep} />
           <div className="plane-note">
             <strong>离线建设</strong>
             <span>
-              先取得水文与地形，再计算声场并发布。实验绑定发布版本，不随草稿修改。
+              获取或复用水文，计算声场并发布。实验绑定发布版本，不随草稿修改。
             </span>
           </div>
         </aside>
@@ -424,7 +452,7 @@ export function EnvironmentAuthoringPage() {
             <div className="section-number">01</div>
             <div>
               <h2>定义海域与用途</h2>
-              <p>海域坐标用于 WOA 与 GEBCO 查询；最终水深和距离由返回的数据覆盖范围确定。</p>
+              <p>{flatBoundary ? "计算采用平坦海底，非实测地形。" : "此历史环境保留原有海底边界。"}</p>
               <div className="form-grid">
                 <label>
                   说明
@@ -437,19 +465,21 @@ export function EnvironmentAuthoringPage() {
                   />
                 </label>
                 <label>
-                  数据确定的最大水深（m）
+                  计算水深（m，不超过声速剖面）
                   <input
                     type="number"
-                    readOnly
+                    readOnly={!flatBoundary}
                     value={value.maximumDepthMeters}
+                    onChange={e => setValue({ ...value, maximumDepthMeters: Number(e.target.value) })}
                   />
                 </label>
                 <label>
-                  地形覆盖距离（m）
+                  声场计算距离（m）
                   <input
                     type="number"
-                    readOnly
+                    readOnly={!flatBoundary}
                     value={value.maximumRangeMeters}
+                    onChange={e => setValue({ ...value, maximumRangeMeters: Number(e.target.value) })}
                   />
                 </label>
               </div>
@@ -459,6 +489,7 @@ export function EnvironmentAuthoringPage() {
             <div className="section-number">02</div>
             <div>
               <h2>选择水文来源</h2>
+              <div className="hydrology-reuse"><label>已保存的水文剖面<select value={selectedProfile} onChange={event => setSelectedProfile(event.target.value)}><option value="">选择已获取或已导入的数据</option>{(hydrologyCache.data ?? []).map((item: any) => <option key={item.cache_id} value={item.cache_id}>{item.filename || item.provider || "已保存剖面"} · {item.selection ? `${item.selection.latitude_deg}°, ${item.selection.longitude_deg}° · ${item.selection.month ? `${item.selection.month}月` : "年平均"} · ` : ""}{item.maximum_depth_meters} m · {item.point_count}点</option>)}</select></label><button type="button" disabled={!selectedProfile || reuseProfile.isPending} onClick={() => reuseProfile.mutate(selectedProfile)}>使用所选水文</button><small>获取按钮先查本地剖面和月度原始文件；相同内容不重复保存。</small>{(reuseProfile.error || hydrologyCache.error) && <ErrorState error={reuseProfile.error || hydrologyCache.error} />}</div>
               <div className="source-grid two-sources">
                 <SourceCard
                   selected={hydrologySource === "woa"}
@@ -475,16 +506,16 @@ export function EnvironmentAuthoringPage() {
               </div>
               {hydrologySource === "woa" && (
                 <div className="acquisition-form"><div className="form-grid">
-                  <label>纬度（°）<input disabled={acquisition.useReferenceCache} type="number" min="-90" max="90" value={acquisition.latitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, latitudeDeg: Number(e.target.value) })} /></label>
-                  <label>经度（°）<input disabled={acquisition.useReferenceCache} type="number" min="-180" max="180" value={acquisition.longitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, longitudeDeg: Number(e.target.value) })} /></label>
-                  <label>月份<input disabled={acquisition.useReferenceCache} type="number" min="1" max="12" value={acquisition.month} onChange={(e) => setAcquisition({ ...acquisition, month: Number(e.target.value) })} /></label>
+                  <label>纬度（°）<input type="number" min="-90" max="90" value={acquisition.latitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, latitudeDeg: Number(e.target.value) })} /></label>
+                  <label>经度（°）<input type="number" min="-180" max="180" value={acquisition.longitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, longitudeDeg: Number(e.target.value) })} /></label>
+                  <label>月份<input type="number" min="1" max="12" value={acquisition.month ?? ""} placeholder="留空为年平均" onChange={(e) => setAcquisition({ ...acquisition, month: e.target.value === "" ? null : Number(e.target.value) })} /></label>
                   <label>请求 SSP 深度上限（m）<input type="number" min="1" value={acquisition.requestedSspDepthMeters} onChange={(e) => setAcquisition({ ...acquisition, requestedSspDepthMeters: Number(e.target.value) })} /></label>
-                </div><label>数据来源<select value={acquisition.useReferenceCache ? "reference" : "online"} onChange={(e) => setAcquisition(e.target.value === "reference" ? { ...acquisitionInitial, useReferenceCache: true } : { ...acquisition, useReferenceCache: false })}><option value="online">在线查询所选海域</option><option value="reference">内置参考案例：北纬18°、东经110°、4月</option></select></label>
+                </div>
                 {!acquisition.useReferenceCache && capabilities.data?.woa_online_available === false && <p role="status">{String(capabilities.data.woa_unavailable_reason)}</p>}
                 <div className="acquisition-actions"><button type="button" onClick={() => woa.mutate(sourceQuery(acquisition, "ssp"))} disabled={woa.isPending || (!acquisition.useReferenceCache && capabilities.data?.woa_online_available === false)}>{woa.isPending ? "正在获取…" : acquisition.useReferenceCache ? "载入参考声速剖面" : "获取 WOA 数据"}</button>{woa.isPending && <button type="button" onClick={() => woaAbort.current?.abort()}>取消获取</button>}</div>
                 {!acquisition.useReferenceCache && <p className="acquisition-hint">首次获取某个月份需下载温度、盐度数据，可能需要数分钟。下载后，更换经纬度会直接使用该月缓存提取剖面。</p>}
                 {woaProgress && <div className="acquisition-progress" role="status" aria-live="polite"><strong>{woaProgress.message}</strong>{woa.isPending && <span>已等待 {woaElapsed} 秒{woaProgress.dataset ? ` · ${woaProgress.dataset}（${woaProgress.file_index}/${woaProgress.file_count}）` : ""}</span>}{woa.isPending && woaProgress.received_bytes !== undefined && <><span>{(woaProgress.received_bytes / 1048576).toFixed(1)} MB{woaProgress.total_bytes ? ` / ${(woaProgress.total_bytes / 1048576).toFixed(1)} MB` : " · 总大小由服务端决定"}</span><progress aria-label="WOA 文件下载进度" max={woaProgress.total_bytes ?? undefined} value={woaProgress.total_bytes ? woaProgress.received_bytes : undefined} /></>}</div>}
-                {woa.error && <p className="acquisition-error" role="alert">{woa.error.message}</p>}
+                {woa.error && <ErrorState error={woa.error} />}
                 </div>
               )}
               {hydrologySource === "file" && (
@@ -495,57 +526,16 @@ export function EnvironmentAuthoringPage() {
                     accept=".csv,.txt,.json"
                     onChange={(e) =>
                       e.target.files?.[0] &&
-                      void importFile(e.target.files[0], "ssp")
+                      void importFile(e.target.files[0])
                     }
                   />
                 </label>
               )}
-            </div>
-          </section>
-          <section className="builder-section">
-            <div className="section-number">03</div>
-            <div>
-              <h2>选择海底地形来源</h2>
-              <div className="source-grid two-sources">
-                <SourceCard
-                  selected={terrainSource === "gebco"}
-                  title="GEBCO 全球地形"
-                  detail="沿指定方位采样真实海底剖面"
-                  onClick={() => setTerrainSource("gebco")}
-                />
-                <SourceCard
-                  selected={terrainSource === "file"}
-                  title="导入地形文件"
-                  detail="CSV / TXT / JSON 地形剖面"
-                  onClick={() => setTerrainSource("file")}
-                />
-              </div>
-              {terrainSource === "gebco" && (
-                <div className="acquisition-form"><div className="form-grid">
-                  <label>起点纬度（°）<input disabled={acquisition.useReferenceCache} type="number" min="-90" max="90" value={acquisition.latitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, latitudeDeg: Number(e.target.value) })} /></label>
-                  <label>起点经度（°）<input disabled={acquisition.useReferenceCache} type="number" min="-180" max="180" value={acquisition.longitudeDeg} onChange={(e) => setAcquisition({ ...acquisition, longitudeDeg: Number(e.target.value) })} /></label>
-                  <label>剖面方位（°）<input disabled={acquisition.useReferenceCache} type="number" value={acquisition.bearingDeg} onChange={(e) => setAcquisition({ ...acquisition, bearingDeg: Number(e.target.value) })} /></label>
-                  <label>请求剖面距离（m）<input disabled={acquisition.useReferenceCache} type="number" min="1" value={acquisition.requestedRangeMeters} onChange={(e) => setAcquisition({ ...acquisition, requestedRangeMeters: Number(e.target.value) })} /></label>
-                  <label>采样点数<input disabled={acquisition.useReferenceCache} type="number" min="2" max="100" value={acquisition.terrainSamples} onChange={(e) => setAcquisition({ ...acquisition, terrainSamples: Number(e.target.value) })} /></label>
-                </div><button type="button" onClick={() => terrain.mutate(sourceQuery(acquisition, "terrain"))} disabled={terrain.isPending}>{terrain.isPending ? "正在获取…" : acquisition.useReferenceCache ? "载入参考地形" : "获取 GEBCO 地形"}</button></div>
-              )}
-              {terrainSource === "file" && (
-                <label className="file-button">
-                  选择地形文件
-                  <input
-                    type="file"
-                    accept=".csv,.txt,.json"
-                    onChange={(e) =>
-                      e.target.files?.[0] &&
-                      void importFile(e.target.files[0], "terrain")
-                    }
-                  />
-                </label>
-              )}
+              {importError != null && <ErrorState error={importError} />}
             </div>
           </section>
           <section className="builder-section preview-section">
-            <div className="section-number">04</div>
+            <div className="section-number">03</div>
             <div>
               <h2>数据预览与检查</h2>
               {staleSources.length > 0 && <p role="alert">采集参数已改变，请重新获取{staleSources.map(kind => kind === "ssp" ? "声速剖面" : "地形").join("、")}。旧数据仅供查看，不可据此构建。</p>}
@@ -558,7 +548,7 @@ export function EnvironmentAuthoringPage() {
                   <b>{value.soundSpeedProfile.length}</b> SSP 点
                 </span>
                 <span>
-                  <b>{value.bathymetry.length}</b> 地形点
+                  <b>{flatBoundary ? "平坦假设" : value.bathymetry.length ? "历史输入" : "未确认"}</b> 计算边界
                 </span>
                 <span>
                   <b>{value.maximumDepthMeters} m</b> 深度
@@ -567,11 +557,13 @@ export function EnvironmentAuthoringPage() {
                   <b>{value.maximumRangeMeters / 1000} km</b> 距离
                 </span>
               </div>
-              <div className={`coverage-check ${profileCoversTerrain ? "valid" : "invalid"}`}><strong>数据覆盖检查</strong><span>SSP 至 {sspMaximumDepth} m · 地形最深 {terrainMaximumDepth} m · 距离 {terrainMaximumRange} m</span><p>{!hasEnvironmentSamples ? "请先获取 SSP 与地形数据；每组至少需要两个有效采样点。" : profileCoversTerrain ? "SSP 已覆盖当前地形水深，可进入 Bellhop 构建。" : "SSP 未覆盖地形最深处。系统不会静默外推声速剖面；请重新获取更深的 WOA 数据或导入完整 SSP。"}</p></div>
+              <div className={`coverage-check ${profileCoversTerrain ? "valid" : "invalid"}`}><strong>数据覆盖检查</strong><span>声速剖面至 {sspMaximumDepth} m · 计算水深 {terrainMaximumDepth} m · 距离 {terrainMaximumRange} m</span><p>{value.soundSpeedProfile.length < 2 ? "请先获取至少两个声速采样点。" : !hasEnvironmentSamples ? "水文剖面已就绪，请确认计算边界、水深及范围。" : profileCoversTerrain ? "声速剖面覆盖计算水深，可进入 Bellhop 构建。" : "声速剖面未覆盖计算水深。请减小水深或获取更深的水文数据；不会静默外推。"}</p></div>
+              {flatBoundary && <div className="form-grid"><label>计算水深（m）<input type="number" min="1" max={sspMaximumDepth || undefined} value={value.maximumDepthMeters} onChange={event => setValue({ ...value, maximumDepthMeters: Number(event.target.value) })} /></label><label>计算距离（m）<input type="number" min="1" value={value.maximumRangeMeters} onChange={event => setValue({ ...value, maximumRangeMeters: Number(event.target.value) })} /></label></div>}
+              {step < 4 && <button disabled={!inputReady} onClick={() => setStep(4)}>下一步：计算参数</button>}
             </div>
           </section>
           <section className="builder-section">
-            <div className="section-number">05</div>
+            <div className="section-number">04</div>
             <div>
               <h2>Bellhop 离线构建</h2>
               <div className="form-grid">
@@ -605,7 +597,7 @@ export function EnvironmentAuthoringPage() {
                 <label>最小发射角（°）<input type="number" value={buildParameters.minimumAngle} onChange={(event) => setBuildParameters({...buildParameters, minimumAngle: Number(event.target.value)})} /></label>
                 <label>最大发射角（°）<input type="number" value={buildParameters.maximumAngle} onChange={(event) => setBuildParameters({...buildParameters, maximumAngle: Number(event.target.value)})} /></label>
               </div>
-              <p>按当前声速、地形和底质重新计算声场。声速在采样点之间线性插值，不外推。发布后可在实验中选择。</p>
+              <p>按当前声速、计算边界和底质重新计算声场。声速在采样点之间线性插值，不外推。发布后可在实验中选择。</p>
               <button
                 type="button"
                 disabled={!inputReady || startBuild.isPending || save.isPending || capabilities.data?.bellhop_available === false}
@@ -652,40 +644,11 @@ export function EnvironmentAuthoringPage() {
                     <strong>当前环境计算已完成</strong>
                     <span>{matchesBuild ? "发布时将完整校验声场并保存本次输入快照；已有运行使用的版本不会改变。" : "输入已修改。请按当前参数重新计算，不能把旧计算结果作为当前环境发布。"}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => publish.mutate()}
-                    disabled={publish.isPending || !matchesBuild}
-                  >
-                    发布为正式环境
-                  </button>
                 </div>
               )}
             </section>
           )}
-          {!build && step === 6 && <section className="build-console"><h2>计算与发布</h2><p>当前尚未计算声场。请检查采样覆盖和 Bellhop 参数后开始计算。</p><button onClick={() => setStep(5)}>设置计算参数</button></section>}
-          {(notice ||
-            save.error ||
-            terrain.error ||
-            startBuild.error ||
-            publish.error) && (
-            <div className="authoring-notice">
-              {notice}
-              {(save.error ||
-                terrain.error ||
-                startBuild.error ||
-                publish.error) && (
-                <ErrorState
-                  error={
-                    save.error ||
-                    terrain.error ||
-                    startBuild.error ||
-                    publish.error
-                  }
-                />
-              )}
-            </div>
-          )}
+          {!build && step === 5 && <section className="build-console"><h2>计算与发布</h2><p>当前尚未计算声场。请检查采样覆盖和 Bellhop 参数后开始计算。</p><button onClick={() => setStep(4)}>设置计算参数</button></section>}
         </main>
       </div>
     </div>
@@ -712,7 +675,7 @@ const scenarioInitial = (
         id: "",
         name: "未命名节点场景",
         environmentAssetId: environmentId,
-        fusionCenterNodeId: "0",
+        fusionCenterNodeId: null,
         provenance: { kind: "new", label: "新建" },
         nodes: [
           {
@@ -734,13 +697,18 @@ const scenarioInitial = (
 
 const experimentInitial: ExperimentDraft = {
   kind: "experiment",
+  executionMode: "PlanningV1",
+  planningCycleDurationNs: "30000000000",
+  adaptiveSafetyMarginNs: "0",
+  flows: [],
+  fusionReceiverNodeId: null,
   id: "",
   name: "未命名网络实验",
   sourceExperimentId: null,
   scenarioId: "",
   provenance: { kind: "new", label: "新建" },
-  routingMode: "DirectToFusionCenter",
-  macMode: "Tdma",
+  routingMode: "Direct",
+  macMode: "AdaptiveTdma",
   workload: "BearingFusion",
   minimumBearingPoints: "5",
   maximumFusionPeriodNs: "180000000000",
@@ -765,15 +733,28 @@ export function ExperimentAuthoringPage() {
     queryKey: ["environment-inputs", environment.environment_asset_id], queryFn: () => apiClient.environmentInputs(environment.environment_asset_id),
   })) });
   const [inspectorSection, setInspectorSection] = useState("basic");
+  const [targetExpanded, setTargetExpanded] = useState(false);
   const scenarioDrafts = useQuery(queries.drafts("scenario"));
   const experimentDrafts = useQuery({ ...queries.drafts("experiment"), enabled: Boolean(requestedDraftId) });
   const client = useQueryClient();
   const navigate = useNavigate();
   const [value, setValue] = useState(() => ({ ...experimentInitial, scenarioId: params.get("scenario") ?? "" }));
+  const planning = value.executionMode === "PlanningV1";
   const [server, setServer] = useState<AuthoringDraftDto | null>(null);
   const [scene, setScene] = useState<ScenarioDraft>(() => scenarioInitial([], ""));
   const initialSceneSignature = useRef(JSON.stringify([scene.name, scene.environmentAssetId, scene.nodes, scene.trajectoryBindings, scene.spatialDomain]));
   const [sceneServer, setSceneServer] = useState<AuthoringDraftDto | null>(null);
+  const [sceneBusinessReset, setSceneBusinessReset] = useState(false);
+  const [pendingSceneId, setPendingSceneId] = useState<string | null>(null);
+  const [sceneSwitching, startSceneTransition] = useTransition();
+  const switchScene = (id: string) => {
+    setPendingSceneId(null);
+    startSceneTransition(() => {
+      setValue(current => ({ ...current, scenarioId: id, flows: [], fusionReceiverNodeId: null }));
+      loadedScene.current = ""; setSceneServer(null); setSceneBusinessReset(true);
+      if (!id) setScene(scenarioInitial([], ""));
+    });
+  };
   const loadedScene = useRef("");
   const loadedExperiment = useRef("");
   const [savedSignature, setSavedSignature] = useState("");
@@ -796,13 +777,12 @@ export function ExperimentAuthoringPage() {
     const p = selectedScenarioDraft.payload;
     setSceneServer(selectedScenarioDraft);
     setScene({ kind: "scenario", id: selectedScenarioDraft.draft_id, name: selectedScenarioDraft.name,
-      environmentAssetId: String(p.environment_asset_id ?? ""), fusionCenterNodeId: String(p.fusion_center_node_id ?? "0"),
+      environmentAssetId: String(p.environment_asset_id ?? ""), fusionCenterNodeId: p.fusion_center_node_id == null ? null : String(p.fusion_center_node_id),
       nodes: structuredClone(p.nodes as ScenarioDraft["nodes"] ?? []),
       trajectoryBindings: structuredClone(p.trajectory_bindings as ScenarioDraft["trajectoryBindings"] ?? []),
       spatialDomain: structuredClone(p.spatial_domain as ScenarioDraft["spatialDomain"] ?? null),
       provenance: { kind: "new", label: "新建" }, updatedAt: selectedScenarioDraft.updated_at });
   }, [selectedScenarioDraft]);
-  const fusionPeriodSeconds = Number(value.maximumFusionPeriodNs) / 1e9;
   const guardSeconds = Number(value.guardIntervalNs) / 1e9;
   useEffect(() => {
     const selected = experimentDrafts.data?.find((item) => item.draft_id === requestedDraftId);
@@ -813,11 +793,16 @@ export function ExperimentAuthoringPage() {
     setServer(selected);
     setValue({
       ...experimentInitial,
+      executionMode: source.execution_mode == null ? undefined : String(source.execution_mode),
+      planningCycleDurationNs: text("planning_cycle_duration_ns", "30000000000"),
+      adaptiveSafetyMarginNs: String((source.adaptive_tdma as { safety_margin_ns?: string } | null)?.safety_margin_ns ?? "0"),
+      flows: structuredClone(source.flows as ExperimentDraft["flows"] ?? []),
+      fusionReceiverNodeId: source.fusion_receiver_node_id == null ? null : String(source.fusion_receiver_node_id),
       id: selected.draft_id,
       name: selected.name,
       scenarioId: text("scenario_id", ""),
-      routingMode: text("routing_mode", experimentInitial.routingMode),
-      macMode: text("mac_mode", experimentInitial.macMode),
+      routingMode: text("routing_mode", source.execution_mode === "PlanningV1" ? "Direct" : "DirectToFusionCenter"),
+      macMode: text("mac_mode", source.execution_mode === "PlanningV1" ? "AdaptiveTdma" : "Tdma"),
       workload: text("workload", experimentInitial.workload) === "CommunicationOnly" ? "CommunicationOnly" : "BearingFusion",
       minimumBearingPoints: text("minimum_bearing_points", experimentInitial.minimumBearingPoints),
       maximumFusionPeriodNs: text("maximum_fusion_period_ns", experimentInitial.maximumFusionPeriodNs),
@@ -839,7 +824,7 @@ export function ExperimentAuthoringPage() {
     setEquivalentNoise(number("equivalent_noise_power_db_re_1upa2", 45));
     setTarget({ x: number("target_x_m", 200), y: number("target_y_m", 150) });
   }, [experimentDrafts.data, requestedDraftId, server?.draft_id]);
-  const payload = {
+  const payload: Record<string, unknown> = {
     ...server?.payload,
     scenario_id: value.scenarioId,
     routing_mode: value.routingMode,
@@ -864,6 +849,23 @@ export function ExperimentAuthoringPage() {
     target_x_m: target.x,
     target_y_m: target.y,
   };
+  if (planning) {
+    payload.execution_mode = "PlanningV1";
+    payload.planning_cycle_duration_ns = value.planningCycleDurationNs;
+    delete payload.network_update_interval_cycles;
+    if (value.macMode === "AdaptiveTdma") {
+      payload.adaptive_tdma = { safety_margin_ns: value.adaptiveSafetyMarginNs };
+      delete payload.slot_duration_ns;
+      delete payload.guard_interval_ns;
+    } else delete payload.adaptive_tdma;
+    if (value.workload === "CommunicationOnly") {
+      payload.flows = value.flows ?? [];
+      for (const field of ["fusion_receiver_node_id", "minimum_bearing_points", "maximum_fusion_period_ns", "target_x_m", "target_y_m"]) delete payload[field];
+    } else {
+      payload.fusion_receiver_node_id = value.fusionReceiverNodeId ?? null;
+      delete payload.flows;
+    }
+  }
   const scenePayload = {
     ...sceneServer?.payload,
     environment_asset_id: scene.environmentAssetId,
@@ -895,7 +897,7 @@ export function ExperimentAuthoringPage() {
       saved = server ? await apiClient.updateDraft(server, value.name, exactPayload)
         : await apiClient.createDraft("experiment", value.name, exactPayload);
     } catch (error) {
-      throw new Error(`节点场景已保存（修订 ${savedScene.revision}）；实验保存失败，未启动运行。${error instanceof Error ? error.message : "请重试"}`);
+      throw new Error(`节点场景已保存（修订 ${savedScene.revision}）；实验保存失败，未启动运行。请保留本页修改并重试。`, { cause: error });
     }
     setServer(saved);
     setSavedSignature(JSON.stringify([scene.name, scenePayload, value.name, exactPayload]));
@@ -908,18 +910,21 @@ export function ExperimentAuthoringPage() {
   });
   const run = useMutation({
     mutationFn: async () => {
-      const positiveIntegers = [value.bitRateBitsPerSecond, value.simulationCycleCount, value.networkUpdateIntervalCycles, slotDurationNs];
+      const positiveIntegers = [value.bitRateBitsPerSecond, value.simulationCycleCount, value.networkUpdateIntervalCycles, ...(value.macMode === "Tdma" ? [slotDurationNs] : [])];
       if (!positiveIntegers.every(text => /^[1-9]\d*$/.test(text))) throw new Error("速率、周期数、网络刷新间隔与时隙时长必须是有效正数。");
-      if (!/^\d+$/.test(value.guardIntervalNs) || BigInt(value.guardIntervalNs) >= BigInt(slotDurationNs)) throw new Error("保护时间必须非负且小于一个时隙。");
+      if (value.macMode === "Tdma" && (!/^\d+$/.test(value.guardIntervalNs) || BigInt(value.guardIntervalNs) >= BigInt(slotDurationNs))) throw new Error("保护时间必须非负且小于一个时隙。");
       if (!/^\d+$/.test(value.deterministicSeed) || BigInt(value.deterministicSeed) > 18446744073709551615n) throw new Error("随机种子必须是 0～18446744073709551615 之间的整数。");
       if (![value.centerFrequencyHz, value.occupiedBandwidthHz, value.sourceLevelDb, equivalentNoise, waveformNoisePsd, target.x, target.y].every(Number.isFinite)
         || value.centerFrequencyHz <= 0 || value.occupiedBandwidthHz <= 0) throw new Error("设备与噪声参数必须是有限数值，频率和带宽必须大于零。");
       const { saved, savedScene } = await saveComposition();
       if (savedScene.validation_issues.length) throw new Error(`节点场景已保存，但尚不能运行：${savedScene.validation_issues.join("；")}`);
       if (saved.validation_issues.length) throw new Error(saved.validation_issues.join("；"));
-      if (scene.nodes.length < 3 || scene.nodes.length > 6) throw new Error("实验草稿已保存；当前运行引擎仅支持 3～6 个节点，未启动运行。不会自动补充或删减节点。");
+      if (!scene.nodes.length) throw new Error("实验草稿已保存；场景至少需要一个节点，未启动运行。");
+      if (!planning && (scene.nodes.length < 3 || scene.nodes.length > 6)) throw new Error("实验草稿已保存；历史执行方式仅支持 3～6 个节点，未启动运行。不会自动补充或删减节点。");
+      const planningIssues = planningConfigurationIssues(value, scene.nodes);
+      if (planningIssues.length) throw new Error(`实验已保存，运行前检查：${planningIssues.join("；")}`);
       const coverage = trajectoryRunCoverage(scene, trajectories.data ?? [], value.simulationCycleCount,
-        slotDurationNs, value.macMode);
+        slotDurationNs, value.macMode, planning ? value.planningCycleDurationNs : undefined);
       if (coverage.issues.length) throw new Error(`实验已保存，运行前检查：${coverage.issues.join("；")}`);
       return apiClient.createAuthoringRun(saved.draft_id, saved.revision);
     },
@@ -933,11 +938,22 @@ export function ExperimentAuthoringPage() {
   if (loadError) return <ErrorState error={loadError} />;
   if (requestedDraftId && !experimentDrafts.data?.some(draft => draft.draft_id === requestedDraftId)) return <p role="alert">这个实验草稿不存在，未改用其他案例。<Link to="/workspace/experiment">新建实验</Link></p>;
   const coverage = trajectoryRunCoverage(scene, trajectories.data ?? [], value.simulationCycleCount,
-    slotDurationNs, value.macMode);
+    slotDurationNs, value.macMode, planning ? value.planningCycleDurationNs : undefined);
+  const savedIssues = [
+    ...(sceneServer?.validation_issues ?? []).map(issue => `节点场景：${issue}`),
+    ...(server?.validation_issues ?? []).map(issue => `实验配置：${issue}`),
+  ];
+  const needsBusinessEndpoints = value.workload === "BearingFusion"
+    ? !scene.nodes.some(node => node.node_id === value.fusionReceiverNodeId && node.can_receive)
+    : !(value.flows?.length) || value.flows.some(flow => flow.source_node_id === flow.destination_node_id
+      || !scene.nodes.some(node => node.node_id === flow.source_node_id && node.can_transmit)
+      || !scene.nodes.some(node => node.node_id === flow.destination_node_id && node.can_receive));
   const inspector = (
         <div className="experiment-inspector" data-section={inspectorSection}>
           <div className="studio-pane-title"><strong>环境与实验参数</strong></div>
           <nav className="inspector-tabs" aria-label="实验参数分组">{[["basic", "资源"], ["network", "网络"], ["phy", "物理模式"], ["execution", "运行"]].map(([id, label]) => <button type="button" key={id} className={id === inspectorSection ? "selected" : ""} onClick={() => setInspectorSection(id)}>{label}</button>)}</nav>
+          {planning && sceneBusinessReset && needsBusinessEndpoints && <p className="property-help" role="status">场景已切换，通信流和应用接收点已清空。请在“网络”中为新场景重新指定业务端点。</p>}
+          {value.executionMode !== undefined && !planning && <p role="alert">此草稿的执行模式不受当前工作台支持，不能按历史模式运行。可以新建实验重新配置。</p>}
           <section id="basic" className="panel form-panel">
             <h2>场景与资源</h2>
             <label>场景名称<input value={scene.name} onChange={e => setScene({ ...scene, name: e.target.value })} /></label>
@@ -947,9 +963,8 @@ export function ExperimentAuthoringPage() {
                 value={value.scenarioId}
                 onChange={(e) => {
                   const sceneChanged = JSON.stringify([scene.name, scene.environmentAssetId, scene.nodes, scene.trajectoryBindings, scene.spatialDomain]) !== initialSceneSignature.current;
-                  if (signature !== savedSignature && (sceneServer || sceneChanged) && !window.confirm("切换场景将丢弃本页尚未保存的节点修改，是否继续？")) return;
-                  set("scenarioId", e.target.value); loadedScene.current = "";
-                  if (!e.target.value) { setScene(scenarioInitial([], "")); setSceneServer(null); }
+                  if (signature !== savedSignature && (sceneServer || sceneChanged)) { setPendingSceneId(e.target.value); return; }
+                  switchScene(e.target.value);
                 }}
               >
                 <option value="">新建节点场景</option>
@@ -960,18 +975,19 @@ export function ExperimentAuthoringPage() {
                 ))}
               </select>
             </label>
-            {value.scenarioId && !sceneServer && <p role="alert">当前场景引用无法读取，请重新选择。不会使用默认场景。</p>}
+            {sceneSwitching && <p role="status">正在切换场景…</p>}
+            {!sceneSwitching && value.scenarioId && !sceneServer && <p role="alert">当前场景引用无法读取，请重新选择。</p>}
+            {environmentNames[(environments.data ?? []).findIndex(environment => environment.environment_asset_id === scene.environmentAssetId)]?.isFetching && <p role="status">正在读取场景环境…</p>}
             <label>实验环境<select value={scene.environmentAssetId} onChange={e => setScene({ ...scene, environmentAssetId: e.target.value })}>
               <option value="">请选择已发布环境</option>{environments.data!.map((environment, index) => <option key={environment.environment_asset_id} value={environment.environment_asset_id}>{String(environmentNames[index].data?.name ?? (environment.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : `已发布环境 ${index + 1}`))} · v{environment.asset_format_version}</option>)}
             </select></label>
             <p className="property-help">点击画布节点，在此选择轨迹和收发能力。环境需先在环境建设中发布。</p>
-            <p className="property-help">当前运行引擎支持 3～6 个节点。其他规模可编辑、保存，尚不能启动运行。</p>
-            <SceneDomainEditor value={scene.spatialDomain} onChange={spatialDomain => setScene({ ...scene, spatialDomain })}
-              supported={capabilities.data?.scene_domain_validation === true} environment={sceneEnvironment}
-              inputs={environmentNames[(environments.data ?? []).findIndex(e => e.environment_asset_id === scene.environmentAssetId)]?.data} />
+            <p className="property-help">{planning ? "场景至少需要一个节点；通信流需要不同的源和目的节点，融合业务需要接收节点和其他可发送的观测节点。" : "历史执行方式支持 3～6 个节点。其他规模可编辑、保存，尚不能启动运行。"}</p>
+            {scene.spatialDomain && <p className="property-help">此历史场景保留原边界校验，以免改变已有实验。地形关联编辑已冻结；新场景不启用该功能。</p>}
           </section>
           <section id="network" className="panel form-panel">
             <h2>网络与协议</h2>
+            {!planning && <><label>业务接收 / 融合节点<select value={scene.fusionCenterNodeId ?? ""} onChange={event => setScene({ ...scene, fusionCenterNodeId: event.target.value || null })}><option value="">未指定</option>{scene.nodes.map(node => <option key={node.node_id} value={node.node_id}>N{node.node_id}</option>)}</select></label><p className="property-help">保留此历史草稿的配置式执行方式。新建实验可使用显式通信流与自适应 TDMA；预置案例需从有轨迹的场景派生。</p></>}
             <div className="form-grid">
               <label>
                 路由
@@ -979,8 +995,10 @@ export function ExperimentAuthoringPage() {
                   value={value.routingMode}
                   onChange={(e) => set("routingMode", e.target.value)}
                 >
-                  <option value="DirectToFusionCenter">直接发送到汇聚节点</option>
-                  <option value="ShortestPath">最短路径到汇聚节点</option>
+                  {planning && <option value="Direct">直接发送到业务目的节点</option>}
+                  {!planning && <option value="DirectToFusionCenter">直接发送到汇聚节点（兼容）</option>}
+                  {planning && !["Direct", "ShortestPath"].includes(value.routingMode) && <option value={value.routingMode} disabled>当前路由不受支持，请重新选择</option>}
+                  <option value="ShortestPath">{planning ? "最短路径到业务目的节点" : "最短路径到汇聚节点"}</option>
                 </select>
               </label>
               <label>
@@ -989,7 +1007,8 @@ export function ExperimentAuthoringPage() {
                   value={value.macMode}
                   onChange={(e) => set("macMode", e.target.value)}
                 >
-                  <option value="Tdma">TDMA · 节点按时隙轮流发送</option>
+                  <option value="Tdma">配置式 TDMA · 节点按时隙轮流发送</option>
+                  {planning && <option value="AdaptiveTdma">自适应 TDMA · 自动规划时隙</option>}
                 </select>
               </label>
               <label>
@@ -1000,20 +1019,35 @@ export function ExperimentAuthoringPage() {
                   <option value="BearingFusion">探测与定位实验</option>
                 </select>
               </label>
-              <p className="field-explanation workload-explanation">{value.workload === "CommunicationOnly" ? "纯网络通信：只产生网络业务和收发结果，不要求生成方位报告或融合结果。" : "方位特征融合：节点产生方位报告；只有经网络成功交付到融合中心的报告才参与融合。"}</p>
-              <p className="field-explanation">直达：所有业务送往汇聚节点；最短路径：依据当前有向网络选择可达路径，可能中继。TDMA 是当前开放的接入方式，不提供尚未接入的算法。</p>
+              <p className="field-explanation workload-explanation">{value.workload === "CommunicationOnly" ? "统计网络收发，不进行定位。" : "节点发送方位报告，接收后用于定位。"}</p>
             </div>
-            {value.workload === "BearingFusion" && <details className="parameter-detail"><summary>融合算法设置 · 当前至少 {value.minimumBearingPoints} 条有效观测</summary>
-              <p>场景决定可产生的观测，链路决定能交付的观测。算法只在周期末检查已交付报告；满足数量且几何可解时才形成融合。同一节点可在不同时间贡献观测，观测数不等于节点数。</p>
-              <label>算法最少有效观测数<input type="number" min="5" step="1" value={value.minimumBearingPoints} onChange={e => set("minimumBearingPoints", e.target.value)} /></label>
-              <small>当前实验策略要求至少 5 条，不是说最小二乘数学上必然需要 5 个节点。普通实验保留现有设置即可，不需要安排触发时刻。</small>
+            {planning && value.workload === "CommunicationOnly" && <section className="parameter-detail" aria-label="显式通信流">
+              <h3>通信流 · 源节点 → 目的节点</h3><p>双向通信添加两条相反方向的流。</p>
+              {!value.flows?.length && <p className="property-help">请先添加通信流。</p>}
+              {(value.flows ?? []).map((flow, index) => <div className="form-grid" key={index}>
+                <label>源节点 {index + 1}<select value={flow.source_node_id} onChange={event => set("flows", value.flows!.map((item, i) => i === index ? { ...item, source_node_id: event.target.value } : item))}><option value="">请选择</option>{scene.nodes.map(node => <option key={node.node_id} value={node.node_id} disabled={!node.can_transmit}>N{node.node_id}{node.can_transmit ? "" : " · 不可发送"}</option>)}</select></label>
+                <label>目的节点 {index + 1}<select value={flow.destination_node_id} onChange={event => set("flows", value.flows!.map((item, i) => i === index ? { ...item, destination_node_id: event.target.value } : item))}><option value="">请选择</option>{scene.nodes.map(node => <option key={node.node_id} value={node.node_id} disabled={!node.can_receive}>N{node.node_id}{node.can_receive ? "" : " · 不可接收"}</option>)}</select></label>
+                <label>每周期包数 {index + 1}<input type="number" min="1" max="1000" step="1" value={Number.isFinite(flow.packets_per_cycle) ? flow.packets_per_cycle : ""} onChange={event => set("flows", value.flows!.map((item, i) => i === index ? { ...item, packets_per_cycle: Number(event.target.value) } : item))} /></label>
+                <button type="button" onClick={() => set("flows", value.flows!.filter((_, i) => i !== index))}>删除通信流 {index + 1}</button>
+              </div>)}
+              <button type="button" onClick={() => set("flows", [...(value.flows ?? []), { source_node_id: "", destination_node_id: "", packets_per_cycle: 1 }])}>添加单向通信流</button>
+            </section>}
+            {planning && <ExperimentParticipation nodes={scene.nodes} workload={value.workload} fusionReceiverNodeId={value.fusionReceiverNodeId ?? null} simulationCycleCount={value.simulationCycleCount} minimumBearingPoints={Number(value.minimumBearingPoints)} flows={value.flows} />}
+            {value.workload === "BearingFusion" && <details className="parameter-detail"><summary>定位算法 · 集中式方位交汇</summary>
+              <small>按方位角交汇定位（AOA），目前采用单中心处理。</small>
+              {planning && <label>当前算法的固定处理节点<select value={value.fusionReceiverNodeId ?? ""} onChange={event => set("fusionReceiverNodeId", event.target.value || null)}><option value="">请选择可接收节点</option>{scene.nodes.map(node => <option key={node.node_id} value={node.node_id} disabled={!node.can_receive}>N{node.node_id}{!node.can_receive ? " · 不可接收" : ""}</option>)}</select></label>}
+              <details><summary>算法高级设置：积累 {value.minimumBearingPoints} 条后尝试定位</summary><label>本算法的报告积累门槛<input type="number" min="5" step="1" value={value.minimumBearingPoints} onChange={e => set("minimumBearingPoints", e.target.value)} /></label>
+              <small>收到足够报告后尝试定位；条数不是节点数。</small></details>
             </details>}
-            {value.workload === "BearingFusion" && <details className="parameter-detail"><summary>探测目标 · 合成观测的参考位置</summary><div className="form-grid"><label>目标 X（m）<input type="number" value={target.x} onChange={e => setTarget({ ...target, x: Number(e.target.value) })} /></label><label>目标 Y（m）<input type="number" value={target.y} onChange={e => setTarget({ ...target, y: Number(e.target.value) })} /></label></div><p>用于生成节点观测，不直接送入融合求解器；融合仍只使用网络成功交付的观测。</p></details>}
-            {value.workload === "BearingFusion" && <details className="parameter-detail"><summary>结果对照条件 · 不控制仿真</summary>
-              <label>报告收集与融合耗时参考（s）<input type="number" min="1" step="1" value={fusionPeriodSeconds} onChange={e => set("maximumFusionPeriodNs", String(Math.round(Number(e.target.value) * 1e9)))} /></label>
-              <p>从本轮最早有效观测的采样时刻，到融合完成的仿真时长；不是 CPU 计算耗时、定时器或自动终止条件。仅在结果中供人工对照。</p>
+            {value.workload === "BearingFusion" && <details className="parameter-detail" open={targetExpanded} onToggle={event => setTargetExpanded(event.currentTarget.open)}><summary>探测目标位置</summary><div className="form-grid"><label>目标 X（m）<input type="number" value={target.x} onChange={e => setTarget({ ...target, x: Number(e.target.value) })} /></label><label>目标 Y（m）<input type="number" value={target.y} onChange={e => setTarget({ ...target, y: Number(e.target.value) })} /></label></div><small>可拖动画布上的目标。此位置用于生成观测，不是定位结果。</small></details>}
+            {value.macMode === "Tdma" && <details className="parameter-detail"><summary>配置式 TDMA · 私有高级参数</summary>
+              <small>按手工时隙轮流发送。</small>
+              <div className="form-grid"><label>每个时隙（s）<input type="number" min="0.001" step="0.1" value={Number(slotDurationNs) / 1e9} onChange={e => setSlotDurationNs(String(Math.round(Number(e.target.value) * 1e9)))} /></label><label>时隙保护时间（s）<input type="number" min="0" step="0.1" value={guardSeconds} onChange={e => set("guardIntervalNs", String(Math.round(Number(e.target.value) * 1e9)))} /></label></div>
+              <small>保护时间包含在时隙内，给传播和接收留出余量。</small>
+              {!planning && <><label>重新规划间隔（周期）<input type="number" min="1" step="1" value={value.networkUpdateIntervalCycles} onChange={e => set("networkUpdateIntervalCycles", e.target.value)} /></label><p>当前每 {value.networkUpdateIntervalCycles} 个通信周期重新计算网络结构与计划；不是向 TDMA 读取调度表的频率。较短间隔表示更频繁更新，尚不代表已实现自适应参数算法。</p></>}
             </details>}
-            <details className="parameter-detail"><summary>网络刷新策略 · 每 {value.networkUpdateIntervalCycles} 个通信周期</summary><label>重新规划间隔（周期）<input type="number" min="1" step="1" value={value.networkUpdateIntervalCycles} onChange={e => set("networkUpdateIntervalCycles", e.target.value)} /></label><p>重新计算网络结构与计划的间隔；不是向 TDMA 读取调度表的频率。基础实验可保留当前值；较短间隔表示更频繁更新网络结构。</p></details>
+            {planning && value.macMode === "AdaptiveTdma" && <details className="parameter-detail"><summary>自适应 TDMA · 私有高级参数</summary><small>按待发数据、发送时长和传播时间自动排槽。</small><label>时隙安全余量（s）<input type="number" min="0" step="0.001" value={planningSecondsInput(value.adaptiveSafetyMarginNs)} onChange={event => set("adaptiveSafetyMarginNs", planningNanosecondsInput(event.target.value))} /></label><small>额外预留时间，通常保持 0。</small></details>}
+            {planning && <details className="parameter-detail"><summary>{value.macMode === "AdaptiveTdma" ? "自适应 TDMA" : "配置式 TDMA"} · 规划与业务节拍（高级）</summary><label>当前规划方案的业务周期（s）<input type="number" min="0.000000001" step="1" value={planningSecondsInput(value.planningCycleDurationNs)} onChange={event => set("planningCycleDurationNs", planningNanosecondsInput(event.target.value))} /></label><small>每周期产生新业务并重新排槽；过短时运行前提示。</small></details>}
           </section>
           <section id="phy" className="panel form-panel">
             <h2>物理模式</h2>
@@ -1038,16 +1072,15 @@ export function ExperimentAuthoringPage() {
               <label>占用带宽（Hz）<input type="number" min="1" value={value.occupiedBandwidthHz} onChange={e => set("occupiedBandwidthHz", Number(e.target.value))} /></label>
               <label>声源级（dB re 1 μPa @ 1 m）<input type="number" value={value.sourceLevelDb} onChange={e => set("sourceLevelDb", Number(e.target.value))} /></label>
               {physicalLayer === "Channel1Abstract" && <label>等效接收噪声功率（dB re 1 μPa²）<input type="number" value={equivalentNoise} onChange={e => setEquivalentNoise(Number(e.target.value))} /><small>抽象接收模型的带内噪声功率，不是模式 B 的每赫兹噪声谱密度。</small></label>}
-            </div><p>参数实际进入运行。中心频率必须在所选环境的离线计算覆盖范围内；更改速率会影响发送时长，需要同时检查时隙。配置速率不等于有效吞吐量。</p></details>
+            </div><p>参数实际进入运行。中心频率必须在所选环境的离线计算覆盖范围内；更改速率会影响发送时长；自适应模式需检查业务周期容量，配置式 TDMA 需同时检查手工时隙。配置速率不等于有效吞吐量。</p></details>
           </section>
           <section id="execution" className="panel form-panel">
             <h2>运行时长</h2>
             <label>通信周期数<input type="number" min="1" step="1" value={value.simulationCycleCount} onChange={e => set("simulationCycleCount", e.target.value)} /></label>
-            <p className="property-help">每个周期为所有非汇聚节点各安排一个 TDMA 时隙；不是轨迹采样次数，也不是每秒帧数。</p>
-            <div className="duration-preview"><strong>预计仿真时段</strong><b>{coverage.endNs === null ? "请检查周期数" : `0～${Number(coverage.endNs) / 1e9} s`}</b><small>{Math.max(0, scene.nodes.length - 1)} 个发送节点 × {Number(slotDurationNs) / 1e9} s / 时隙 × {value.simulationCycleCount} 周期</small></div>
+            {planning ? <p className="property-help">每轮长度取自所选 MAC 的私有规划配置，不再在通用运行设置中编辑。业务不足以在本轮发完时排队到后续轮次；运行结束不会假装全部发送成功。</p> : <p className="property-help">历史执行方式保留原有周期语义；不是轨迹采样次数，也不是每秒帧数。</p>}
+            <div className="duration-preview"><strong>预计仿真时段</strong><b>{coverage.endNs === null ? "请检查周期设置" : `0～${Number(coverage.endNs) / 1e9} s`}</b><small>{planning ? `${Number(value.planningCycleDurationNs) / 1e9} s / 业务周期 × ${value.simulationCycleCount} 周期` : `${Math.max(0, scene.nodes.length - 1)} 个发送节点 × ${Number(slotDurationNs) / 1e9} s / 时隙 × ${value.simulationCycleCount} 周期`}</small></div>
             {coverage.issues.length > 0 && <details className="parameter-detail coverage-warning"><summary>轨迹覆盖待检查 · {coverage.issues.length} 项</summary>{coverage.issues.map((issue, i) => <p key={i}>{issue}</p>)}</details>}
-            <details className="parameter-detail"><summary>TDMA 时序 · 高级设置</summary><div className="form-grid"><label>每个时隙（s）<input type="number" min="0.001" step="0.1" value={Number(slotDurationNs) / 1e9} onChange={e => setSlotDurationNs(String(Math.round(Number(e.target.value) * 1e9)))} /></label><label>时隙保护时间（s）<input type="number" min="0" step="0.1" value={guardSeconds} onChange={e => set("guardIntervalNs", String(Math.round(Number(e.target.value) * 1e9)))} /></label></div><p>保护时间在时隙内部，为传播和收发结束留余量，不另加到周期时长中。基础实验保留现有值；缩短时隙若使物理事件跨出周期，运行会明确失败，不会裁掉晚到事件。</p></details>
-            <details className="parameter-detail"><summary>复现实验 · 随机种子 {value.deterministicSeed}</summary><label>随机种子<input inputMode="numeric" value={value.deterministicSeed} onChange={e => set("deterministicSeed", e.target.value)} /></label><p>控制模型内的随机序列。保留同一资源版本、参数和种子用于复现；更换种子用于比较随机噪声影响。它不是节点编号、启动时间或采样频率。</p></details>
+            <details className="parameter-detail"><summary>重复实验设置（高级）</summary><label>随机序列编号（随机种子）<input inputMode="numeric" value={value.deterministicSeed} onChange={e => set("deterministicSeed", e.target.value)} /></label><small>同一配置和编号可重复实验；换编号用于比较不同随机噪声。</small></details>
           </section>
         </div>
   );
@@ -1055,17 +1088,27 @@ export function ExperimentAuthoringPage() {
     <div className="unified-experiment-toolbar">
       <div><h1>实验工作台</h1><small>节点、轨迹与网络配置 · 同页保存</small></div>
       <label>实验名称<input value={value.name} onChange={e => set("name", e.target.value)} disabled={save.isPending || run.isPending} /></label>
-      <span role="status">{server ? signature === savedSignature ? `已保存 · 修订 ${server.revision}` : `修订 ${server.revision} · 编辑中` : "尚未保存"}</span>
+      <span role="status">{server ? signature === savedSignature ? `已保存 · 修订 ${server.revision}${savedIssues.length ? " · 尚有待完善项" : ""}` : `修订 ${server.revision} · 编辑中` : "尚未保存"}</span>
       <button type="button" onClick={() => save.mutate()} disabled={save.isPending || run.isPending}>保存实验草稿</button>
       <button type="button" className="primary-button" onClick={() => run.mutate()} disabled={run.isPending || save.isPending}>{run.isPending ? "正在保存并启动…" : "保存并运行"}</button>
     </div>
-    {(save.error || run.error) && <p role="alert" className="studio-save-error">{save.error?.message || run.error?.message}</p>}
-    {server && <p className="studio-save-note">场景与实验已保存到服务器 · 场景修订 {sceneServer?.revision} / 实验修订 {server.revision}{sceneServer?.validation_issues.length ? ` · 待完善：${sceneServer.validation_issues.join("；")}` : ""}</p>}
+    {(save.error || run.error) && <ErrorState error={save.error || run.error} />}
+    {server && <p className="studio-save-note">场景与实验草稿已保存到服务器 · 场景修订 {sceneServer?.revision} / 实验修订 {server.revision}。保存草稿不代表已通过运行检查。</p>}
+    {savedIssues.length > 0 && <section className="studio-save-note" aria-label="保存校验" aria-live="polite">
+      <strong>草稿已保存，以下问题尚待完善，暂不能运行</strong>
+      <ul>{savedIssues.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
+      <p>点击“环境与实验参数”，在“资源”中检查环境，在“网络”中配置通信流或应用接收节点；轨迹与收发能力请点击对应节点检查。</p>
+      <p>{signature === savedSignature ? "修改后再次保存以更新检查结果。启动时还会检查轨迹覆盖与运行条件。" : "以上为上次保存的检查结果；当前有未保存修改，请再次保存更新。"}</p>
+    </section>}
     <p className="experiment-control-help">在中间布设节点，右侧编辑所选节点。点击画布空白处或“环境与实验参数”，切回网络与运行配置。</p>
   </section>;
-  return <div className="unified-experiment-page authoring-layout">
-    <fieldset className="studio-editing-surface" disabled={save.isPending || run.isPending}>
+  return <div className="unified-experiment-page authoring-layout" aria-busy={sceneSwitching}>
+    {pendingSceneId !== null && <div className="scene-switch-backdrop"><section role="alertdialog" aria-modal="true" aria-labelledby="scene-switch-title" className="scene-switch-dialog" onKeyDown={event => { if (event.key === "Escape") setPendingSceneId(null); }}><h2 id="scene-switch-title">切换节点场景？</h2><p>未保存的节点修改将丢弃，通信流和处理节点需重新选择。</p><div><button autoFocus onClick={() => setPendingSceneId(null)}>保留当前场景</button><button className="primary-button" onClick={() => switchScene(pendingSceneId)}>确认切换</button></div></section></div>}
+    {sceneSwitching && <div className="scene-switch-progress" role="status">正在切换场景…</div>}
+    <fieldset className="studio-editing-surface" disabled={save.isPending || run.isPending || sceneSwitching || pendingSceneId !== null}>
       <ScenarioDesigner draft={scene} onChange={setScene} trajectories={trajectories.data} globalInspector={inspector}
+        target={value.workload === "BearingFusion" ? target : undefined} onTargetChange={setTarget} onTargetSelect={() => { setInspectorSection("network"); setTargetExpanded(true); }}
+        applicationReceiverNodeId={planning ? value.workload === "BearingFusion" ? value.fusionReceiverNodeId ?? null : null : undefined}
         workspaceControls={workspaceControls}
         allowRelativePlacement={capabilities.data?.relative_trajectory_placement === true}
         environmentInputs={environmentNames[(environments.data ?? []).findIndex(environment => environment.environment_asset_id === scene.environmentAssetId)]?.data}

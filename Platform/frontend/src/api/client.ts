@@ -248,6 +248,8 @@ export class ApiClient {
   acquireWoaProgress = (request: Record<string, unknown>, progress: (value: AcquisitionProgress) => void, signal: AbortSignal) =>
     acquireWithProgress(this.url("/authoring/acquisition/woa/stream"), request, progress, signal);
   environmentCapabilities = () => this.request("/authoring/environment-capabilities", anyObject);
+  hydrologyCache = () => this.request("/authoring/environment/hydrology-cache", isArrayOf(anyObject));
+  hydrologyProfile = (id: string) => this.request(`/authoring/environment/hydrology-cache/${encodeURIComponent(id)}`, anyObject);
   environmentInputs = (id: string) => this.request(`/environments/${encodeURIComponent(id)}/authoring-inputs`, anyObject);
   acquireTerrain = (request: Record<string, unknown>) =>
     this.request("/authoring/acquisition/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });

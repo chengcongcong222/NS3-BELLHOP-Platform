@@ -114,4 +114,12 @@ describe("trajectory Run coverage preflight", () => {
     const { scene, assets } = fixture();
     expect(trajectoryRunCoverage(scene, assets, "1", "6000000000", "Aloha").endNs).toBeNull();
   });
+  it("uses the fixed PlanningV1 horizon for adaptive or configured TDMA without subtracting a centre", () => {
+    const { scene, assets } = fixture([0, 60], 4);
+    scene.fusionCenterNodeId = null;
+    for (const mac of ["AdaptiveTdma", "Tdma"]) {
+      expect(trajectoryRunCoverage(scene, assets, "2", "invalid-unused-slot", mac, "30000000000")).toEqual({ endNs: 60000000000n, issues: [] });
+    }
+    expect(trajectoryRunCoverage(scene, assets, "3", "0", "AdaptiveTdma", "30000000000").issues).toHaveLength(4);
+  });
 });

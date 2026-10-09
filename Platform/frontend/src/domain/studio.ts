@@ -7,7 +7,16 @@ export function eventCurve(tx: { x: number; y: number }, rx: { x: number; y: num
   const curvature = Math.min(42, 16 + arcIndex * 10);
   const x = (tx.x + rx.x) / 2 - dy / length * curvature;
   const y = (tx.y + rx.y) / 2 + dx / length * curvature;
-  return `M ${tx.x.toFixed(1)} ${tx.y.toFixed(1)} Q ${x.toFixed(1)} ${y.toFixed(1)} ${rx.x.toFixed(1)} ${rx.y.toFixed(1)}`;
+  // Trim the curved arrow at the glyph boundary (not the node centre).
+  const trim = (node: { x: number; y: number }, other: { x: number; y: number }) => {
+    const vx = other.x - node.x, vy = other.y - node.y, d = Math.hypot(vx, vy) || 1;
+    const ux = vx / d, uy = vy / d;
+    const radius = 1 / Math.sqrt((ux / 32) ** 2 + (uy / 20) ** 2);
+    const amount = Math.min(radius, length / 3);
+    return { x: node.x + ux * amount, y: node.y + uy * amount };
+  };
+  const start = trim(tx, { x, y }), end = trim(rx, { x, y });
+  return `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} Q ${x.toFixed(1)} ${y.toFixed(1)} ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
 }
 export interface StudioEvent {
   key: string; at: string; kind: string; title: string;
@@ -56,12 +65,13 @@ export function timePercent(at: string, first: string, last: string) {
   const span = BigInt(last) - BigInt(first);
   return span <= 0n ? 0 : Number((BigInt(at) - BigInt(first)) * 10000n / span) / 100;
 }
-export function seekTime(rows: readonly Pick<StudioEvent, "at">[], percent: number) {
-  if (!rows.length) return 0;
+export function seekTime(rows: readonly Pick<StudioEvent, "at">[], percent: number, include: (index: number) => boolean = () => true) {
+  if (!rows.length) return -1;
   const first = BigInt(rows[0].at), last = BigInt(rows.at(-1)!.at);
   const target = first + (last - first) * BigInt(Math.round(percent * 100)) / 10000n;
-  let best = 0, distance: bigint | null = null;
-  rows.forEach((row, i) => { const delta = BigInt(row.at) - target; const d = delta < 0n ? -delta : delta;
+  let best = -1, distance: bigint | null = null;
+  rows.forEach((row, i) => { if (!include(i)) return;
+    const delta = BigInt(row.at) - target; const d = delta < 0n ? -delta : delta;
     if (distance === null || d < distance) { best = i; distance = d; } });
   return best;
 }

@@ -32,6 +32,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .environment_inputs import validate_environment_samples, verify_arrival_axes, write_bellhop_inputs
 from .ocean_download import Progress, download_dataset
+from .ocean_cache import (find_woa_profile, hydrology_acquisition_lock,
+                          store_hydrology_profile, woa_selection)
 
 
 DraftKind = Literal["environment", "scenario", "experiment"]
@@ -179,12 +181,21 @@ def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
             issues.append("波形调制方式无效")
         if payload.get("waveform_noise", "None") not in {"None", "Awgn"}:
             issues.append("波形噪声配置无效")
-        if payload.get("routing_mode", "DirectToFusionCenter") not in {
-            "DirectToFusionCenter", "ShortestPath"
-        }:
+        planning = payload.get("execution_mode") == "PlanningV1"
+        if payload.get("execution_mode") not in (None, "PlanningV1"):
+            issues.append("执行模式无效")
+        if payload.get("routing_mode", "DirectToFusionCenter") not in (
+            {"Direct", "ShortestPath"} if planning else
+            {"DirectToFusionCenter", "ShortestPath"}
+        ):
             issues.append("路由方式尚未接入正式 Runtime")
-        if payload.get("mac_mode", "Tdma") != "Tdma":
+        if payload.get("mac_mode", "Tdma") not in ({"Tdma", "AdaptiveTdma"} if planning else {"Tdma"}):
             issues.append("MAC 方式尚未接入正式 Runtime")
+        if planning:
+            from .planning_authoring import planning_issues
+            issues.extend(planning_issues(payload))
+        elif any(key in payload for key in ("planning_cycle_duration_ns", "adaptive_tdma", "flows", "fusion_receiver_node_id")):
+            issues.append("通用业务与规划参数需要明确选择 PlanningV1")
         if payload.get("workload", "BearingFusion") not in {
             "BearingFusion", "CommunicationOnly"
         }:
@@ -329,6 +340,10 @@ class AuthoringStore:
             raise KeyError(published_id)
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def environment_plot_artifact(self, asset_id: str) -> dict[str, Any] | None:
+        path = self.root / "published" / f"{_safe_id(asset_id)}.json"
+        return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
     def environment_input_snapshot(self, asset_id: str) -> dict[str, Any] | None:
         path = self.root / "published" / f"{_safe_id(asset_id)}.json"
         if not path.is_file():
@@ -397,6 +412,28 @@ def reference_source(asset_root: Path) -> dict[str, Any]:
 
 def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_root: Path,
                 report: Progress = lambda _progress: None) -> dict[str, Any]:
+    if (not math.isfinite(request.latitude_deg) or not math.isfinite(request.longitude_deg)
+            or not -90 <= request.latitude_deg <= 90 or not -180 <= request.longitude_deg <= 180
+            or not math.isfinite(request.maximum_depth_meters)):
+        raise ValueError("坐标或最大深度超出有效范围")
+    selection = woa_selection(request.model_dump())
+    profile_root = cache_root / "profiles"
+    with hydrology_acquisition_lock(cache_root):
+        # Plain JSON results are usable before importing the optional NetCDF
+        # stack and without any network access. Reference requests still verify
+        # the shipped manifest rather than silently borrowing an online result.
+        cached = None if request.use_reference_cache else find_woa_profile(profile_root, selection)
+        if cached is not None:
+            report({"stage": "cache", "message": "复用相同坐标、月份与深度的已保存剖面，无需下载或重新提取"})
+            return {**cached["result"], "cache_id": cached["cache_id"],
+                    "result_cache_reused": True, "cache_files_reused": 0}
+        result = _acquire_woa_uncached(request, cache_root, reference_root, report)
+        record = store_hydrology_profile(profile_root, result, selection=selection)
+        return {**result, "cache_id": record["cache_id"], "result_cache_reused": False}
+
+
+def _acquire_woa_uncached(request: OceanAcquisitionRequest, cache_root: Path, reference_root: Path,
+                          report: Progress) -> dict[str, Any]:
     if not (-90 <= request.latitude_deg <= 90 and -180 <= request.longitude_deg <= 180):
         raise ValueError("坐标超出有效范围")
     if request.use_reference_cache:
@@ -467,7 +504,10 @@ def acquire_woa(request: OceanAcquisitionRequest, cache_root: Path, reference_ro
             points.append({"depth_meters": round(float(depth), 3), "speed_meters_per_second": round(float(speed), 3)})
     if len(points) < 2:
         raise ValueError("请求位置附近没有足够的 WOA 水文深度数据")
-    return {"provider": "NOAA WOA23", "source": "online-real-data", "cache_files_reused": cache_hits, "month": request.month, "resolution_degrees": 1, "grid_coordinate": {"latitude_deg": float(latitudes[lat_index]), "longitude_deg": float(longitudes[lon_index])}, "sound_speed_profile": points}
+    return {"provider": "NOAA WOA23", "source": "online-real-data", "cache_files_reused": cache_hits, "month": request.month,
+            "requested_coordinate": {"latitude_deg": request.latitude_deg, "longitude_deg": request.longitude_deg},
+            "maximum_depth_meters": request.maximum_depth_meters,
+            "resolution_degrees": 1, "grid_coordinate": {"latitude_deg": float(latitudes[lat_index]), "longitude_deg": float(longitudes[lon_index])}, "sound_speed_profile": points}
 
 
 def acquire_terrain(request: TerrainAcquisitionRequest, reference_root: Path) -> dict[str, Any]:
@@ -515,7 +555,7 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
     issues = validate_payload("environment", draft.payload)
     timestamp = _now()
     steps = [BuildStep(key=key, label=label, state="Waiting") for key, label in (
-        ("hydrology", "水文数据"), ("terrain", "海底地形"), ("normalization", "数据规范化"),
+        ("hydrology", "水文数据"), ("terrain", "计算边界"), ("normalization", "输入检查"),
         ("bellhop", "Bellhop 离线计算"), ("parsing", "计算输出检查"), ("asset_validation", "输入快照归档"),
     )]
     build = EnvironmentBuildResource(build_id=f"env-build-{uuid.uuid4().hex[:12]}", draft_id=draft.draft_id, state="Validating", steps=steps, created_at=timestamp, updated_at=timestamp)
@@ -595,11 +635,13 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
             asset_id = f"{_safe_id(draft.name)}-{draft.draft_id}-r{draft.revision}"
             input_summary["executable_sha256"] = hashlib.sha256(executable_path.read_bytes()).hexdigest()
             execution = "Executed"
+        from .acoustic_plots import produce_ray_plot
+        ray_artifact = produce_ray_plot(draft.payload, job_root, executable_path) if not use_reference else {"available": False, "reason": "参考案例未保存声线文件；另存并重新计算可生成"}
         build.steps[3].state = "Completed"; build.state = "Parsing"; build.steps[4].state = "Running"; store.save_build(build)
         # Parsing/normalizing authority remains the Platform environment importer.
         build.steps[4].state = "Completed"; build.state = "Normalizing"; store.save_build(build)
         build.state = "ValidatingAsset"; build.steps[5].state = "Running"; store.save_build(build)
-        build.artifact = {"environment_asset_id": asset_id, "asset_format_version": 1, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "arrivals_path": str(arrivals.resolve()), "validation": validation, "source_draft_id": draft.draft_id, "source_revision": draft.revision, "published": False, "source_snapshot": draft.model_dump(), "input_summary": input_summary}
+        build.artifact = {"environment_asset_id": asset_id, "asset_format_version": 1, "format": "NS3_FACTORY_ACOUSTIC_FIELD", "build_kind": "BellhopOffline", "bellhop_execution": execution, "arrivals_sha256": digest, "arrivals_path": str(arrivals.resolve()), "validation": validation, "source_draft_id": draft.draft_id, "source_revision": draft.revision, "published": False, "source_snapshot": draft.model_dump(), "input_summary": input_summary, "ray_plot": ray_artifact}
         build.steps[5].state = "Completed"; build.state = "Completed"; build.updated_at = _now(); store.save_build(build)
     except Exception as error:
         for step in build.steps:

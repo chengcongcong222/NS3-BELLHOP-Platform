@@ -56,15 +56,18 @@ describe("simulation workbench user journeys", () => {
     expect(await screen.findByRole("img", { name: "草稿声速剖面" })).toBeTruthy();
     expect(screen.queryByText("高级手工编辑")).toBeNull();
     expect(screen.getByLabelText("请求 SSP 深度上限（m）")).toBeTruthy();
-    expect(screen.getByLabelText("请求剖面距离（m）")).toBeTruthy();
+    expect(screen.getByLabelText("声场计算距离（m）")).toBeTruthy();
+    expect(screen.queryByText("地形来源")).toBeNull();
     const name = screen.getByLabelText("环境名称");
     await userEvent.clear(name); await userEvent.type(name, "南海试验环境");
     await userEvent.click(screen.getByRole("button", { name: "获取 WOA 数据" }));
-    await userEvent.click(screen.getByRole("button", { name: "获取 GEBCO 地形" }));
+    expect(screen.queryByLabelText("采用平坦海底计算边界（非实测地形）")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "保存草稿" }));
     expect(await screen.findByText("草稿已保存到服务器工作区")).toBeTruthy();
     const write = fetchMock.mock.calls.find((call) => call[1]?.method === "POST" && String(call[0]) === "/authoring/drafts");
     expect(JSON.parse(String(write?.[1]?.body)).payload.sound_speed_profile).toHaveLength(2);
+    expect(JSON.parse(String(write?.[1]?.body)).payload.sources.bottom_boundary.kind).toBe("ideal-flat-bottom");
+    expect(fetchMock.mock.calls.some(call => String(call[0]).includes("/acquisition/terrain"))).toBe(false);
   });
 
   it("redirects legacy scene editing into the unified canvas and keeps exact coordinate input", async () => {
@@ -92,6 +95,20 @@ describe("simulation workbench user journeys", () => {
     expect(screen.queryByText("从资源到一次可复现实验")).toBeNull();
   });
 
+  it("keeps manual TDMA timing and planning cadence in its own collapsed advanced group", async () => {
+    installApi({ ...catalog, "/authoring/drafts?kind=experiment": { body: [{ kind: "experiment", draft_id: "legacy-tdma", name: "旧配置式实验", payload: {}, revision: 1, created_at: "2026-09-17", updated_at: "2026-09-17", validation_issues: [] }] } }); renderRoute("/workspace/experiment?draft=legacy-tdma");
+    await screen.findByLabelText("MAC");
+    await userEvent.click(screen.getByRole("button", { name: "网络" }));
+    const group = screen.getByText("配置式 TDMA · 私有高级参数").closest("details")!;
+    expect(group.open).toBe(false);
+    for (const label of ["每个时隙（s）", "时隙保护时间（s）", "重新规划间隔（周期）"]) {
+      expect(screen.getByLabelText(label).closest("details")).toBe(group);
+    }
+    expect(group.textContent).toContain("按手工时隙轮流发送");
+    expect(screen.getByRole("option", { name: "配置式 TDMA · 节点按时隙轮流发送" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /^自适应 TDMA/ })).toBeNull();
+  });
+
   it("keeps an old scenario draft link bound to that exact draft in the unified workbench", async () => {
     const node = { ...scenario.nodes[0], initial_position: { x_meters: 123, y_meters: 24, z_meters: -30 } };
     const savedScene = { kind: "scenario", draft_id: "legacy-scene", name: "已有节点布设", payload: {
@@ -110,7 +127,7 @@ describe("simulation workbench user journeys", () => {
   it("persists Channel2 configuration and launches it through the authoring run API", async () => {
     const saved = { kind: "experiment", draft_id: "experiment-waveform", name: "未命名网络实验", payload: {}, revision: 1, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z", validation_issues: [] };
     const launched = { ...run, run_id: "channel2-run", lifecycle: "Created" };
-    const nodes = [...scenario.nodes, ...["998", "999"].map(node_id => ({ ...scenario.nodes[0], node_id }))];
+    const nodes = [...scenario.nodes, ...["998", "999"].map(node_id => ({ ...scenario.nodes[0], node_id, can_transmit: true }))];
     const paths: TrajectoryAssetDto = { asset_id: "channel-config-tracks", version: 1, name: "配置回归轨迹", source: "test-fixture", source_notice: null, checksum_sha256: "test", coordinate_system: "LocalCartesianMetersZUp", tracks: nodes.map(node => ({ track_id: `N${node.node_id}`, points: [0, 120].map(time_s => ({ time_s, x_m: node.initial_position.x_meters, y_m: node.initial_position.y_meters, z_m: node.initial_position.z_meters })) })) };
     const savedScene = { ...saved, kind: "scenario", draft_id: "scene-a", name: "节点布设", payload: {
       environment_asset_id: environment.environment_asset_id, nodes, fusion_center_node_id: scenario.fusion_center_node_id,
@@ -136,6 +153,11 @@ describe("simulation workbench user journeys", () => {
     expect(screen.getByText("发送比特率")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "网络" }));
     await userEvent.selectOptions(screen.getByLabelText("业务负载"), "CommunicationOnly");
+    await userEvent.click(screen.getByRole("button", { name: "添加单向通信流" }));
+    const source = nodes.find(node => node.can_transmit)!;
+    const destination = nodes.find(node => node.can_receive && node.node_id !== source.node_id)!;
+    await userEvent.selectOptions(screen.getByLabelText("源节点 1"), source.node_id);
+    await userEvent.selectOptions(screen.getByLabelText("目的节点 1"), destination.node_id);
     expect(screen.queryByLabelText("算法最少有效观测数")).toBeNull();
     await userEvent.selectOptions(screen.getByLabelText("路由"), "ShortestPath");
     await userEvent.click(screen.getByRole("button", { name: "物理模式" }));

@@ -1,0 +1,363 @@
+[
+  {
+    "name": "workbench-1440",
+    "printing": false,
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1440,
+    "panels": [],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "loss-field-1440",
+    "printing": false,
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1425,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 669,
+        "scrollHeight": 669,
+        "overflowY": "auto",
+        "clientWidth": 1261,
+        "scrollWidth": 1261,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "single-depth-1440",
+    "printing": false,
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1440,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 668,
+        "scrollHeight": 668,
+        "overflowY": "auto",
+        "clientWidth": 1276,
+        "scrollWidth": 1276,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "runtime-1440",
+    "printing": false,
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1440,
+    "panels": [
+      {
+        "className": "studio-product runtime-workspace",
+        "clientHeight": 806,
+        "scrollHeight": 806,
+        "overflowY": "visible",
+        "clientWidth": 1278,
+        "scrollWidth": 1278,
+        "overflowX": "visible"
+      },
+      {
+        "className": "r4-studio-layout",
+        "clientHeight": 622,
+        "scrollHeight": 622,
+        "overflowY": "visible",
+        "clientWidth": 1278,
+        "scrollWidth": 1278,
+        "overflowX": "visible"
+      },
+      {
+        "className": "studio-node-rail runtime-experiment-panel",
+        "clientHeight": 620,
+        "scrollHeight": 739,
+        "overflowY": "auto",
+        "clientWidth": 197,
+        "scrollWidth": 197,
+        "overflowX": "auto"
+      },
+      {
+        "className": "studio-inspector link-inspector runtime-observation-panel",
+        "clientHeight": 620,
+        "scrollHeight": 620,
+        "overflowY": "auto",
+        "clientWidth": 332,
+        "scrollWidth": 332,
+        "overflowX": "auto"
+      },
+      {
+        "className": "event-stack",
+        "clientHeight": 166,
+        "scrollHeight": 741,
+        "overflowY": "auto",
+        "clientWidth": 293,
+        "scrollWidth": 293,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "workbench-1920",
+    "printing": false,
+    "width": 1920,
+    "height": 1080,
+    "scrollWidth": 1920,
+    "panels": [],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "loss-field-1920",
+    "printing": false,
+    "width": 1920,
+    "height": 1080,
+    "scrollWidth": 1920,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 848,
+        "scrollHeight": 848,
+        "overflowY": "auto",
+        "clientWidth": 1756,
+        "scrollWidth": 1756,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "single-depth-1920",
+    "printing": false,
+    "width": 1920,
+    "height": 1080,
+    "scrollWidth": 1920,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 848,
+        "scrollHeight": 848,
+        "overflowY": "auto",
+        "clientWidth": 1756,
+        "scrollWidth": 1756,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "runtime-1920",
+    "printing": false,
+    "width": 1920,
+    "height": 1080,
+    "scrollWidth": 1920,
+    "panels": [
+      {
+        "className": "studio-product runtime-workspace",
+        "clientHeight": 986,
+        "scrollHeight": 986,
+        "overflowY": "visible",
+        "clientWidth": 1758,
+        "scrollWidth": 1758,
+        "overflowX": "visible"
+      },
+      {
+        "className": "r4-studio-layout",
+        "clientHeight": 802,
+        "scrollHeight": 802,
+        "overflowY": "visible",
+        "clientWidth": 1758,
+        "scrollWidth": 1758,
+        "overflowX": "visible"
+      },
+      {
+        "className": "studio-node-rail runtime-experiment-panel",
+        "clientHeight": 800,
+        "scrollHeight": 800,
+        "overflowY": "auto",
+        "clientWidth": 278,
+        "scrollWidth": 278,
+        "overflowX": "auto"
+      },
+      {
+        "className": "studio-inspector link-inspector runtime-observation-panel",
+        "clientHeight": 800,
+        "scrollHeight": 800,
+        "overflowY": "auto",
+        "clientWidth": 465,
+        "scrollWidth": 465,
+        "overflowX": "auto"
+      },
+      {
+        "className": "event-stack",
+        "clientHeight": 359,
+        "scrollHeight": 741,
+        "overflowY": "auto",
+        "clientWidth": 426,
+        "scrollWidth": 426,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "workbench-2553",
+    "printing": false,
+    "width": 2553,
+    "height": 1264,
+    "scrollWidth": 2553,
+    "panels": [],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "loss-field-2553",
+    "printing": false,
+    "width": 2553,
+    "height": 1264,
+    "scrollWidth": 2553,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 1032,
+        "scrollHeight": 1032,
+        "overflowY": "auto",
+        "clientWidth": 2389,
+        "scrollWidth": 2389,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "single-depth-2553",
+    "printing": false,
+    "width": 2553,
+    "height": 1264,
+    "scrollWidth": 2553,
+    "panels": [
+      {
+        "className": "acoustic-plots",
+        "clientHeight": 1032,
+        "scrollHeight": 1032,
+        "overflowY": "auto",
+        "clientWidth": 2389,
+        "scrollWidth": 2389,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "runtime-2553",
+    "printing": false,
+    "width": 2553,
+    "height": 1264,
+    "scrollWidth": 2553,
+    "panels": [
+      {
+        "className": "studio-product runtime-workspace",
+        "clientHeight": 1170,
+        "scrollHeight": 1170,
+        "overflowY": "visible",
+        "clientWidth": 2391,
+        "scrollWidth": 2391,
+        "overflowX": "visible"
+      },
+      {
+        "className": "r4-studio-layout",
+        "clientHeight": 986,
+        "scrollHeight": 986,
+        "overflowY": "visible",
+        "clientWidth": 2391,
+        "scrollWidth": 2391,
+        "overflowX": "visible"
+      },
+      {
+        "className": "studio-node-rail runtime-experiment-panel",
+        "clientHeight": 984,
+        "scrollHeight": 984,
+        "overflowY": "auto",
+        "clientWidth": 385,
+        "scrollWidth": 385,
+        "overflowX": "auto"
+      },
+      {
+        "className": "studio-inspector link-inspector runtime-observation-panel",
+        "clientHeight": 984,
+        "scrollHeight": 984,
+        "overflowY": "auto",
+        "clientWidth": 641,
+        "scrollWidth": 641,
+        "overflowX": "auto"
+      },
+      {
+        "className": "event-stack",
+        "clientHeight": 543,
+        "scrollHeight": 741,
+        "overflowY": "auto",
+        "clientWidth": 602,
+        "scrollWidth": 602,
+        "overflowX": "auto"
+      }
+    ],
+    "background": "rgb(241, 245, 249)"
+  },
+  {
+    "name": "runtime-print",
+    "printing": true,
+    "width": 1440,
+    "height": 900,
+    "scrollWidth": 1425,
+    "panels": [
+      {
+        "className": "studio-product runtime-workspace",
+        "clientHeight": 1646,
+        "scrollHeight": 2149,
+        "overflowY": "visible",
+        "clientWidth": 1405,
+        "scrollWidth": 1405,
+        "overflowX": "visible"
+      },
+      {
+        "className": "r4-studio-layout",
+        "clientHeight": 1521,
+        "scrollHeight": 2149,
+        "overflowY": "visible",
+        "clientWidth": 1405,
+        "scrollWidth": 1405,
+        "overflowX": "visible"
+      },
+      {
+        "className": "studio-node-rail runtime-experiment-panel",
+        "clientHeight": 402,
+        "scrollHeight": 402,
+        "overflowY": "visible",
+        "clientWidth": 1403,
+        "scrollWidth": 1403,
+        "overflowX": "visible"
+      },
+      {
+        "className": "studio-inspector link-inspector runtime-observation-panel",
+        "clientHeight": 516,
+        "scrollHeight": 1144,
+        "overflowY": "visible",
+        "clientWidth": 1403,
+        "scrollWidth": 1403,
+        "overflowX": "visible"
+      },
+      {
+        "className": "event-stack",
+        "clientHeight": 100,
+        "scrollHeight": 741,
+        "overflowY": "visible",
+        "clientWidth": 1379,
+        "scrollWidth": 1379,
+        "overflowX": "visible"
+      }
+    ],
+    "background": "rgb(255, 255, 255)"
+  }
+]
