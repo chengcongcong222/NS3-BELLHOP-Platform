@@ -392,6 +392,16 @@ def _resource_version(text: str) -> str:
     return text
 
 
+def _environment_location(payload: dict) -> dict:
+    """File imports do not inherit the WOA query form's default location."""
+    source = payload.get("sources", {}).get("ssp", {})
+    acquisition = payload.get("acquisition", {})
+    if source.get("source") == "file" or (source.get("filename") and not source.get("request")):
+        acquisition = {}
+    return {"latitude": acquisition.get("latitudeDeg"),
+            "longitude": acquisition.get("longitudeDeg"), "month": acquisition.get("month")}
+
+
 def create_app(
     settings: BackendSettings,
     *,
@@ -1073,11 +1083,9 @@ def create_app(
                 snapshot = authoring.environment_input_snapshot(asset_id)
                 if snapshot:
                     payload = snapshot["payload"]
-                    acquisition = payload.get("acquisition", {})
                     depths = [point["depth_meters"] for point in payload.get("bathymetry", [])]
                     result[asset_id] = {"name": snapshot["name"], "available": True,
-                        "latitude": acquisition.get("latitudeDeg"), "longitude": acquisition.get("longitudeDeg"),
-                        "month": acquisition.get("month"),
+                        **_environment_location(payload),
                         "water_depth_m": payload.get("maximum_depth_meters") or (max(depths) if depths else None)}
                 elif asset_id == "reference-shallow-water-v1":
                     manifest = reference_source(reference_asset_root)
