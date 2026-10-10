@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<algorithm id="user.closeout_probe" version="1.0.0" interface="planning-mac-v2"
+           label="收口验证：时延优先教学包" entry="user_closeout_probe::Plan">
+  <description>按本周期预测损失与时延加权排序，使用全环境安全时长；教学基准，不宣称协议性能优势。</description>
+  <requires knowledge="global-simulation">
+    <input name="node-state-v1" required="true"/>
+    <input name="flow-demand-v1" required="true"/>
+    <input name="routing-view-v1" required="true"/>
+    <input name="link-prediction-v1" required="true"/>
+    <input name="previous-feedback-v1" required="false"/>
+  </requires>
+  <output kind="serial-flow-schedule-v1"/>
+  <parameter id="delay_weight" label="时延权重" type="number" default="0.75" min="0" max="1" help="0 按预测损失排序，1 按预测首达时延排序。"/>
+  <parameter id="guard_margin_ns" label="附加安全余量" type="duration_ns" unit="s" default="0" min="0" max="5000000000" advanced="true"/>
+</algorithm>

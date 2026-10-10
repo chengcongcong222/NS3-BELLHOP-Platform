@@ -179,12 +179,17 @@ def install_package(args):
         candidate = Path(tempfile.mkdtemp(prefix="candidate-", dir=build_root))
         package = package_path(args.name)
         inspect_package(package)
-        # Existing packages are copied from the pinned active installation,
+        # Accumulate the exact pending candidate before the active installation.
+        # An invalid pending pointer is an error, never permission to fall back.
         # never re-read from modified developer sources during a new install.
         package_dirs = []
-        active = root / "active.json"
-        if active.exists():
-            _, previous = read_release(root, json.loads(active.read_text())["release"])
+        inherited = root / "pending.json"
+        if inherited.is_symlink():
+            raise ValueError("待启用指针不能是符号链接；原安装未修改。")
+        if not inherited.exists():
+            inherited = root / "active.json"
+        if inherited.exists():
+            _, previous = read_release(root, json.loads(inherited.read_text())["release"])
             for item in previous["packages"]:
                 path = root / "releases" / previous["worker_sha256"] / "packages" / item["directory"]
                 installed = inspect_package(path)
@@ -241,28 +246,51 @@ def install_package(args):
         print("InstalledPendingActivation " + identity)
         print("构建日志：" + str(log))
     if args.activate:
-        activate_release(args, identity)
+        return activate_release(args, identity)
+    return 0
 
 
 def activate_release(args, identity=None):
     root = Path(config(args)["install_root"])
-    identity = identity or args.release or json.loads((root / "pending.json").read_text())["release"]
-    with (root / "activation.lock").open("a+") as lock:
+    # Pointer selection, publication and consumption share the install lock.
+    # The service lease is nonblocking: do not wait for or stop a live service.
+    with (root / "install.lock").open("a+") as mutation, (root / "activation.lock").open("a+") as lock:
+        fcntl.flock(mutation, fcntl.LOCK_EX)
+        identity = identity or args.release or json.loads((root / "pending.json").read_text())["release"]
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            print("InstalledPendingActivation：受管服务仍持有旧版本；不终止运行。待运行结束并正常关闭服务后再 activate。")
-            return
+            print("ActivationBlocked：未启用，受管服务仍持有版本；请正常关闭服务后重试。安装状态未修改。")
+            return 3
         read_release(root, identity)
+        pending = root / "pending.json"
+        pending_identity = json.loads(pending.read_text())["release"] if pending.exists() else None
         atomic_json(root / "active.json", {"release": identity})
+        if pending_identity == identity:
+            try:
+                pending.unlink()
+            except OSError:
+                # Active is the commit point. Equal pointers are already logically
+                # consumed; a cleanup failure must not misreport activation failure.
+                print("提示：已启用；相同候选指针清理未完成，列表按已启用显示。")
         print("Active " + identity)
         print("新服务设置 PLATFORM_ALGORITHM_INSTALL_ROOT=" + str(root) + "；未修改或重启现有服务。")
+        return 0
 
 
 def list_packages(args):
     settings = config(args)
     root = Path(settings["install_root"])
-    active = json.loads((root / "active.json").read_text())["release"] if (root / "active.json").exists() else None
+    pointers = {}
+    for name in ("active", "pending"):
+        try:
+            path = root / (name + ".json")
+            if path.exists():
+                identity = json.loads(path.read_text())["release"]
+                read_release(root, identity)
+                pointers[name] = identity
+        except (OSError, ValueError, KeyError) as error:
+            print("Invalid", name, str(error))
     for directory in sorted((PLATFORM / "algorithms/user").glob("*")):
         try:
             metadata = inspect_package(directory)
@@ -274,7 +302,9 @@ def list_packages(args):
             worker, manifest = read_release(root, manifest_path.parent.name)
             # Display executable evidence, not merely an XML/manifest claim.
             catalog = json.loads(run([worker, "--algorithm-catalog"]))
-            state = "Active" if manifest_path.parent.name == active else "InstalledPendingActivation"
+            identity = manifest_path.parent.name
+            state = ("Active" if identity == pointers.get("active") else
+                     "InstalledPendingActivation" if identity == pointers.get("pending") else "Retained")
             for item in catalog["algorithms"]:
                 print(state, item["id"], item["version"], item["interface"], item["package_sha256"], manifest_path.parent.name)
         except (ValueError, OSError) as error:
@@ -329,9 +359,9 @@ def main():
             metadata = check(package_path(args.name), settings, output)
             print("Built", metadata["id"], metadata["version"], "检查日志：", output)
         elif args.command == "install":
-            install_package(args)
+            return install_package(args)
         elif args.command == "activate":
-            activate_release(args)
+            return activate_release(args)
         elif args.command == "replay":
             replay(args)
         else:

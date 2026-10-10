@@ -20,8 +20,11 @@ python3 Platform/tools/protocolctl.py activate
 必需；src/*.cpp 和 include/*.hpp 可选。检查执行真实 C++ 编译、入口签名断言及包测试。
 不执行包 CMake/Makefile，不下载依赖。原生代码仍属于受信任代码，不是安全沙箱。
 
-install 在新候选目录复制当前已启用包和新包，编译 Worker，读取真实目录确认登记，
-核验后发布 releases/<worker-sha>。已有程序不覆盖；构建失败保留日志且 active 不变。
+install 优先继承有效的待启用版本；仅当没有待启用版本时继承已启用版本。
+因此先安装 A（不启用），再安装 B，最后的候选包含 A 和 B。继承的是安装目录内
+不可变包副本，不是后来修改的开发目录。候选损坏、依赖不匹配时明确失败，不回退。
+在新候选目录复制保留包和新包，编译 Worker，读取真实目录确认登记，
+核验后发布 releases/<worker-sha>。已有程序不覆盖；任何失败不改变 active/pending。
 同 ID/version 不同编译源码拒绝发布。保留原 header-only v1 的摘要算法；新增 .cpp
 纳入摘要。v2 摘要覆盖规范化 XML 和包内全部文件（含说明、测试、资源）；
 发布后修改任一文件都需要新版本。`src/` 应相对引用本包头文件，或使用 include/
@@ -29,12 +32,19 @@ install 在新候选目录复制当前已启用包和新包，编译 Worker，�
 
 新服务显式设置 `PLATFORM_ALGORITHM_INSTALL_ROOT` 使用 active 安装；后台持有共享
 租约直到所有 owned worker 正常回收和服务退出。activate 使用独占锁，服务仍运行时
-显示待启用，不强杀、不热替换。即使后台空闲，也需正常关闭服务释放租约再显式启用；
+返回 `ActivationBlocked` 和退出码 3（未启用），两个指针均保持不变，不强杀、不热替换。
+即使后台空闲，也需正常关闭服务释放租约再显式启用；
 这是本版有意采用的保守部署流程。未受管服务保持原固定程序，不受安装影响。
 
 使用 `activate --release <旧程序SHA>` 可明确选回保留版本；程序或动态依赖摘要不匹配
 则失败，不以新版本冒充旧版本。依赖清单记录实际 ldd 路径和 SHA，不自动复制系统库。
 共享库升级后应恢复记录的依赖再复现。全自动多版本并行服务未实现。
+
+`list` 状态：`Discovered` 仅发现源码，`InstalledPendingActivation` 仅当前候选，
+`Active` 当前已启用，`Retained` 历史保留，`Invalid` 无效并附原因。
+相同 active/pending 只显示 Active。成功启用只消费与目标相同的候选；
+显式切换历史版本不删除另一待启用候选。安装与启用共用指针修改锁，防止交叉覆盖。
+启用以 active 原子写入为提交点；如清理同值 pending 失败，它仍按已启用处理。
 
 ## A1 安装历史证据
 
