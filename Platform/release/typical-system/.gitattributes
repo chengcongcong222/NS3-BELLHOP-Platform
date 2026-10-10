@@ -1,0 +1,2 @@
+# The manifest validates exact bytes, including line endings, on every host.
+data/** -text

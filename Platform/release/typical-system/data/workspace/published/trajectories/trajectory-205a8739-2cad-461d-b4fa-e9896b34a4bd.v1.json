@@ -1,0 +1,104 @@
+{
+  "asset_id": "trajectory-205a8739-2cad-461d-b4fa-e9896b34a4bd",
+  "version": 1,
+  "name": "收口1010-三节点轨迹",
+  "coordinate_system": "LocalCartesianMetersZUp",
+  "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+  "source_notice": null,
+  "tracks": [
+    {
+      "track_id": "N0",
+      "points": [
+        {
+          "time_s": 0.0,
+          "x_m": 1000.0,
+          "y_m": 0.0,
+          "z_m": -60.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        },
+        {
+          "time_s": 120.0,
+          "x_m": 1000.0,
+          "y_m": 0.0,
+          "z_m": -60.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        }
+      ]
+    },
+    {
+      "track_id": "N1",
+      "points": [
+        {
+          "time_s": 0.0,
+          "x_m": -950.0,
+          "y_m": 250.0,
+          "z_m": -65.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        },
+        {
+          "time_s": 120.0,
+          "x_m": -950.0,
+          "y_m": 250.0,
+          "z_m": -65.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        }
+      ]
+    },
+    {
+      "track_id": "N2",
+      "points": [
+        {
+          "time_s": 0.0,
+          "x_m": 0.0,
+          "y_m": 0.0,
+          "z_m": -8.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        },
+        {
+          "time_s": 120.0,
+          "x_m": 0.0,
+          "y_m": 0.0,
+          "z_m": -8.0,
+          "pitch_rad": null,
+          "yaw_rad": null,
+          "u_mps": null,
+          "v_mps": null,
+          "w_mps": null,
+          "q_radps": null,
+          "r_radps": null
+        }
+      ]
+    }
+  ],
+  "checksum_sha256": "e0a0582d5c468dfe4bac2a0ef556b2eeb65f7e4fea167325e6a8ae1c753a850b"
+}

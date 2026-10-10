@@ -1,0 +1,99 @@
+{
+  "acquisition": {
+    "bearingDeg": 90,
+    "latitudeDeg": 18,
+    "longitudeDeg": 110,
+    "month": 4,
+    "requestedRangeMeters": 10000,
+    "requestedSspDepthMeters": 200,
+    "terrainSamples": 41,
+    "useReferenceCache": false
+  },
+  "bathymetry": [
+    {
+      "depth_meters": 100,
+      "range_meters": 0
+    },
+    {
+      "depth_meters": 100,
+      "range_meters": 1000
+    }
+  ],
+  "bellhop": {
+    "beam_count": 501,
+    "maximum_launch_angle_degrees": 30,
+    "minimum_launch_angle_degrees": -30,
+    "output": "Arrivals",
+    "range_sample_count": 101,
+    "receiver_depths_meters": [
+      1,
+      25.5,
+      50,
+      74.5,
+      99
+    ],
+    "sampling_controls": {
+      "receiver": {
+        "count": "5",
+        "depths": "",
+        "mode": "automatic"
+      },
+      "source": {
+        "count": "5",
+        "depths": "",
+        "mode": "automatic"
+      }
+    },
+    "source_depths_meters": [
+      1,
+      25.5,
+      50,
+      74.5,
+      99
+    ]
+  },
+  "bottom": {
+    "attenuation_db_per_wavelength": 0.5,
+    "density_grams_per_cubic_centimeter": 1.8,
+    "sound_speed_meters_per_second": 1700
+  },
+  "build_source": "authored-bellhop-inputs",
+  "center_frequency_hz": 25000,
+  "construction_mode": "BellhopOffline",
+  "description": "",
+  "maximum_depth_meters": 100,
+  "maximum_range_meters": 1000,
+  "sound_speed_profile": [
+    {
+      "depth_meters": 0,
+      "speed_meters_per_second": 1500
+    },
+    {
+      "depth_meters": 25,
+      "speed_meters_per_second": 1495
+    },
+    {
+      "depth_meters": 50,
+      "speed_meters_per_second": 1490
+    },
+    {
+      "depth_meters": 75,
+      "speed_meters_per_second": 1495
+    },
+    {
+      "depth_meters": 100,
+      "speed_meters_per_second": 1500
+    }
+  ],
+  "sources": {
+    "bottom_boundary": {
+      "description": "平坦海底计算假设，非实测地形",
+      "kind": "ideal-flat-bottom"
+    },
+    "ssp": {
+      "cache_id": "ca0549c268554eb969a23a1888a872e41cbb3f0727c57dc47e2c4bf0d546e9fa",
+      "filename": "ssp.csv",
+      "source": "file"
+    }
+  }
+}

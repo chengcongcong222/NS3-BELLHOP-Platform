@@ -1,0 +1,157 @@
+{
+  "arrivals_path": "${WORKSPACE}/builds/env-build-1d66382083b9/environment.arr",
+  "arrivals_sha256": "8ffc28d1bb2e280f415020e404c8f7e11eb4cd57a492831677d162c2354c1eec",
+  "asset_format_version": 1,
+  "bellhop_execution": "Executed",
+  "build_kind": "BellhopOffline",
+  "environment_asset_id": "1010-environment-ea3bb4c15c18-r2",
+  "format": "NS3_FACTORY_ACOUSTIC_FIELD",
+  "input_summary": {
+    "executable_sha256": "806ac6a07ae4c9ebecba552243d234d54e486230f088f517228a87a323f5f514",
+    "frequency_hz": 25000,
+    "input_files_sha256": {
+      "environment.bty": "8dd85d5b5bc1220ec8acd3e3558e53546e82c0e688518aeec34a0a68a49d46ac",
+      "environment.env": "f71af3217e586dbc46418d1daf2175f2cba3156a4ebebfb0c7d368b967b1ade5",
+      "input.json": "9a84e8898ed289e8e743a27d2265731858bf103635000169553945ba8d6e003c"
+    },
+    "maximum_range_meters": 1000.0,
+    "range_sample_count": 101,
+    "receiver_depths_meters": [
+      1.0,
+      25.5,
+      50.0,
+      74.5,
+      99.0
+    ],
+    "source_depths_meters": [
+      1.0,
+      25.5,
+      50.0,
+      74.5,
+      99.0
+    ],
+    "ssp_interpolation": "linear-with-in-domain-bottom-interpolation",
+    "tracing_box_depth_meters": 101.0,
+    "water_depth_meters": 100.0
+  },
+  "published": false,
+  "ray_plot": {
+    "available": true,
+    "path": "${WORKSPACE}/builds/env-build-1d66382083b9/ray-preview/environment.ray",
+    "sha256": "50ed0a83254b057cc04936f0e86f7aebcf949c9d3900b5fdf7ffbdcec819d43f"
+  },
+  "source_draft_id": "environment-ea3bb4c15c18",
+  "source_revision": 2,
+  "source_snapshot": {
+    "created_at": "2026-10-10T08:50:07.683584Z",
+    "draft_id": "environment-ea3bb4c15c18",
+    "kind": "environment",
+    "name": "收口1010-导入声速剖面",
+    "payload": {
+      "acquisition": {
+        "bearingDeg": 90,
+        "latitudeDeg": 18,
+        "longitudeDeg": 110,
+        "month": 4,
+        "requestedRangeMeters": 10000,
+        "requestedSspDepthMeters": 200,
+        "terrainSamples": 41,
+        "useReferenceCache": false
+      },
+      "bathymetry": [
+        {
+          "depth_meters": 100,
+          "range_meters": 0
+        },
+        {
+          "depth_meters": 100,
+          "range_meters": 1000
+        }
+      ],
+      "bellhop": {
+        "beam_count": 501,
+        "maximum_launch_angle_degrees": 30,
+        "minimum_launch_angle_degrees": -30,
+        "output": "Arrivals",
+        "range_sample_count": 101,
+        "receiver_depths_meters": [
+          1,
+          25.5,
+          50,
+          74.5,
+          99
+        ],
+        "sampling_controls": {
+          "receiver": {
+            "count": "5",
+            "depths": "",
+            "mode": "automatic"
+          },
+          "source": {
+            "count": "5",
+            "depths": "",
+            "mode": "automatic"
+          }
+        },
+        "source_depths_meters": [
+          1,
+          25.5,
+          50,
+          74.5,
+          99
+        ]
+      },
+      "bottom": {
+        "attenuation_db_per_wavelength": 0.5,
+        "density_grams_per_cubic_centimeter": 1.8,
+        "sound_speed_meters_per_second": 1700
+      },
+      "build_source": "authored-bellhop-inputs",
+      "center_frequency_hz": 25000,
+      "construction_mode": "BellhopOffline",
+      "description": "",
+      "maximum_depth_meters": 100,
+      "maximum_range_meters": 1000,
+      "sound_speed_profile": [
+        {
+          "depth_meters": 0,
+          "speed_meters_per_second": 1500
+        },
+        {
+          "depth_meters": 25,
+          "speed_meters_per_second": 1495
+        },
+        {
+          "depth_meters": 50,
+          "speed_meters_per_second": 1490
+        },
+        {
+          "depth_meters": 75,
+          "speed_meters_per_second": 1495
+        },
+        {
+          "depth_meters": 100,
+          "speed_meters_per_second": 1500
+        }
+      ],
+      "sources": {
+        "bottom_boundary": {
+          "description": "平坦海底计算假设，非实测地形",
+          "kind": "ideal-flat-bottom"
+        },
+        "ssp": {
+          "cache_id": "ca0549c268554eb969a23a1888a872e41cbb3f0727c57dc47e2c4bf0d546e9fa",
+          "filename": "ssp.csv",
+          "source": "file"
+        }
+      }
+    },
+    "revision": 2,
+    "updated_at": "2026-10-10T08:50:08.003797Z",
+    "validation_issues": []
+  },
+  "validation": {
+    "full_asset_validation": "PerformedByPublisher",
+    "state": "InputAndAxesVerified"
+  }
+}

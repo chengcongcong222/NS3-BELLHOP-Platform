@@ -1,0 +1,7 @@
+setup: 0.257926 ms
+Preprocess: 2737.295909 ms
+1 warning(s) thrown of the following type(s):
+BHC_WARN_ONERAY_OUTOFMEMORY: Ran out of memory for individual ray(s), those rays have been truncated
+Run: 38.662863 ms
+Postprocess: 0.206913 ms
+writeout: 36.760734 ms

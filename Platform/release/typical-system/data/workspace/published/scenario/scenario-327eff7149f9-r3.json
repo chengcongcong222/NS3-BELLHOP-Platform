@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "name": "收口1010-三节点场景",
+  "payload": {
+    "environment_asset_id": "reference-shallow-water-v1",
+    "environment_version": 1,
+    "fusion_center_node_id": null,
+    "nodes": [
+      {
+        "can_receive": true,
+        "can_transmit": true,
+        "duplex_mode": "HalfDuplex",
+        "initial_position": {
+          "x_meters": 1000,
+          "y_meters": 0,
+          "z_meters": -60
+        },
+        "initial_velocity": {
+          "x_meters_per_second": 0,
+          "y_meters_per_second": 0,
+          "z_meters_per_second": 0
+        },
+        "node_id": "0"
+      },
+      {
+        "can_receive": true,
+        "can_transmit": true,
+        "duplex_mode": "HalfDuplex",
+        "initial_position": {
+          "x_meters": -950,
+          "y_meters": 250,
+          "z_meters": -65
+        },
+        "initial_velocity": {
+          "x_meters_per_second": 0,
+          "y_meters_per_second": 0,
+          "z_meters_per_second": 0
+        },
+        "node_id": "1"
+      },
+      {
+        "can_receive": true,
+        "can_transmit": true,
+        "duplex_mode": "HalfDuplex",
+        "initial_position": {
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -8
+        },
+        "initial_velocity": {
+          "x_meters_per_second": 0,
+          "y_meters_per_second": 0,
+          "z_meters_per_second": 0
+        },
+        "node_id": "2"
+      }
+    ],
+    "spatial_domain": null,
+    "trajectory_bindings": [
+      {
+        "asset_id": "trajectory-205a8739-2cad-461d-b4fa-e9896b34a4bd",
+        "node_id": "2",
+        "placement_mode": "RelativeToNodeStart",
+        "track_id": "N2",
+        "version": 1
+      },
+      {
+        "asset_id": "trajectory-205a8739-2cad-461d-b4fa-e9896b34a4bd",
+        "node_id": "0",
+        "placement_mode": "RelativeToNodeStart",
+        "track_id": "N0",
+        "version": 1
+      },
+      {
+        "asset_id": "trajectory-205a8739-2cad-461d-b4fa-e9896b34a4bd",
+        "node_id": "1",
+        "placement_mode": "RelativeToNodeStart",
+        "track_id": "N1",
+        "version": 1
+      }
+    ]
+  },
+  "published_at": "2026-10-10T08:46:59.356501Z",
+  "published_id": "scenario-327eff7149f9-r3",
+  "source_draft_id": "scenario-327eff7149f9",
+  "source_revision": 3
+}

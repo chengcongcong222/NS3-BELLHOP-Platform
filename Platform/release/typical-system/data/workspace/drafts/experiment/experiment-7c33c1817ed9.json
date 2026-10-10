@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-10-10T08:46:39.712522Z",
+  "draft_id": "experiment-7c33c1817ed9",
+  "kind": "experiment",
+  "name": "收口1010-双流",
+  "payload": {
+    "bit_rate_bits_per_second": "60",
+    "center_frequency_hz": 25000,
+    "deterministic_seed": "1",
+    "equivalent_noise_power_db_re_1upa2": 45,
+    "execution_mode": "PlanningV1",
+    "flows": [
+      {
+        "destination_node_id": "2",
+        "flow_id": "0",
+        "packets_per_cycle": 2,
+        "source_node_id": "0"
+      },
+      {
+        "destination_node_id": "2",
+        "flow_id": "1",
+        "packets_per_cycle": 2,
+        "source_node_id": "0"
+      }
+    ],
+    "mac_algorithm": {
+      "id": "example.flow-round-robin",
+      "interface": "planning-mac-v2",
+      "package_sha256": "71f1ce116e9d190c6aa92e094ded54a7ee35b3020c24254f0caeed915aec993b",
+      "parameters": {
+        "packets_per_turn": "1"
+      },
+      "version": "1.0.0"
+    },
+    "mac_mode": "RegisteredMac",
+    "occupied_bandwidth_hz": 4000,
+    "physical_layer": "Channel1Abstract",
+    "planning_cycle_duration_ns": "30000000000",
+    "routing_mode": "Direct",
+    "scenario_id": "scenario-327eff7149f9",
+    "scenario_revision": 7,
+    "simulation_cycle_count": "2",
+    "source_level_db": 190,
+    "waveform_modulation": "Bpsk",
+    "waveform_noise": "None",
+    "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+    "workload": "CommunicationOnly"
+  },
+  "revision": 6,
+  "updated_at": "2026-10-10T08:54:18.950291Z",
+  "validation_issues": []
+}

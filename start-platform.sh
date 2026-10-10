@@ -5,6 +5,18 @@ set -euo pipefail
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 launcher="${repository_root}/Platform/scripts/platform_demo.sh"
 
+# A retained local deployment records its existing ports and immutable tools.
+# Do not silently prepare a different build when that deployment is incomplete.
+profile="${PLATFORM_LOCAL_PROFILE:-${repository_root}/Platform/.runtime/current-system.env}"
+if [[ -f "${profile}" ]]; then
+  source "${profile}"
+  if [[ "${1:-start}" == start ]] && "${launcher}" status >/dev/null 2>&1; then
+    echo "系统已经运行：http://127.0.0.1:${PLATFORM_FRONTEND_PORT}"
+    exit 0
+  fi
+  exec "${launcher}" "${1:-start}"
+fi
+
 export PLATFORM_NS3_PREFIX="${PLATFORM_NS3_PREFIX:-/home/ccc/.local/ns3/3.47}"
 
 usage() {

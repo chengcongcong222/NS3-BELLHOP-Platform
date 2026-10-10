@@ -1,0 +1,268 @@
+{
+  "catalog": {
+    "algorithms": [
+      {
+        "description": "按待发数据、发送时长和传播时延分配机会；多节点轮流发送。",
+        "id": "platform.adaptive-tdma",
+        "interface": "planning-mac-v1",
+        "label": "自适应 TDMA",
+        "package_sha256": "0d70fc6e3e34b7499c931539bc1314c85265cc2ee5f67bb7ecac471c83d1e260",
+        "parameters": [
+          {
+            "advanced": true,
+            "choices": [],
+            "default": "0",
+            "help": "自动计算物理占用后追加的间隔，通常保持 0。",
+            "id": "safety_margin_ns",
+            "label": "额外安全间隔",
+            "max": "60000000000",
+            "min": "0",
+            "type": "duration_ns",
+            "unit": "s"
+          }
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "description": "开发接入示例：按节点编号分配发送机会，不作为研究算法或默认协议。",
+        "id": "user.integration_multifile",
+        "interface": "planning-mac-v1",
+        "label": "示例定序调度",
+        "package_sha256": "8ebd549e540b69d0fb9ccb905f2ff4eda9b6507199bd6f3e171389092b82a81f",
+        "parameters": [
+          {
+            "advanced": false,
+            "choices": [
+              "升序",
+              "降序"
+            ],
+            "default": "升序",
+            "help": "",
+            "id": "order",
+            "label": "发送顺序",
+            "max": "",
+            "min": "",
+            "type": "enum",
+            "unit": ""
+          },
+          {
+            "advanced": true,
+            "choices": [],
+            "default": "0",
+            "help": "在发送及传播时长之外追加间隔。",
+            "id": "gap_ns",
+            "label": "附加间隔",
+            "max": "60000000000",
+            "min": "0",
+            "type": "duration_ns",
+            "unit": "s"
+          }
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "description": "开发接入示例：按节点编号分配发送机会，不作为研究算法或默认协议。",
+        "id": "user.integration_probe",
+        "interface": "planning-mac-v1",
+        "label": "示例定序调度",
+        "package_sha256": "6d1292cbac50230767deaaa30890c76c1259e3cc565fe170095b93f7ae38da0c",
+        "parameters": [
+          {
+            "advanced": false,
+            "choices": [
+              "升序",
+              "降序"
+            ],
+            "default": "升序",
+            "help": "",
+            "id": "order",
+            "label": "发送顺序",
+            "max": "",
+            "min": "",
+            "type": "enum",
+            "unit": ""
+          },
+          {
+            "advanced": true,
+            "choices": [],
+            "default": "0",
+            "help": "在发送及传播时长之外追加间隔。",
+            "id": "gap_ns",
+            "label": "附加间隔",
+            "max": "60000000000",
+            "min": "0",
+            "type": "duration_ns",
+            "unit": "s"
+          }
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "description": "按稳定流身份轮询已知待发包，无跨周期私有状态；教学基准，不宣称公平性或性能保证。",
+        "id": "example.flow-round-robin",
+        "inputs": [
+          {
+            "name": "flow-demand-v1",
+            "required": true
+          },
+          {
+            "name": "link-prediction-v1",
+            "required": true
+          },
+          {
+            "name": "node-state-v1",
+            "required": true
+          },
+          {
+            "name": "previous-feedback-v1",
+            "required": false
+          },
+          {
+            "name": "routing-view-v1",
+            "required": true
+          }
+        ],
+        "interface": "planning-mac-v2",
+        "knowledge": "global-simulation",
+        "label": "流轮询教学样例",
+        "output": "serial-flow-schedule-v1",
+        "package_sha256": "71f1ce116e9d190c6aa92e094ded54a7ee35b3020c24254f0caeed915aec993b",
+        "parameters": [
+          {
+            "advanced": false,
+            "choices": [],
+            "default": "1",
+            "help": "",
+            "id": "packets_per_turn",
+            "label": "每流每轮包数",
+            "max": "16",
+            "min": "1",
+            "type": "integer",
+            "unit": ""
+          }
+        ],
+        "version": "1.0.0"
+      },
+      {
+        "description": "按本周期预测损失与时延加权排序，使用全环境安全时长；教学基准，不宣称协议性能优势。",
+        "id": "user.closeout_probe",
+        "inputs": [
+          {
+            "name": "flow-demand-v1",
+            "required": true
+          },
+          {
+            "name": "link-prediction-v1",
+            "required": true
+          },
+          {
+            "name": "node-state-v1",
+            "required": true
+          },
+          {
+            "name": "previous-feedback-v1",
+            "required": false
+          },
+          {
+            "name": "routing-view-v1",
+            "required": true
+          }
+        ],
+        "interface": "planning-mac-v2",
+        "knowledge": "global-simulation",
+        "label": "收口验证：时延优先教学包",
+        "output": "serial-flow-schedule-v1",
+        "package_sha256": "3ae116ae77a7a120ede1fb5c126b6fcbb9a4f0a38a4359bbcf7a88b17a73c3fe",
+        "parameters": [
+          {
+            "advanced": false,
+            "choices": [],
+            "default": "0.75",
+            "help": "0 按预测损失排序，1 按预测首达时延排序。",
+            "id": "delay_weight",
+            "label": "时延权重",
+            "max": "1",
+            "min": "0",
+            "type": "number",
+            "unit": ""
+          },
+          {
+            "advanced": true,
+            "choices": [],
+            "default": "0",
+            "help": "",
+            "id": "guard_margin_ns",
+            "label": "附加安全余量",
+            "max": "5000000000",
+            "min": "0",
+            "type": "duration_ns",
+            "unit": "s"
+          }
+        ],
+        "version": "1.0.0"
+      }
+    ],
+    "schema": "platform.algorithm-catalog.v1"
+  },
+  "dependencies": [
+    {
+      "path": "/home/ccc/.local/ns3/3.47/lib/libns3.47-core-default.so",
+      "sha256": "f3e01ef4c20b9663086cde1967de8f998265a340dc2b1b598a757a5e31f894ad"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+      "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+    }
+  ],
+  "packages": [
+    {
+      "directory": "package-0",
+      "id": "user.integration_probe",
+      "interface": "planning-mac-v1",
+      "package_sha256": "6d1292cbac50230767deaaa30890c76c1259e3cc565fe170095b93f7ae38da0c",
+      "version": "1.0.0"
+    },
+    {
+      "directory": "package-1",
+      "id": "user.integration_multifile",
+      "interface": "planning-mac-v1",
+      "package_sha256": "8ebd549e540b69d0fb9ccb905f2ff4eda9b6507199bd6f3e171389092b82a81f",
+      "version": "1.0.0"
+    },
+    {
+      "directory": "package-2",
+      "id": "example.flow-round-robin",
+      "interface": "planning-mac-v2",
+      "package_sha256": "71f1ce116e9d190c6aa92e094ded54a7ee35b3020c24254f0caeed915aec993b",
+      "version": "1.0.0"
+    },
+    {
+      "directory": "package-3",
+      "id": "user.closeout_probe",
+      "interface": "planning-mac-v2",
+      "package_sha256": "3ae116ae77a7a120ede1fb5c126b6fcbb9a4f0a38a4359bbcf7a88b17a73c3fe",
+      "version": "1.0.0"
+    }
+  ],
+  "schema": "platform.algorithm-installation.v1",
+  "source_dirty": false,
+  "source_revision": "dbce6c4849fd8197dbcfac0108e312aebcedb094",
+  "toolchain": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "worker_sha256": "dd21c42db0468afce60d378074be5377de7f2f1c87f0768efbeabc2bdb0174c7"
+}
