@@ -180,7 +180,7 @@ auto RunPair(const EnvironmentAssetRepository& repository,
   auto preset = Require(MakeAcceptanceExperimentPreset(
       AcceptanceProfile::kAcceptance4Node,
       Require(ExperimentId::Create("channel12-comparison-" + seed_text)),
-      1, "Paired BPSK AWGN experiment",
+      1, "Paired OSDM AWGN experiment",
       ScenarioReference{scenario.scenario_id(), scenario.version()},
       options.cycles, RxQualityMode::kNone, 0.0, seed));
   const auto bandwidth = preset.phy().occupied_bandwidth_hz;
@@ -214,11 +214,11 @@ auto RunPair(const EnvironmentAssetRepository& repository,
 
   WaveformPhyConfig waveform_config{
       ModulationConfig{
-          ModulationScheme::kBpsk, 6'000.0,
-          static_cast<double>(experiment.phy().bit_rate_bits_per_second),
+          ModulationScheme::kOsdm, 6'000.0, 6'000.0,
           std::pow(10.0,
                    experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
-          experiment.phy().center_frequency_hz, 30.0},
+          experiment.phy().center_frequency_hz, 30.0,
+          OsdmConfig{256U, 16U, 64U}},
       experiment.phy().occupied_bandwidth_hz,
       AwgnNoiseConfig{options.noise_psd_db, seed},
       {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
@@ -307,7 +307,7 @@ auto Run(const Options& options) -> void {
       options.noise_psd_db + 10.0 * std::log10(bandwidth);
 
   std::cout << std::setprecision(10);
-  std::cout << "Channel 1/2 paired BPSK-AWGN comparison (experiment only)\n"
+  std::cout << "Channel 1/2 paired scalar-vs-OSDM-AWGN comparison (experiment only)\n"
             << "source=Bellhop-derived reference .arr; NOT field-measured\n"
             << "channel2_equalization=ideal-known-channel-frequency-domain-mmse\n"
             << "repetitions=" << options.repetitions

@@ -339,8 +339,14 @@ class AcceptanceRunExecutor final : public IRunExecutor {
             ErrorCode::kFailedPrecondition,
             "Waveform execution requires quality_mode=None; observe actual waveform BER separately"});
       }
-      if(modulation.symbol_rate_baud !=
-             static_cast<double>(experiment.phy().bit_rate_bits_per_second) ||
+      // Legacy one-bit symbols use the experiment bit rate directly. OSDM is
+      // block modulation: its symbol rate is the complex sample clock, while
+      // actual airtime comes from K/M/CP framing in WaveformTxPhy.
+      const auto rate_matches =
+          modulation.scheme == phy::internal::ModulationScheme::kOsdm ||
+          modulation.symbol_rate_baud ==
+              static_cast<double>(experiment.phy().bit_rate_bits_per_second);
+      if(!rate_matches ||
          modulation.acoustic_carrier_hz !=
              experiment.phy().center_frequency_hz ||
          waveform_->phy.occupied_bandwidth_hz !=

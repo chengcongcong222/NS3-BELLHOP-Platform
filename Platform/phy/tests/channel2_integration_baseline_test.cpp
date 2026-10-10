@@ -94,7 +94,7 @@ auto TestSharedTransmissionArtifactAndE2eEndpoint() -> bool {
 
   TransmissionWaveformStore store;
   auto published = store.Publish(TransmissionWaveformArtifact{
-      TransmissionId{77}, packet.packet_id, *frame, *waveform});
+      TransmissionId{77}, packet.packet_id, *frame, frame->bit_count(), *waveform});
   auto receiver_one_artifact = store.Find(TransmissionId{77});
   auto receiver_two_artifact = store.Find(TransmissionId{77});
   if(!published || !receiver_one_artifact || !receiver_two_artifact) {
@@ -124,7 +124,7 @@ auto TestSharedTransmissionArtifactAndE2eEndpoint() -> bool {
                       modulation);
 
   auto duplicate = store.Publish(TransmissionWaveformArtifact{
-      TransmissionId{77}, packet.packet_id, *frame, *waveform});
+      TransmissionId{77}, packet.packet_id, *frame, frame->bit_count(), *waveform});
   store.ReleaseCycleArtifacts();
   const auto absent_after_cycle = !store.Find(TransmissionId{77});
 

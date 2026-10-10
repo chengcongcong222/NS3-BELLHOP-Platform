@@ -170,10 +170,10 @@ auto TestRealRunsShareTargetPacketBasis() -> bool {
                        42U, &scalar_repeat_observer}};
   WaveformPhyConfig waveform_config{
       ModulationConfig{
-          ModulationScheme::kBpsk, 6'000.0, 60.0,
+          ModulationScheme::kOsdm, 6'000.0, 6'000.0,
           std::pow(10.0,
                    experiment->phy().source_level_db_re_1upa_at_1m / 20.0),
-          25'000.0, 30.0},
+          25'000.0, 30.0, OsdmConfig{256U, 16U, 64U}},
       4'000.0, NoNoiseConfig{},
       {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};

@@ -36,6 +36,7 @@ using ns3_factory::phy::internal::ChannelEqualizationMode;
 using ns3_factory::phy::internal::BuildDelayAlignmentMatrix;
 using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
+using ns3_factory::phy::internal::OsdmConfig;
 using ns3_factory::phy::internal::NoNoiseConfig;
 using ns3_factory::phy::internal::NoiseProfile;
 using ns3_factory::phy::internal::RunWaveformPipeline;
@@ -260,21 +261,22 @@ auto TestChannel3ReusesWaveformPipeline() -> bool {
   const auto source = BitFrame::Create({0, 1, 1, 0, 1, 0, 0, 1});
   if(!taps || !source) return Check(false, "Channel 3 taps and bits");
 
-  const ModulationConfig modulation{ModulationScheme::kBpsk,
+  const ModulationConfig modulation{ModulationScheme::kOsdm,
                                     8000.0,
-                                    1000.0,
+                                    8000.0,
                                     1.0,
                                     12345.0,
-                                    0.0};
+                                    0.0,
+                                    OsdmConfig{8U, 2U, 2U}};
   const auto result = RunWaveformPipeline(
       *source,
       WaveformPipelineConfig{modulation,
                              *taps,
                              NoiseProfile{NoNoiseConfig{}},
-                             {ChannelEqualizationMode::kDisabled},
+                             {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
                              true});
   return Check(result && result->recovered() == *source,
-               "External CIR reuses waveform modules") &&
+               "External CIR reuses the OSDM waveform modules") &&
          Check(result && result->bit_error_count() == 0U,
                "Channel 3 round trip has no fixture bit errors");
 }

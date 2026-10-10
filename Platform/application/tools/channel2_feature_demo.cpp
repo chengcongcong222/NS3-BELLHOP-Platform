@@ -29,7 +29,7 @@ auto Require(Result<T> result) -> T {
 }
 
 struct Options {
-  std::string modulation = "bpsk";
+  std::string modulation = "osdm";
   std::string noise = "none";
   std::filesystem::path asset_root = PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT;
   double psd_db = 0.0;
@@ -70,8 +70,9 @@ auto Parse(int argc, char** argv) -> Options {
       options.seed = std::stoull(value);
     } else throw std::runtime_error("Unknown option: " + std::string{argument});
   }
-  if(options.modulation != "bpsk" && options.modulation != "bfsk") {
-    throw std::runtime_error("Supported modulation: bpsk, bfsk (QPSK reserved)");
+  if(options.modulation != "osdm" && options.modulation != "bpsk" &&
+     options.modulation != "bfsk") {
+    throw std::runtime_error("Supported modulation: osdm, bpsk, bfsk");
   }
   if(options.noise != "none" && options.noise != "awgn" && options.noise != "wenz") {
     throw std::runtime_error("Supported noise: none, awgn, wenz");
@@ -132,8 +133,8 @@ auto ExecuteDemo(const Options& options) -> int {
       "Waveform feature round trip",
       ScenarioReference{scenario.scenario_id(), scenario.version()}, 2,
       RxQualityMode::kNone, 45.0, options.seed));
-  // Explicit demo-only change: 15-byte feature + 4-byte CRC at 60 bps takes
-  // 2.534 s, so the scalar preset's 4 s slot (with 2 s guard) is too short.
+  // Keep a common six-second slot for OSDM and the slower legacy BPSK/BFSK
+  // selections so their ns-3 scheduling contract remains directly comparable.
   const auto experiment = Require(ExperimentDefinition::Create(
       preset.experiment_id(), 1, "Waveform feature round trip",
       preset.scenario(), preset.routing(),
@@ -147,16 +148,24 @@ auto ExecuteDemo(const Options& options) -> int {
     noise = WenzNoiseConfig{options.shipping, options.wind, options.seed};
   }
   ReceptionObserver observer;
+  auto scheme = ModulationScheme::kOsdm;
+  if(options.modulation == "bpsk") scheme = ModulationScheme::kBpsk;
+  if(options.modulation == "bfsk") scheme = ModulationScheme::kBfsk;
+  const auto symbol_rate =
+      scheme == ModulationScheme::kOsdm ? 6'000.0 : 60.0;
+  const ModulationConfig modulation{
+      scheme, 6'000.0, symbol_rate,
+      std::pow(10.0,
+               experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
+      25'000.0, 30.0, OsdmConfig{256U, 16U, 64U}};
   WaveformPhyConfig config{
-      ModulationConfig{options.modulation == "bpsk" ? ModulationScheme::kBpsk
-                                                   : ModulationScheme::kBfsk,
-                       6'000.0, 60.0,
-                       std::pow(10.0, experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
-                       25'000.0, 30.0},
+      modulation,
       4'000.0, noise,
       {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor executor{repository, WaveformExecutionOptions{config, &observer}};
+  const auto framed_sample_count =
+      Require(ModulatedSampleCount(152U, modulation));
   NullTraceSink trace;
   const auto run_id = Require(RunId::Create("channel2-feature-demo"));
   const auto result = Require(executor.Execute(run_id, scenario, experiment, trace));
@@ -168,8 +177,12 @@ auto ExecuteDemo(const Options& options) -> int {
             << "\nchannel_source=Bellhop-derived .arr; reference environment, NOT field measurement"
             << "\nmodulation=" << options.modulation << " noise=" << options.noise
             << " seed=" << options.seed
-            << " equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60"
-            << " slot_seconds=6\n";
+            << " equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate="
+            << symbol_rate << " slot_seconds=6\n";
+  if(scheme == ModulationScheme::kOsdm) {
+    std::cout << "osdm_base_constellation=BPSK K=256 M=16 N=16 CP=64"
+                 " framed_samples=" << framed_sample_count << '\n';
+  }
   if(options.noise == "awgn") {
     std::cout << "noise_psd_db_re_1upa2_per_hz=" << options.psd_db << '\n';
   }
@@ -222,7 +235,7 @@ auto ExecuteDemo(const Options& options) -> int {
     }
     for(const auto& row : observer.rows) {
       if(row.path_count <= 1 || row.payload_bit_count != 120 ||
-         row.received_sample_count <= 15200 ||
+         row.received_sample_count <= framed_sample_count ||
          (options.noise == "none" ? row.noise_power_upa2 != 0.0
                                   : row.noise_power_upa2 <= 0.0)) {
         throw std::runtime_error("Bellhop waveform/noise verification failed");
@@ -258,7 +271,7 @@ auto ExecuteDemo(const Options& options) -> int {
 
 auto main(int argc, char** argv) -> int {
   if(argc == 2 && std::string_view{argv[1]} == "--help") {
-    std::cout << "Options: --modulation bpsk|bfsk --noise none|awgn|wenz "
+    std::cout << "Options: --modulation osdm|bpsk|bfsk --noise none|awgn|wenz "
                  "--psd-db N --wind N --shipping N --seed N --asset-root PATH\n";
     return EXIT_SUCCESS;
   }

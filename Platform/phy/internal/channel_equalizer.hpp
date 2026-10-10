@@ -7,13 +7,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <numbers>
 #include <span>
 #include <vector>
 
 #include <ns3_factory/contracts/errors.hpp>
 
 #include "channel_processor.hpp"
+#include "fft.hpp"
 #include "waveform.hpp"
 
 namespace ns3_factory::phy::internal {
@@ -30,40 +30,6 @@ struct ChannelEqualizationConfig final {
 };
 
 namespace channel_equalizer_detail {
-
-inline void Transform(std::vector<std::complex<double>>& values,
-                      bool inverse) {
-  const auto size = values.size();
-  for(std::size_t index = 1U, reverse = 0U; index < size; ++index) {
-    auto bit = size >> 1U;
-    for(; (reverse & bit) != 0U; bit >>= 1U) reverse ^= bit;
-    reverse ^= bit;
-    if(index < reverse) std::swap(values[index], values[reverse]);
-  }
-
-  for(std::size_t length = 2U; length <= size; length <<= 1U) {
-    const auto angle = (inverse ? 2.0 : -2.0) *
-                       std::numbers::pi_v<double> /
-                       static_cast<double>(length);
-    const auto step = std::polar(1.0, angle);
-    for(std::size_t begin = 0U; begin < size; begin += length) {
-      auto rotation = std::complex<double>{1.0, 0.0};
-      for(std::size_t offset = 0U; offset < length / 2U; ++offset) {
-        const auto even = values[begin + offset];
-        const auto odd =
-            values[begin + offset + length / 2U] * rotation;
-        values[begin + offset] = even + odd;
-        values[begin + offset + length / 2U] = even - odd;
-        rotation *= step;
-      }
-    }
-    if(length == size) break;
-  }
-
-  if(inverse) {
-    for(auto& value : values) value /= static_cast<double>(size);
-  }
-}
 
 [[nodiscard]] inline auto MeanPower(const WaveformBuffer& waveform) -> double {
   long double sum = 0.0L;
@@ -139,8 +105,10 @@ inline void Transform(std::vector<std::complex<double>>& values,
   std::vector<std::complex<double>> channel_spectrum(fft_size);
   std::copy(impulse_response->begin(), impulse_response->end(),
             channel_spectrum.begin());
-  channel_equalizer_detail::Transform(received_spectrum, false);
-  channel_equalizer_detail::Transform(channel_spectrum, false);
+  auto transformed = TransformRadix2(received_spectrum, false);
+  if(!transformed) return std::unexpected(transformed.error());
+  transformed = TransformRadix2(channel_spectrum, false);
+  if(!transformed) return std::unexpected(transformed.error());
 
   const auto physical_regularization =
       noise_power_upa2 / transmitted_symbol_power_upa2;
@@ -172,7 +140,8 @@ inline void Transform(std::vector<std::complex<double>>& values,
         std::conj(channel_spectrum[index]) * received_spectrum[index] /
         denominator;
   }
-  channel_equalizer_detail::Transform(received_spectrum, true);
+  transformed = TransformRadix2(received_spectrum, true);
+  if(!transformed) return std::unexpected(transformed.error());
   received_spectrum.resize(expected_sample_count);
   return WaveformBuffer::Create(received.sample_rate_hz(),
                                 std::move(received_spectrum));

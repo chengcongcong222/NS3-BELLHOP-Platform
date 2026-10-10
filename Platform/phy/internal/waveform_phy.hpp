@@ -28,8 +28,8 @@ struct WaveformPhyConfig final {
 
 [[nodiscard]] inline auto ValidateWaveformPhyConfig(const WaveformPhyConfig& c)
     -> contracts::Status {
-  auto samples = SamplesPerSymbol(c.modulation);
-  if(!samples) return std::unexpected(samples.error());
+  auto minimum_samples = ModulatedSampleCount(40U, c.modulation);
+  if(!minimum_samples) return std::unexpected(minimum_samples.error());
   auto modem = CreateModulator(c.modulation.scheme);
   if(!modem) return std::unexpected(modem.error());
   if(!std::isfinite(c.occupied_bandwidth_hz) ||
@@ -39,7 +39,7 @@ struct WaveformPhyConfig final {
       c.equalization.mode !=
           ChannelEqualizationMode::kIdealFrequencyDomainMmse) ||
      c.frame_format != WaveformFrameFormat::kPayloadWithCrc32 ||
-     c.maximum_samples / *samples < 40U) {
+     c.maximum_samples < *minimum_samples) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,
                                  "Invalid waveform band, equalizer, frame or "
                                  "sample limit"});
@@ -83,13 +83,6 @@ class WaveformTxPhy final : public contracts::ITxPhy {
   [[nodiscard]] auto Encode(const contracts::DigitalPacket& packet,
                             const contracts::TxEncodeRequest& request) const
       -> Result<contracts::TxEmission> override {
-    const auto sps = *SamplesPerSymbol(config_.modulation);
-    const auto max_bytes = config_.maximum_samples / sps / 8U;
-    if(max_bytes <= kWaveformCrcBytes ||
-       packet.payload.size() > max_bytes - kWaveformCrcBytes) {
-      return std::unexpected(Error{ErrorCode::kOutOfRange,
-                                   "Waveform frame exceeds sample limit"});
-    }
     auto source = ExtractPayloadBitFrame(packet);
     if(!source) return std::unexpected(source.error());
     auto framed_payload = AddWaveformCrc(packet.payload);
@@ -98,6 +91,13 @@ class WaveformTxPhy final : public contracts::ITxPhy {
     framed_packet.payload = std::move(*framed_payload);
     auto frame = ExtractPayloadBitFrame(framed_packet);
     if(!frame) return std::unexpected(frame.error());
+    const auto expected_samples =
+        ModulatedSampleCount(frame->bit_count(), config_.modulation);
+    if(!expected_samples || *expected_samples > config_.maximum_samples) {
+      return std::unexpected(
+          Error{ErrorCode::kOutOfRange,
+                "Waveform frame exceeds sample limit"});
+    }
     auto modulator = CreateModulator(config_.modulation.scheme);
     if(!modulator) return std::unexpected(modulator.error());
     auto waveform = (*modulator)->Modulate(*frame, config_.modulation);
@@ -120,7 +120,7 @@ class WaveformTxPhy final : public contracts::ITxPhy {
     if(!emission) return std::unexpected(emission.error());
     auto published = artifacts_.get().Publish(TransmissionWaveformArtifact{
         request.transmission_id, packet.packet_id, std::move(*source),
-        std::move(*waveform)});
+        frame->bit_count(), std::move(*waveform)});
     if(!published) return std::unexpected(published.error());
     return emission;
   }
@@ -157,17 +157,19 @@ class WaveformRxPhy final : public contracts::IRxPhy {
                                    "Waveform packet identity mismatch"});
     }
     const auto& transmitted = (*artifact)->transmitted_waveform();
-    const auto sps = *SamplesPerSymbol(config_.modulation);
+    const auto frame_bit_count = (*artifact)->framed_bit_count();
+    const auto expected_samples =
+        ModulatedSampleCount(frame_bit_count, config_.modulation);
+    if(!expected_samples) return std::unexpected(expected_samples.error());
     if(transmitted.sample_rate_hz() != config_.modulation.sample_rate_hz ||
        signal.emission().center_frequency_hz() !=
            config_.modulation.acoustic_carrier_hz ||
-       transmitted.sample_count() % sps != 0 ||
+       transmitted.sample_count() != *expected_samples ||
        transmitted.sample_count() > config_.maximum_samples) {
       return std::unexpected(Error{ErrorCode::kFailedPrecondition,
                                    "Waveform receive configuration mismatch"});
     }
-    // Frame length comes from X's sample metadata, never original truth bits.
-    const auto frame_bit_count = transmitted.sample_count() / sps;
+    // Framed length is immutable PHY metadata, not source-bit content.
     if(frame_bit_count <= kWaveformCrcBytes * 8U || frame_bit_count % 8U != 0) {
       return std::unexpected(Error{ErrorCode::kFailedPrecondition,
                                    "Invalid waveform frame length"});

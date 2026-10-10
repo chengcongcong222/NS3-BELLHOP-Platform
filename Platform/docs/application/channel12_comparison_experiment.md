@@ -7,9 +7,11 @@ changing the default worker, frontend, runtime scheduler, or PHY contracts.
 
 ## Frozen comparison setup
 
-The executable runs the same Acceptance4Node feature workload against the
-same Bellhop-derived reference environment and BPSK PHY configuration twice
-for each seed: optional sampled-scalar Channel 1, then waveform Channel 2.
+The executable runs the same Acceptance4Node feature workload against the same
+Bellhop-derived reference environment twice for each seed: optional
+sampled-scalar Channel 1, then OSDM waveform Channel 2. Channel 1 retains its
+coherent-BPSK/AWGN probability model; Channel 2 uses BPSK constellation mapping
+inside OSDM with `K=256`, `M=16`, `N=16`, and `CP=64`.
 The experiment rejects any pair whose current-hop target
 TransmissionId/PacketId/receiver/payload-bit set differs. Both paths use
 15-byte feature payloads plus the same CRC32 test trailer and 6-second TDMA
@@ -22,8 +24,9 @@ equivalent in-band noise power
 complex samples from that same PSD with an explicit seed. The two generators
 do **not** produce the same sample-wise noise realization. Channel 1 uses
 Bellhop's incoherent aggregate TL and independent bit-error draws; Channel 2
-uses Bellhop's path delays/complex gains, waveform convolution and its
-current ideal-phase BPSK detector. These are intentionally different
+uses Bellhop's path delays/complex gains, waveform convolution, an
+ideal-known-channel frequency-domain MMSE equalizer, CP removal, and OSDM
+inverse transformation. These are intentionally different
 physical approximations; matching PSD is not matching a multipath receiver.
 
 A repetition is one full paired simulation run. For each channel, pooled
@@ -60,26 +63,17 @@ hardware calibration.
 | Target packets attempted | 1,200 | 1,200 |
 | No arrival | 0 | 0 |
 | Observed payload bits | 144,000 | 144,000 |
-| Wrong payload bits | 0 | 49,182 |
-| BER (observed) | 0 | 0.3415416667 |
-| Failed target packets | 0 | 800 |
-| PER (observed) | 0 | 0.6666666667 |
+| Wrong payload bits | 0 | 0 |
+| BER (observed) | 0 | 0 |
+| Failed target packets | 0 | 0 |
+| PER (observed) | 0 | 0 |
 
-The paired difference `Channel2 - Channel1` is +0.3415416667 BER
-(bootstrap interval [0.3413888889, 0.3416807292]) and +0.6666666667 PER
-(interval [0.6666666667, 0.6666666667]). Zero observed scalar errors do
-not imply that its unknown population BER is mathematically zero. The
-degenerate PER interval reflects nearly deterministic failures in this
-fixed scene; more seed repetitions do not create environmental diversity.
-
-An independent no-waveform-noise control using
-`platform_application_channel2_feature_demo --modulation bpsk --noise none
---seed 42` still showed 80/120 wrong payload bits for the first target
-reception. Thus AWGN alone does not explain this gap. The current receiver
-only uses ideal first-arrival phase correction and symbol-sum decisions;
-it does not estimate/equalize the full multipath channel. Coherent
-multipath and inter-symbol interference are plausible causes. This
-experiment does **not** establish that Channel 2 is better. The next
-technical task is to add and validate a multipath-aware receiver
-(equalization or another explicitly reviewed design), then rerun the
-same frozen comparison without hiding unfavorable conditions.
+The paired differences and both paired-bootstrap intervals are `[0,0]` for
+this explicit zero-dB PSD fixture. That result verifies the OSDM integration
+and removal of the earlier unmitigated multipath errors; it does **not**
+establish that either channel has zero population BER or that Channel 2 is
+generally better. The Channel 2 receiver is currently idealized because it
+uses the exact simulated CIR rather than estimating it from a preamble. Noise
+stress points and additional sea states are required for a meaningful
+performance boundary, and future equalizers must be compared using this same
+paired packet basis.

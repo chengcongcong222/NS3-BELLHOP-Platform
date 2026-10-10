@@ -56,7 +56,7 @@ if(PLATFORM_NS3_AVAILABLE)
     PRIVATE PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT="${PROJECT_SOURCE_DIR}/environment/assets/reference_shallow_water_v1"
   )
   if(BUILD_TESTING)
-    foreach(modulation IN ITEMS bpsk bfsk)
+    foreach(modulation IN ITEMS osdm bpsk bfsk)
       foreach(noise IN ITEMS none awgn wenz)
         add_test(
           NAME platform_application_channel2_${modulation}_${noise}_test
@@ -68,7 +68,7 @@ if(PLATFORM_NS3_AVAILABLE)
     add_test(
       NAME platform_application_channel2_strong_noise_test
       COMMAND platform_application_channel2_feature_demo
-        --modulation bpsk --noise awgn --psd-db 120 --verify
+        --modulation osdm --noise awgn --psd-db 120 --verify
     )
   endif()
 endif()

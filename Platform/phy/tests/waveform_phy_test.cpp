@@ -22,8 +22,12 @@ struct Observer : IWaveformReceptionObserver {
 
 auto Config(ModulationScheme scheme = ModulationScheme::kBpsk)
     -> WaveformPhyConfig {
-  return {{scheme, 6'000.0, 60.0, 1'000.0, 25'000.0, 30.0},
-          4'000.0, NoNoiseConfig{},
+  const auto symbol_rate =
+      scheme == ModulationScheme::kOsdm ? 6'000.0 : 60.0;
+  const ModulationConfig modulation{
+      scheme, 6'000.0, symbol_rate, 1'000.0, 25'000.0, 30.0,
+      OsdmConfig{256U, 16U, 64U}};
+  return {modulation, 4'000.0, NoNoiseConfig{},
           {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
           WaveformFrameFormat::kPayloadWithCrc32, 1'000'000U};
 }
@@ -78,8 +82,10 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
                 observer.summaries[0].bit_error_count == 0 &&
                 observer.summaries[0].noise_power_upa2 == 0.0,
             "true BER and no noise") ||
-     !Check(emission->duration().nanoseconds() == 800'000'000,
-            "CRC overhead in duration")) return false;
+     !Check(emission->duration().nanoseconds() ==
+                (scheme == ModulationScheme::kOsdm
+                     ? 53'333'334 : 800'000'000),
+            "CRC and OSDM framing overhead in duration")) return false;
 
   // Replace only the evaluation truth. Decisions/payload must stay identical.
   TransmissionWaveformStore altered_store;
@@ -87,7 +93,7 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
   if(!artifact || !wrong_truth) return false;
   auto published = altered_store.Publish(TransmissionWaveformArtifact{
       TransmissionId{20}, PacketId{10}, *wrong_truth,
-      (*artifact)->transmitted_waveform()});
+      (*artifact)->framed_bit_count(), (*artifact)->transmitted_waveform()});
   Observer altered_observer;
   auto altered_rx = WaveformRxPhy::Create(config, altered_store,
                                            &altered_observer);
@@ -102,7 +108,8 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
       (*artifact)->transmitted_waveform().samples().begin(),
       (*artifact)->transmitted_waveform().samples().end()};
   for(std::size_t i = 0; i < 100; ++i) {
-    if(scheme == ModulationScheme::kBpsk) samples[i] = -samples[i];
+    if(scheme == ModulationScheme::kBpsk ||
+       scheme == ModulationScheme::kOsdm) samples[i] = -samples[i];
     else samples[i] = std::conj(samples[i]);
   }
   auto damaged_waveform = WaveformBuffer::Create(6'000.0, std::move(samples));
@@ -110,6 +117,7 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
   if(!damaged_waveform) return false;
   auto damaged_publish = damaged_store.Publish(TransmissionWaveformArtifact{
       TransmissionId{20}, PacketId{10}, (*artifact)->original_frame(),
+      (*artifact)->framed_bit_count(),
       std::move(*damaged_waveform)});
   auto damaged_rx = WaveformRxPhy::Create(config, damaged_store);
   if(!damaged_publish || !damaged_rx) return false;
@@ -139,6 +147,10 @@ auto InvalidProfiles() -> bool {
       static_cast<ChannelEqualizationMode>(255U);
   if(!Check(!WaveformTxPhy::Create(config, store),
             "unknown equalization mode rejected")) return false;
+  config = Config(ModulationScheme::kOsdm);
+  config.modulation.osdm = OsdmConfig{10U, 3U, 2U};
+  if(!Check(!WaveformTxPhy::Create(config, store),
+            "invalid OSDM K/M rejected")) return false;
   config = Config();
   config.modulation.sample_rate_hz = 1e300;
   config.modulation.symbol_rate_baud = 1e-300;
@@ -187,7 +199,8 @@ int main() {
   const auto bytes = std::as_bytes(std::span{check.data(), check.size()});
   if(!Check(WaveformCrc32(bytes) == 0xcbf43926U, "CRC known vector") ||
      !RoundTrip(ModulationScheme::kBpsk) ||
-     !RoundTrip(ModulationScheme::kBfsk) || !NoiseAfterChannel() ||
+     !RoundTrip(ModulationScheme::kBfsk) ||
+     !RoundTrip(ModulationScheme::kOsdm) || !NoiseAfterChannel() ||
      !InvalidProfiles()) return 1;
   std::cout << "Waveform providers, truth isolation and post-channel noise passed\n";
 }

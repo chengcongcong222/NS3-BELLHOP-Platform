@@ -43,6 +43,9 @@ using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::MultipathTap;
 using ns3_factory::phy::internal::NoiseProfile;
 using ns3_factory::phy::internal::NoNoiseConfig;
+using ns3_factory::phy::internal::OsdmConfig;
+using ns3_factory::phy::internal::OsdmForwardBlock;
+using ns3_factory::phy::internal::OsdmInverseBlock;
 using ns3_factory::phy::internal::RecoverPayloadBytes;
 using ns3_factory::phy::internal::RunWaveformPipeline;
 using ns3_factory::phy::internal::WaveformBuffer;
@@ -131,6 +134,71 @@ auto TestChannelPathAdapterAndFractionalDelay() -> bool {
          Check(std::abs(delayed->samples()[1].real() - 0.25) <
                    1.0e-12,
                "Fractional-delay second sample");
+}
+
+auto TestOsdmMatlabReferenceAndRoundTrip() -> bool {
+  const OsdmConfig reference_config{4U, 2U, 2U};
+  const std::vector<std::complex<double>> symbols{
+      {1.0, 0.0}, {2.0, 0.0}, {3.0, 0.0}, {4.0, 0.0}};
+  const auto transformed = OsdmForwardBlock(symbols, reference_config);
+  if(!transformed) return Check(false, "OSDM reference transform");
+
+  const auto sqrt_two = std::sqrt(2.0);
+  const std::vector<std::complex<double>> expected{
+      {2.0 * sqrt_two, 0.0}, {3.0 * sqrt_two, 0.0},
+      {-sqrt_two, 0.0}, {-sqrt_two, 0.0}};
+  for(std::size_t index = 0U; index < expected.size(); ++index) {
+    if(!Check(std::abs((*transformed)[index] - expected[index]) < 1.0e-12,
+              "OSDM matches MATLAB reshape and unitary IDFT")) {
+      return false;
+    }
+  }
+  const auto inverted = OsdmInverseBlock(*transformed, reference_config);
+  if(!inverted || inverted->size() != symbols.size()) {
+    return Check(false, "OSDM inverse transform");
+  }
+  for(std::size_t index = 0U; index < symbols.size(); ++index) {
+    if(!Check(std::abs((*inverted)[index] - symbols[index]) < 1.0e-12,
+              "OSDM forward/inverse identity")) {
+      return false;
+    }
+  }
+
+  const auto source = BitFrame::Create(
+      {0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1});
+  if(!source) return Check(false, "OSDM source bits");
+  const ModulationConfig modulation{
+      ModulationScheme::kOsdm, 8'000.0, 8'000.0, 1.0e4, 12'000.0, 0.0,
+      OsdmConfig{8U, 2U, 3U}};
+  const auto modulator = CreateModulator(modulation.scheme);
+  if(!modulator) return Check(false, "OSDM modulator creation");
+  const auto waveform = (*modulator)->Modulate(*source, modulation);
+  if(!waveform) return Check(false, "OSDM modulation");
+  if(!Check(waveform->sample_count() == 22U,
+            "OSDM block padding and CP sample count")) {
+    return false;
+  }
+  for(std::size_t cp_index = 0U; cp_index < 3U; ++cp_index) {
+    if(!Check(std::abs(waveform->samples()[cp_index] -
+                       waveform->samples()[8U + cp_index]) < 1.0e-12,
+              "OSDM cyclic prefix copies the block tail")) {
+      return false;
+    }
+  }
+
+  const WaveformPipelineConfig config{
+      modulation,
+      {MultipathTap{0.0, std::polar(0.35, 0.2)},
+       MultipathTap{2.0 / modulation.sample_rate_hz,
+                    std::polar(0.8, -0.5)}},
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
+      true};
+  const auto result = RunWaveformPipeline(*source, config);
+  return Check(result && result->recovered() == *source,
+               "OSDM recovers a padded multi-block frame") &&
+         Check(result && result->bit_error_count() == 0U,
+               "OSDM noiseless known-channel BER is zero");
 }
 
 auto TestKnownChannelEqualizationRemovesStrongMultipath() -> bool {
@@ -332,6 +400,7 @@ int main() {
   const auto passed =
       TestDigitalPacketPayloadExtraction() &&
       TestChannelPathAdapterAndFractionalDelay() &&
+      TestOsdmMatlabReferenceAndRoundTrip() &&
       TestBpskAwgnRoundTrip() &&
       TestKnownChannelEqualizationRemovesStrongMultipath() &&
       TestBfskWenzRoundTrip() &&
