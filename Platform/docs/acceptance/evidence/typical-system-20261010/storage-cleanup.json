@@ -1,0 +1,911 @@
+{
+  "baseline": "4e22bf0a4d3d82be7c3e9af1e600618e1dc0c9a2",
+  "operation": "recoverable cross-filesystem moves; no permanent deletion",
+  "archive_directory": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010",
+  "source_checkpoint_before_final_report": "3973989c51d15f517dcbe35900cc4fea66e12333",
+  "completed_build_moves": 135,
+  "completed_project_cache_moves": 8,
+  "logical_bytes_moved": 15896062766,
+  "file_size_note": "logical du -sb totals, not Windows C physical space reclaimed",
+  "remaining_builds": [
+    "ns3-bellhop-alg02-clean-off",
+    "ns3-bellhop-alg02-clean-on"
+  ],
+  "ports": {
+    "8007": false,
+    "8008": false,
+    "8009": false,
+    "8010": false,
+    "8011": false,
+    "8012": true,
+    "4177": false,
+    "4178": false,
+    "4179": false,
+    "4180": false,
+    "4181": false,
+    "4182": true
+  },
+  "final_filesystems": {
+    "/": {
+      "used_bytes": 22985224192,
+      "available_bytes": 1003123597312
+    },
+    "/mnt/c": {
+      "used_bytes": 150266728448,
+      "available_bytes": 5919600640
+    },
+    "/mnt/d": {
+      "used_bytes": 311171178496,
+      "available_bytes": 31650254848
+    }
+  },
+  "wsl_vhdx": "C:\\Users\\ccc\\AppData\\Local\\wsl\\{9144653c-5f64-4411-9fe3-a8ce22b03b1f}\\ext4.vhdx",
+  "offline_compaction_performed": false,
+  "preserved": [
+    "active source and Git administration",
+    "legacy NS3_Factory and original RAR",
+    "current ON/OFF verification builds",
+    "ns-3 prefix",
+    "all historical user data in D archives"
+  ],
+  "moves": [
+    {
+      "path": "/home/ccc/build/S5 05 relocation D",
+      "bytes": 50128540,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/S5 05 relocation D"
+    },
+    {
+      "path": "/home/ccc/build/alg02-closeout-backup-20261010",
+      "bytes": 2187037848,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/alg02-closeout-backup-20261010"
+    },
+    {
+      "path": "/home/ccc/build/alg02-installations",
+      "bytes": 34452194,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/alg02-installations"
+    },
+    {
+      "path": "/home/ccc/build/alg02-packages",
+      "bytes": 215122163,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/alg02-packages"
+    },
+    {
+      "path": "/home/ccc/build/channel2-review-20260909-off",
+      "bytes": 74109952,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/channel2-review-20260909-off"
+    },
+    {
+      "path": "/home/ccc/build/channel2-review-20260909-on",
+      "bytes": 122400368,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/channel2-review-20260909-on"
+    },
+    {
+      "path": "/home/ccc/build/e2e-01-off",
+      "bytes": 81261234,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/e2e-01-off"
+    },
+    {
+      "path": "/home/ccc/build/e2e-01-on",
+      "bytes": 136375020,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/e2e-01-on"
+    },
+    {
+      "path": "/home/ccc/build/edge-ux-r2-final-06",
+      "bytes": 11310672,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/edge-ux-r2-final-06"
+    },
+    {
+      "path": "/home/ccc/build/edge-ux-r3",
+      "bytes": 12088960,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/edge-ux-r3"
+    },
+    {
+      "path": "/home/ccc/build/frontend-r4-off",
+      "bytes": 78407085,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/frontend-r4-off"
+    },
+    {
+      "path": "/home/ccc/build/frontend-r4-on",
+      "bytes": 319243007,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/frontend-r4-on"
+    },
+    {
+      "path": "/home/ccc/build/legacy-frontend-ux-audit",
+      "bytes": 257236189,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/legacy-frontend-ux-audit"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-alg02-on",
+      "bytes": 101085876,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-alg02-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-channel2-off",
+      "bytes": 72470167,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-channel2-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-channel2-on",
+      "bytes": 113303957,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-channel2-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-core-s1-02-off",
+      "bytes": 2334043,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-core-s1-02-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-core-s1-02-on",
+      "bytes": 4413017,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-core-s1-02-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-exp01-off",
+      "bytes": 154062235,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-exp01-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-exp01-on",
+      "bytes": 458720530,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-exp01-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-02h-off",
+      "bytes": 2335314,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-02h-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-02h-on",
+      "bytes": 4877103,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-02h-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03a-off",
+      "bytes": 2627072,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03a-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03a-on",
+      "bytes": 5168862,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03a-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03b-off",
+      "bytes": 2978314,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03b-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03b-on",
+      "bytes": 5520123,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03b-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03c-off",
+      "bytes": 3894844,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03c-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-03c-on",
+      "bytes": 6436608,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-03c-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04a-off",
+      "bytes": 4480598,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04a-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04a-on",
+      "bytes": 7022360,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04a-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04b-off",
+      "bytes": 4849660,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04b-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04b-on",
+      "bytes": 7393445,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04b-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04c-off",
+      "bytes": 5610935,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04c-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04c-on",
+      "bytes": 8197470,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04c-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04d1-off",
+      "bytes": 6351723,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04d1-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04d1-on",
+      "bytes": 8936131,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04d1-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04d2-off",
+      "bytes": 7383482,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04d2-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-04d2-on",
+      "bytes": 11235477,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-04d2-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-05a-off",
+      "bytes": 7949489,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-05a-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-05a-on",
+      "bytes": 11788037,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-05a-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-05b1-off",
+      "bytes": 8619840,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-05b1-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-s1-05b1-on",
+      "bytes": 12458396,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-s1-05b1-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-uxr1-off",
+      "bytes": 72133140,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-uxr1-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-platform-uxr1-on",
+      "bytes": 112927775,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-platform-uxr1-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-02-off",
+      "bytes": 79149169,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-02-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-02-on",
+      "bytes": 132517520,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-02-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-03-demo-state",
+      "bytes": 322720,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-03-demo-state"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-03-off",
+      "bytes": 79140599,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-03-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-04-demo-state",
+      "bytes": 5256,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-04-demo-state"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s4-04-dep-off",
+      "bytes": 16966251,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s4-04-dep-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s4-04-dep-on",
+      "bytes": 65132786,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s4-04-dep-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s4-04-final-off",
+      "bytes": 24361865,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s4-04-final-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s4-04-final-on",
+      "bytes": 65196677,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s4-04-final-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-05-off",
+      "bytes": 79139545,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-05-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-05-on",
+      "bytes": 134056600,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-05-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-r4-03-on",
+      "bytes": 133969258,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-r4-03-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-close-runtime",
+      "bytes": 232880,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-close-runtime"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-dev",
+      "bytes": 1744096,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-dev"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-close-off",
+      "bytes": 72122386,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-close-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-off-final",
+      "bytes": 72122433,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-off-final"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-close-on",
+      "bytes": 113538861,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-close-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-on-dev",
+      "bytes": 112855311,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-on-dev"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-03-pytest-cache",
+      "bytes": 1690,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-03-pytest-cache"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-team-off",
+      "bytes": 16387839,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-team-off"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-team-on",
+      "bytes": 50372615,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-team-on"
+    },
+    {
+      "path": "/home/ccc/build/ns3-factory-platform",
+      "bytes": 2224551,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-factory-platform"
+    },
+    {
+      "path": "/home/ccc/build/ns3-factory-platform-ns3",
+      "bytes": 3260990,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-factory-platform-ns3"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-02-on-final",
+      "bytes": 112916918,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-02-on-final"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-03-dev-off",
+      "bytes": 72099884,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-03-dev-off"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r2-desktop-review",
+      "bytes": 1381747,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r2-desktop-review"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r2-iteration1",
+      "bytes": 611515,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r2-iteration1"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r2-iteration1b",
+      "bytes": 730673,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r2-iteration1b"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r2-iteration2",
+      "bytes": 149515,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r2-iteration2"
+    },
+    {
+      "path": "/home/ccc/build/ns3-bellhop-s5-03-dev-on",
+      "bytes": 112918080,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/ns3-bellhop-s5-03-dev-on"
+    },
+    {
+      "path": "/home/ccc/build/r4-05-state",
+      "bytes": 236061,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/r4-05-state"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r1-browser.1rWFq1",
+      "bytes": 157378415,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r1-browser.1rWFq1"
+    },
+    {
+      "path": "/home/ccc/build/s5-03 accepted path b",
+      "bytes": 50068773,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03 accepted path b"
+    },
+    {
+      "path": "/home/ccc/build/r4-05-node-modules",
+      "bytes": 57455270,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/r4-05-node-modules"
+    },
+    {
+      "path": "/home/ccc/build/s5-03 final release b",
+      "bytes": 50067671,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03 final release b"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-corruption-test",
+      "bytes": 7467707,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-corruption-test"
+    },
+    {
+      "path": "/home/ccc/build/s5-03 release extract b",
+      "bytes": 50069694,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03 release extract b"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-accepted-a",
+      "bytes": 50061575,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-accepted-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-extract-a",
+      "bytes": 50059947,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-extract-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-hidden-source-empty",
+      "bytes": 0,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-hidden-source-empty"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-a",
+      "bytes": 13552638,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-b",
+      "bytes": 13552638,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-b"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-c",
+      "bytes": 13553475,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-d",
+      "bytes": 13553475,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-d"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-g",
+      "bytes": 13553651,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-g"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-out-h",
+      "bytes": 13553651,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-out-h"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-final-extract-a",
+      "bytes": 50068908,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-final-extract-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-final-off",
+      "bytes": 72105366,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-final-off"
+    },
+    {
+      "path": "/home/ccc/build/p0-ux-r2-browser-profiles",
+      "bytes": 820010093,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/p0-ux-r2-browser-profiles"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-a",
+      "bytes": 74871523,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-b",
+      "bytes": 74871532,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-b"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-c",
+      "bytes": 74871507,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-d",
+      "bytes": 74871507,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-d"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-g",
+      "bytes": 74871551,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-g"
+    },
+    {
+      "path": "/home/ccc/build/s5-04-error-wrong-asset",
+      "bytes": 7467707,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-04-error-wrong-asset"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-wrong-asset-test",
+      "bytes": 50068793,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-wrong-asset-test"
+    },
+    {
+      "path": "/home/ccc/build/s5-03-release-work-h",
+      "bytes": 74871505,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-03-release-work-h"
+    },
+    {
+      "path": "/home/ccc/build/s5-04-acceptance-dry-run",
+      "bytes": 50072820,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-04-acceptance-dry-run"
+    },
+    {
+      "path": "/home/ccc/build/s5-04-off",
+      "bytes": 72095565,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-04-off"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-backend-test-venv",
+      "bytes": 43147152,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-backend-test-venv"
+    },
+    {
+      "path": "/home/ccc/build/s5-04-on",
+      "bytes": 112888459,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-04-on"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-clean-source-a",
+      "bytes": 390631313,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-clean-source-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-empty-source-mask",
+      "bytes": 0,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-empty-source-mask"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-clean-source-b",
+      "bytes": 390631313,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-clean-source-b"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-negative-corrupt",
+      "bytes": 7531557,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-negative-corrupt"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-clean-source-c",
+      "bytes": 390631538,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-clean-source-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-clean-source-d",
+      "bytes": 390631538,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-clean-source-d"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-a",
+      "bytes": 0,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-a2",
+      "bytes": 13731688,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-a2"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-b",
+      "bytes": 0,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-b"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-b2",
+      "bytes": 13731688,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-b2"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-c",
+      "bytes": 13731706,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-output-d",
+      "bytes": 13731706,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-output-d"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-final-dry-run",
+      "bytes": 50137069,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-final-dry-run"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-negative-manifest",
+      "bytes": 50133991,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-negative-manifest"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-offline-hidden",
+      "bytes": 50130815,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-offline-hidden"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-a",
+      "bytes": 74815888,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-a"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-a2",
+      "bytes": 74875887,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-a2"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-b",
+      "bytes": 74874199,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-b"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-b2",
+      "bytes": 74875913,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-b2"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-c",
+      "bytes": 74873937,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-relocation-c",
+      "bytes": 50129910,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-relocation-c"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-release-work-d",
+      "bytes": 74873938,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-release-work-d"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-source-off-precommit",
+      "bytes": 72127184,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-source-off-precommit"
+    },
+    {
+      "path": "/home/ccc/build/s5-05-source-on-precommit",
+      "bytes": 112921583,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/s5-05-source-on-precommit"
+    },
+    {
+      "path": "/home/ccc/build/trajectory-20260911-off",
+      "bytes": 77472015,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trajectory-20260911-off"
+    },
+    {
+      "path": "/home/ccc/build/trajectory-20260911-on",
+      "bytes": 130502354,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trajectory-20260911-on"
+    },
+    {
+      "path": "/home/ccc/build/trj-02-closeout-off",
+      "bytes": 80589865,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trj-02-closeout-off"
+    },
+    {
+      "path": "/home/ccc/build/trj-02-closeout-on",
+      "bytes": 136288151,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trj-02-closeout-on"
+    },
+    {
+      "path": "/home/ccc/build/trj-02-off",
+      "bytes": 80080859,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trj-02-off"
+    },
+    {
+      "path": "/home/ccc/build/trj-02-on",
+      "bytes": 134372073,
+      "recovery": "builds-before-cleanup.tar.gz",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/build/trj-02-on"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/.runtime",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/.runtime",
+      "bytes": 3076785323,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/frontend/node_modules",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/frontend/node_modules",
+      "bytes": 118748842,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/frontend/.tools",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-trajectory-builder-uuv/Platform/frontend/.tools",
+      "bytes": 201155762,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-frontend-authoring-r4/Platform/frontend/node_modules",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-frontend-authoring-r4/Platform/frontend/node_modules",
+      "bytes": 114764509,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-frontend-convergence-r4/Platform/frontend/node_modules",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-frontend-convergence-r4/Platform/frontend/node_modules",
+      "bytes": 114764511,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-frontend-convergence-r4/Platform/frontend/.tools",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-frontend-convergence-r4/Platform/frontend/.tools",
+      "bytes": 201155762,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-frontend-runtime-r4/Platform/frontend/node_modules",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-frontend-runtime-r4/Platform/frontend/node_modules",
+      "bytes": 114764503,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    },
+    {
+      "path": "/home/ccc/work/NS3-BELLHOP-Platform-frontend-runtime-r4/Platform/frontend/.tools",
+      "quarantine_path": "/mnt/d/ProjectStorage/NS3-BELLHOP-checkpoint-20261010/quarantine/work/NS3-BELLHOP-Platform-frontend-runtime-r4/Platform/frontend/.tools",
+      "bytes": 201155762,
+      "recovery": "project-history-before-cleanup.tar.gz"
+    }
+  ]
+}

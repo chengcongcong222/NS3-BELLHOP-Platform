@@ -8,7 +8,15 @@ launcher="${repository_root}/Platform/scripts/platform_demo.sh"
 # A retained local deployment records its existing ports and immutable tools.
 # Do not silently prepare a different build when that deployment is incomplete.
 profile="${PLATFORM_LOCAL_PROFILE:-${repository_root}/Platform/.runtime/current-system.env}"
+if [[ -n "${PLATFORM_LOCAL_PROFILE:-}" && ! -f "${profile}" ]]; then
+  echo "指定的运行配置不存在：${profile}；不会回退启动其他版本。" >&2
+  exit 2
+fi
 if [[ -f "${profile}" ]]; then
+  if [[ "${1:-start}" == prepare ]]; then
+    echo "当前使用已验证运行包，不能用 prepare 覆盖；请按典型系统恢复说明操作。" >&2
+    exit 2
+  fi
   source "${profile}"
   if [[ "${1:-start}" == start ]] && "${launcher}" status >/dev/null 2>&1; then
     echo "系统已经运行：http://127.0.0.1:${PLATFORM_FRONTEND_PORT}"

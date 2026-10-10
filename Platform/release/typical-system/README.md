@@ -25,6 +25,8 @@
 
 已配置主入口 `http://127.0.0.1:4182`，后台 `http://127.0.0.1:8012`。本机配置是 `Platform/.runtime/current-system.env`；存在时，入口使用其指定的保留程序，不会因预检失败自动另建一版系统。
 
+显式指定的配置文件不存在时会报错，不回退到其他版本。保留运行包模式下禁止 `prepare`，避免覆盖已经验证的程序。
+
 `Platform/.runtime/retained-system/` 包含运行程序、Python 环境、算法安装和活动数据；前端仍使用 `Platform/frontend/dist`、当前唯一的 `node_modules` 和 `.tools`。不再依赖旧 trajectory 工作树。ns-3 系统依赖仍需保留原安装前缀。
 
 运行记录目前仍为进程内存状态：不要随意重启。原记录已归档；恢复数据集不会把历史 Run URL 重新注入运行目录。进入案例后重新运行即可生成本版结果。

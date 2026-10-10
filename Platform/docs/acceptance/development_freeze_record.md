@@ -32,7 +32,11 @@ Worker manifest 的构建源码为安装修复提交 dbce6c4；最终源码只�
 
 整理基线为 `4e22bf0a4d3d82be7c3e9af1e600618e1dc0c9a2`。本次只整理启动入口、典型数据、历史运行目录与构建缓存，不修改仿真算法、前后端业务逻辑或 Runtime 事件。
 
+整理节点标签：`checkpoint/typical-system-20261010`，分支仍为 `feature/algorithm-integration-v2`。标签固定本报告、典型数据、启动保护和验证证据所在的同一源码节点，不重新生成仿真程序。
+
 当前项目：`/home/ccc/work/NS3-BELLHOP-Platform-algorithm-integration-v2`。运行根目录的 `./start-platform.sh`，打开 **http://127.0.0.1:4182**；后台仍为 8012。重复启动只报告已运行，不另开端口。
+
+Windows 可双击 `D:\ProjectStorage\NS3-BELLHOP-checkpoint-20261010\start-system.cmd`。本轮验证了它调用的 WSL 启动路径和状态命令；没有将脚本调用验证写成 Windows 人工双击验收。
 
 | 当前配置 | 路径或身份 |
 | --- | --- |
@@ -61,9 +65,11 @@ Worker manifest 的构建源码为安装修复提交 dbce6c4；最终源码只�
 | 声线路径 | 已发布导入环境可选 5 个发射深度，显示 31 条真实声线 |
 | 前端 | 锁定 Vitest 4.1.11：resources、runActions、environmentTruth 共 31 项通过 |
 | 后台 | 安装生命周期、轨迹 API/C++ 逐点一致性共 5 项通过 |
-| 恢复工具 | 5 项通过，含完整性、拒绝覆盖、损坏输入、路径边界 |
+| 恢复与启动保护 | 7 项通过，含完整性、拒绝覆盖、损坏输入、路径边界、缺失配置不回退、禁止覆盖保留程序 |
 | C++ ON | Bellhop Runtime 与 Acceptance 场景/融合 3 项通过 |
 | C++ OFF | 轨迹资产/UUV 2 项通过 |
+
+合计 48 项自动化测试通过，另有上述 3 次真实页面运行。整理结束再次检查前端文件和 Worker 的 4 项 SHA256，全部与受测版本相同；主入口 `/ready` 全部就绪，3 次运行结果仍可打开。
 
 曾误从仓库根目录调用 npm exec，使用了非锁定测试器且未载入 DOM 配置；该次运行无效，已改为从前端目录直接执行锁定版本并通过。误生成的缓存已移入隔离区，未进入源码节点。
 
@@ -77,9 +83,18 @@ Worker manifest 的构建源码为安装修复提交 dbce6c4；最终源码只�
 | `project-history-before-cleanup.tar.gz` | 旧项目源码、用户环境/草稿/轨迹和缓存；SHA256 `e75967a3e16c08fe92eb1fa7a297a10b8d12dd95647e19a634319a84e8c9ab49` |
 | `service-records/8007` 至 `8012` | 旧服务的运行目录、结果、定义及事件；8012 的 `runs-before-switch.json` 保留更新前索引 |
 | `current-programs-and-data.tar.gz` | 当前已受测的运行程序、典型活动数据、Node 与前端依赖、主入口配置；排除服务 PID 和活动日志，不用于覆盖运行中的目录 |
+| `ns3-installed-prefix.tar.gz` | 当前 ns-3 3.47 安装依赖备份 |
+| `source-checkpoint.bundle` | 可独立恢复的完整 Git 历史；已执行 bundle verify |
+| `start-system.cmd` | 本机 Windows 入口；只调用 Ubuntu-24.04 中当前根目录的启动脚本，再打开 4182。已验证对应 WSL 路径和 status 命令 |
 | `quarantine/` | 可直接找回的原目录；不是永久删除。搬移映射见 `quarantine-moves.jsonl` 和 `quarantine-project-moves.jsonl` |
 
 两个压缩归档在清理前均完成 `tar --compare`，退出码 0。批量永久删除被安全检查拦截后，改为可恢复跨盘搬移；不把“有压缩包”当作直接永久删除整个项目的理由。
+
+搬移已完成：135 个历史构建目录、8 个旧运行/前端依赖目录，共 **15,896,062,766 字节（约 14.8 GiB，逻辑文件体积）**。逐项核验原路径已移出、D 盘目标存在。Linux 文件系统占用从整理前约 37 GiB 降至约 22 GiB；这不等于 Windows C 盘已经回收 14.8 GiB。
+
+`/home/ccc/build` 仅留下当前 ON/OFF 验证构建，合计约 571 MiB。活动运行程序与数据约 185 MiB，Git 典型数据包约 9.9 MiB；当前前端依赖另行保留。旧 4177～4181 / 8007～8011 服务已在备份和空闲检查后关闭，只保留主入口 4182 / 8012。
+
+完整搬移映射、保留目录、端口核验和磁盘统计见 [storage-cleanup.json](evidence/typical-system-20261010/storage-cleanup.json)。D 盘另有同名清单；历史资料仍可从隔离目录或已校验压缩包找回。本轮没有永久删除历史用户资料。
 
 历史运行目录当前为内存数据，不能自动恢复历史 Run URL。已导出旧端口的 23 次运行和原主入口的 4 次运行；本次保留系统已重新生成可查看结果。原始用户资源在 D 盘归档中，不会因为精简展示而被销毁。
 
@@ -88,5 +103,7 @@ Worker manifest 的构建源码为安装修复提交 dbce6c4；最终源码只�
 ### Windows C 盘限制
 
 本发行版 `Ubuntu-24.04` 的虚拟磁盘在 C 盘，不是另外两套 D 盘发行版。移走文件释放的是 Linux 内部空间；当前 VHDX 未启用稀疏回收，不能把搬移体积直接算成 C 盘已回收体积。整理期间也观察到 Windows C 盘页面文件约 8.7 GiB，但缺少其起始值，不能断言 C 盘余量变化均由它造成。
+
+收尾测量 C 盘可用约 **5.5 GiB**，D 盘可用约 **29.5 GiB**。C 盘仍较紧张；不把本次文件整理报告成 Windows 磁盘问题已完全解决。
 
 离线压缩必须在虚拟磁盘不以读写方式挂载时进行，参见 [Microsoft compact vdisk](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/compact-vdisk)。本轮未擅自关闭整个 WSL、修改页面文件或在线操作 VHDX。需要另行安排短暂停机，确认当前结果已导出、IDE 文件已保存后，再回收 Windows 的实际占用。

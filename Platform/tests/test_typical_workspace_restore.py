@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -65,6 +67,32 @@ class RestoreTests(unittest.TestCase):
             module.restore(seed, target)
             self.assertEqual(len(list((target / 'environments').iterdir())), 2)
             self.assertTrue((target / 'workspace/drafts/experiment/experiment-7c33c1817ed9.json').is_file())
+
+
+class LauncherProtectionTests(unittest.TestCase):
+    def call(self, root, profile, *arguments):
+        # Copy just the entry point: there is deliberately no underlying
+        # launcher, so a regression cannot start or prepare a real service.
+        entry = root / 'start-platform.sh'
+        entry.write_bytes((SCRIPT.parents[2] / 'start-platform.sh').read_bytes())
+        return subprocess.run(['bash', str(entry), *arguments], capture_output=True, text=True,
+                              env={**os.environ, 'PLATFORM_LOCAL_PROFILE': str(profile)})
+
+    def test_missing_explicit_profile_cannot_fall_back(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = self.call(root, root / 'missing.env')
+            self.assertEqual(result.returncode, 2)
+            self.assertIn('不会回退', result.stderr)
+
+    def test_prepare_cannot_overwrite_retained_programs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = root / 'retained.env'
+            profile.write_text('# Retained deployment\n')
+            result = self.call(root, profile, 'prepare')
+            self.assertEqual(result.returncode, 2)
+            self.assertIn('不能用 prepare 覆盖', result.stderr)
 
 
 if __name__ == '__main__':
