@@ -166,6 +166,7 @@ export interface RunDefinitionContextDto {
 }
 
 export interface CommunicationFlowDto {
+  flow_id?: DecimalString | null;
   source_node_id: DecimalString;
   destination_node_id: DecimalString;
   packets_per_cycle: number;

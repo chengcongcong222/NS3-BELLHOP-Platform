@@ -149,6 +149,11 @@ class ScenarioRuntime final {
 
   [[nodiscard]] auto RunCycles(std::size_t cycle_count)
       -> contracts::Status;
+  auto BindPlanningEvidence(contracts::IPlanningEvidenceSink* sink) -> contracts::Status {
+    if(state_!=ScenarioRuntimeState::kReady) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition,"Planning evidence must be bound before execution"});
+    planning_evidence_=sink;return {};
+  }
 
   [[nodiscard]] auto BindTrajectories(
       std::shared_ptr<const contracts::INodeTrajectory> trajectories) -> contracts::Status {
@@ -289,6 +294,7 @@ class ScenarioRuntime final {
   std::optional<contracts::StructureSnapshot> applied_structure_;
   std::optional<contracts::StructureOrigin> applied_structure_origin_;
   contracts::PreviousCycleFeedback previous_planning_feedback_;
+  contracts::IPlanningEvidenceSink* planning_evidence_{};
   std::optional<AppliedMacSchedule> applied_mac_schedule_;
   std::size_t completed_cycle_count_{0};
   std::size_t candidate_plan_build_count_{0};
@@ -606,6 +612,7 @@ inline auto ScenarioRuntime::RunOneCycle(
       signal_runtime,
       event_sink);
   if(!tx_runtime) return std::unexpected(tx_runtime.error());
+  if(flow_planning) tx_runtime->BindPlanningEvidence(planning_evidence_);
   PlanBoundExecutionHook execution_hook{*tx_runtime, signal_runtime};
   kernel::internal::PlanInstaller installer{dispatcher};
   kernel::internal::CycleCoordinator coordinator{installer,

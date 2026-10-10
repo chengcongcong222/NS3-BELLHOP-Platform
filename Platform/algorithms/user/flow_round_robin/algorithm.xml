@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<algorithm id="example.flow-round-robin" version="1.0.0" interface="planning-mac-v2"
+           label="流轮询教学样例" entry="example_flow_round_robin::Plan">
+  <description>按稳定流身份轮询已知待发包，无跨周期私有状态；教学基准，不宣称公平性或性能保证。</description>
+  <requires knowledge="global-simulation">
+    <input name="node-state-v1" required="true"/>
+    <input name="flow-demand-v1" required="true"/>
+    <input name="routing-view-v1" required="true"/>
+    <input name="link-prediction-v1" required="true"/>
+    <input name="previous-feedback-v1" required="false"/>
+  </requires>
+  <output kind="serial-flow-schedule-v1"/>
+  <parameter id="packets_per_turn" label="每流每轮包数" type="integer" default="1" min="1" max="16"/>
+</algorithm>

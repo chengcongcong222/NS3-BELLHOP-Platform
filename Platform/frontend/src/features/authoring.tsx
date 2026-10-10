@@ -22,7 +22,7 @@ import { isSceneDomain } from "../domain/sceneSpatial";
 import { trajectoryRunCoverage } from "../domain/trajectoryCoverage";
 import { planningConfigurationIssues, planningNanosecondsInput, planningSecondsInput } from "../domain/planningConfiguration";
 import { AlgorithmParameters } from "../components/AlgorithmParameters";
-import { algorithmDefaults, algorithmIssues, algorithmKey } from "../domain/algorithms";
+import { algorithmDefaults, algorithmIssues, algorithmKey, bindFlowIdentities } from "../domain/algorithms";
 import {
   EmptyState,
   ErrorState,
@@ -819,7 +819,11 @@ export function ExperimentAuthoringPage() {
   const set = <K extends keyof ExperimentDraft>(
     key: K,
     val: ExperimentDraft[K],
-  ) => setValue({ ...value, [key]: val });
+  ) => setValue(current => {
+    const next = { ...current, [key]: val };
+    if (key === "flows") next.flows = bindFlowIdentities(next.flows ?? [], next.macAlgorithm?.interface === "planning-mac-v2");
+    return next;
+  });
   const selectedScenarioDraft = scenarioDrafts.data?.find((item) => item.draft_id === value.scenarioId);
   const sceneEnvironment = environments.data?.find(item => item.environment_asset_id === scene.environmentAssetId);
   useEffect(() => {
@@ -917,7 +921,7 @@ export function ExperimentAuthoringPage() {
       delete payload.guard_interval_ns;
     }
     if (value.workload === "CommunicationOnly") {
-      payload.flows = value.flows ?? [];
+      payload.flows = value.macAlgorithm?.interface === "planning-mac-v2" ? value.flows ?? [] : bindFlowIdentities(value.flows ?? [], false);
       for (const field of ["fusion_receiver_node_id", "minimum_bearing_points", "maximum_fusion_period_ns", "target_x_m", "target_y_m"]) delete payload[field];
     } else {
       payload.fusion_receiver_node_id = value.fusionReceiverNodeId ?? null;
@@ -1068,8 +1072,9 @@ export function ExperimentAuthoringPage() {
                   value={value.macMode === "RegisteredMac" ? value.macAlgorithm ? algorithmKey(value.macAlgorithm) : "RegisteredMac" : value.macMode}
                   onChange={(e) => {
                     const algorithm = algorithmCatalog.data?.algorithms.find(a => algorithmKey(a) === e.target.value);
-                    setValue(current => algorithm ? { ...current, macMode: "RegisteredMac", macAlgorithm: algorithmDefaults(algorithm) }
-                      : { ...current, macMode: e.target.value, macAlgorithm: undefined });
+                    setValue(current => algorithm ? { ...current, macMode: "RegisteredMac", macAlgorithm: algorithmDefaults(algorithm),
+                      flows: bindFlowIdentities(current.flows ?? [], algorithm.interface === "planning-mac-v2") }
+                      : { ...current, macMode: e.target.value, macAlgorithm: undefined, flows: bindFlowIdentities(current.flows ?? [], false) });
                   }}
                 >
                   {planning && <optgroup label="已安装算法">{algorithmCatalog.data?.algorithms.map(a => <option key={algorithmKey(a)} value={algorithmKey(a)}>{a.label} · v{a.version}</option>)}</optgroup>}

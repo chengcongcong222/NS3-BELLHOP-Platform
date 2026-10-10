@@ -128,6 +128,15 @@ def new_package(args):
     if directory.exists():
         raise ValueError("包目录已存在，未覆盖。")
     namespace = "user_" + args.name
+    if args.interface == "planning-mac-v2":
+        source = PLATFORM / "algorithms/examples/channel_aware"
+        shutil.copytree(source, directory)
+        for path in directory.rglob("*"):
+            if path.is_file() and path.suffix in {".hpp", ".cpp", ".xml", ".md"}:
+                path.write_text(path.read_text().replace("example_channel_aware", namespace)
+                    .replace("example.channel-aware", "user." + args.name))
+        print("已创建 v2 包：" + str(directory))
+        return
     directory.mkdir(parents=True)
     source = (PLATFORM / "algorithms/examples/ordered_mac/algorithm.hpp").read_text()
     (directory / "algorithm.hpp").write_text(source.replace("example_mac", namespace))
@@ -272,6 +281,17 @@ def list_packages(args):
             print("Invalid", manifest_path.parent.name, str(error))
 
 
+def replay(args):
+    settings = config(args)
+    root = Path(settings["install_root"])
+    release = args.release or json.loads((root / "active.json").read_text())["release"]
+    worker, _ = read_release(root, release)
+    snapshot = args.snapshot.resolve(strict=True)
+    if snapshot.stat().st_size > 8 * 1024 * 1024:
+        raise ValueError("单周期上下文超过 8 MiB 部署保护预算。")
+    print(run([worker, "--replay-planning-context", snapshot]).strip())
+
+
 def main():
     parser = argparse.ArgumentParser(description="受信任的服务器端算法安装工具；不执行 Python 仿真。")
     parser.add_argument("--config", type=Path, default=PLATFORM / ".runtime/protocolctl.json")
@@ -285,11 +305,16 @@ def main():
     for name in ("new", "check", "install"):
         command = commands.add_parser(name)
         command.add_argument("name")
+        if name == "new":
+            command.add_argument("--interface", choices=["planning-mac-v1", "planning-mac-v2"], default="planning-mac-v2")
         if name == "install":
             command.add_argument("--activate", action="store_true")
     commands.add_parser("list")
     activation = commands.add_parser("activate")
     activation.add_argument("--release", help="指定已保留的程序 SHA；默认待启用版本")
+    replay_command = commands.add_parser("replay", help="使用相同 C++ 算法重放导出的规划上下文，不推进仿真")
+    replay_command.add_argument("snapshot", type=Path)
+    replay_command.add_argument("--release", help="指定已保留的程序 SHA；默认当前启用版本")
     args = parser.parse_args()
     try:
         if args.command == "configure":
@@ -307,6 +332,8 @@ def main():
             install_package(args)
         elif args.command == "activate":
             activate_release(args)
+        elif args.command == "replay":
+            replay(args)
         else:
             list_packages(args)
         return 0

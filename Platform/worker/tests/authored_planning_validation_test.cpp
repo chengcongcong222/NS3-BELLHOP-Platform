@@ -170,6 +170,44 @@ auto RegisteredAlgorithmRejectsBypasses() -> bool {
   return true;
 }
 
+auto StrictV3FlowBoundary() -> bool {
+  const auto& packages=planning::RegisteredFlowAlgorithms();
+  if(packages.empty()) { std::cout << "V3 package loader gate requires explicit v2 package build\n";return true; }
+  TemporaryDefinition fixture;
+  auto valid=BaseDocument();
+  valid["schema"]="ns3-factory-authored-run-v3";
+  auto& e=valid["experiment"];
+  e["mac_mode"]="RegisteredMac";e.erase("adaptive_tdma");
+  const auto& package=packages.front();
+  Json parameters=Json::object();
+  for(const auto& parameter:package.parameters) parameters[parameter.id]=parameter.default_value;
+  e["mac_algorithm"]={{"id",package.id},{"version",package.version},{"package_sha256",package.package_sha256},
+    {"interface","planning-mac-v2"},{"worker_sha256",std::string(64,'a')},{"parameters",parameters}};
+  e["flows"][0]["flow_id"]=std::numeric_limits<std::uint64_t>::max();
+  std::function<void(Json&)> encode=[&](Json& value) {
+    if(value.is_number_unsigned()) value=std::to_string(value.get<std::uint64_t>());
+    else if(value.is_number_integer()) value=std::to_string(value.get<std::int64_t>());
+    else if(value.is_array()) for(auto& item:value) encode(item);
+    else if(value.is_object()) for(auto& item:value.items()) if(item.key()!="mac_algorithm") encode(item.value());
+  };
+  encode(valid);
+  auto loaded=fixture.Load(valid);CHECK(loaded);
+  CHECK(loaded->experiment.planning()->flows[0].flow_id==FlowId{UINT64_MAX});
+  const std::vector<std::function<void(Json&)>> mutations{
+    [](Json& j) { j["experiment"]["flows"][0].erase("flow_id"); },
+    [](Json& j) { j["experiment"]["flows"][0]["flow_id"]=1; },
+    [](Json& j) { j["experiment"]["flows"][0]["flow_id"]="01"; },
+    [](Json& j) { j["experiment"]["flows"].push_back(j["experiment"]["flows"][0]); },
+    [](Json& j) { j["experiment"]["mac_algorithm"]["interface"]="planning-mac-v1"; },
+    [](Json& j) { j["experiment"]["mac_algorithm"]["parameters"]["unknown"]="1"; },
+    [](Json& j) { j["experiment"]["mac_algorithm"]["package_sha256"]=std::string(64,'f'); },
+    [](Json& j) { j["nodes"][0]["node_id"]="18446744073709551616"; },
+    [](Json& j) { j["experiment"]["planning_cycle_duration_ns"]="9223372036854775808"; }};
+  for(const auto& mutate:mutations) { auto bad=valid;mutate(bad);CHECK(!fixture.Load(bad)); }
+  std::cout << "V3_EXACT_FLOW_AND_PACKAGE_LOADER_OK\n";
+  return true;
+}
+
 auto ConfiguredGuardUsesActualAirtime() -> bool {
   const auto duration = [](std::int64_t ns) { return SimDuration::FromNanoseconds(ns); };
   const auto experiment = ExperimentDefinition::Create(*ExperimentId::Create("guard-experiment"), 1,
@@ -202,5 +240,5 @@ auto ConfiguredGuardUsesActualAirtime() -> bool {
 }  // namespace
 
 int main() {
-  return RegisteredAlgorithmRejectsBypasses() && StrictV2AndCompatibleV1() && ConfiguredGuardUsesActualAirtime() ? EXIT_SUCCESS : EXIT_FAILURE;
+  return RegisteredAlgorithmRejectsBypasses() && StrictV2AndCompatibleV1() && StrictV3FlowBoundary() && ConfiguredGuardUsesActualAirtime() ? EXIT_SUCCESS : EXIT_FAILURE;
 }

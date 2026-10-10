@@ -319,6 +319,7 @@ struct WaveformExecutionOptions final {
 
 class RunExecutionExecutor final : public IRunExecutor {
  public:
+  void BindPlanningEvidence(contracts::IPlanningEvidenceSink* sink) noexcept { planning_evidence_=sink; }
   explicit RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments)
       noexcept
@@ -540,7 +541,7 @@ class RunExecutionExecutor final : public IRunExecutor {
     // This catalog stores immutable revision-qualified IDs, not an independent
     // numeric revision column. Use its content version, not the format version.
     PlanningExecutionPlanner generic_planner{experiment,run_id.value(),PlanningEnvironment{
-        std::cref(*channel),scenario.environment().asset_id,"fnv1a64:"+environment_checksum,environment_checksum}};
+        std::cref(*channel),scenario.environment().asset_id,"fnv1a64:"+environment_checksum,environment_checksum},planning_evidence_};
     ConstantNoise noise{
         experiment.phy().equivalent_noise_power_db_re_1upa2};
     DeterministicRxPhy deterministic_rx;
@@ -575,6 +576,10 @@ class RunExecutionExecutor final : public IRunExecutor {
             : static_cast<assembly::internal::IScenarioCycleApplication*>(&*traffic_application),
         planning_execution ? assembly::internal::MacScheduleUpdatePolicy::kEveryCycle
                            : assembly::internal::MacScheduleUpdatePolicy::kNetworkUpdateCycle};
+    if(flow_scoped) {
+      const auto bound_evidence=runtime.BindPlanningEvidence(planning_evidence_);
+      if(!bound_evidence) return std::unexpected(bound_evidence.error());
+    }
     if(planning_execution) {
       const auto airtime = phy::internal::ComputePayloadAirtime(
           workload_payload_bytes + (waveform_ ? phy::internal::kWaveformCrcBytes : 0U),
@@ -707,6 +712,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       environments_;
   std::optional<WaveformExecutionOptions> waveform_;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
+  contracts::IPlanningEvidenceSink* planning_evidence_{};
 };
 
 // Compatibility name for preset-focused callers. Both paths now execute the

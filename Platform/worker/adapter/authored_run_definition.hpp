@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -18,12 +19,13 @@
 #include <ns3_factory/planning/registered_algorithms.hpp>
 
 #include "internal/simulation_worker.hpp"
+#include "planning_context_json.hpp"
 
 namespace ns3_factory::worker::adapter {
 
 // V1 remains a compatibility decoder. V2 rejects lossy numeric conversions and
 // unknown algorithm parameters before nlohmann's arithmetic get() casts run.
-inline auto ValidatePlanningV2Document(const nlohmann::json& document)
+inline auto ValidatePlanningV2Document(const nlohmann::json& document,bool flow_scoped=false)
     -> contracts::Status {
   using Json = nlohmann::json;
   try {
@@ -106,14 +108,21 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document)
           (!experiment.contains("adaptive_tdma") || experiment.at("adaptive_tdma").is_null()), "registered MAC legacy parameters");
       const auto& a = experiment.at("mac_algorithm");
       keys(a, {"id", "version", "package_sha256", "interface", "parameters", "worker_sha256"}, "mac_algorithm keys");
-      require(a.at("interface") == "planning-mac-v1", "algorithm interface");
+      require(a.at("interface") == (flow_scoped ? "planning-mac-v2":"planning-mac-v1"), "algorithm interface");
       require(a.at("worker_sha256").is_string() && a.at("worker_sha256").get<std::string>().size() == 64, "worker checksum");
       planning::MacAlgorithmConfiguration config{a.at("id").get<std::string>(), a.at("version").get<std::string>(),
-          a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>()};
-      const auto* algorithm = planning::FindAlgorithm(config);
-      require(algorithm != nullptr, "algorithm package unavailable");
-      const auto valid = planning::ValidateParameters(*algorithm, config.parameters);
-      if(!valid) return std::unexpected(valid.error());
+          a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>(),a.at("interface")};
+      if(flow_scoped) {
+        const auto* algorithm=planning::FindFlowAlgorithm(config);
+        require(algorithm!=nullptr,"v2 algorithm package unavailable");
+        const auto valid=planning::ValidateParameters(*algorithm,config.parameters);
+        if(!valid) return std::unexpected(valid.error());
+      } else {
+        const auto* algorithm = planning::FindAlgorithm(config);
+        require(algorithm != nullptr, "algorithm package unavailable");
+        const auto valid = planning::ValidateParameters(*algorithm, config.parameters);
+        if(!valid) return std::unexpected(valid.error());
+      }
     } else if(experiment.at("mac_mode") == "AdaptiveTdma") {
       require(!experiment.contains("mac_algorithm"), "unexpected registered algorithm");
       require(!experiment.contains("slot_duration_ns") && !experiment.contains("guard_interval_ns"), "adaptive slot parameters");
@@ -128,7 +137,10 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document)
     }
     require(experiment.at("flows").is_array(), "flows");
     for(const auto& flow : experiment.at("flows")) {
-      keys(flow, {"source_node_id", "destination_node_id", "packets_per_cycle"}, "flow keys");
+      if(flow_scoped) {
+        keys(flow,{"flow_id","source_node_id","destination_node_id","packets_per_cycle"},"flow keys");
+        integer(flow.at("flow_id"),u64,"flow_id");
+      } else keys(flow, {"source_node_id", "destination_node_id", "packets_per_cycle"}, "flow keys");
       integer(flow.at("source_node_id"), u64, "flow source_node_id");
       integer(flow.at("destination_node_id"), u64, "flow destination_node_id");
       integer(flow.at("packets_per_cycle"), count_max, "packets_per_cycle");
@@ -162,6 +174,22 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document)
   }
 }
 
+// V3 is the first authored definition carrying stable FlowId. Keep old numeric
+// JSON decoders unchanged; normalize v3's explicit decimal strings only here.
+inline void NormalizePlanningV3Integers(nlohmann::json& value) {
+  static const std::set<std::string> fields{"version","scenario_source_revision","experiment_source_revision",
+      "format_version","node_id","source_node_id","destination_node_id","flow_id","packets_per_cycle",
+      "fusion_center_node_id","fusion_receiver_node_id","time_ns","planning_cycle_duration_ns",
+      "bit_rate_bps","network_update_interval_cycles","minimum_bearing_points","maximum_fusion_period_ns",
+      "deterministic_seed","slot_duration_ns","guard_interval_ns","safety_margin_ns"};
+  if(value.is_array()) for(auto& item:value) NormalizePlanningV3Integers(item);
+  if(value.is_object()) for(auto& item:value.items()) {
+    if(item.key()=="mac_algorithm") continue; // semver and XML values are already strings
+    if(fields.contains(item.key()) && !item.value().is_null()) item.value()=planning_json::Unsigned(item.value());
+    else NormalizePlanningV3Integers(item.value());
+  }
+}
+
 inline auto LoadAuthoredRunDefinition(
     const std::filesystem::path& path,
     const internal::RunExecutionRequest& request)
@@ -172,10 +200,16 @@ inline auto LoadAuthoredRunDefinition(
     std::ifstream input{path};
     if(!input) return std::unexpected(Error{ErrorCode::kNotFound,
         "Authored run definition is unavailable"});
-    const auto document = json::parse(input);
-    const bool planning_v2 = document.at("schema") == "ns3-factory-authored-run-v2";
+    auto document = json::parse(input);
+    const bool flow_scoped=document.at("schema")=="ns3-factory-authored-run-v3";
+    if(flow_scoped) {
+      NormalizePlanningV3Integers(document);
+      if(document.at("experiment").at("mac_mode")!="RegisteredMac")
+        throw std::invalid_argument("Authored v3 requires explicit flow-scoped MAC");
+    }
+    const bool planning_v2 = flow_scoped || document.at("schema") == "ns3-factory-authored-run-v2";
     if(planning_v2) {
-      const auto valid = ValidatePlanningV2Document(document);
+      const auto valid = ValidatePlanningV2Document(document,flow_scoped);
       if(!valid) return std::unexpected(valid.error());
     }
     if((document.at("schema") != "ns3-factory-authored-run-v1" && !planning_v2) ||
@@ -239,14 +273,15 @@ inline auto LoadAuthoredRunDefinition(
         const auto& a = e.at("mac_algorithm");
         planning->mac_algorithm.emplace(planning::MacAlgorithmConfiguration{
             a.at("id").get<std::string>(), a.at("version").get<std::string>(),
-            a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>()});
+            a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>(),a.at("interface")});
       }
       if(e.contains("fusion_receiver_node_id") && !e.at("fusion_receiver_node_id").is_null())
         planning->fusion_receiver_node_id = NodeId{e.at("fusion_receiver_node_id").get<std::uint64_t>()};
       for(const auto& flow : e.value("flows", json::array())) planning->flows.push_back({
           NodeId{flow.at("source_node_id").get<std::uint64_t>()},
           NodeId{flow.at("destination_node_id").get<std::uint64_t>()},
-          flow.at("packets_per_cycle").get<std::size_t>()});
+          flow.at("packets_per_cycle").get<std::size_t>(),flow_scoped
+              ? std::optional{FlowId{flow.at("flow_id").get<std::uint64_t>()}} : std::nullopt});
     }
     auto experiment = application::ExperimentDefinition::Create(
         request.experiment_id, request.definition_version,

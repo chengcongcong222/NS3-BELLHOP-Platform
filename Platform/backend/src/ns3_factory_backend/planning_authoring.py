@@ -20,11 +20,17 @@ def planning_issues(payload: dict, nodes: list[dict] | None = None) -> list[str]
     issues: list[str] = []
     if payload.get("execution_mode") != "PlanningV1":
         return ["规划配置必须明确选择 PlanningV1"]
+    flow_scoped = (payload.get("mac_algorithm") or {}).get("interface") == "planning-mac-v2" if isinstance(payload.get("mac_algorithm"), dict) else False
     if payload.get("routing_mode") not in {"Direct", "ShortestPath"}:
         issues.append("规划执行必须明确选择已实现的路由")
     if payload.get("mac_mode") not in {"AdaptiveTdma", "Tdma", "RegisteredMac"}:
         issues.append("规划执行必须明确选择已实现的 MAC")
-    if "network_update_interval_cycles" in payload and payload["network_update_interval_cycles"] != "1":
+    if flow_scoped:
+        try:
+            _unsigned(payload.get("network_update_interval_cycles", "1"), positive=True)
+        except ValueError as error:
+            issues.append(f"网络结构刷新间隔无效：{error}")
+    elif "network_update_interval_cycles" in payload and payload["network_update_interval_cycles"] != "1":
         issues.append("PlanningV1 每个业务周期重新规划，network_update_interval_cycles 仅可省略或填写字符串 1")
     # These compatibility fields are still frozen and parsed by the worker for
     # both workloads. Inactive application parameters must not bypass checking
@@ -114,12 +120,19 @@ def planning_issues(payload: dict, nodes: list[dict] | None = None) -> list[str]
             issues.append("普通通信必须配置至少一条显式业务流")
         else:
             seen: set[tuple[int, int]] = set()
+            identities: set[int] = set()
             for index, flow in enumerate(flows):
                 try:
-                    if not isinstance(flow, dict) or set(flow) != {
-                        "source_node_id", "destination_node_id", "packets_per_cycle"
-                    }:
+                    expected = {"source_node_id", "destination_node_id", "packets_per_cycle"}
+                    if flow_scoped:
+                        expected.add("flow_id")
+                    if not isinstance(flow, dict) or set(flow) != expected:
                         raise ValueError("业务流必须包含源、目的和每周期包数")
+                    if flow_scoped:
+                        identity = _unsigned(flow["flow_id"])
+                        if identity in identities:
+                            raise ValueError("业务流标识重复")
+                        identities.add(identity)
                     source = _unsigned(flow["source_node_id"])
                     destination = _unsigned(flow["destination_node_id"])
                     count = flow["packets_per_cycle"]
@@ -127,7 +140,7 @@ def planning_issues(payload: dict, nodes: list[dict] | None = None) -> list[str]
                         raise ValueError("每周期包数必须是 1 至 1000 的整数")
                     if source == destination:
                         raise ValueError("源节点和目的节点不能相同")
-                    if (source, destination) in seen:
+                    if not flow_scoped and (source, destination) in seen:
                         raise ValueError("同一方向业务流不能重复")
                     seen.add((source, destination))
                     if by_id is not None:
@@ -159,11 +172,41 @@ def freeze_planning_configuration(payload: dict) -> dict:
         "adaptive_tdma": ({"safety_margin_ns": int(payload["adaptive_tdma"]["safety_margin_ns"])}
                           if payload["mac_mode"] == "AdaptiveTdma" else None),
         "flows": sorted([{
+            **({"flow_id": int(flow["flow_id"])} if "flow_id" in flow else {}),
             "source_node_id": int(flow["source_node_id"]),
             "destination_node_id": int(flow["destination_node_id"]),
             "packets_per_cycle": flow["packets_per_cycle"],
         } for flow in payload.get("flows") or []], key=lambda flow: (
-            flow["source_node_id"], flow["destination_node_id"])),
+            flow["source_node_id"], flow["destination_node_id"], flow.get("flow_id", 0))),
         "fusion_receiver_node_id": (int(payload["fusion_receiver_node_id"])
                                     if payload.get("fusion_receiver_node_id") is not None else None),
     }
+
+
+V3_INTEGER_FIELDS = frozenset({"version", "scenario_source_revision", "experiment_source_revision",
+    "format_version", "node_id", "source_node_id", "destination_node_id", "flow_id", "packets_per_cycle",
+    "fusion_center_node_id", "fusion_receiver_node_id", "time_ns", "planning_cycle_duration_ns",
+    "bit_rate_bps", "network_update_interval_cycles", "minimum_bearing_points", "maximum_fusion_period_ns",
+    "deterministic_seed", "slot_duration_ns", "guard_interval_ns", "safety_margin_ns"})
+
+
+def v3_integer_boundary(value, *, encode: bool):
+    """Adapter only. XML strings/semver are untouched; never convert floats or bools."""
+    if isinstance(value, list):
+        return [v3_integer_boundary(item, encode=encode) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {}
+    for key, item in value.items():
+        if key == "mac_algorithm":
+            result[key] = item
+        elif key in V3_INTEGER_FIELDS and item is not None:
+            if encode:
+                if type(item) is not int or not 0 <= item < (1 << 64):
+                    raise ValueError(f"Invalid integer in frozen definition: {key}")
+                result[key] = str(item)
+            else:
+                result[key] = _unsigned(item)
+        else:
+            result[key] = v3_integer_boundary(item, encode=encode)
+    return result

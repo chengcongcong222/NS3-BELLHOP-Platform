@@ -1,7 +1,8 @@
-# 算法包与安装（A1 可用部分）
+# 算法包与安装
 
 入口 `Platform/tools/protocolctl.py`，Python 标准库即可运行，C++23/CMake/Ninja/
-ns-3.47 由本机离线工具链提供。当前模板为 planning-mac-v1；v2 尚不能宣称可用。
+ns-3.47 由本机离线工具链提供。新建模板默认 planning-mac-v2；用
+`new my_mac --interface planning-mac-v1` 可显式建立兼容旧接口的包。
 
 ```bash
 python3 Platform/tools/protocolctl.py configure \
@@ -22,7 +23,9 @@ python3 Platform/tools/protocolctl.py activate
 install 在新候选目录复制当前已启用包和新包，编译 Worker，读取真实目录确认登记，
 核验后发布 releases/<worker-sha>。已有程序不覆盖；构建失败保留日志且 active 不变。
 同 ID/version 不同编译源码拒绝发布。保留原 header-only v1 的摘要算法；新增 .cpp
-纳入摘要。XML v2 的完整资源摘要尚待 A4，不应把该兼容策略误称为 v2 已完成。
+纳入摘要。v2 摘要覆盖规范化 XML 和包内全部文件（含说明、测试、资源）；
+发布后修改任一文件都需要新版本。`src/` 应相对引用本包头文件，或使用 include/
+下包专属命名的头文件，避免不同包的 algorithm.hpp 同名串用。
 
 新服务显式设置 `PLATFORM_ALGORITHM_INSTALL_ROOT` 使用 active 安装；后台持有共享
 租约直到所有 owned worker 正常回收和服务退出。activate 使用独占锁，服务仍运行时
@@ -33,7 +36,7 @@ install 在新候选目录复制当前已启用包和新包，编译 Worker，�
 则失败，不以新版本冒充旧版本。依赖清单记录实际 ldd 路径和 SHA，不自动复制系统库。
 共享库升级后应恢复记录的依赖再复现。全自动多版本并行服务未实现。
 
-## 本阶段证据
+## A1 安装历史证据
 
 - integration_probe：new → check → install → activate，真实程序
   `03aa03ad4e053ef15f56fad368fcdbaa701493da3df4104973542185aa370ee1`。
@@ -44,4 +47,19 @@ install 在新候选目录复制当前已启用包和新包，编译 Worker，�
 - `test_protocolctl.py` 4 项：多源编译运行、失败编译隔离、版本冲突/租约、非法路径。
 - `test_compile_catalog.py` 3 项；后台算法目录/安装/网关 27 项。本阶段未跑全量回归。
 
-这些是安装链证据，不是 v2 信道感知、流执行或物理 E2E 的验收。
+以上是 A1 历史记录。后续 v2 安装及真实运行证据见 CHECKPOINT 和 verification。
+
+## v2 重放
+
+Worker 为 authored v2 运行导出到 `<workspace>/planning-evidence/<run_id>/`。
+`index.json` 为 Available 时，cycle-N.json 才是完整的可重放周期记录。
+
+```bash
+python3 Platform/tools/protocolctl.py replay /path/to/cycle-1.json
+# 保留多个程序时，显式使用捕获该记录的安装版本：
+python3 Platform/tools/protocolctl.py replay /path/to/cycle-1.json --release WORKER_SHA256
+```
+
+重放执行相同 C++ 算法及计划校验器，不启动 ns-3，不重新构造运行世界，
+不在 Python 重写算法。输出 Matched 表示上下文算出的计划与捕获计划一致，
+不意味着重新完成了物理仿真；实际发送另看 executions 中的对应记录。

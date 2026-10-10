@@ -13,13 +13,16 @@ target_link_libraries(
     Platform::structure
 )
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND PLATFORM_NS3_AVAILABLE)
   add_executable(platform_assembly_flow_runtime_test tests/flow_runtime_test.cpp)
   target_include_directories(platform_assembly_flow_runtime_test PRIVATE
     "${PROJECT_SOURCE_DIR}/assembly" "${PROJECT_SOURCE_DIR}/kernel"
     "${PROJECT_SOURCE_DIR}/planning" "${PROJECT_SOURCE_DIR}/runtime" "${PROJECT_SOURCE_DIR}/structure")
   target_link_libraries(platform_assembly_flow_runtime_test PRIVATE Platform::assembly)
   add_test(NAME platform_assembly_flow_runtime_test COMMAND platform_assembly_flow_runtime_test)
+endif()
+
+if(BUILD_TESTING)
   add_executable(
     platform_assembly_channel2_feature_link_test
     tests/channel2_feature_link_test.cpp

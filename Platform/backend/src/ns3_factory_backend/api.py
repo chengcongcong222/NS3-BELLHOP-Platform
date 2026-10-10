@@ -830,6 +830,7 @@ def create_app(
         payload = draft.payload
         planning = payload.get("execution_mode") == "PlanningV1"
         frozen_algorithm = await algorithms.freeze(payload)
+        flow_scoped = frozen_algorithm is not None and frozen_algorithm["interface"] == "planning-mac-v2"
         current_issues = validate_payload("experiment", payload)
         if current_issues:
             raise CatalogError("DraftValidationFailed", "; ".join(current_issues))
@@ -943,7 +944,7 @@ def create_app(
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
         definition = {
-            "schema": "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
+            "schema": "ns3-factory-authored-run-v3" if flow_scoped else "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
             "scenario_id": scenario_publication["published_id"],
             "scenario_source_revision": scenario_draft.revision,
             "scenario_name": scenario_draft.name,
@@ -990,7 +991,7 @@ def create_app(
                 "center_frequency_hz": float(payload.get("center_frequency_hz", 25_000)),
                 "occupied_bandwidth_hz": float(payload.get("occupied_bandwidth_hz", 4_000)),
                 "source_level_db": float(payload.get("source_level_db", payload.get("source_level_db_re_1upa_at_1m", 110))),
-                "network_update_interval_cycles": (1 if planning else int(payload.get("network_update_interval_cycles", 10))),
+                "network_update_interval_cycles": (1 if planning and not flow_scoped else int(payload.get("network_update_interval_cycles", 1 if planning else 10))),
                 "minimum_bearing_points": int(payload.get("minimum_bearing_points", 5)),
                 "maximum_fusion_period_ns": int(payload.get("maximum_fusion_period_ns", 180_000_000_000)),
                 "target_x_m": float(payload.get("target_x_m", 200.0)),
@@ -1007,6 +1008,9 @@ def create_app(
             if payload["mac_mode"] in {"AdaptiveTdma", "RegisteredMac"}:
                 definition["experiment"].pop("slot_duration_ns")
                 definition["experiment"].pop("guard_interval_ns")
+        if flow_scoped:
+            from .planning_authoring import v3_integer_boundary
+            definition = v3_integer_boundary(definition, encode=True)
         encoded = json.dumps(definition, ensure_ascii=False, sort_keys=True,
                              separators=(",", ":")).encode()
         digest = hashlib.sha256(encoded).hexdigest()

@@ -92,7 +92,20 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
                                            &altered_observer);
   if(!published || !altered_rx) return false;
   auto altered = altered_rx->Decode(*request);
-  if(!Check(altered && *altered == *decoded, "truth cannot decide payload") ||
+  // Compare every decision/identity/payload field. The newly formalized
+  // post-decision comparison must change, just like observer BER already did.
+  if(!Check(altered && altered->transmission_id()==decoded->transmission_id() &&
+                altered->packet_id()==decoded->packet_id() &&
+                altered->receiver_node_id()==decoded->receiver_node_id() &&
+                altered->outcome()==decoded->outcome() &&
+                altered->recovered_payload()==decoded->recovered_payload() &&
+                altered->quality_evidence()==decoded->quality_evidence(), "truth cannot decide payload") ||
+     !Check(altered->bit_comparison() && decoded->bit_comparison() &&
+                altered->bit_comparison()->crc_ok==decoded->bit_comparison()->crc_ok &&
+                altered->bit_comparison()->compared_payload_bits==decoded->bit_comparison()->compared_payload_bits &&
+                altered->bit_comparison()->erroneous_payload_bits>0 &&
+                decoded->bit_comparison()->erroneous_payload_bits==0,
+            "formal BER is post-decision; truth does not affect CRC") ||
      !Check(altered_observer.summaries[0].bit_error_count > 0,
             "truth only affects observed BER")) return false;
 

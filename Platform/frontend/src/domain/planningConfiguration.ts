@@ -31,6 +31,8 @@ export function planningConfigurationIssues(value: ExperimentDraft, nodes: Scena
     const flows = value.flows ?? [];
     if (!flows.length) issues.push("通信性能实验至少需要一条显式通信流。");
     const pairs = new Set<string>();
+    const flowIds = new Set<string>();
+    const flowScoped = value.macAlgorithm?.interface === "planning-mac-v2";
     flows.forEach((flow, index) => {
       const prefix = `通信流 ${index + 1}`;
       if (!nodeId(flow.source_node_id) || !nodes.some(node => node.node_id === flow.source_node_id && node.can_transmit)) issues.push(`${prefix}的源节点必须存在且可发送。`);
@@ -38,8 +40,12 @@ export function planningConfigurationIssues(value: ExperimentDraft, nodes: Scena
       if (flow.source_node_id === flow.destination_node_id) issues.push(`${prefix}的源节点与目的节点必须不同。`);
       if (!Number.isInteger(flow.packets_per_cycle) || flow.packets_per_cycle < 1 || flow.packets_per_cycle > 1000) issues.push(`${prefix}每周期包数必须是 1～1000 的整数。`);
       const key = `${flow.source_node_id}:${flow.destination_node_id}`;
-      if (pairs.has(key)) issues.push(`${prefix}与已有通信流方向重复，请调整每周期包数。`);
+      if (!flowScoped && pairs.has(key)) issues.push(`${prefix}与已有通信流方向重复，请调整每周期包数。`);
       pairs.add(key);
+      if (flowScoped) {
+        if (flow.flow_id == null || !nodeId(flow.flow_id) || flowIds.has(flow.flow_id)) issues.push(`${prefix}标识缺失或重复，请重新添加该流。`);
+        else flowIds.add(flow.flow_id);
+      }
     });
   }
   return issues;

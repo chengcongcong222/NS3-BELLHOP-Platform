@@ -710,10 +710,36 @@ auto TestRegistrationFailurePreventsPublicationAndConsume() -> bool {
          *fixture->queues.size(NodeId{0}) == 1;
 }
 
+auto TestEmptySelectedFlowRecordsUnusedWithoutFallback() -> bool {
+  auto fixture=MakeFixture({Node(0),Node(1),Node(2),Node(3)});
+  auto routing=Routing({{NodeId{0},NodeId{1},NodeId{1}}});
+  if(!fixture || !routing) return false;
+  auto packet=Packet(100,0,UnicastDestination{NodeId{1}});packet.flow_id=FlowId{11};
+  if(!fixture->queues.Enqueue(NodeId{0},packet)) return false;
+  const TxOpportunity opportunity{NodeId{0},At(1),FlowSelectionConstraint{
+    GrantId{0},FlowId{22},NodeId{1},NodeId{1},PlanningCycleId{0},SnapshotVersion{0},123,At(9)}};
+  auto plan=RoutedPlan({opportunity},*routing);if(!plan) return false;
+  auto bound=PlanBoundTxRuntime::Create(*plan,fixture->working,fixture->queues,fixture->preparation,
+      fixture->candidates,fixture->signal_runtime,fixture->event_sink);if(!bound) return false;
+  struct Evidence final : IPlanningEvidenceSink {
+    std::vector<GrantExecutionEvidence> rows;
+    void OnPlan(const PlanningContext&,const ProtocolCyclePlan&,std::string_view) noexcept override {}
+    void OnGrant(const GrantExecutionEvidence& row) noexcept override { rows.push_back(row); }
+  } evidence;
+  bound->BindPlanningEvidence(&evidence);
+  auto result=bound->HandleTxStart(opportunity,At(1));
+  auto remaining=fixture->queues.PeekFront(NodeId{0});
+  return result && std::holds_alternative<UnusedSelectedFlowEmptyTxStart>(*result) &&
+      evidence.rows.size()==1 && evidence.rows[0].status==GrantExecutionStatus::kUnusedSelectedFlowEmpty &&
+      !evidence.rows[0].packet_id && !evidence.rows[0].transmission_id &&
+      fixture->event_sink.count==0 && fixture->records.size()==0 && remaining && *remaining && **remaining==packet;
+}
+
 }  // namespace
 
 auto main() -> int {
   return TestBindingMembershipTimeAndPlanLifetime() &&
+                 TestEmptySelectedFlowRecordsUnusedWithoutFallback() &&
                  TestBroadcastFanOutConsumeAndZeroCandidates() &&
                  TestAllNoArrivalPublishesAndConsumesOnce() &&
                  TestRelayUnicastFanOutAndNoRouteHeadBlocking() &&

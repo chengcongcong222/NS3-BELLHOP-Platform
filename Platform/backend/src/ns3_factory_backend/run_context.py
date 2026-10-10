@@ -59,6 +59,7 @@ class RunAdaptiveTdmaSummary(ResourceModel):
 
 
 class RunCommunicationFlow(ResourceModel):
+    flow_id: UIntDecimal | None = None
     source_node_id: UIntDecimal
     destination_node_id: UIntDecimal
     packets_per_cycle: int = Field(ge=1, le=1000)
@@ -109,8 +110,8 @@ def load_captured_definition(snapshot: RunSnapshot) -> dict:
         if hashlib.sha256(encoded).hexdigest() != snapshot.authored_definition_sha256:
             raise ValueError("definition checksum mismatch")
         definition = json.loads(encoded)
-        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2"}
-                or (definition["schema"] == "ns3-factory-authored-run-v2"
+        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
+                or (definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
                     and definition.get("execution_mode") != "PlanningV1")
                 or definition["scenario_id"] != snapshot.scenario_id
                 or definition["experiment_id"] != snapshot.experiment_id
@@ -119,6 +120,9 @@ def load_captured_definition(snapshot: RunSnapshot) -> dict:
                 or definition["environment"]["asset_id"] != snapshot.environment_asset_id
                 or str(definition["environment"]["format_version"]) != snapshot.environment_format_version):
             raise ValueError("definition identity mismatch")
+        if definition["schema"] == "ns3-factory-authored-run-v3":
+            from .planning_authoring import v3_integer_boundary
+            return v3_integer_boundary(definition, encode=False)
         return definition
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise CatalogError(
@@ -188,7 +192,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
     definition = load_captured_definition(snapshot)
     try:
         config = definition["experiment"]
-        planning = definition["schema"] == "ns3-factory-authored-run-v2"
+        planning = definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
         # These fields occur in both the definition and the command. They must
         # agree; read endpoints must not repair or silently select either one.
         for key in ("physical_layer", "waveform_modulation", "waveform_noise",
@@ -242,7 +246,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
                 "mac_algorithm": config.get("mac_algorithm"),
                 "adaptive_tdma": ({"safety_margin_ns": str(config["adaptive_tdma"]["safety_margin_ns"])}
                                   if config["adaptive_tdma"] is not None else None),
-                "flows": tuple({**flow, "source_node_id": str(flow["source_node_id"]),
+                "flows": tuple({**flow, **({"flow_id": str(flow["flow_id"])} if "flow_id" in flow else {}), "source_node_id": str(flow["source_node_id"]),
                                 "destination_node_id": str(flow["destination_node_id"])} for flow in config["flows"]),
                 "fusion_receiver_node_id": (str(config["fusion_receiver_node_id"])
                                             if config["fusion_receiver_node_id"] is not None else None),

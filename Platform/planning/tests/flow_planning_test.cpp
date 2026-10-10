@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ns3_factory/planning/sdk.hpp>
+#include "flow_context_fixture.hpp"
 #include "internal/fifo_packet_selector.hpp"
 #include "internal/tx_preparation.hpp"
 using namespace ns3_factory::contracts;
@@ -7,45 +8,18 @@ using namespace ns3_factory::planning;
 using namespace ns3_factory::runtime::internal;
 #define CHECK(value) do { if(!(value)) { std::cerr << "failed line " << __LINE__ << '\n'; return 1; } } while(false)
 
-auto Fixture() -> PlanningContextData {
-  const auto at = SimTime::Zero();
-  const auto ns = SimDuration::FromNanoseconds(10);
-  std::vector<NodeId> ids{NodeId{0},NodeId{10},NodeId{20},NodeId{99}};
-  std::vector<NodeCommittedState> nodes;
-  std::vector<DirectedLink> edges;
-  std::vector<LogicalLink> logical;
-  std::vector<RouteEntry> routes;
-  std::vector<NodeTrafficDemand> physical;
-  std::vector<LinkPrediction> links;
-  for(auto id : ids) {
-    nodes.push_back({id,{true,true,DuplexMode::kHalfDuplex},{{static_cast<double>(id.value()),0,-10},{0,0,0}}});
-    physical.push_back({id,0,id==NodeId{0} ? 2U:0U,ns});
-    for(auto other : ids) if(id!=other) {
-      edges.push_back({id,other}); logical.push_back({id,other}); routes.push_back({id,other,other});
-      links.push_back({id,other,{static_cast<double>(id.value()),0,-10},{static_cast<double>(other.value()),0,-10},
-        at,25000,1000,"fixture-environment","1","fixture-checksum","shared-sample-v1",
-        LinkPredictionStatus::kAvailable,40.0,ns,std::nullopt,std::nullopt});
-    }
-  }
-  const auto world = WorldSnapshot::Create(SnapshotVersion{0},at,nodes);
-  const auto graph = ConnectivityGraph::Create(edges,ids);
-  const auto roles = RoleTable::Create({},ids);
-  const auto topology = LogicalTopology::Create(logical,ids,*graph);
-  const auto structure = StructureSnapshot::Create(PlanningCycleId{0},SnapshotVersion{0},*roles,*graph,*topology);
-  const auto routing = RoutingPlan::Create(routes,*structure);
-  const auto input = PlanningInput::Create(PlanningCycleId{0},SnapshotVersion{0},at,physical,ns);
-  return {"fixture-run",*world,*structure,*routing,*input,{PlanningCycleId{0},SnapshotVersion{0},at},
-    SimDuration::FromNanoseconds(100),
-    {{{NodeId{0},FlowId{11}},NodeId{0},NodeId{10},NodeId{10},0,1,ns},
-     {{NodeId{0},FlowId{22}},NodeId{0},NodeId{20},NodeId{20},0,1,ns}},links,{},{{"fixture","value"}},42,{},
-     {"fixture","1.0.0","mac"}};
-}
+using ns3_factory::planning::test::Fixture;
 
 int main() {
   const auto context = PlanningContext::Create(Fixture()); CHECK(context);
   CHECK(context->data().previous.links.empty() && !context->data().previous.cycle_id);
   CHECK(context->data().world.FindNode(NodeId{0}));
   CHECK(!context->data().world.FindNode(NodeId{1}));
+  CHECK(NodeIndex(*context,NodeId{0})==0);
+  CHECK(NodeIndex(*context,NodeId{10})==1);
+  CHECK(NodeIndex(*context,NodeId{20})==2);
+  CHECK(NodeIndex(*context,NodeId{99})==3);
+  CHECK(!NodeIndex(*context,NodeId{1}));
   auto shuffled = Fixture(); std::reverse(shuffled.links.begin(),shuffled.links.end());
   std::reverse(shuffled.demands.begin(),shuffled.demands.end());
   const auto reordered = PlanningContext::Create(shuffled); CHECK(reordered);
@@ -74,6 +48,16 @@ int main() {
   bad=Fixture(); bad.links.pop_back(); CHECK(!PlanningContext::Create(bad));
   bad=Fixture(); bad.budgets.maximum_links=2; CHECK(!PlanningContext::Create(bad));
   bad=Fixture(); bad.previous.ended_at=SimTime::Zero(); CHECK(!PlanningContext::Create(bad));
+  bad=Fixture(); bad.demands[0].queued_packets=UINT64_MAX; CHECK(!PlanningContext::Create(bad));
+  bad=Fixture(); bad.budgets.maximum_grants=1;
+  auto bounded=PlanningContext::Create(bad);CHECK(bounded);
+  CHECK(!FlowTransmissionPlan::Create(*bounded,grants));
+  wrong=grants;wrong[0].extra_guard=SimDuration::FromNanoseconds(INT64_MAX);
+  CHECK(!FlowTransmissionPlan::Create(*context,wrong));
+  wrong=grants;wrong[0].start_offset=SimDuration::FromNanoseconds(-1);
+  CHECK(!FlowTransmissionPlan::Create(*context,wrong));
+  CHECK(!context->data().links[0].maximum_excess_delay && !context->data().links[0].path_count);
+  bad=Fixture();bad.links[0].path_count=1;CHECK(!PlanningContext::Create(bad));
   auto different=Fixture(); different.links[0].loss_db=60;
   const auto changed=PlanningContext::Create(different); CHECK(changed); CHECK(!plan->Validate(*changed));
 

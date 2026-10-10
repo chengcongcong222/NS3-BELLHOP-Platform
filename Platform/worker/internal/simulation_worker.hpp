@@ -100,9 +100,10 @@ struct WorkerExecutionSnapshot final {
 class SimulationWorker final {
  public:
   explicit SimulationWorker(
-      const environment::internal::EnvironmentAssetRepository& environments)
+      const environment::internal::EnvironmentAssetRepository& environments,
+      contracts::IPlanningEvidenceSink* evidence=nullptr)
       noexcept
-      : environments_(environments) {}
+      : environments_(environments),planning_evidence_(evidence) {}
 
   [[nodiscard]] auto last_execution() const noexcept
       -> const std::optional<WorkerExecutionSnapshot>& {
@@ -195,6 +196,7 @@ class SimulationWorker final {
               ? application::internal::RunExecutionExecutor{
                     environments_.get(), std::move(*waveform_options)}
               : application::internal::RunExecutionExecutor{environments_.get()};
+    executor.BindPlanningEvidence(planning_evidence_);
     application::RunService service{
         scenarios, experiments, runs, executor, events};
     const auto reference = application::ExperimentReference{
@@ -314,6 +316,7 @@ class SimulationWorker final {
       environments_;
   std::optional<WorkerExecutionSnapshot> last_execution_;
   bool used_{false};
+  contracts::IPlanningEvidenceSink* planning_evidence_{};
 };
 
 using AcceptanceWorkerRequest = RunExecutionRequest;

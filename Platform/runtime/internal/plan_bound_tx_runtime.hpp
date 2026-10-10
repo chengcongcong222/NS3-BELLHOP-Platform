@@ -6,6 +6,7 @@
 #include <variant>
 
 #include <ns3_factory/contracts/errors.hpp>
+#include <ns3_factory/contracts/planning_evidence.hpp>
 #include <ns3_factory/contracts/protocol_cycle_plan.hpp>
 #include <ns3_factory/contracts/time.hpp>
 #include <ns3_factory/contracts/tx_opportunity.hpp>
@@ -54,6 +55,7 @@ class PlanBoundTxRuntime final {
   [[nodiscard]] auto HandleTxStart(
       const contracts::TxOpportunity& opportunity,
       contracts::SimTime now) -> contracts::Result<PlanBoundTxStartOutcome>;
+  void BindPlanningEvidence(contracts::IPlanningEvidenceSink* sink) noexcept { evidence_=sink; }
 
  private:
   PlanBoundTxRuntime(
@@ -79,6 +81,7 @@ class PlanBoundTxRuntime final {
   std::reference_wrapper<const CandidateReceiverResolver> candidate_resolver_;
   std::reference_wrapper<CycleSignalRuntime> signal_runtime_;
   std::reference_wrapper<ITransmissionSessionEventSink> event_sink_;
+  contracts::IPlanningEvidenceSink* evidence_{};
 };
 
 inline auto PlanBoundTxRuntime::Create(
@@ -145,13 +148,21 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
             "TxStart time does not exactly match TxOpportunity"});
   }
 
+  struct EvidenceGuard final {
+    contracts::IPlanningEvidenceSink* sink;
+    contracts::GrantExecutionEvidence value;
+    ~EvidenceGuard() { if(sink && value.opportunity.flow_selection) sink->OnGrant(value); }
+  } evidence{evidence_,{opportunity,now,contracts::GrantExecutionStatus::kRejected,{},{}}};
   auto preparation = preparation_service_.get().Prepare(
       opportunity, queue_store_.get(), plan_.routing_plan());
   if(!preparation) {
     return std::unexpected(preparation.error());
   }
   if(std::holds_alternative<NoPacketTxPreparation>(*preparation)) {
-    if(opportunity.flow_selection) return UnusedSelectedFlowEmptyTxStart{};
+    if(opportunity.flow_selection) {
+      evidence.value.status=contracts::GrantExecutionStatus::kUnusedSelectedFlowEmpty;
+      return UnusedSelectedFlowEmptyTxStart{};
+    }
     return UnusedNoPacketTxStart{};
   }
   if(std::holds_alternative<NoRouteTxPreparation>(*preparation)) {
@@ -167,6 +178,7 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
 
   const auto queue_owner = ready.selected_packet.queue_owner;
   const auto packet_id = ready.selected_packet.packet.packet_id;
+  evidence.value.packet_id=packet_id;
   TransmissionExecutionRequest request{
       opportunity,
       std::move(ready.selected_packet.packet),
@@ -204,6 +216,8 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
   const auto feedback = signal_runtime_.get().RecordPlanningTransmission(*session);
   if(!feedback) return std::unexpected(feedback.error());
   signal_runtime_.get().EmitTransmissionSuccess(*session);
+  evidence.value.status=contracts::GrantExecutionStatus::kExecuted;
+  evidence.value.transmission_id=session->transmission().transmission_id;
   return ExecutedTxStart{std::move(*session)};
 }
 

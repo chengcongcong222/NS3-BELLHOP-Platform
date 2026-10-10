@@ -10,6 +10,7 @@
 #include "adapter/json_line_message_sink.hpp"
 #include "adapter/authored_run_definition.hpp"
 #include "adapter/algorithm_catalog.hpp"
+#include "adapter/planning_evidence_archive.hpp"
 #include "internal/environment_asset_repository.hpp"
 #include "internal/simulation_worker.hpp"
 
@@ -107,8 +108,15 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
     authored.emplace(std::move(*loaded));
   }
   worker::adapter::JsonLineWorkerMessageSink output{std::cout};
-  worker::internal::SimulationWorker simulation_worker{*environments};
+  worker::adapter::PlanningEvidenceArchive planning_evidence;
+  worker::internal::SimulationWorker simulation_worker{*environments,&planning_evidence};
   const auto executed = simulation_worker.Run(request, output, std::move(authored));
+  if(command->authored_definition_path) {
+    const auto directory=std::filesystem::path{*command->authored_definition_path}.parent_path().parent_path()
+        /"planning-evidence"/command->run_id.value();
+    const auto saved=planning_evidence.Write(directory);
+    if(!saved) std::cerr << saved.error().message << '\n';
+  }
   if(!executed) {
     std::cerr << "platform_sim_worker execution/bridge failure: "
               << executed.error().message << '\n';
@@ -120,6 +128,16 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
 }  // namespace
 
 auto main(int argc, char** argv) -> int {
+  if(argc==3 && std::string_view{argv[1]}=="--replay-planning-context") {
+    try {
+      const auto path=std::filesystem::path{argv[2]};
+      if(std::filesystem::file_size(path)>8U*1024U*1024U) return ProtocolFailure("Replay export exceeds 8 MiB deployment limit");
+      std::ifstream input{path};input.exceptions(std::ios::badbit|std::ios::failbit);
+      auto result=worker::adapter::ReplayPlanningEvidence(nlohmann::json::parse(input));
+      if(!result) return ProtocolFailure(result.error().message);
+      std::cout << result->dump() << '\n';return 0;
+    } catch(const std::exception& error) { return ProtocolFailure(error.what()); }
+  }
   if(argc == 2 && std::string_view{argv[1]} == "--algorithm-catalog") {
     std::cout << worker::adapter::AlgorithmCatalogJson().dump() << '\n';
     return 0;

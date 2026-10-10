@@ -1,5 +1,13 @@
 platform_add_interface_module(application)
 
+if(BUILD_TESTING)
+  add_executable(platform_planning_context_assembler_test tests/planning_context_assembler_test.cpp)
+  target_include_directories(platform_planning_context_assembler_test PRIVATE
+    "${PROJECT_SOURCE_DIR}/application" "${PROJECT_SOURCE_DIR}/environment" "${PROJECT_SOURCE_DIR}/planning/tests")
+  target_link_libraries(platform_planning_context_assembler_test PRIVATE Platform::planning Platform::environment)
+  add_test(NAME platform_planning_context_assembler_test COMMAND platform_planning_context_assembler_test)
+endif()
+
 if(PLATFORM_NS3_AVAILABLE)
   add_executable(platform_application_channel2_acceptance_review
     tools/channel2_acceptance_review.cpp)

@@ -11,6 +11,13 @@ target_link_libraries(
 
 add_library(platform_worker_json_codec STATIC codec/json_codec.cpp)
 add_library(Platform::worker_json_codec ALIAS platform_worker_json_codec)
+if(BUILD_TESTING)
+  add_executable(platform_planning_context_json_test tests/planning_context_json_test.cpp)
+  target_include_directories(platform_planning_context_json_test PRIVATE "${PROJECT_SOURCE_DIR}/worker"
+    "${PROJECT_SOURCE_DIR}/planning/tests" "${PROJECT_SOURCE_DIR}/algorithms/examples/channel_aware")
+  target_link_libraries(platform_planning_context_json_test PRIVATE Platform::planning Platform::third_party_nlohmann_json)
+  add_test(NAME platform_planning_context_json_test COMMAND platform_planning_context_json_test)
+endif()
 target_include_directories(
   platform_worker_json_codec
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/codec/include"

@@ -32,6 +32,7 @@ export function AlgorithmParameters({ algorithm, value, onChange }: {
       <div className="form-grid">{algorithm.parameters.filter(p => p.advanced).map(field)}</div>
     </details>}
     <details><summary>版本与配置管理</summary><small>版本 {algorithm.version} · 参数只作用于此算法</small>
+      {algorithm.interface === "planning-mac-v2" && <p className="property-help">集中式周期规划；逐流分配发送机会。平台提供当前节点、业务需求、冻结路由及已声明的链路输入，不开放未来轨迹。</p>}
       <button type="button" onClick={() => onChange(algorithmDefaults(algorithm))}>恢复本算法默认参数</button>
     </details>
   </section>;

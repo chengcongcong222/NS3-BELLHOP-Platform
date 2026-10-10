@@ -50,6 +50,15 @@ class ProtocolctlTests(unittest.TestCase):
         result = tool.check(self.package, self.settings, self.root / "check")
         self.assertEqual(len(result["sources"]), 1)
 
+    def test_generated_v2_package_compiles_and_has_behavior_test(self):
+        generated = self.root / "generated_v2"
+        args = argparse.Namespace(name="generated_v2", interface="planning-mac-v2")
+        with patch.object(tool, "package_path", return_value=generated), contextlib.redirect_stdout(io.StringIO()):
+            tool.new_package(args)
+        result = tool.check(generated, self.settings, self.root / "check-v2")
+        self.assertEqual(result["interface"], "planning-mac-v2")
+        self.assertEqual(result["id"], "user.generated_v2")
+
     def test_failed_compile_keeps_active_installation(self):
         root, identity = self.installation()
         before = (root / "active.json").read_bytes()

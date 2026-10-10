@@ -2,6 +2,7 @@
 
 #include <ns3_factory/application/domain.hpp>
 #include <ns3_factory/contracts/planning_input.hpp>
+#include <ns3_factory/contracts/planning_evidence.hpp>
 #include <ns3_factory/planning/registered_algorithms.hpp>
 #include "internal/adaptive_tdma_mac_planner.hpp"
 #include "internal/composite_protocol_cycle_planner.hpp"
@@ -136,8 +137,9 @@ class RegisteredMacPlanner final : public planning::internal::IMacPlanner {
 class PlanningExecutionPlanner final : public planning::internal::IProtocolCyclePlanner {
  public:
   explicit PlanningExecutionPlanner(const ExperimentDefinition& definition) : definition_(definition) {}
-  PlanningExecutionPlanner(const ExperimentDefinition& definition,std::string run_id,PlanningEnvironment environment)
-      : definition_(definition),run_id_(std::move(run_id)),environment_(std::move(environment)) {}
+  PlanningExecutionPlanner(const ExperimentDefinition& definition,std::string run_id,PlanningEnvironment environment,
+      contracts::IPlanningEvidenceSink* evidence=nullptr)
+      : definition_(definition),run_id_(std::move(run_id)),environment_(std::move(environment)),evidence_(evidence) {}
   auto uses_flow_planning() const noexcept -> bool override {
     const auto& d=definition_.get();
     return d.planning() && d.planning()->mac_algorithm && d.planning()->mac_algorithm->interface=="planning-mac-v2";
@@ -167,6 +169,7 @@ class PlanningExecutionPlanner final : public planning::internal::IProtocolCycle
     if(!plan) return std::unexpected(plan.error());
     const auto admitted=plan->Validate(*context);
     if(!admitted) return std::unexpected(admitted.error());
+    if(evidence_) evidence_->OnPlan(*context,plan->protocol_plan(),config.package_sha256);
     return plan->protocol_plan();
   }
   auto Build(const contracts::WorldSnapshot&, const contracts::StructureSnapshot&) const
@@ -206,6 +209,7 @@ class PlanningExecutionPlanner final : public planning::internal::IProtocolCycle
   std::reference_wrapper<const ExperimentDefinition> definition_;
   std::string run_id_;
   std::optional<PlanningEnvironment> environment_;
+  contracts::IPlanningEvidenceSink* evidence_{};
 };
 
 inline auto MaximumAssetPropagationTail(const environment::internal::AcousticFieldAsset& asset)

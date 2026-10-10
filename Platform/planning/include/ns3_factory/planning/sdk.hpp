@@ -7,6 +7,14 @@ namespace ns3_factory::planning {
 using contracts::PlanningContext;
 using contracts::FlowDemandKey;
 
+// Optional dense index for algorithms using matrices. Never cast a NodeId to
+// an array subscript; the mapping belongs to this exact immutable snapshot.
+inline auto NodeIndex(const PlanningContext& context,contracts::NodeId id) -> std::optional<std::size_t> {
+  const auto nodes=context.data().world.nodes();
+  for(std::size_t i=0;i<nodes.size();++i) if(nodes[i].node_id==id) return i;
+  return std::nullopt;
+}
+
 // Canonical FNV-1a64 input fingerprint, not authentication or a signature.
 // Every fixed-width value uses little-endian bytes; strings are length-framed.
 inline auto ContextFingerprint(const PlanningContext& context) -> std::uint64_t {
