@@ -102,6 +102,13 @@ enum class DecodeOutcome : std::uint8_t {
   kNotDecoded = 2,
 };
 
+struct RxBitComparison final {
+  std::uint64_t compared_payload_bits;
+  std::uint64_t erroneous_payload_bits;
+  bool crc_ok;
+  auto operator==(const RxBitComparison&) const -> bool = default;
+};
+
 class RxDecodeResult final {
  public:
   [[nodiscard]] static auto Create(TransmissionId transmission_id,
@@ -168,6 +175,16 @@ class RxDecodeResult final {
 
   auto operator==(const RxDecodeResult&) const -> bool = default;
 
+  auto bit_comparison() const noexcept -> const std::optional<RxBitComparison>& { return bit_comparison_; }
+  auto WithBitComparison(RxBitComparison comparison) const -> Result<RxDecodeResult> {
+    if(!comparison.compared_payload_bits || comparison.erroneous_payload_bits > comparison.compared_payload_bits ||
+       comparison.crc_ok != (outcome_ == DecodeOutcome::kDecoded))
+      return std::unexpected(Error{ErrorCode::kInvalidArgument, "Invalid post-decision bit comparison"});
+    auto copy = *this;
+    copy.bit_comparison_ = comparison;
+    return copy;
+  }
+
  private:
   constexpr RxDecodeResult(TransmissionId transmission_id,
                            PacketId packet_id,
@@ -187,6 +204,7 @@ class RxDecodeResult final {
   DecodeOutcome outcome_;
   std::optional<RxQualityEvidence> quality_evidence_;
   std::optional<std::vector<std::byte>> recovered_payload_;
+  std::optional<RxBitComparison> bit_comparison_;
 };
 
 inline auto RxDecodeResult::Create(TransmissionId transmission_id,

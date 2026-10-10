@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <optional>
 
 #include <ns3_factory/contracts/destination.hpp>
 #include <ns3_factory/contracts/identity.hpp>
@@ -14,6 +15,9 @@ struct DigitalPacket final {
   // End-to-end logical destination, independent of any current-hop target.
   PacketDestination destination;
   std::vector<std::byte> payload;
+  // Global-simulation metadata, never serialized into acoustic payload bytes.
+  // Absent for all legacy packets. Relay/recovered-payload copies preserve it.
+  std::optional<FlowId> flow_id{};
 
   auto operator==(const DigitalPacket&) const -> bool = default;
 };

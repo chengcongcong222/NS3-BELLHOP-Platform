@@ -17,6 +17,7 @@ struct MacAlgorithmConfiguration final {
   std::string version;
   std::string package_sha256;
   Parameters parameters;
+  std::string interface{"planning-mac-v1"};
   auto operator==(const MacAlgorithmConfiguration&) const -> bool = default;
 };
 struct Parameter final {
@@ -47,7 +48,21 @@ inline auto IntegerParameter(const Parameters& values, const std::string& name)
       "Algorithm parameter must be a canonical integer: " + name});
 }
 
-inline auto ValidateParameters(const MacAlgorithm& algorithm, const Parameters& values)
+inline auto NumberParameter(const Parameters& values,const std::string& name)
+    -> contracts::Result<double> {
+  auto it=values.find(name);
+  if(it!=values.end()) {
+    double value{};
+    const auto& text=it->second;
+    const auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+    if(parsed.ec==std::errc{} && parsed.ptr==text.data()+text.size() && std::isfinite(value)) return value;
+  }
+  return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+      "Algorithm parameter must be a finite number: " + name});
+}
+
+template<class Algorithm>
+inline auto ValidateParameters(const Algorithm& algorithm, const Parameters& values)
     -> contracts::Result<void> {
   using namespace contracts;
   if(values.size() != algorithm.parameters.size()) return std::unexpected(Error{

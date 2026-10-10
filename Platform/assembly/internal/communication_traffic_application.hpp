@@ -24,12 +24,23 @@ struct CommunicationTrafficFlow final {
   contracts::NodeId source_node_id;
   contracts::NodeId destination_node_id;
   std::size_t packets_per_cycle;
+  std::optional<contracts::FlowId> flow_id{};
 };
 
 // Generic deterministic traffic source. It creates network payloads only and
 // deliberately has no feature decoding or fusion behavior.
 class CommunicationTrafficApplication final : public IScenarioCycleApplication {
  public:
+  auto forecast_flows(contracts::PlanningCycleId) const
+      -> contracts::Result<std::vector<contracts::FlowInputForecast>> override {
+    std::vector<contracts::FlowInputForecast> result;
+    for(const auto& flow : flows_) {
+      if(!flow.flow_id) return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Flow planning needs frozen business flow identities"});
+      result.push_back({*flow.flow_id,flow.source_node_id,flow.destination_node_id,flow.packets_per_cycle});
+    }
+    return result;
+  }
   CommunicationTrafficApplication(
       std::vector<contracts::NodeId> sources,
       contracts::NodeId destination,
@@ -48,9 +59,9 @@ class CommunicationTrafficApplication final : public IScenarioCycleApplication {
         next_packet_id_(first_packet_id.value()),
         timing_(ApplicationInputTiming::kCycleStart) {
     std::sort(flows_.begin(), flows_.end(), [](const auto& a, const auto& b) {
-      return a.source_node_id != b.source_node_id
-          ? a.source_node_id < b.source_node_id
-          : a.destination_node_id < b.destination_node_id;
+      if(a.source_node_id!=b.source_node_id) return a.source_node_id<b.source_node_id;
+      if(a.destination_node_id!=b.destination_node_id) return a.destination_node_id<b.destination_node_id;
+      return a.flow_id<b.flow_id;
     });
     for(const auto& flow : flows_) {
       if(sources_.empty() || sources_.back() != flow.source_node_id)
@@ -80,8 +91,9 @@ class CommunicationTrafficApplication final : public IScenarioCycleApplication {
             "Communication flow endpoints or packet count are invalid"});
       }
       for(std::size_t j = 0; j < i; ++j) {
-        if(flows_[j].source_node_id == flow.source_node_id &&
-           flows_[j].destination_node_id == flow.destination_node_id) {
+        if((flow.flow_id && flows_[j].flow_id==flow.flow_id) ||
+           (!flow.flow_id && flows_[j].source_node_id == flow.source_node_id &&
+           flows_[j].destination_node_id == flow.destination_node_id)) {
           return std::unexpected(contracts::Error{contracts::ErrorCode::kAlreadyExists,
               "Communication flow is duplicated"});
         }
@@ -119,7 +131,7 @@ class CommunicationTrafficApplication final : public IScenarioCycleApplication {
             node_id, contracts::DigitalPacket{
                 contracts::PacketId{next_packet_id_++}, node_id,
                 contracts::UnicastDestination{flow.destination_node_id},
-                std::move(payload)});
+                                     std::move(payload), flow.flow_id});
         if(!status) return status;
       }
     }

@@ -213,7 +213,7 @@ class WaveformRxPhy final : public contracts::IRxPhy {
       if(!result) return std::unexpected(result.error());
     }
     // Truth is read only AFTER all receiver decisions and recovered bytes.
-    if(observer_) {
+    {
       const auto& truth = (*artifact)->original_frame();
       const auto payload_bits = frame_bit_count - 8U * kWaveformCrcBytes;
       if(truth.bit_count() == payload_bits) {
@@ -221,6 +221,9 @@ class WaveformRxPhy final : public contracts::IRxPhy {
         for(std::size_t i = 0; i < payload_bits; ++i) {
           errors += truth.bits()[i] != received->recovered.bits()[i];
         }
+        result = result->WithBitComparison({payload_bits, errors, crc_ok});
+        if(!result) return std::unexpected(result.error());
+        if(observer_) {
         double signal_power = 0.0;
         double noise_power = 0.0;
         for(std::size_t i = 0; i < received->received.sample_count(); ++i) {
@@ -234,6 +237,7 @@ class WaveformRxPhy final : public contracts::IRxPhy {
                             taps->size(), payload_bits, errors, crc_ok,
                             received->received.sample_count(),
                             signal_power / count, noise_power / count});
+        }
       }
     }
     return result;

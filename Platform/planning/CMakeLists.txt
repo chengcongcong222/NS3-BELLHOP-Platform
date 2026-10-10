@@ -5,7 +5,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(PLATFORM_MAC_PLUGIN_DIRS "" CACHE STRING "Additional trusted planning MAC package directories")
 set(mac_packages "${PROJECT_SOURCE_DIR}/algorithms/adaptive_tdma" ${PLATFORM_MAC_PLUGIN_DIRS})
 foreach(package IN LISTS mac_packages)
-  file(GLOB_RECURSE package_inputs CONFIGURE_DEPENDS "${package}/*.hpp" "${package}/src/*.cpp" "${package}/algorithm.xml")
+  file(GLOB_RECURSE package_inputs CONFIGURE_DEPENDS "${package}/*")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${package_inputs})
 endforeach()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/algorithms/compile_catalog.py")
@@ -31,6 +31,16 @@ target_include_directories(
 target_link_libraries(platform_planning INTERFACE Platform::contracts)
 
 if(BUILD_TESTING)
+  add_executable(platform_channel_aware_example_test
+    "${PROJECT_SOURCE_DIR}/algorithms/examples/channel_aware/tests/ordering.cpp")
+  target_include_directories(platform_channel_aware_example_test PRIVATE
+    "${PROJECT_SOURCE_DIR}/algorithms/examples/channel_aware")
+  target_link_libraries(platform_channel_aware_example_test PRIVATE Platform::planning)
+  add_test(NAME platform_channel_aware_example_test COMMAND platform_channel_aware_example_test)
+  add_executable(platform_flow_planning_test tests/flow_planning_test.cpp)
+  target_include_directories(platform_flow_planning_test PRIVATE "${PROJECT_SOURCE_DIR}/runtime")
+  target_link_libraries(platform_flow_planning_test PRIVATE Platform::planning)
+  add_test(NAME platform_flow_planning_test COMMAND platform_flow_planning_test)
   add_test(NAME platform_algorithm_xml_catalog_test
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/algorithms/test_compile_catalog.py")
   add_executable(platform_planning_adaptive_planning_test tests/adaptive_planning_test.cpp)

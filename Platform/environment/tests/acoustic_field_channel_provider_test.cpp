@@ -126,6 +126,12 @@ auto QueryResponse(const AcousticFieldChannelProvider& provider,
         Error{ErrorCode::kFailedPrecondition,
               "Normalized acoustic field unexpectedly returned no-arrival"});
   }
+  const auto sample=provider.Sample(query.tx_position(),query.rx_position(),query.center_frequency_hz());
+  const auto* signal=sample ? std::get_if<AcousticFieldSignalCell>(&*sample) : nullptr;
+  if(!signal || signal->aggregate_transmission_loss_db!=response->aggregate_transmission_loss_db() ||
+     signal->first_arrival_delay!=response->first_arrival_delay() ||
+     !std::ranges::equal(signal->paths,response->paths())) return std::unexpected(Error{
+      ErrorCode::kInternal,"Prediction sample differs from formal physical query"});
   return *response;
 }
 
@@ -413,10 +419,18 @@ auto TestProviderOwnershipAndConfigurationValidation() -> bool {
   return !null_provider && !negative_policy;
 }
 
+auto TestIdentityFreeNoArrivalAndFailure() -> bool {
+  auto provider=MakeProvider(MakeMixedCoverageAsset());
+  if(!provider) return false;
+  auto none=provider->Sample({0,0,-10},{0,0,-30},20000);
+  auto outside=provider->Sample({0,0,-10},{11,0,-30},20000);
+  return none && std::holds_alternative<AcousticFieldNoArrivalCell>(*none) && !outside;
+}
+
 }  // namespace
 
 auto main() -> int {
-  return TestCoordinateMappingAndHorizontalRange() &&
+  return TestIdentityFreeNoArrivalAndFailure() && TestCoordinateMappingAndHorizontalRange() &&
                  TestFrequencySelectionAndBandwidthIndependence() &&
                  TestScalarInterpolationAtCornerEdgeFaceAndInterior() &&
                  TestDelayRoundingToNearestNanosecond() &&

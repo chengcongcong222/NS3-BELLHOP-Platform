@@ -347,13 +347,14 @@ class RunExecutionExecutor final : public IRunExecutor {
     auto asset_id = environment::internal::EnvironmentAssetId::Create(
         scenario.environment().asset_id);
     if(!asset_id) return std::unexpected(asset_id.error());
-    auto asset = environments_.get().Load(*asset_id);
-    if(!asset) {
+    auto asset_record = environments_.get().Find(*asset_id);
+    if(!asset_record) {
       return std::unexpected(
-          contracts::Error{asset.error().code,
+          contracts::Error{asset_record.error().code,
                            "Environment asset missing: " +
-                               asset.error().message});
+                               asset_record.error().message});
     }
+    contracts::Result<std::shared_ptr<const environment::internal::AcousticFieldAsset>> asset=asset_record->asset;
     if((*asset)->format_version() !=
        scenario.environment().asset_format_version) {
       return std::unexpected(
@@ -369,6 +370,8 @@ class RunExecutionExecutor final : public IRunExecutor {
             ? assembly::internal::kCommunicationTrafficPayload.size()
             : assembly::internal::kDetectionFeatureV1PayloadBytes;
     const bool planning_execution = experiment.planning().has_value();
+    const bool flow_scoped = planning_execution && experiment.planning()->mac_algorithm &&
+        experiment.planning()->mac_algorithm->interface=="planning-mac-v2";
     if(experiment.scenario().scenario_id != scenario.scenario_id() ||
        experiment.scenario().scenario_version != scenario.version())
       return std::unexpected(Error{ErrorCode::kFailedPrecondition,
@@ -484,7 +487,7 @@ class RunExecutionExecutor final : public IRunExecutor {
         ? assembly::internal::AcceptanceFeatureApplication::Create(
             assembly::internal::BearingFeatureConfiguration{report_sources, *receiver,
               experiment.fusion().minimum_bearing_points, experiment.fusion().maximum_fusion_period,
-              experiment.fusion().target_x_meters, experiment.fusion().target_y_meters},
+              experiment.fusion().target_x_meters, experiment.fusion().target_y_meters,true,flow_scoped},
             *queues, *deliveries, SimTime::Zero(), PacketId{1'000'000}, &trace)
         : assembly::internal::AcceptanceFeatureApplication::Create(
             *config,
@@ -501,7 +504,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(planning_execution) {
         std::vector<assembly::internal::CommunicationTrafficFlow> flows;
         for(const auto& flow : experiment.planning()->flows)
-          flows.push_back({flow.source_node_id, flow.destination_node_id, flow.packets_per_cycle});
+          flows.push_back({flow.source_node_id, flow.destination_node_id, flow.packets_per_cycle,flow.flow_id});
         traffic_application.emplace(std::move(flows), *queues);
       } else {
       traffic_application.emplace(
@@ -533,7 +536,11 @@ class RunExecutionExecutor final : public IRunExecutor {
                                   : static_cast<const structure::internal::ILogicalTopologyPolicy&>(topology)};
     std::optional<ConfiguredPlanner> legacy_planner;
     if(config) legacy_planner.emplace(*config, experiment.routing().mode);
-    PlanningExecutionPlanner generic_planner{experiment};
+    const auto environment_checksum=environment::internal::package_detail::ChecksumHex(asset_record->metadata.payload_checksum);
+    // This catalog stores immutable revision-qualified IDs, not an independent
+    // numeric revision column. Use its content version, not the format version.
+    PlanningExecutionPlanner generic_planner{experiment,run_id.value(),PlanningEnvironment{
+        std::cref(*channel),scenario.environment().asset_id,"fnv1a64:"+environment_checksum,environment_checksum}};
     ConstantNoise noise{
         experiment.phy().equivalent_noise_power_db_re_1upa2};
     DeterministicRxPhy deterministic_rx;

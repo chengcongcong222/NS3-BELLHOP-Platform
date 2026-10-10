@@ -60,8 +60,13 @@ inline auto TxPreparationService::Prepare(
     const PacketQueueStore& queue_store,
     const std::optional<contracts::RoutingPlan>& routing_plan) const
     -> contracts::Result<TxPreparationOutcome> {
-  auto selected =
-      selector_.get().Select(opportunity.sender_node_id, queue_store);
+  auto selected = [&]() -> contracts::Result<std::optional<SelectedPacket>> {
+    if(!opportunity.flow_selection) return selector_.get().Select(opportunity.sender_node_id, queue_store);
+    auto packet = queue_store.PeekFlow(opportunity.sender_node_id, opportunity.flow_selection->flow_id);
+    if(!packet) return std::unexpected(packet.error());
+    if(!*packet) return std::nullopt;
+    return std::optional{SelectedPacket{opportunity.sender_node_id, std::move(**packet)}};
+  }();
   if(!selected) {
     return std::unexpected(selected.error());
   }
@@ -75,7 +80,20 @@ inline auto TxPreparationService::Prepare(
     return std::unexpected(resolution.error());
   }
   if(std::holds_alternative<NoRouteResolution>(*resolution)) {
+    if(opportunity.flow_selection) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition, "PlanningExecutionMismatch: frozen flow route disappeared"});
     return NoRouteTxPreparation{};
+  }
+
+  if(const auto& constraint = opportunity.flow_selection) {
+    const auto* destination = std::get_if<contracts::UnicastDestination>(&(**selected).packet.destination);
+    const auto& resolved = std::get<ResolvedTransmissionTarget>(*resolution).target;
+    const auto* hop = std::get_if<contracts::UnicastTransmissionTarget>(&resolved);
+    if(!destination || !hop || destination->node_id != constraint->destination_node_id ||
+       hop->node_id != constraint->next_hop_node_id || !routing_plan ||
+       routing_plan->cycle_id() != constraint->cycle_id || routing_plan->base_snapshot_version() != constraint->snapshot_version)
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "PlanningExecutionMismatch: flow or frozen route mismatch"});
   }
 
   return ReadyTxPreparation{

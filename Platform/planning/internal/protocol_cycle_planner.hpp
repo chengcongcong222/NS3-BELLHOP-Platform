@@ -5,12 +5,19 @@
 #include <ns3_factory/contracts/state.hpp>
 #include <ns3_factory/contracts/structure.hpp>
 #include <ns3_factory/contracts/planning_input.hpp>
+#include <ns3_factory/contracts/planning_context.hpp>
 
 namespace ns3_factory::planning::internal {
 
 class IProtocolCyclePlanner {
  public:
   virtual ~IProtocolCyclePlanner() = default;
+  virtual auto uses_flow_planning() const noexcept -> bool { return false; }
+  virtual auto BuildFlow(const contracts::WorldSnapshot&, const contracts::StructureSnapshot&,
+      const contracts::PlanningInput&, const contracts::FlowPlanningState&) const
+      -> contracts::Result<contracts::ProtocolCyclePlan> {
+    return std::unexpected(contracts::Error{contracts::ErrorCode::kUnsupported, "Flow planning is not supported by this interface"});
+  }
 
   [[nodiscard]] virtual auto Build(
       const contracts::WorldSnapshot& world_snapshot,

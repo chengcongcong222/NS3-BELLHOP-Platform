@@ -6,6 +6,7 @@
 #include <ns3_factory/contracts/errors.hpp>
 #include <ns3_factory/contracts/identity.hpp>
 #include <ns3_factory/contracts/time.hpp>
+#include <ns3_factory/contracts/planning_context.hpp>
 
 #include "internal/cycle_working_state.hpp"
 
@@ -19,6 +20,11 @@ enum class ApplicationInputTiming {
 class IScenarioCycleApplication {
  public:
   virtual ~IScenarioCycleApplication() = default;
+  virtual auto forecast_flows(contracts::PlanningCycleId) const
+      -> contracts::Result<std::vector<contracts::FlowInputForecast>> {
+    return std::unexpected(contracts::Error{contracts::ErrorCode::kUnsupported,
+        "Application has not provided explicit flow identities"});
+  }
 
   [[nodiscard]] virtual auto input_node_ids() const noexcept
       -> std::span<const contracts::NodeId> = 0;

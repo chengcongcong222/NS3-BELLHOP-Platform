@@ -41,6 +41,31 @@ class PacketQueueStore final {
   [[nodiscard]] auto size(contracts::NodeId queue_owner) const
       -> contracts::Result<std::size_t>;
 
+  auto PeekFlow(contracts::NodeId owner, contracts::FlowId flow) const
+      -> contracts::Result<std::optional<contracts::DigitalPacket>> {
+    const auto* queue = FindQueue(owner);
+    if(!queue) return std::unexpected(contracts::Error{contracts::ErrorCode::kNotFound, "Unknown flow queue owner"});
+    for(const auto& packet : queue->packets) if(packet.flow_id == flow) return std::optional{packet};
+    return std::nullopt;
+  }
+  auto ConsumeFlow(contracts::NodeId owner, contracts::FlowId flow, contracts::PacketId expected)
+      -> contracts::Status {
+    auto* queue = FindQueue(owner);
+    if(!queue) return std::unexpected(contracts::Error{contracts::ErrorCode::kNotFound, "Unknown flow queue owner"});
+    const auto found = std::find_if(queue->packets.begin(), queue->packets.end(),
+        [&](const auto& packet) { return packet.flow_id == flow; });
+    if(found == queue->packets.end() || found->packet_id != expected) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition, "Selected flow earliest packet does not match expected PacketId"});
+    queue->packets.erase(found);
+    return {};
+  }
+  // Internal snapshot only; never passed to algorithm code (payload is private).
+  auto Packets(contracts::NodeId owner) const -> contracts::Result<std::vector<contracts::DigitalPacket>> {
+    const auto* queue = FindQueue(owner);
+    if(!queue) return std::unexpected(contracts::Error{contracts::ErrorCode::kNotFound, "Unknown queue owner"});
+    return std::vector<contracts::DigitalPacket>{queue->packets.begin(), queue->packets.end()};
+  }
+
   [[nodiscard]] auto node_ids() const noexcept
       -> std::span<const contracts::NodeId> {
     return std::span<const contracts::NodeId>{node_ids_};

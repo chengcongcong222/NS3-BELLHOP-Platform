@@ -43,8 +43,29 @@ def load_package(directory: Path) -> dict:
     package = dict(root.attrib)
     if not IDENTIFIER.fullmatch(package["id"]) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", package["version"]):
         raise ValueError("Invalid stable algorithm ID or version")
-    if package["interface"] != "planning-mac-v1" or not re.fullmatch(r"[A-Za-z_]\w*(?:::[A-Za-z_]\w*)+", package["entry"]):
+    if package["interface"] not in {"planning-mac-v1", "planning-mac-v2"} or not re.fullmatch(r"[A-Za-z_]\w*(?:::[A-Za-z_]\w*)+", package["entry"]):
         raise ValueError("Unsupported interface or C++ entry point")
+    v2 = package["interface"] == "planning-mac-v2"
+    if v2:
+        requires, outputs = root.findall("requires"), root.findall("output")
+        if len(requires) != 1 or requires[0].attrib != {"knowledge": "global-simulation"}:
+            raise ValueError("v2 requires explicit global-simulation knowledge")
+        if len(outputs) != 1 or outputs[0].attrib != {"kind": "serial-flow-schedule-v1"} or len(outputs[0]):
+            raise ValueError("v2 output must be serial-flow-schedule-v1")
+        inputs = []
+        supported = {"node-state-v1", "flow-demand-v1", "routing-view-v1", "link-prediction-v1", "previous-feedback-v1"}
+        for item in requires[0]:
+            if item.tag != "input" or set(item.attrib) != {"name", "required"} or len(item):
+                raise ValueError("Invalid v2 input capability")
+            if item.attrib["name"] not in supported or item.attrib["required"] not in {"true", "false"}:
+                raise ValueError("Unsupported v2 capability")
+            inputs.append({"name": item.attrib["name"], "required": item.attrib["required"] == "true"})
+        names = [i["name"] for i in inputs]
+        mandatory = {"node-state-v1", "flow-demand-v1", "routing-view-v1"}
+        if len(names) != len(set(names)) or not mandatory <= {i["name"] for i in inputs if i["required"]}:
+            raise ValueError("v2 requires distinct node, flow and routing capabilities")
+        package.update(knowledge="global-simulation", output="serial-flow-schedule-v1",
+                       inputs=sorted(inputs, key=lambda i: i["name"]))
     descriptions = root.findall("description")
     if len(descriptions) != 1 or descriptions[0].attrib or len(descriptions[0]):
         raise ValueError("One plain description is required")
@@ -54,6 +75,8 @@ def load_package(directory: Path) -> dict:
     fields = []
     for element in root:
         if element.tag == "description":
+            continue
+        if v2 and element.tag in {"requires", "output"}:
             continue
         if element.tag != "parameter" or set(element.attrib) - {"id", "label", "type", "unit", "default", "min", "max", "advanced", "help"}:
             raise ValueError("Unknown descriptor field")
@@ -108,6 +131,20 @@ def load_package(directory: Path) -> dict:
             raise ValueError("Package sources must not escape the package")
         digest.update(source.relative_to(directory).as_posix().encode())
         digest.update(source.read_bytes())
+    if v2:
+        # Canonical XML and every package file, including resources/tests. No
+        # machine path, mtime, or ambiguous filename/content concatenation.
+        digest = hashlib.sha256(b"planning-mac-v2-package\x00")
+        for path in sorted(directory.rglob("*")):
+            if path.is_symlink():
+                raise ValueError("v2 package links are forbidden")
+            if not path.is_file():
+                continue
+            name = path.relative_to(directory).as_posix().encode()
+            data = ET.canonicalize(content.decode(), strip_text=True).encode() if path == xml else path.read_bytes()
+            for value in (name, data):
+                digest.update(len(value).to_bytes(8, "little"))
+                digest.update(value)
     package["package_sha256"] = digest.hexdigest()
     package["header"] = str(directory / "algorithm.hpp")
     package["sources"] = [str(source) for source in sources]
@@ -120,17 +157,29 @@ def compile_packages(directories: list[Path]) -> str:
     if len(identities) != len(set(identities)):
         raise ValueError("Duplicate algorithm ID and version")
     quote = lambda s: json.dumps(s, ensure_ascii=False)
-    lines = ["#pragma once", "#include <ns3_factory/planning/mac_algorithm.hpp>"]
+    lines = ["#pragma once", "#include <ns3_factory/planning/sdk.hpp>"]
     lines += ["#include " + quote(p["header"]) for p in packages]
-    lines += ["namespace ns3_factory::planning {", "inline auto RegisteredAlgorithms() -> const std::vector<MacAlgorithm>& {", "static const std::vector<MacAlgorithm> algorithms = {"]
-    for p in packages:
+    lines += ["namespace ns3_factory::planning {"]
+    def declaration(p):
         fields = []
         for f in p["parameters"]:
             values = [quote(f[k]) for k in ("id", "label", "type", "unit", "default", "min", "max", "help")]
             values += ["true" if f["advanced"] else "false", "{" + ",".join(map(quote, f["choices"])) + "}"]
             fields.append("{" + ",".join(values) + "}")
-        lines.append("{" + ",".join(quote(p[k]) for k in ("id", "version", "package_sha256", "label", "description")) + ",{" + ",".join(fields) + "}, &" + p["entry"] + "},")
-    lines += ["}; return algorithms; }", "inline auto FindAlgorithm(const MacAlgorithmConfiguration& config) -> const MacAlgorithm* {", "for(const auto& a : RegisteredAlgorithms()) if(a.id == config.id && a.version == config.version && a.package_sha256 == config.package_sha256) return &a;", "return nullptr; }", "}"]
+        result = "{" + ",".join(quote(p[k]) for k in ("id", "version", "package_sha256", "label", "description")) + ",{" + ",".join(fields) + "}, &" + p["entry"]
+        if p["interface"] == "planning-mac-v2":
+            inputs = ["{" + quote(i["name"]) + "," + ("true" if i["required"] else "false") + "}" for i in p["inputs"]]
+            result += "," + quote(p["knowledge"]) + "," + quote(p["output"]) + ",{" + ",".join(inputs) + "}"
+        return result + "},"
+    for version, name, kind in [("planning-mac-v1", "Algorithms", "MacAlgorithm"), ("planning-mac-v2", "FlowAlgorithms", "FlowMacAlgorithm")]:
+        lines += [f"inline auto Registered{name}() -> const std::vector<{kind}>& {{", f"static const std::vector<{kind}> algorithms = {{"]
+        lines += [declaration(p) for p in packages if p["interface"] == version]
+        finder = "FindAlgorithm" if version == "planning-mac-v1" else "FindFlowAlgorithm"
+        lines += ["}; return algorithms; }", f"inline auto {finder}(const MacAlgorithmConfiguration& config) -> const {kind}* {{",
+                  f"if(config.interface != {quote(version)}) return nullptr;",
+                  f"for(const auto& a : Registered{name}()) if(a.id == config.id && a.version == config.version && a.package_sha256 == config.package_sha256) return &a;",
+                  "return nullptr; }"]
+    lines += ["}"]
     return "\n".join(lines) + "\n"
 
 

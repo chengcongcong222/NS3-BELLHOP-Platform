@@ -10,6 +10,7 @@
 #include "internal/shortest_path_routing_planner.hpp"
 #include "internal/logical_topology_policy.hpp"
 #include "internal/acoustic_field_asset.hpp"
+#include "planning_context_assembler.hpp"
 
 namespace ns3_factory::application::internal {
 
@@ -135,6 +136,39 @@ class RegisteredMacPlanner final : public planning::internal::IMacPlanner {
 class PlanningExecutionPlanner final : public planning::internal::IProtocolCyclePlanner {
  public:
   explicit PlanningExecutionPlanner(const ExperimentDefinition& definition) : definition_(definition) {}
+  PlanningExecutionPlanner(const ExperimentDefinition& definition,std::string run_id,PlanningEnvironment environment)
+      : definition_(definition),run_id_(std::move(run_id)),environment_(std::move(environment)) {}
+  auto uses_flow_planning() const noexcept -> bool override {
+    const auto& d=definition_.get();
+    return d.planning() && d.planning()->mac_algorithm && d.planning()->mac_algorithm->interface=="planning-mac-v2";
+  }
+  auto BuildFlow(const contracts::WorldSnapshot& world,const contracts::StructureSnapshot& structure,
+      const contracts::PlanningInput& input,const contracts::FlowPlanningState& state) const
+      -> contracts::Result<contracts::ProtocolCyclePlan> override {
+    using namespace contracts;
+    const auto& d=definition_.get();
+    if(!uses_flow_planning() || !environment_ ||
+       (d.routing().mode!=RoutingMode::kDirect && d.routing().mode!=RoutingMode::kShortestPath))
+      return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Flow planning requires explicit installed inputs and routing"});
+    const auto& config=*d.planning()->mac_algorithm;
+    const auto* algorithm=planning::FindFlowAlgorithm(config);
+    if(!algorithm) return std::unexpected(Error{ErrorCode::kNotFound,"Exact v2 MAC package is not installed"});
+    const auto valid=planning::ValidateParameters(*algorithm,config.parameters);
+    if(!valid) return std::unexpected(valid.error());
+    auto routing=d.routing().mode==RoutingMode::kDirect
+        ? planning::internal::DirectRoutingPlanner{}.Build(structure)
+        : planning::internal::ShortestPathRoutingPlanner{}.Build(structure);
+    if(!routing) return std::unexpected(routing.error());
+    auto context=AssemblePlanningContext(run_id_,world,structure,*routing,input,state,*environment_,
+        d.phy().center_frequency_hz,d.phy().occupied_bandwidth_hz,d.planning()->cycle_duration,
+        d.deterministic_seed(),config.parameters,{config.id,config.version,"mac"});
+    if(!context) return std::unexpected(context.error());
+    auto plan=algorithm->build(*context,config.parameters);
+    if(!plan) return std::unexpected(plan.error());
+    const auto admitted=plan->Validate(*context);
+    if(!admitted) return std::unexpected(admitted.error());
+    return plan->protocol_plan();
+  }
   auto Build(const contracts::WorldSnapshot&, const contracts::StructureSnapshot&) const
       -> contracts::Result<contracts::ProtocolCyclePlan> override {
     return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
@@ -170,6 +204,8 @@ class PlanningExecutionPlanner final : public planning::internal::IProtocolCycle
   }
  private:
   std::reference_wrapper<const ExperimentDefinition> definition_;
+  std::string run_id_;
+  std::optional<PlanningEnvironment> environment_;
 };
 
 inline auto MaximumAssetPropagationTail(const environment::internal::AcousticFieldAsset& asset)

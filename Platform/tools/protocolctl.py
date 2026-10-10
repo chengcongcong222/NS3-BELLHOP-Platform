@@ -92,9 +92,10 @@ def check(directory: Path, settings: dict, output: Path):
              "-I" + str(PLATFORM / "contracts/include"), "-I" + str(PLATFORM / "planning/include"),
              "-I" + str(directory), "-I" + str(directory / "include")]
     entry = output / "entry.cpp"
+    entry_type = "BuildFlowMac" if metadata["interface"] == "planning-mac-v2" else "BuildMac"
     entry.write_text('#include <type_traits>\n#include "algorithm.hpp"\n'
                      'static_assert(std::is_same_v<decltype(&' + metadata["entry"]
-                     + '), ns3_factory::planning::BuildMac>);\nint main() {}\n')
+                     + '), ns3_factory::planning::' + entry_type + '>);\nint main() {}\n')
     sources = metadata["sources"]
     log = output / "check.log"
     run(flags + [str(entry)] + sources + ["-o", str(output / "entry")], log=log)

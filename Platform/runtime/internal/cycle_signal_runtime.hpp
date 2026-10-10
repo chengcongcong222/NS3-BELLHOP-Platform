@@ -22,6 +22,7 @@
 #include "internal/transmission_record.hpp"
 #include "internal/transmission_record_store.hpp"
 #include "internal/transmission_session.hpp"
+#include "internal/planning_feedback_store.hpp"
 
 namespace ns3_factory::runtime::internal {
 
@@ -79,6 +80,11 @@ class CycleSignalRuntime final {
                                    TransmissionExecutionRequest request)
       -> contracts::Result<TransmissionSession>;
 
+  auto BindPlanningFeedback(PlanningFeedbackStore& store) noexcept -> void { planning_feedback_ = &store; }
+  auto RecordPlanningTransmission(const TransmissionSession& session) -> contracts::Status {
+    return planning_feedback_ ? planning_feedback_->OnTransmission(session) : contracts::Status{};
+  }
+
   [[nodiscard]] auto HandleSignalArrival(
       contracts::SimTime event_time,
       contracts::ReceivedSignal signal) -> contracts::Status {
@@ -91,6 +97,13 @@ class CycleSignalRuntime final {
     const auto receiver_node_id = signal.receiver_node_id();
     const auto inserted = ledger_.Insert(std::move(signal));
     if(!inserted) return inserted;
+    if(planning_feedback_) {
+      if(!record_store_) return std::unexpected(contracts::Error{contracts::ErrorCode::kInternal, "Feedback requires transmission records"});
+      const auto record = record_store_->Find(transmission_id);
+      if(!record) return std::unexpected(record.error());
+      const auto recorded = planning_feedback_->OnArrival(record->get().transmission(), receiver_node_id);
+      if(!recorded) return recorded;
+    }
     Emit(contracts::TraceEvent::Create(
         event_time,
         contracts::SignalArrivalTrace{transmission_id,
@@ -131,6 +144,7 @@ class CycleSignalRuntime final {
   contracts::SimTime cycle_close_time_;
   contracts::ITraceSink* trace_sink_{nullptr};
   bool committed_{false};
+  PlanningFeedbackStore* planning_feedback_{nullptr};
 };
 
 inline auto CycleSignalRuntime::EmitTransmissionSuccess(
@@ -239,6 +253,12 @@ inline auto CycleSignalRuntime::HandleSessionFinalize(
                                                     *record_store_);
     if(!disposition) {
       return std::unexpected(disposition.error());
+    }
+    if(planning_feedback_) {
+      const auto record = record_store_->Find(session->reception().transmission_id);
+      if(!record) return std::unexpected(record.error());
+      const auto recorded = planning_feedback_->OnReception(record->get().transmission(), *session, *disposition);
+      if(!recorded) return recorded;
     }
     const auto reception = session->reception();
     const auto packet_id = session->desired_signal().emission().packet_id();

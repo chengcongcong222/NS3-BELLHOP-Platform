@@ -44,6 +44,7 @@
 #include "internal/reception_disposition_service.hpp"
 #include "internal/reception_result_accumulator.hpp"
 #include "internal/scenario_cycle_application.hpp"
+#include "internal/flow_demand_snapshot.hpp"
 #include "internal/structure_builder.hpp"
 #include "internal/transmission_executor.hpp"
 #include "internal/transmission_record_store.hpp"
@@ -286,6 +287,8 @@ class ScenarioRuntime final {
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
   std::optional<contracts::ConnectivityGraph> previous_connectivity_;
   std::optional<contracts::StructureSnapshot> applied_structure_;
+  std::optional<contracts::StructureOrigin> applied_structure_origin_;
+  contracts::PreviousCycleFeedback previous_planning_feedback_;
   std::optional<AppliedMacSchedule> applied_mac_schedule_;
   std::size_t completed_cycle_count_{0};
   std::size_t candidate_plan_build_count_{0};
@@ -382,7 +385,27 @@ inline auto ScenarioRuntime::RunOneCycle(
         *planning_input, snapshot, *structure);
     if(!valid_input) return valid_input;
   }
-  auto candidate_result = planning_input
+  const bool flow_planning = cycle_planner_.uses_flow_planning();
+  const contracts::StructureOrigin structure_origin = is_network_update_cycle
+      ? contracts::StructureOrigin{cycle_id, snapshot.version(), snapshot.committed_at()}
+      : applied_structure_origin_.value();
+  std::optional<contracts::FlowPlanningState> flow_state;
+  if(flow_planning) {
+    if(!planning_input || mac_update_policy_ != MacScheduleUpdatePolicy::kEveryCycle ||
+       (cycle_application_ && cycle_application_->input_timing() != ApplicationInputTiming::kCycleStart)) {
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Flow planning requires physical inputs, cycle-start input and fresh per-cycle planning"});
+    }
+    auto forecast = cycle_application_ ? cycle_application_->forecast_flows(cycle_id)
+        : contracts::Result<std::vector<contracts::FlowInputForecast>>{std::vector<contracts::FlowInputForecast>{}};
+    if(!forecast) return std::unexpected(forecast.error());
+    auto demands = SnapshotFlowDemands(queue_store_,*planning_input,*forecast);
+    if(!demands) return std::unexpected(demands.error());
+    flow_state = contracts::FlowPlanningState{structure_origin,std::move(*demands),previous_planning_feedback_};
+  }
+  auto candidate_result = flow_state
+      ? cycle_planner_.BuildFlow(snapshot,*structure,*planning_input,*flow_state)
+      : planning_input
       ? cycle_planner_.Build(snapshot, *structure, *planning_input)
       : cycle_planner_.Build(snapshot, *structure);
   if(!candidate_result) return std::unexpected(candidate_result.error());
@@ -405,10 +428,11 @@ inline auto ScenarioRuntime::RunOneCycle(
             "Cycle plan starts before snapshot or kernel time"});
   }
 
-  contracts::Result<AppliedMacSchedule> candidate_schedule =
-      AppliedMacSchedule::Capture(*candidate_plan);
-  if(!candidate_schedule) {
-    return std::unexpected(candidate_schedule.error());
+  std::optional<AppliedMacSchedule> candidate_schedule;
+  if(!flow_planning) {
+    auto captured = AppliedMacSchedule::Capture(*candidate_plan);
+    if(!captured) return std::unexpected(captured.error());
+    candidate_schedule = std::move(*captured);
   }
   const bool apply_candidate_mac = is_network_update_cycle ||
       mac_update_policy_ == MacScheduleUpdatePolicy::kEveryCycle;
@@ -464,6 +488,8 @@ inline auto ScenarioRuntime::RunOneCycle(
       base_version,
       plan->timing().closes_at(),
       trace_sink_};
+  runtime::internal::PlanningFeedbackStore planning_feedback;
+  if(flow_planning) signal_runtime.BindPlanningFeedback(planning_feedback);
   runtime::internal::FifoPacketSelector selector;
   runtime::internal::TxPreparationService preparation{selector};
   runtime::internal::CandidateReceiverResolver candidate_resolver;
@@ -609,14 +635,17 @@ inline auto ScenarioRuntime::RunOneCycle(
   }
 
   if(is_network_update_cycle) {
+    applied_structure_origin_ = structure_origin;
     previous_connectivity_ = structure->connectivity_graph();
     applied_structure_ = std::move(*structure);
     ++network_refresh_count_;
   }
   if(apply_candidate_mac) {
-    applied_mac_schedule_ = std::move(*candidate_schedule);
+    applied_mac_schedule_ = std::move(candidate_schedule);
     ++applied_schedule_update_count_;
   }
+  if(flow_planning) previous_planning_feedback_ = planning_feedback.Complete(
+      cycle_id, committed.version(), timing.starts_at(), timing.closes_at());
   ++completed_cycle_count_;
   return {};
 }

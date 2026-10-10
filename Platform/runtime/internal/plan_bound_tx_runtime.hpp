@@ -26,11 +26,12 @@ struct ExecutedTxStart final {
 
 struct UnusedNoPacketTxStart final {};
 struct UnusedNoRouteTxStart final {};
+struct UnusedSelectedFlowEmptyTxStart final {};
 
 using PlanBoundTxStartOutcome =
     std::variant<ExecutedTxStart,
                  UnusedNoPacketTxStart,
-                 UnusedNoRouteTxStart>;
+                 UnusedNoRouteTxStart, UnusedSelectedFlowEmptyTxStart>;
 
 class PlanBoundTxRuntime final {
  public:
@@ -150,6 +151,7 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
     return std::unexpected(preparation.error());
   }
   if(std::holds_alternative<NoPacketTxPreparation>(*preparation)) {
+    if(opportunity.flow_selection) return UnusedSelectedFlowEmptyTxStart{};
     return UnusedNoPacketTxStart{};
   }
   if(std::holds_alternative<NoRouteTxPreparation>(*preparation)) {
@@ -176,13 +178,22 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
     return std::unexpected(session.error());
   }
 
+  if(const auto& selection = opportunity.flow_selection) {
+    if(session->transmission().ended_at > selection->reservation_end) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition, "PlanningExecutionMismatch: transmission exceeded reservation"});
+    for(const auto& signal : session->received_signals()) if(signal.last_effect_end_at() > selection->reservation_end)
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "PlanningExecutionMismatch: physical reception exceeded reservation"});
+  }
+
   const auto published = event_sink_.get().Publish(*session);
   if(!published) {
     return std::unexpected(published.error());
   }
 
-  const auto consumed =
-      queue_store_.get().ConsumeFront(queue_owner, packet_id);
+  const auto consumed = opportunity.flow_selection
+      ? queue_store_.get().ConsumeFlow(queue_owner, opportunity.flow_selection->flow_id, packet_id)
+      : queue_store_.get().ConsumeFront(queue_owner, packet_id);
   if(!consumed) {
     return std::unexpected(
         contracts::Error{
@@ -190,6 +201,8 @@ inline auto PlanBoundTxRuntime::HandleTxStart(
             "Physical transmission succeeded but conditional queue consume "
             "failed"});
   }
+  const auto feedback = signal_runtime_.get().RecordPlanningTransmission(*session);
+  if(!feedback) return std::unexpected(feedback.error());
   signal_runtime_.get().EmitTransmissionSuccess(*session);
   return ExecutedTxStart{std::move(*session)};
 }

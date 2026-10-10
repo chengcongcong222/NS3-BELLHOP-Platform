@@ -38,6 +38,13 @@ class AcousticFieldChannelProvider final
   [[nodiscard]] auto Query(const contracts::ChannelQuery& query) const
       -> contracts::Result<contracts::ChannelFieldOutcome> override;
 
+  // The identical immutable field sampler is shared by physical queries and
+  // cycle-boundary model predictions. No communication identity or RNG exists.
+  [[nodiscard]] auto Sample(const contracts::Position3d& tx_position,
+                            const contracts::Position3d& rx_position,
+                            double center_frequency_hz) const
+      -> contracts::Result<AcousticFieldCell>;
+
   [[nodiscard]] constexpr auto asset() const noexcept
       -> const AcousticFieldAsset& {
     return *asset_;
@@ -79,18 +86,35 @@ struct AxisWeights final {
 inline auto AcousticFieldChannelProvider::Query(
     const contracts::ChannelQuery& query) const
     -> contracts::Result<contracts::ChannelFieldOutcome> {
+  auto sampled = Sample(query.tx_position(), query.rx_position(), query.center_frequency_hz());
+  if(!sampled) return std::unexpected(sampled.error());
+  if(const auto* signal = std::get_if<AcousticFieldSignalCell>(&*sampled)) {
+    auto response = contracts::ChannelFieldResponse::Create(query.transmission_id(),
+        query.receiver_node_id(), signal->aggregate_transmission_loss_db,
+        signal->first_arrival_delay, signal->paths);
+    if(!response) return std::unexpected(response.error());
+    return contracts::ChannelFieldOutcome{std::move(*response)};
+  }
+  return contracts::ChannelFieldOutcome{contracts::ChannelNoArrival{
+      query.transmission_id(), query.receiver_node_id()}};
+}
+
+inline auto AcousticFieldChannelProvider::Sample(
+    const contracts::Position3d& tx_position,
+    const contracts::Position3d& rx_position,
+    double center_frequency_hz) const -> contracts::Result<AcousticFieldCell> {
   const auto source_depth =
-      asset_->coordinate_frame().DepthMeters(query.tx_position());
+      asset_->coordinate_frame().DepthMeters(tx_position);
   if(!source_depth) return std::unexpected(source_depth.error());
   const auto receiver_depth =
-      asset_->coordinate_frame().DepthMeters(query.rx_position());
+      asset_->coordinate_frame().DepthMeters(rx_position);
   if(!receiver_depth) return std::unexpected(receiver_depth.error());
   const auto horizontal_range =
-      HorizontalRangeMeters(query.tx_position(), query.rx_position());
+      HorizontalRangeMeters(tx_position, rx_position);
   if(!horizontal_range) return std::unexpected(horizontal_range.error());
 
   const auto frequency_index = frequency_policy_.Select(
-      asset_->frequency_hz(), query.center_frequency_hz());
+      asset_->frequency_hz(), center_frequency_hz);
   if(!frequency_index) return std::unexpected(frequency_index.error());
   const auto source_lookup =
       ResolveGridAxis(asset_->source_depth_m(), *source_depth);
@@ -110,13 +134,7 @@ inline auto AcousticFieldChannelProvider::Query(
   const auto* nearest_signal =
       std::get_if<AcousticFieldSignalCell>(&nearest_cell);
   if(nearest_signal == nullptr) {
-    contracts::ChannelFieldOutcome outcome{
-        contracts::ChannelNoArrival{query.transmission_id(),
-                                    query.receiver_node_id()}};
-    const auto identity =
-        contracts::ValidateChannelFieldOutcomeIdentity(query, outcome);
-    if(!identity) return std::unexpected(identity.error());
-    return outcome;
+    return nearest_cell;
   }
 
   const auto source_weights = detail::BuildAxisWeights(*source_lookup);
@@ -191,19 +209,9 @@ inline auto AcousticFieldChannelProvider::Query(
                          "int64 nanoseconds"});
   }
 
-  auto response = contracts::ChannelFieldResponse::Create(
-      query.transmission_id(),
-      query.receiver_node_id(),
-      interpolated_loss,
+  return AcousticFieldCell{AcousticFieldSignalCell{interpolated_loss,
       contracts::SimDuration::FromNanoseconds(
-          static_cast<contracts::NanosecondCount>(rounded_nanoseconds)),
-      nearest_signal->paths);
-  if(!response) return std::unexpected(response.error());
-  contracts::ChannelFieldOutcome outcome{std::move(*response)};
-  const auto identity =
-      contracts::ValidateChannelFieldOutcomeIdentity(query, outcome);
-  if(!identity) return std::unexpected(identity.error());
-  return outcome;
+          static_cast<contracts::NanosecondCount>(rounded_nanoseconds)), nearest_signal->paths}};
 }
 
 }  // namespace ns3_factory::environment::internal

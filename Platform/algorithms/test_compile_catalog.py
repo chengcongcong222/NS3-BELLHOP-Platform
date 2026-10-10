@@ -8,6 +8,31 @@ ROOT = Path(__file__).parent
 
 
 class CatalogTests(unittest.TestCase):
+    def test_v2_metadata_and_complete_content_identity(self):
+        original = ROOT / "examples/channel_aware"
+        package = load_package(original)
+        self.assertEqual(package["knowledge"], "global-simulation")
+        self.assertEqual(package["output"], "serial-flow-schedule-v1")
+        generated = compile_packages([ROOT / "adaptive_tdma", original])
+        self.assertIn("FindFlowAlgorithm", generated)
+        self.assertIn("&example_channel_aware::Plan", generated)
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp) / "copy"
+            shutil.copytree(original, directory)
+            self.assertEqual(package["package_sha256"], load_package(directory)["package_sha256"])
+            xml = directory / "algorithm.xml"
+            source = xml.read_text()
+            xml.write_text(source.replace('id="example.channel-aware" version="1.0.0"', 'version="1.0.0" id="example.channel-aware"'))
+            self.assertEqual(package["package_sha256"], load_package(directory)["package_sha256"])
+            (directory / "table.dat").write_bytes(b"resource")
+            self.assertNotEqual(package["package_sha256"], load_package(directory)["package_sha256"])
+            xml.write_text(source.replace('knowledge="global-simulation"', 'knowledge="future"'))
+            with self.assertRaises(ValueError): load_package(directory)
+            xml.write_text(source.replace('name="routing-view-v1"', 'name="node-state-v1"'))
+            with self.assertRaises(ValueError): load_package(directory)
+            xml.write_text(source.replace('interface="planning-mac-v2"', 'interface="planning-mac-v1"'))
+            with self.assertRaises(ValueError): load_package(directory)
+
     def test_multi_source_identity_and_path_rejection(self):
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp) / "package"

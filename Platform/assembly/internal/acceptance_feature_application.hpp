@@ -44,6 +44,7 @@ struct BearingFeatureConfiguration final {
   double target_x;
   double target_y;
   bool cycle_start_inputs = true;
+  bool identified_flows = false;
   auto sensor_node_ids() const { return std::span<const contracts::NodeId>{sources}; }
   auto fusion_center_node_id() const { return receiver; }
   auto minimum_bearing_points() const { return minimum_observations; }
@@ -85,6 +86,16 @@ class AcceptanceFeatureApplication final
   [[nodiscard]] auto forecast_packet_count(contracts::PlanningCycleId,
       contracts::NodeId node) const -> contracts::Result<std::uint64_t> override {
     return std::binary_search(config_.sources.begin(), config_.sources.end(), node) ? 1U : 0U;
+  }
+  auto forecast_flows(contracts::PlanningCycleId) const
+      -> contracts::Result<std::vector<contracts::FlowInputForecast>> override {
+    if(!config_.identified_flows) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition,"Bearing flow identity was not explicitly enabled"});
+    std::vector<contracts::FlowInputForecast> result;
+    // One bearing flow per source in this workload, fixed for this Run. NodeId
+    // is used as identity, never an array index, and 0 is a legal FlowId.
+    for(auto source:config_.sources) result.push_back({contracts::FlowId{source.value()},source,config_.receiver,1});
+    return result;
   }
 
   [[nodiscard]] auto OnInputReady(
@@ -296,7 +307,8 @@ inline auto AcceptanceFeatureApplication::OnInputReady(
           node_id,
           contracts::UnicastDestination{
               config_.fusion_center_node_id()},
-          std::move(payload)});
+          std::move(payload),config_.identified_flows
+              ? std::optional{contracts::FlowId{node_id.value()}} : std::nullopt});
   if(!queued) return queued;
   generated_cycle_inputs_.insert(generated_position, input);
   generated_reports_.push_back(

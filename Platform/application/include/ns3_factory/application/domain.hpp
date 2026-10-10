@@ -183,6 +183,7 @@ struct TrafficFlow final {
   contracts::NodeId source_node_id;
   contracts::NodeId destination_node_id;
   std::size_t packets_per_cycle;
+  std::optional<contracts::FlowId> flow_id{};
   auto operator==(const TrafficFlow&) const -> bool = default;
 };
 
@@ -424,7 +425,8 @@ inline auto ExperimentDefinition::Create(
   if(planning) {
     if((mac.mode == MacMode::kRegistered) != planning->mac_algorithm.has_value() ||
        (planning->mac_algorithm && (planning->mac_algorithm->id.empty() ||
-        planning->mac_algorithm->version.empty() || planning->mac_algorithm->package_sha256.size() != 64))) {
+        planning->mac_algorithm->version.empty() || planning->mac_algorithm->package_sha256.size() != 64 ||
+        (planning->mac_algorithm->interface!="planning-mac-v1" && planning->mac_algorithm->interface!="planning-mac-v2")))) {
       return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
           "Registered MAC requires explicit algorithm identity and package checksum"});
     }
@@ -441,19 +443,23 @@ inline auto ExperimentDefinition::Create(
       return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
           "Planning execution needs explicit workload destinations and valid cycle timing"});
     }
+    const bool flow_scoped=planning->mac_algorithm && planning->mac_algorithm->interface=="planning-mac-v2";
     std::sort(planning->flows.begin(), planning->flows.end(), [](const auto& a, const auto& b) {
       if(a.source_node_id != b.source_node_id) return a.source_node_id < b.source_node_id;
-      return a.destination_node_id < b.destination_node_id;
+      if(a.destination_node_id != b.destination_node_id) return a.destination_node_id < b.destination_node_id;
+      return a.flow_id < b.flow_id;
     });
     for(std::size_t i = 0; i < planning->flows.size(); ++i) {
       const auto& f = planning->flows[i];
       if(f.source_node_id == f.destination_node_id || f.packets_per_cycle == 0 ||
-         f.packets_per_cycle > 1000 || (i &&
+         f.packets_per_cycle > 1000 || (flow_scoped != f.flow_id.has_value()) || (!flow_scoped && i &&
          planning->flows[i-1].source_node_id == f.source_node_id &&
          planning->flows[i-1].destination_node_id == f.destination_node_id)) {
         return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
             "Traffic flows must have distinct endpoints, unique pairs and 1..1000 packets"});
       }
+      if(flow_scoped) for(std::size_t j=0;j<i;++j) if(planning->flows[j].flow_id==f.flow_id)
+        return std::unexpected(contracts::Error{contracts::ErrorCode::kAlreadyExists,"Business FlowId is duplicated"});
     }
   }
   return ExperimentDefinition{std::move(experiment_id),

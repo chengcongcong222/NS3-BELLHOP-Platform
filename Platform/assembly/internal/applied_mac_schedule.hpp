@@ -76,6 +76,9 @@ inline auto AppliedMacSchedule::Capture(
   const auto opportunities = candidate_plan.mac_plan().tx_opportunities();
   slots.reserve(opportunities.size());
   for(const auto& opportunity : opportunities) {
+    if(opportunity.flow_selection) return std::unexpected(contracts::Error{
+        contracts::ErrorCode::kFailedPrecondition,
+        "Flow grants cannot be captured in a legacy reusable node schedule"});
     const auto offset = contracts::CheckedSubtract(
         opportunity.eligible_at, timing.starts_at());
     if(!offset || *offset < contracts::SimDuration::Zero()) {
