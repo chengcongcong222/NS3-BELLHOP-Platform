@@ -1,7 +1,8 @@
 import { AcousticPlots } from "../components/AcousticPlots";
 import { DepthSamplingInput } from "../components/DepthSamplingInput";
+import { acousticParameterErrors, automaticSampling, depthSamples, restoreSampling, samplingBudget, type DepthSampling } from "../domain/environmentSampling";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "../api/client";
 import type { AcquisitionProgress } from "../api/acquisition";
@@ -20,6 +21,8 @@ import { ExperimentParticipation } from "../components/ExperimentParticipation";
 import { isSceneDomain } from "../domain/sceneSpatial";
 import { trajectoryRunCoverage } from "../domain/trajectoryCoverage";
 import { planningConfigurationIssues, planningNanosecondsInput, planningSecondsInput } from "../domain/planningConfiguration";
+import { AlgorithmParameters } from "../components/AlgorithmParameters";
+import { algorithmDefaults, algorithmIssues, algorithmKey } from "../domain/algorithms";
 import {
   EmptyState,
   ErrorState,
@@ -56,20 +59,22 @@ interface EnvironmentBuildParameters {
   beamCount: number;
   minimumAngle: number;
   maximumAngle: number;
-  sourceDepths: string;
-  receiverDepths: string;
+  sourceSampling: DepthSampling;
+  receiverSampling: DepthSampling;
   rangeSampleCount: number;
 }
 const defaultBuildParameters: EnvironmentBuildParameters = {
   bottomSoundSpeed: 1700, bottomDensity: 1.8,
   bottomAttenuation: 0.5, beamCount: 501,
   minimumAngle: -30, maximumAngle: 30,
-  sourceDepths: "8, 20, 40, 60, 75", receiverDepths: "8, 20, 40, 60, 75", rangeSampleCount: 26,
+  sourceSampling: automaticSampling(), receiverSampling: automaticSampling(), rangeSampleCount: 101,
 };
 const acquisitionInitial = { latitudeDeg: 18, longitudeDeg: 110, month: 4 as number | null, requestedSspDepthMeters: 200,
   bearingDeg: 90, requestedRangeMeters: 10000, terrainSamples: 41, useReferenceCache: false };
 const flatBottomSource = { kind: "ideal-flat-bottom", description: "平坦海底计算假设，非实测地形" };
 type AcquisitionParameters = typeof acquisitionInitial;
+const samplingWaterDepth = (value: EnvironmentDraft, sources: Record<string, any>) => sources.bottom_boundary?.kind === "ideal-flat-bottom" || !value.bathymetry.length
+  ? value.maximumDepthMeters : Math.min(...value.bathymetry.map(point => point.depthMeters));
 const sourceQuery = (p: AcquisitionParameters, kind: "ssp" | "terrain") => kind === "ssp"
   ? { latitude_deg: p.latitudeDeg, longitude_deg: p.longitudeDeg, month: p.month, maximum_depth_meters: p.requestedSspDepthMeters, use_reference_cache: p.useReferenceCache }
   : { latitude_deg: p.latitudeDeg, longitude_deg: p.longitudeDeg, bearing_deg: p.bearingDeg, maximum_range_meters: p.requestedRangeMeters, sample_count: p.terrainSamples, use_reference_cache: p.useReferenceCache };
@@ -102,8 +107,9 @@ const toEnvironmentPayload = (value: EnvironmentDraft, parameters = defaultBuild
     minimum_launch_angle_degrees: parameters.minimumAngle,
     maximum_launch_angle_degrees: parameters.maximumAngle,
     output: "Arrivals",
-    source_depths_meters: parameters.sourceDepths.split(",").map((part) => Number(part.trim())),
-    receiver_depths_meters: parameters.receiverDepths.split(",").map((part) => Number(part.trim())),
+    source_depths_meters: depthSamples(parameters.sourceSampling, samplingWaterDepth(value, sources)).points,
+    receiver_depths_meters: depthSamples(parameters.receiverSampling, samplingWaterDepth(value, sources)).points,
+    sampling_controls: { source: parameters.sourceSampling, receiver: parameters.receiverSampling },
     range_sample_count: parameters.rangeSampleCount,
   },
 });
@@ -137,14 +143,13 @@ function StepRail({ current, select }: { current: number; select: (step: number)
   return (
     <ol className="build-step-rail">
       {[
-        "基本信息",
-        "水文来源",
-        "数据预览",
-        "Bellhop 配置",
-        "构建与发布",
-      ].map((label, index) => (
-        <li className={index + 1 === current ? "active" : ""} key={label}>
-          <button type="button" aria-current={index + 1 === current ? "step" : undefined} onClick={() => select(index + 1)}><b>{index + 1}</b><span>{label}</span></button>
+        { id: 1, label: "基本信息" },
+        { id: 2, label: "水文来源" },
+        { id: 4, label: "配置与预览" },
+        { id: 5, label: "构建与发布" },
+      ].map(({ id, label }, index) => (
+        <li className={id === current ? "active" : ""} key={label}>
+          <button type="button" aria-current={id === current ? "step" : undefined} onClick={() => select(id)}><b>{index + 1}</b><span>{label}</span></button>
         </li>
       ))}
     </ol>
@@ -176,7 +181,7 @@ function SourceCard({
 }
 
 export function EnvironmentAuthoringPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const drafts = useQuery(queries.drafts("environment"));
   const client = useQueryClient();
   const [value, setValue] = useState(environmentInitial);
@@ -192,6 +197,10 @@ export function EnvironmentAuthoringPage() {
     "woa" | "file"
   >("woa");
   const [build, setBuild] = useState<EnvironmentBuildDto | null>(null);
+  const requestedBuild = params.get("build") ?? "";
+  const savedBuild = useQuery({ queryKey: ["environment-build", requestedBuild], queryFn: () => apiClient.getEnvironmentBuild(requestedBuild), enabled: !!requestedBuild, staleTime: Infinity });
+  const loadedBuild = useRef("");
+  const [hydratedBuild, setHydratedBuild] = useState("");
   const [builtInput, setBuiltInput] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const nameInput = useRef<HTMLInputElement>(null);
@@ -205,6 +214,12 @@ export function EnvironmentAuthoringPage() {
   const [buildParameters, setBuildParameters] = useState(defaultBuildParameters);
   const [acquisition, setAcquisition] = useState(acquisitionInitial);
   const [sources, setSources] = useState<Record<string, any>>({ bottom_boundary: flatBottomSource });
+  const waterDepth = samplingWaterDepth(value, sources);
+  const sourceSampling = depthSamples(buildParameters.sourceSampling, waterDepth);
+  const receiverSampling = depthSamples(buildParameters.receiverSampling, waterDepth);
+  const budget = samplingBudget(sourceSampling.points, receiverSampling.points, buildParameters.rangeSampleCount);
+  const samplingErrors = [sourceSampling.error && `发射深度：${sourceSampling.error}`, receiverSampling.error && `接收深度：${receiverSampling.error}`].filter(Boolean) as string[];
+  const buildErrors = [...samplingErrors, ...budget.errors, ...acousticParameterErrors(buildParameters, value.centerFrequencyHz)];
   const currentInput = JSON.stringify([value.name, toEnvironmentPayload(value, buildParameters, acquisition, sources)]);
   const currentInputRef = useRef(currentInput); currentInputRef.current = currentInput;
   const acquisitionRef = useRef(acquisition); acquisitionRef.current = acquisition;
@@ -230,11 +245,13 @@ export function EnvironmentAuthoringPage() {
       setValue(current => ({ ...current, soundSpeedProfile: points.map(point => ({ depthMeters: point.depth_meters, speedMetersPerSecond: point.speed_meters_per_second })),
         maximumDepthMeters: current.bathymetry.length ? current.maximumDepthMeters : points.at(-1)!.depth_meters }));
       setNotice("已复用服务器保存的水文剖面，没有重新下载。来源与原查询条件随草稿保存。");
-      setStep(3);
+      setStep(4);
     },
   });
   useEffect(() => {
-    let selected = drafts.data?.find(
+    if (requestedBuild && !savedBuild.data) return;
+    const snapshot = savedBuild.data?.artifact?.source_snapshot as AuthoringDraftDto | undefined;
+    let selected = snapshot ?? drafts.data?.find(
       (item) => item.draft_id === params.get("draft"),
     );
     if (!selected && source.data && sourceId && loadedSource.current !== sourceId) {
@@ -243,7 +260,7 @@ export function EnvironmentAuthoringPage() {
       selected = { kind: "environment", draft_id: "", name: String(source.data.name), payload: source.data.payload as Record<string, unknown>, revision: 0, created_at: "", updated_at: "", validation_issues: [] };
       setNotice((source.data.limitations as string[]).join("；"));
     }
-    if (selected && selected.draft_id !== serverDraft?.draft_id) {
+    if (selected && (selected.draft_id !== serverDraft?.draft_id || (snapshot && hydratedBuild !== savedBuild.data!.build_id))) {
       if (selected.draft_id) setServerDraft(selected);
       setValue(fromEnvironmentDraft(selected));
       const p = selected.payload as any;
@@ -256,16 +273,30 @@ export function EnvironmentAuthoringPage() {
         beamCount: p.bellhop?.beam_count ?? defaultBuildParameters.beamCount,
         minimumAngle: p.bellhop?.minimum_launch_angle_degrees ?? defaultBuildParameters.minimumAngle,
         maximumAngle: p.bellhop?.maximum_launch_angle_degrees ?? defaultBuildParameters.maximumAngle,
-        sourceDepths: p.bellhop?.source_depths_meters?.join(", ") ?? defaultBuildParameters.sourceDepths,
-        receiverDepths: p.bellhop?.receiver_depths_meters?.join(", ") ?? defaultBuildParameters.receiverDepths,
+        sourceSampling: restoreSampling(p.bellhop?.source_depths_meters, p.bellhop?.sampling_controls?.source, samplingWaterDepth(fromEnvironmentDraft(selected), p.sources ?? {})),
+        receiverSampling: restoreSampling(p.bellhop?.receiver_depths_meters, p.bellhop?.sampling_controls?.receiver, samplingWaterDepth(fromEnvironmentDraft(selected), p.sources ?? {})),
         rangeSampleCount: p.bellhop?.range_sample_count ?? defaultBuildParameters.rangeSampleCount,
       });
+      if (snapshot) setHydratedBuild(savedBuild.data!.build_id);
     }
-  }, [drafts.data, params, serverDraft?.draft_id, source.data, sourceId]);
+  }, [drafts.data, params, serverDraft?.draft_id, source.data, sourceId, requestedBuild, savedBuild.data, hydratedBuild]);
+  useEffect(() => {
+    const result = savedBuild.data;
+    const snapshot = result?.artifact?.source_snapshot as AuthoringDraftDto | undefined;
+    if (!result || !snapshot || hydratedBuild !== result.build_id || loadedBuild.current === result.build_id || serverDraft?.draft_id !== snapshot.draft_id) return;
+    loadedBuild.current = result.build_id;
+    setBuild(result);
+    setBuiltInput(currentInput);
+    setShowPlots(result.state === "Completed");
+    setStep(result.state === "Completed" ? 5 : 4);
+    if (result.artifact?.published) setPublishedBuildId(result.build_id);
+    setNotice("已打开保存的计算结果，未重新计算。修改后需重新构建。");
+  }, [savedBuild.data, serverDraft?.draft_id, currentInput, hydratedBuild]);
   const save = useMutation({
     onError: () => setNotice(""),
     mutationFn: async () => {
       if (!requireName()) throw new Error("请先填写环境名称。");
+      if (samplingErrors.length) { setStep(4); setShowPlots(false); throw new Error(samplingErrors.join(" ")); }
       const submittedInput = currentInput;
       const draft = serverDraft
         ? apiClient.updateDraft(
@@ -334,7 +365,7 @@ export function EnvironmentAuthoringPage() {
       setNotice(result.result_cache_reused ? `已复用本地 ${result.provider} 剖面，共 ${points.length} 个采样点；没有重新下载。` : `已从 ${result.provider} 获取 ${points.length} 个水文采样点`);
       void client.invalidateQueries({ queryKey: ["hydrology-cache"] });
       setWoaProgress({ stage: "completed", message: `已获取 ${points.length} 个声速采样点${result.cache_files_reused === 2 ? "，使用已缓存的 NOAA 月度数据" : ""}` });
-      setStep(3);
+      setStep(4);
     },
   });
   const importFile = async (file: File) => {
@@ -359,6 +390,7 @@ export function EnvironmentAuthoringPage() {
     onError: () => setNotice(""),
     mutationFn: async () => {
       if (!requireName()) throw new Error("请先填写环境名称。");
+      if (buildErrors.length) { setStep(4); setShowPlots(false); throw new Error(buildErrors.join(" ")); }
       setNotice("正在保存输入并计算声场…");
       setBuiltInput(currentInput);
       const saved = serverDraft
@@ -376,10 +408,14 @@ export function EnvironmentAuthoringPage() {
       return apiClient.createEnvironmentBuild(saved.draft_id, saved.revision);
     },
     onSuccess: (result) => {
+      loadedBuild.current = result.build_id;
+      setHydratedBuild(result.build_id);
+      client.setQueryData(["environment-build", result.build_id], result);
       setBuild(result);
-      setStep(5);
-      setShowPlots(true);
-      setNotice(result.state === "Completed" ? "声场计算完成，可以发布。" : "声场计算未完成，请查看错误信息。");
+      setParams(current => { const next = new URLSearchParams(current); next.set("build", result.build_id); next.set("draft", result.draft_id); next.delete("source"); return next; }, { replace: true });
+      setStep(result.state === "Completed" ? 5 : 4);
+      setShowPlots(result.state === "Completed");
+      setNotice(result.state === "Completed" ? "声场计算完成，可以发布。" : "");
     },
   });
   const publish = useMutation({
@@ -391,15 +427,17 @@ export function EnvironmentAuthoringPage() {
       await client.invalidateQueries({ queryKey: ["environments"] });
     },
   });
-  if (drafts.error || source.error) return <ErrorState error={drafts.error || source.error} />;
-  if (drafts.isPending || (sourceId && source.isPending)) return <LoadingState />;
+  if (drafts.error || source.error || savedBuild.error) return <ErrorState error={drafts.error || source.error || savedBuild.error} />;
+  if (drafts.isPending || (requestedBuild && savedBuild.isPending) || (sourceId && (source.isPending || loadedSource.current !== sourceId))) return <LoadingState />;
   const sspMaximumDepth = value.soundSpeedProfile.length ? Math.max(...value.soundSpeedProfile.map((point) => point.depthMeters)) : 0;
   const flatBoundary = sources.bottom_boundary?.kind === "ideal-flat-bottom";
   const terrainMaximumDepth = flatBoundary ? value.maximumDepthMeters : value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.depthMeters)) : 0;
   const terrainMaximumRange = flatBoundary ? value.maximumRangeMeters : value.bathymetry.length ? Math.max(...value.bathymetry.map((point) => point.rangeMeters)) : 0;
   const hasEnvironmentSamples = value.soundSpeedProfile.length >= 2 && (flatBoundary || value.bathymetry.length >= 2) && terrainMaximumDepth > 0 && terrainMaximumRange > 0;
   const profileCoversTerrain = hasEnvironmentSamples && sspMaximumDepth >= terrainMaximumDepth;
-  const staleSources = (["ssp"] as const).filter(kind => sources[kind]?.request && JSON.stringify({ ...sources[kind].request, use_reference_cache: false }) !== JSON.stringify(sourceQuery(acquisition, kind)));
+  // Saved JSON may have alphabetically sorted keys. Compare scientific query
+  // fields, not serialization order; a reopened cache must not look "changed".
+  const staleSources = (["ssp"] as const).filter(kind => sources[kind]?.request && Object.entries(sourceQuery(acquisition, kind)).some(([key, expected]) => key !== "use_reference_cache" && sources[kind].request[key] !== expected));
   const inputReady = hasEnvironmentSamples && profileCoversTerrain && !staleSources.length;
   const matchesBuild = builtInput === currentInput;
   return (
@@ -434,6 +472,7 @@ export function EnvironmentAuthoringPage() {
         {nameError && <p role="alert">{nameError}</p>}
         {notice && <p role="status">{notice}</p>}
         {(save.error || startBuild.error || publish.error) && <ErrorState error={save.error || startBuild.error || publish.error} />}
+        {build?.state === "Failed" && <p role="alert">本次计算未完成：{build.failure?.message || "服务未返回具体原因，请重试或查看计算记录。"} 请在下方修改参数后重新计算。</p>}
         {build?.state === "Completed" && !matchesBuild && <p>输入已修改，请重新计算后发布。</p>}
       </div>
       {(sourceId || build?.state === "Completed") && <div className="environment-view-tabs"><button aria-pressed={!showPlots} onClick={() => setShowPlots(false)}>输入与计算参数</button><button aria-pressed={showPlots} onClick={() => setShowPlots(true)}>信道计算结果</button></div>}
@@ -538,7 +577,7 @@ export function EnvironmentAuthoringPage() {
           <section className="builder-section preview-section">
             <div className="section-number">03</div>
             <div>
-              <h2>数据预览与检查</h2>
+              <h2>水文预览与计算范围</h2>
               {staleSources.length > 0 && <p role="alert">采集参数已改变，请重新获取{staleSources.map(kind => kind === "ssp" ? "声速剖面" : "地形").join("、")}。旧数据仅供查看，不可据此构建。</p>}
               {sources.ssp?.grid_coordinate && <p>实际水文采样位置：纬度 {sources.ssp.grid_coordinate.latitude_deg}°、经度 {sources.ssp.grid_coordinate.longitude_deg}° · {sources.ssp.month ? `${sources.ssp.month}月统计` : "年平均"}<br /><small>当前使用 WOA 1° 网格；邻近坐标可能落入同一格点，得到相同月平均剖面。</small></p>}
               <div className="environment-preview">
@@ -560,11 +599,11 @@ export function EnvironmentAuthoringPage() {
               </div>
               <div className={`coverage-check ${profileCoversTerrain ? "valid" : "invalid"}`}><strong>数据覆盖检查</strong><span>声速剖面至 {sspMaximumDepth} m · 计算水深 {terrainMaximumDepth} m · 距离 {terrainMaximumRange} m</span><p>{value.soundSpeedProfile.length < 2 ? "请先获取至少两个声速采样点。" : !hasEnvironmentSamples ? "水文剖面已就绪，请确认计算边界、水深及范围。" : profileCoversTerrain ? "声速剖面覆盖计算水深，可进入 Bellhop 构建。" : "声速剖面未覆盖计算水深。请减小水深或获取更深的水文数据；不会静默外推。"}</p></div>
               {flatBoundary && <div className="form-grid"><label>计算水深（m）<input type="number" min="1" max={sspMaximumDepth || undefined} value={value.maximumDepthMeters} onChange={event => setValue({ ...value, maximumDepthMeters: Number(event.target.value) })} /></label><label>计算距离（m）<input type="number" min="1" value={value.maximumRangeMeters} onChange={event => setValue({ ...value, maximumRangeMeters: Number(event.target.value) })} /></label></div>}
-              {step < 4 && <button disabled={!inputReady} onClick={() => setStep(4)}>下一步：计算参数</button>}
+              {step < 4 && <button onClick={() => setStep(4)}>配置与预览</button>}
             </div>
           </section>
           <section className="builder-section">
-            <div className="section-number">04</div>
+            <div className="section-number">03</div>
             <div>
               <h2>Bellhop 离线构建</h2>
               <div className="form-grid">
@@ -581,10 +620,15 @@ export function EnvironmentAuthoringPage() {
                     }
                   />
                 </label>
-                <DepthSamplingInput label="发送" value={buildParameters.sourceDepths} waterDepth={value.maximumDepthMeters} onChange={sourceDepths => setBuildParameters(current => ({ ...current, sourceDepths }))} />
-                <DepthSamplingInput label="接收" value={buildParameters.receiverDepths} waterDepth={value.maximumDepthMeters} onChange={receiverDepths => setBuildParameters(current => ({ ...current, receiverDepths }))} />
+                <DepthSamplingInput label="发送" value={buildParameters.sourceSampling} waterDepth={waterDepth} onChange={sourceSampling => setBuildParameters(current => ({ ...current, sourceSampling }))} />
+                <DepthSamplingInput label="接收" value={buildParameters.receiverSampling} waterDepth={waterDepth} onChange={receiverSampling => setBuildParameters(current => ({ ...current, receiverSampling }))} />
                 <label>距离采样数<input type="number" min="2" max="1000" value={buildParameters.rangeSampleCount} onChange={e => setBuildParameters({ ...buildParameters, rangeSampleCount: Number(e.target.value) })} /></label>
-                <p className="sampling-summary">收发水平距离 0～{value.maximumRangeMeters} m，{Number.isInteger(buildParameters.rangeSampleCount) && buildParameters.rangeSampleCount >= 2 ? `每隔 ${Number((value.maximumRangeMeters / (buildParameters.rangeSampleCount - 1)).toPrecision(5))} m 计算一个位置（含两端）` : "请填写至少 2 个采样点"}。点数不是节点数；未经过精度验证的网格不能保证任意位置查询准确。</p>
+                <p className="sampling-summary">距离 0～{value.maximumRangeMeters} m{Number.isInteger(buildParameters.rangeSampleCount) && buildParameters.rangeSampleCount >= 2 ? ` · 间隔 ${Number((value.maximumRangeMeters / (buildParameters.rangeSampleCount - 1)).toPrecision(5))} m` : ""}。包含两端，点数不是节点数。</p>
+                <section className="sampling-budget" aria-label="计算规模检查"><strong>计算规模</strong><p>{sourceSampling.points.length} 个发射深度 × {receiverSampling.points.length} 个接收深度 × {Number.isFinite(buildParameters.rangeSampleCount) ? buildParameters.rangeSampleCount : "—"} 个距离点{budget.cells > 0 ? ` = ${budget.cells.toLocaleString("en-US")} 个位置` : ""}</p>
+                  {buildErrors.length > 0 && <ul role="alert">{buildErrors.map(error => <li key={error}>{error}</li>)}</ul>}
+                  {budget.errors.length > 0 && !samplingErrors.length && budget.maxRanges >= 2 && <div><p>保持深度采样不变，可将距离点数改为 {budget.maxRanges}（间隔约 {Number((value.maximumRangeMeters / (budget.maxRanges - 1)).toPrecision(4))} m）。</p><button type="button" onClick={() => setBuildParameters(current => ({ ...current, rangeSampleCount: budget.maxRanges }))}>距离点数改为 {budget.maxRanges}</button></div>}
+                  <small>平台当前上限 200,000 个采样位置，并非 Bellhop 极限。实际文件大小还取决于多径数量；点数不代表精度。</small>
+                </section>
                 {capabilities.data?.bellhop_available === false && <p role="status">本机未配置 Bellhop 离线计算程序。可以保存草稿，但不会用参考声场代替计算。</p>}
                 <details className="bellhop-advanced"><summary>海底材料与声线计算参数</summary><p>海底材料是模型配置，不来自 WOA。以下保留当前设置，修改后需重新计算。</p><div className="form-grid">
                 <label>海底声速（m/s）<input type="number" value={buildParameters.bottomSoundSpeed} onChange={(event) => setBuildParameters({...buildParameters, bottomSoundSpeed: Number(event.target.value)})} /></label>
@@ -598,7 +642,7 @@ export function EnvironmentAuthoringPage() {
               <p>按当前声速、计算边界和底质重新计算声场。声速在采样点之间线性插值，不外推。发布后可在实验中选择。</p>
               <button
                 type="button"
-                disabled={!inputReady || startBuild.isPending || save.isPending || capabilities.data?.bellhop_available === false}
+                disabled={!inputReady || buildErrors.length > 0 || startBuild.isPending || save.isPending || capabilities.data?.bellhop_available === false}
                 onClick={() => startBuild.mutate()}
               >
                 {startBuild.isPending
@@ -706,7 +750,7 @@ const experimentInitial: ExperimentDraft = {
   scenarioId: "",
   provenance: { kind: "new", label: "新建" },
   routingMode: "Direct",
-  macMode: "AdaptiveTdma",
+  macMode: "RegisteredMac",
   workload: "BearingFusion",
   minimumBearingPoints: "5",
   maximumFusionPeriodNs: "180000000000",
@@ -721,15 +765,14 @@ const experimentInitial: ExperimentDraft = {
   updatedAt: now(),
 };
 export function ExperimentAuthoringPage() {
+  const algorithmCatalog = useQuery({ queryKey: ["algorithms"], queryFn: apiClient.algorithmCatalog, retry: false, staleTime: 30000 });
   const capabilities = useQuery({ queryKey: ["authoring-capabilities"], queryFn: apiClient.authoringCapabilities, retry: false });
   const [params] = useSearchParams();
   const requestedDraftId = params.get("draft");
   const scenarios = useQuery(queries.scenarios());
   const environments = useQuery(queries.environments());
   const trajectories = useQuery(queries.trajectories());
-  const environmentNames = useQueries({ queries: (environments.data ?? []).map(environment => ({
-    queryKey: ["environment-inputs", environment.environment_asset_id], queryFn: () => apiClient.environmentInputs(environment.environment_asset_id),
-  })) });
+  const environmentNames = useQuery(queries.environmentSummaries());
   const [inspectorSection, setInspectorSection] = useState("basic");
   const [targetExpanded, setTargetExpanded] = useState(false);
   const scenarioDrafts = useQuery(queries.drafts("scenario"));
@@ -739,7 +782,17 @@ export function ExperimentAuthoringPage() {
   const [value, setValue] = useState(() => ({ ...experimentInitial, scenarioId: params.get("scenario") ?? "" }));
   const planning = value.executionMode === "PlanningV1";
   const [server, setServer] = useState<AuthoringDraftDto | null>(null);
+  useEffect(() => {
+    if (requestedDraftId || server || value.macMode !== "RegisteredMac" || value.macAlgorithm) return;
+    const installed = algorithmCatalog.data?.algorithms.find(a => a.id === "platform.adaptive-tdma");
+    if (installed) setValue(current => ({ ...current, macAlgorithm: algorithmDefaults(installed) }));
+  }, [requestedDraftId, server, value.macMode, value.macAlgorithm, algorithmCatalog.data]);
+  const installedAlgorithm = value.macAlgorithm && algorithmCatalog.data?.algorithms.find(a => algorithmKey(a) === algorithmKey(value.macAlgorithm!));
+  const algorithmErrors = value.macMode === "RegisteredMac" ? algorithmIssues(value.macAlgorithm, algorithmCatalog.data) : [];
   const [scene, setScene] = useState<ScenarioDraft>(() => scenarioInitial([], ""));
+  const sceneEnvironmentInputs = useQuery({ queryKey: ["environment-inputs", scene.environmentAssetId],
+    queryFn: () => apiClient.environmentInputs(scene.environmentAssetId), enabled: !!scene.environmentAssetId,
+    staleTime: Infinity });
   const initialSceneSignature = useRef(JSON.stringify([scene.name, scene.environmentAssetId, scene.nodes, scene.trajectoryBindings, scene.spatialDomain]));
   const [sceneServer, setSceneServer] = useState<AuthoringDraftDto | null>(null);
   const [sceneBusinessReset, setSceneBusinessReset] = useState(false);
@@ -794,6 +847,7 @@ export function ExperimentAuthoringPage() {
       executionMode: source.execution_mode == null ? undefined : String(source.execution_mode),
       planningCycleDurationNs: text("planning_cycle_duration_ns", "30000000000"),
       adaptiveSafetyMarginNs: String((source.adaptive_tdma as { safety_margin_ns?: string } | null)?.safety_margin_ns ?? "0"),
+      macAlgorithm: structuredClone(source.mac_algorithm as ExperimentDraft["macAlgorithm"]),
       flows: structuredClone(source.flows as ExperimentDraft["flows"] ?? []),
       fusionReceiverNodeId: source.fusion_receiver_node_id == null ? null : String(source.fusion_receiver_node_id),
       id: selected.draft_id,
@@ -851,11 +905,17 @@ export function ExperimentAuthoringPage() {
     payload.execution_mode = "PlanningV1";
     payload.planning_cycle_duration_ns = value.planningCycleDurationNs;
     delete payload.network_update_interval_cycles;
+    delete payload.mac_algorithm;
     if (value.macMode === "AdaptiveTdma") {
       payload.adaptive_tdma = { safety_margin_ns: value.adaptiveSafetyMarginNs };
       delete payload.slot_duration_ns;
       delete payload.guard_interval_ns;
     } else delete payload.adaptive_tdma;
+    if (value.macMode === "RegisteredMac") {
+      payload.mac_algorithm = value.macAlgorithm;
+      delete payload.slot_duration_ns;
+      delete payload.guard_interval_ns;
+    }
     if (value.workload === "CommunicationOnly") {
       payload.flows = value.flows ?? [];
       for (const field of ["fusion_receiver_node_id", "minimum_bearing_points", "maximum_fusion_period_ns", "target_x_m", "target_y_m"]) delete payload[field];
@@ -914,6 +974,7 @@ export function ExperimentAuthoringPage() {
       if (!/^\d+$/.test(value.deterministicSeed) || BigInt(value.deterministicSeed) > 18446744073709551615n) throw new Error("随机种子必须是 0～18446744073709551615 之间的整数。");
       if (![value.centerFrequencyHz, value.occupiedBandwidthHz, value.sourceLevelDb, equivalentNoise, waveformNoisePsd, target.x, target.y].every(Number.isFinite)
         || value.centerFrequencyHz <= 0 || value.occupiedBandwidthHz <= 0) throw new Error("设备与噪声参数必须是有限数值，频率和带宽必须大于零。");
+      if (algorithmErrors.length) throw new Error(algorithmErrors.join("；"));
       const { saved, savedScene } = await saveComposition();
       if (savedScene.validation_issues.length) throw new Error(`节点场景已保存，但尚不能运行：${savedScene.validation_issues.join("；")}`);
       if (saved.validation_issues.length) throw new Error(saved.validation_issues.join("；"));
@@ -935,6 +996,7 @@ export function ExperimentAuthoringPage() {
   const loadError = scenarios.error || environments.error || trajectories.error || scenarioDrafts.error || (requestedDraftId && experimentDrafts.error);
   if (loadError) return <ErrorState error={loadError} />;
   if (requestedDraftId && !experimentDrafts.data?.some(draft => draft.draft_id === requestedDraftId)) return <p role="alert">这个实验草稿不存在，未改用其他案例。<Link to="/workspace/experiment">新建实验</Link></p>;
+  if (requestedDraftId && server?.draft_id !== requestedDraftId) return <LoadingState />;
   const coverage = trajectoryRunCoverage(scene, trajectories.data ?? [], value.simulationCycleCount,
     slotDurationNs, value.macMode, planning ? value.planningCycleDurationNs : undefined);
   const savedIssues = [
@@ -975,9 +1037,10 @@ export function ExperimentAuthoringPage() {
             </label>
             {sceneSwitching && <p role="status">正在切换场景…</p>}
             {!sceneSwitching && value.scenarioId && !sceneServer && <p role="alert">当前场景引用无法读取，请重新选择。</p>}
-            {environmentNames[(environments.data ?? []).findIndex(environment => environment.environment_asset_id === scene.environmentAssetId)]?.isFetching && <p role="status">正在读取场景环境…</p>}
+            {sceneEnvironmentInputs.isFetching && <p role="status">正在读取场景环境…</p>}
+            {environmentNames.error && <ErrorState error={environmentNames.error} />}
             <label>实验环境<select value={scene.environmentAssetId} onChange={e => setScene({ ...scene, environmentAssetId: e.target.value })}>
-              <option value="">请选择已发布环境</option>{environments.data!.map((environment, index) => <option key={environment.environment_asset_id} value={environment.environment_asset_id}>{String(environmentNames[index].data?.name ?? (environment.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : `已发布环境 ${index + 1}`))} · v{environment.asset_format_version}</option>)}
+              <option value="">请选择已发布环境</option>{environments.data!.map((environment, index) => <option key={environment.environment_asset_id} value={environment.environment_asset_id}>{String((environmentNames.data?.[environment.environment_asset_id] as { name?: string } | undefined)?.name ?? (environment.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : `已发布环境 ${index + 1}`))} · v{environment.asset_format_version}</option>)}
             </select></label>
             <p className="property-help">点击画布节点，在此选择轨迹和收发能力。环境需先在环境建设中发布。</p>
             <p className="property-help">{planning ? "场景至少需要一个节点；通信流需要不同的源和目的节点，融合业务需要接收节点和其他可发送的观测节点。" : "历史执行方式支持 3～6 个节点。其他规模可编辑、保存，尚不能启动运行。"}</p>
@@ -1002,11 +1065,17 @@ export function ExperimentAuthoringPage() {
               <label>
                 MAC
                 <select
-                  value={value.macMode}
-                  onChange={(e) => set("macMode", e.target.value)}
+                  value={value.macMode === "RegisteredMac" ? value.macAlgorithm ? algorithmKey(value.macAlgorithm) : "RegisteredMac" : value.macMode}
+                  onChange={(e) => {
+                    const algorithm = algorithmCatalog.data?.algorithms.find(a => algorithmKey(a) === e.target.value);
+                    setValue(current => algorithm ? { ...current, macMode: "RegisteredMac", macAlgorithm: algorithmDefaults(algorithm) }
+                      : { ...current, macMode: e.target.value, macAlgorithm: undefined });
+                  }}
                 >
-                  <option value="Tdma">配置式 TDMA · 节点按时隙轮流发送</option>
-                  {planning && <option value="AdaptiveTdma">自适应 TDMA · 自动规划时隙</option>}
+                  {planning && <optgroup label="已安装算法">{algorithmCatalog.data?.algorithms.map(a => <option key={algorithmKey(a)} value={algorithmKey(a)}>{a.label} · v{a.version}</option>)}</optgroup>}
+                  {planning && value.macMode === "RegisteredMac" && !installedAlgorithm && <option value={value.macAlgorithm ? algorithmKey(value.macAlgorithm) : "RegisteredMac"} disabled>{value.macAlgorithm ? "原算法版本不可用" : algorithmCatalog.isError ? "算法目录不可用" : "正在加载算法"}</option>}
+                  <optgroup label="历史实验兼容"><option value="Tdma">配置式 TDMA · 节点按时隙轮流发送</option>
+                  {planning && <option value="AdaptiveTdma">自适应 TDMA · 历史配置兼容</option>}</optgroup>
                 </select>
               </label>
               <label>
@@ -1019,6 +1088,9 @@ export function ExperimentAuthoringPage() {
               </label>
               <p className="field-explanation workload-explanation">{value.workload === "CommunicationOnly" ? "统计网络收发，不进行定位。" : "节点发送方位报告，接收后用于定位。"}</p>
             </div>
+            {planning && algorithmCatalog.isError && <p role="alert">算法目录加载失败。<button type="button" onClick={() => void algorithmCatalog.refetch()}>重试</button></p>}
+            {planning && value.macMode === "RegisteredMac" && installedAlgorithm && value.macAlgorithm && <AlgorithmParameters algorithm={installedAlgorithm} value={value.macAlgorithm} onChange={selection => set("macAlgorithm", selection)} />}
+            {planning && algorithmErrors.length > 0 && <p role="alert">{algorithmErrors.join("；")}</p>}
             {planning && value.workload === "CommunicationOnly" && <section className="parameter-detail" aria-label="显式通信流">
               <h3>通信流 · 源节点 → 目的节点</h3><p>双向通信添加两条相反方向的流。</p>
               {!value.flows?.length && <p className="property-help">请先添加通信流。</p>}
@@ -1045,7 +1117,7 @@ export function ExperimentAuthoringPage() {
               {!planning && <><label>重新规划间隔（周期）<input type="number" min="1" step="1" value={value.networkUpdateIntervalCycles} onChange={e => set("networkUpdateIntervalCycles", e.target.value)} /></label><p>当前每 {value.networkUpdateIntervalCycles} 个通信周期重新计算网络结构与计划；不是向 TDMA 读取调度表的频率。较短间隔表示更频繁更新，尚不代表已实现自适应参数算法。</p></>}
             </details>}
             {planning && value.macMode === "AdaptiveTdma" && <details className="parameter-detail"><summary>自适应 TDMA · 私有高级参数</summary><small>按待发数据、发送时长和传播时间自动排槽。</small><label>时隙安全余量（s）<input type="number" min="0" step="0.001" value={planningSecondsInput(value.adaptiveSafetyMarginNs)} onChange={event => set("adaptiveSafetyMarginNs", planningNanosecondsInput(event.target.value))} /></label><small>额外预留时间，通常保持 0。</small></details>}
-            {planning && <details className="parameter-detail"><summary>{value.macMode === "AdaptiveTdma" ? "自适应 TDMA" : "配置式 TDMA"} · 规划与业务节拍（高级）</summary><label>当前规划方案的业务周期（s）<input type="number" min="0.000000001" step="1" value={planningSecondsInput(value.planningCycleDurationNs)} onChange={event => set("planningCycleDurationNs", planningNanosecondsInput(event.target.value))} /></label><small>每周期产生新业务并重新排槽；过短时运行前提示。</small></details>}
+            {planning && <details className="parameter-detail"><summary>业务产生节拍（高级）</summary><label>当前规划方案的业务周期（s）<input type="number" min="0.000000001" step="1" value={planningSecondsInput(value.planningCycleDurationNs)} onChange={event => set("planningCycleDurationNs", planningNanosecondsInput(event.target.value))} /></label><small>每周期产生新业务并重新规划；不是手工时隙长度。</small></details>}
           </section>
           <section id="phy" className="panel form-panel">
             <h2>物理模式</h2>
@@ -1109,7 +1181,7 @@ export function ExperimentAuthoringPage() {
         applicationReceiverNodeId={planning ? value.workload === "BearingFusion" ? value.fusionReceiverNodeId ?? null : null : undefined}
         workspaceControls={workspaceControls}
         allowRelativePlacement={capabilities.data?.relative_trajectory_placement === true}
-        environmentInputs={environmentNames[(environments.data ?? []).findIndex(environment => environment.environment_asset_id === scene.environmentAssetId)]?.data}
+        environmentInputs={sceneEnvironmentInputs.data}
         surfaceZMeters={sceneEnvironment?.coordinate_frame.surface_z_meters}
         onTrajectoryCreated={() => { client.invalidateQueries({ queryKey: ["trajectories"] }); }} />
     </fieldset>

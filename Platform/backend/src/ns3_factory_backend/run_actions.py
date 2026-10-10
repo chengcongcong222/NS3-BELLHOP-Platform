@@ -133,7 +133,7 @@ def _timing(definition: dict | None, command: StartRunCommand,
             manifest: RunManifest | None) -> RunTimingDiagnostic | None:
     try:
         config = definition["experiment"] if definition is not None else None
-        if config and config["mac_mode"] == "AdaptiveTdma":
+        if config and config["mac_mode"] in {"AdaptiveTdma", "RegisteredMac"}:
             # Slot boundaries are planner output, not a user-configured input.
             return None
         rate = int(config["bit_rate_bps"] if config else manifest.experiment.phy.bit_rate_bits_per_second)

@@ -7,6 +7,8 @@
 #include "internal/composite_protocol_cycle_planner.hpp"
 #include "internal/direct_routing_planner.hpp"
 #include "internal/shortest_path_routing_planner.hpp"
+#include <ns3_factory/planning/registered_algorithms.hpp>
+#include "../../algorithms/examples/ordered_mac/algorithm.hpp"
 
 using namespace ns3_factory::contracts;
 using namespace ns3_factory::planning::internal;
@@ -168,7 +170,36 @@ auto AllDestinationRouting() -> bool {
 }
 }  // namespace
 
+auto RegisteredPackageParity() -> bool {
+  using namespace ns3_factory;
+  const auto& packages = planning::RegisteredAlgorithms();
+  const auto found = std::find_if(packages.begin(), packages.end(), [](const auto& a) { return a.id == "platform.adaptive-tdma"; });
+  CHECK(found != packages.end());
+  const auto& package = *found;
+  planning::Parameters parameters{{"safety_margin_ns", "1"}};
+  CHECK(planning::ValidateParameters(package, parameters));
+  CHECK(!planning::ValidateParameters(package, {}));
+  CHECK(!planning::ValidateParameters(package, {{"safety_margin_ns", "01"}}));
+  CHECK(!planning::ValidateParameters(package, {{"safety_margin_ns", "-1"}}));
+  CHECK(!planning::ValidateParameters(package, {{"safety_margin_ns", "0"}, {"unknown", "1"}}));
+  CHECK(!planning::FindAlgorithm({package.id, "99.0.0", package.package_sha256, parameters}));
+  const auto world = World(); const auto structure = Structure(); const auto input = Input(4, 1);
+  CHECK(world && structure && input);
+  const auto policy = AdaptiveTdmaPolicy::Create(For(18), For(1));
+  CHECK(policy);
+  const auto original = AdaptiveTdmaMacPlanner{*policy}.Build(*world, *structure, *input);
+  const auto registered = package.build(*world, *structure, *input, For(18), parameters);
+  CHECK(original && registered);
+  CHECK(std::equal(registered->begin(), registered->end(), original->mac_plan().tx_opportunities().begin(), original->mac_plan().tx_opportunities().end()));
+  const auto again = package.build(*world, *structure, *input, For(18), parameters);
+  CHECK(again && *again == *registered);
+  const auto asc = example_mac::Build(*world, *structure, *input, For(18), {{"gap_ns", "1"}, {"order", "升序"}});
+  const auto desc = example_mac::Build(*world, *structure, *input, For(18), {{"gap_ns", "1"}, {"order", "降序"}});
+  CHECK(asc && desc && asc->front().sender_node_id == NodeId{0} && desc->front().sender_node_id == NodeId{1});
+  return true;
+}
+
 int main() {
-  return DemandAllocationAndFairness() && ValidatorsAndOverflow() && AllDestinationRouting()
+  return RegisteredPackageParity() && DemandAllocationAndFairness() && ValidatorsAndOverflow() && AllDestinationRouting()
       ? EXIT_SUCCESS : EXIT_FAILURE;
 }

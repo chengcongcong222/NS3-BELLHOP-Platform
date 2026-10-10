@@ -196,6 +196,16 @@ auto main(int argc, char** argv) -> int {
   using namespace application;
   using namespace environment::internal;
 
+  if(argc == 4 && std::string{argv[1]} == "--environment") {
+    auto repository = EnvironmentAssetRepository::Open(std::filesystem::path{argv[2]});
+    auto id = EnvironmentAssetId::Create(argv[3]);
+    if(!repository || !id) return Fail("environment repository configuration is invalid");
+    auto record = repository->Find(*id);
+    if(!record) return Fail("selected environment package is unavailable or invalid");
+    std::cout << EnvironmentResource(*record).dump() << '\n';
+    return 0;
+  }
+
   if(argc != 3) {
     return Fail("usage: resource_catalog_adapter REPOSITORY_ROOT ASSET_ID");
   }

@@ -41,7 +41,7 @@ class RunRoutingSummary(ResourceModel):
 
 
 class RunMacSummary(ResourceModel):
-    mode: Literal["Tdma", "AdaptiveTdma"]
+    mode: Literal["Tdma", "AdaptiveTdma", "RegisteredMac"]
     slot_duration_ns: PositiveUIntDecimal | None = None
     guard_interval_ns: UIntDecimal | None = None
 
@@ -49,7 +49,7 @@ class RunMacSummary(ResourceModel):
     def validate_mode_parameters(self):
         if self.mode == "Tdma" and (self.slot_duration_ns is None or self.guard_interval_ns is None):
             raise ValueError("configured TDMA requires its captured timing")
-        if self.mode == "AdaptiveTdma" and (self.slot_duration_ns is not None or self.guard_interval_ns is not None):
+        if self.mode != "Tdma" and (self.slot_duration_ns is not None or self.guard_interval_ns is not None):
             raise ValueError("adaptive TDMA has no configured slot or guard")
         return self
 
@@ -84,6 +84,7 @@ class RunExperimentResource(ExperimentResource):
     execution_mode: Literal["PlanningV1"] | None = None
     planning_cycle_duration_ns: PositiveUIntDecimal | None = None
     adaptive_tdma: RunAdaptiveTdmaSummary | None = None
+    mac_algorithm: dict | None = None
     flows: tuple[RunCommunicationFlow, ...] = ()
     fusion_receiver_node_id: UIntDecimal | None = None
 
@@ -238,6 +239,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
             **({
                 "execution_mode": definition["execution_mode"],
                 "planning_cycle_duration_ns": str(config["planning_cycle_duration_ns"]),
+                "mac_algorithm": config.get("mac_algorithm"),
                 "adaptive_tdma": ({"safety_margin_ns": str(config["adaptive_tdma"]["safety_margin_ns"])}
                                   if config["adaptive_tdma"] is not None else None),
                 "flows": tuple({**flow, "source_node_id": str(flow["source_node_id"]),

@@ -19,7 +19,8 @@ export function planningConfigurationIssues(value: ExperimentDraft, nodes: Scena
   if (value.executionMode !== "PlanningV1") return [];
   const issues: string[] = [];
   if (!["Direct", "ShortestPath"].includes(value.routingMode)) issues.push("规划实验仅支持通用直达或最短路径路由，请重新选择。");
-  if (!["Tdma", "AdaptiveTdma"].includes(value.macMode)) issues.push("规划实验的 MAC 尚未接入运行。");
+  if (!["Tdma", "AdaptiveTdma", "RegisteredMac"].includes(value.macMode)) issues.push("规划实验的 MAC 尚未接入运行。");
+  if (value.macMode === "RegisteredMac" && !value.macAlgorithm) issues.push("请选择已安装算法。");
   if (!/^[1-9]\d*$/.test(value.planningCycleDurationNs ?? "") || BigInt(value.planningCycleDurationNs!) > 9223372036854775807n) issues.push("业务周期必须是有效的正整数纳秒时长。");
   if (value.macMode === "AdaptiveTdma" && (!/^(0|[1-9]\d*)$/.test(value.adaptiveSafetyMarginNs ?? "") || BigInt(value.adaptiveSafetyMarginNs!) > 9223372036854775807n)) issues.push("自适应 TDMA 安全余量必须是有效的非负整数纳秒时长。");
   const nodeId = (id: string) => /^(0|[1-9]\d*)$/.test(id) && BigInt(id) <= 18446744073709551615n;

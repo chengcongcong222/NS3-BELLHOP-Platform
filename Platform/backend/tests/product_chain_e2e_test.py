@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import httpx
@@ -29,10 +30,17 @@ async def _terminal(client: httpx.AsyncClient, run_id: str) -> dict:
     raise AssertionError("authored run did not terminate")
 
 
-def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Path) -> None:
+@pytest.mark.parametrize("use_live_adapter", [False, True])
+def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Path, use_live_adapter: bool) -> None:
+    if use_live_adapter and ("PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH" not in os.environ or
+                             "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH" not in os.environ):
+        pytest.skip("live catalog gate requires C++ authority adapters")
     async def run() -> None:
         repository = tmp_path / "environment-repository"
         workspace = tmp_path / "workspace"
+        if use_live_adapter:
+            subprocess.run([os.environ["PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH"],
+                            str(repository), "backend-field-v1"], check=True)
         app = create_app(
             BackendSettings(
                 worker_executable=Path(os.environ["PLATFORM_SIM_WORKER_PATH"]),
@@ -40,8 +48,11 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
                 authoring_workspace_root=workspace,
                 authoring_reference_asset_root=Path(os.environ["PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT"]),
                 environment_asset_publisher_executable=Path(os.environ["PLATFORM_ENVIRONMENT_ASSET_PUBLISHER_PATH"]),
+                resource_catalog_adapter=(Path(os.environ["PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH"])
+                                          if use_live_adapter else None),
+                acceptance_environment_asset_id="backend-field-v1",
             ),
-            resource_catalog=resource_catalog(),
+            resource_catalog=None if use_live_adapter else resource_catalog(),
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -60,6 +71,9 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
             published = await client.post(f"/authoring/environment-builds/{build.json()['build_id']}/publish")
             assert published.status_code == 200
             environment_id = published.json()["environment_asset_id"]
+            if use_live_adapter:
+                assert environment_id in {row["environment_asset_id"] for row in
+                    (await client.get("/environments")).json()}
 
             rows = ["track_id,time_s,x_m,y_m,z_m"]
             node_rows = [(10, 1000, 0, -60), (20, -950, 250, -65),
@@ -175,21 +189,33 @@ def test_authored_channel1_channel2_and_missing_reference_fail_fast(tmp_path: Pa
             failed = await client.post(f"/authoring/experiments/{experiment.json()['draft_id']}/runs")
             assert failed.status_code == 404
             assert failed.json()["error"]["code"] == "TrajectoryNotFound"
+            if use_live_adapter:
+                # Warm listing must not weaken the new-run validation gate.
+                field = repository / environment_id / "field.bin"
+                field.write_bytes(field.read_bytes()[:-1])
+                rejected = await client.post(f"/authoring/experiments/{experiment.json()['draft_id']}/runs")
+                assert rejected.status_code == 503
+                assert rejected.json()["error"]["code"] == "EnvironmentUnavailable"
 
     asyncio.run(run())
 
 
 def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Path) -> None:
     """Exercise the real worker for both PHYs, including a two-node network."""
+    if "PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH" not in os.environ or "PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH" not in os.environ:
+        pytest.skip("planning package replay gate requires C++ resource adapters")
     async def run() -> None:
         workspace = tmp_path / "workspace"
+        subprocess.run([os.environ["PLATFORM_WORKER_TEST_ASSET_BUILDER_PATH"], str(tmp_path / "repository"), "backend-field-v1"], check=True)
         app = create_app(BackendSettings(
             worker_executable=Path(os.environ["PLATFORM_SIM_WORKER_PATH"]),
             environment_repository_root=tmp_path / "repository",
             authoring_workspace_root=workspace,
             authoring_reference_asset_root=Path(os.environ["PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT"]),
             environment_asset_publisher_executable=Path(os.environ["PLATFORM_ENVIRONMENT_ASSET_PUBLISHER_PATH"]),
-        ), resource_catalog=resource_catalog())
+            resource_catalog_adapter=Path(os.environ["PLATFORM_RESOURCE_CATALOG_ADAPTER_PATH"]),
+            acceptance_environment_asset_id="backend-field-v1",
+        ))
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
             ssp, terrain = _reference_data(Path(os.environ["PLATFORM_REFERENCE_ENVIRONMENT_ASSET_ROOT"]))
             environment = await client.post("/authoring/drafts", json={
@@ -210,7 +236,7 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
             assert imported.status_code == 201, imported.text
 
             async def execute(physical_layer: str, node_count: int, workload: str,
-                              mac_mode: str = "AdaptiveTdma"):
+                              mac_mode: str = "AdaptiveTdma", algorithm_id: str = "platform.adaptive-tdma"):
                 chosen = node_rows[:node_count]
                 scenario = await client.post("/authoring/drafts", json={
                     "kind": "scenario", "name": f"Planning {node_count} nodes", "payload": {
@@ -244,6 +270,13 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                 }
                 if mac_mode == "AdaptiveTdma":
                     payload["adaptive_tdma"] = {"safety_margin_ns": "0"}
+                elif mac_mode == "RegisteredMac":
+                    installed = (await client.get("/algorithms")).json()
+                    algorithm = next(a for a in installed["algorithms"] if a["id"] == algorithm_id)
+                    payload["mac_algorithm"] = {key: algorithm[key] for key in ("id", "version", "package_sha256", "interface")}
+                    payload["mac_algorithm"]["parameters"] = {p["id"]: p["default"] for p in algorithm["parameters"]}
+                    if algorithm_id == "example.ordered-mac":
+                        payload["mac_algorithm"]["parameters"]["order"] = "降序"
                 else:
                     payload.update(slot_duration_ns="16000000000", guard_interval_ns="2000000000")
                 experiment = await client.post("/authoring/drafts", json={
@@ -304,13 +337,31 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                                      and trace["payload"]["disposition"] == "LocalDelivery"]
                         assert len(delivered) < 5
                     assert {node["node_id"] for node in result["nodes"] if node["is_fusion_center"]} == {"99"}
-                if mac_mode == "AdaptiveTdma":
+                if mac_mode in {"AdaptiveTdma", "RegisteredMac"}:
                     assert context["experiment"]["mac"]["slot_duration_ns"] is None
                     assert context["actions"]["timing"] is None
+                if mac_mode == "RegisteredMac":
+                    if algorithm_id == "example.ordered-mac":
+                        assert transmissions[0]["sender_node_id"] == "1"
+                    assert terminal["provenance"]["mac_algorithm"] == context["experiment"]["mac_algorithm"]
+                    assert result["provenance"]["mac_algorithm"] == context["experiment"]["mac_algorithm"]
+                    assert context["experiment"]["mac_algorithm"] == {**payload["mac_algorithm"], "worker_sha256": installed["worker_sha256"]}
+                    reopened = (await client.get(f"/authoring/drafts/experiment/{experiment.json()['draft_id']}")).json()
+                    assert reopened["payload"]["mac_algorithm"] == payload["mac_algorithm"]
+                    repeated = await client.post(f"/runs/{run_id}/rerun")
+                    assert repeated.status_code == 201, repeated.text
+                    assert (await _terminal(client, repeated.json()["run_id"]))["lifecycle"] == "Completed"
+                    invalid = json.loads(json.dumps(payload))
+                    invalid["mac_algorithm"]["version"] = "99.0.0"
+                    rejected = await client.post("/authoring/drafts", json={"kind": "experiment", "name": "Unavailable", "payload": invalid})
+                    assert rejected.status_code == 409, rejected.text
+                    invalid["mac_algorithm"] = {**payload["mac_algorithm"], "parameters": {"safety_margin_ns": "-1"}}
+                    rejected = await client.post("/authoring/drafts", json={"kind": "experiment", "name": "Invalid", "payload": invalid})
+                    assert rejected.status_code == 422, rejected.text
                 if physical_layer == "Channel2Waveform":
                     assert result["visualization"]["waveform"]
                 measured = result["visualization"]["waveform"]
-                print(f"PlanningV1 {physical_layer} {node_count}nodes {workload} {mac_mode}: "
+                print(f"PlanningV1 {physical_layer} {node_count}nodes {workload} {mac_mode} {algorithm_id if mac_mode == 'RegisteredMac' else ''}: "
                       f"Tx={len(transmissions)}, LocalDelivery={result['projection']['local_delivery_count']}, "
                       f"CRC={sum(item['crc_ok'] for item in measured)}/{len(measured)}, Fusion={len(result['fusion_results'])}")
 
@@ -318,5 +369,9 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                 await execute(physical_layer, 2, "CommunicationOnly")
                 await execute(physical_layer, 3, "CommunicationOnly")
                 await execute(physical_layer, 4, "BearingFusion")
+                await execute(physical_layer, 3, "CommunicationOnly", "RegisteredMac")
+                await execute(physical_layer, 4, "BearingFusion", "RegisteredMac")
+                if os.environ.get("PLATFORM_EXPECT_EXTERNAL_MAC") == "1":
+                    await execute(physical_layer, 3, "CommunicationOnly", "RegisteredMac", "example.ordered-mac")
             await execute("Channel1Abstract", 2, "CommunicationOnly", "Tdma")
     asyncio.run(run())

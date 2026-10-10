@@ -68,7 +68,7 @@ target_include_directories(
 
 target_link_libraries(
   platform_application
-  INTERFACE Platform::contracts
+  INTERFACE Platform::contracts Platform::planning
 )
 
 if(BUILD_TESTING)

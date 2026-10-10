@@ -118,6 +118,7 @@ export interface ExperimentDto {
   execution_mode?: "PlanningV1";
   planning_cycle_duration_ns?: DecimalString;
   adaptive_tdma?: { safety_margin_ns: DecimalString } | null;
+  mac_algorithm?: import("../domain/algorithms").AlgorithmSelection & { worker_sha256?: string } | null;
   flows?: CommunicationFlowDto[];
   fusion_receiver_node_id?: DecimalString | null;
   experiment_id: string;

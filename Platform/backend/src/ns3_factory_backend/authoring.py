@@ -32,6 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .environment_inputs import validate_environment_samples, verify_arrival_axes, write_bellhop_inputs
 from .ocean_download import Progress, download_dataset
+from .acoustic_plots import file_sha256
 from .ocean_cache import (find_woa_profile, hydrology_acquisition_lock,
                           store_hydrology_profile, woa_selection)
 
@@ -189,7 +190,7 @@ def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
             {"DirectToFusionCenter", "ShortestPath"}
         ):
             issues.append("路由方式尚未接入正式 Runtime")
-        if payload.get("mac_mode", "Tdma") not in ({"Tdma", "AdaptiveTdma"} if planning else {"Tdma"}):
+        if payload.get("mac_mode", "Tdma") not in ({"Tdma", "AdaptiveTdma", "RegisteredMac"} if planning else {"Tdma"}):
             issues.append("MAC 方式尚未接入正式 Runtime")
         if planning:
             from .planning_authoring import planning_issues
@@ -607,7 +608,7 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
                     raise RuntimeError("Bellhop 执行完成但未生成 arrivals 文件")
                 arrivals = executed_arrivals
                 execution = "Executed"
-            digest = hashlib.sha256(arrivals.read_bytes()).hexdigest()
+            digest = file_sha256(arrivals)
             validation = json.loads((reference_root / "validation_report.json").read_text(encoding="utf-8"))
             asset_id = f"{_safe_id(draft.name)}-{draft.draft_id}-r{draft.revision}"
         else:
@@ -630,10 +631,10 @@ def new_build(store: AuthoringStore, request: BuildRequest) -> EnvironmentBuildR
             arrivals = job_root / "environment.arr"
             if not arrivals.is_file(): raise RuntimeError("Bellhop 未生成 arrivals 文件")
             verify_arrival_axes(arrivals, input_summary)
-            digest = hashlib.sha256(arrivals.read_bytes()).hexdigest()
+            digest = file_sha256(arrivals)
             validation = {"state": "InputAndAxesVerified", "full_asset_validation": "PerformedByPublisher"}
             asset_id = f"{_safe_id(draft.name)}-{draft.draft_id}-r{draft.revision}"
-            input_summary["executable_sha256"] = hashlib.sha256(executable_path.read_bytes()).hexdigest()
+            input_summary["executable_sha256"] = file_sha256(executable_path)
             execution = "Executed"
         from .acoustic_plots import produce_ray_plot
         ray_artifact = produce_ray_plot(draft.payload, job_root, executable_path) if not use_reference else {"available": False, "reason": "参考案例未保存声线文件；另存并重新计算可生成"}

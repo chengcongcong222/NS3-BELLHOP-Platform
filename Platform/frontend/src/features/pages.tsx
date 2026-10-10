@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { apiClient, ApiFailure } from "../api/client";
 import { queries } from "../api/queries";
@@ -77,19 +77,20 @@ export function OverviewPage() {
 
 export function EnvironmentCatalogPage() {
   const query = useQuery(queries.environments());
-  const inputs = useQueries({ queries: (query.data ?? []).map(item => ({ queryKey: ["environment-inputs", item.environment_asset_id], queryFn: () => apiClient.environmentInputs(item.environment_asset_id) })) });
+  const summaries = useQuery(queries.environmentSummaries());
   const state = <QueryState query={query} />;
   if (query.isPending || query.error) return state;
   return (
     <>
       <PageHeader title="环境建设" detail="查看声速剖面、水声信道和计算参数；修改后另存新版本，既有实验不受影响。" />
       <div className="catalog-actions"><Link className="button-link" to="/workspace/environment">建设新环境</Link><span>{query.data.length} 个已发布环境 · 直接进入建设器查看与编辑</span></div>
+      {summaries.error && <ErrorState error={summaries.error} />}
       {!query.data.length ? <EmptyState>暂无环境资产</EmptyState> : (
-        <div className="environment-library">{query.data.map((item, index) => {
-          const source = inputs[index].data; const p = source?.payload as any; const acquisition = p?.acquisition;
+        <div className="environment-library">{query.data.map(item => {
+          const source = summaries.data?.[item.environment_asset_id] as { available: boolean; name: string; latitude: number | null; longitude: number | null; month: number | null; water_depth_m: number | null } | undefined;
           return <article className="environment-library-card" key={item.environment_asset_id}>
             <header><span className="environment-symbol" aria-hidden="true">≈</span><div><h2><Link to={`/environments/${item.environment_asset_id}`}>{source?.available && source.name ? String(source.name) : item.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : "已发布声场（名称未保留）"}</Link></h2><small>已发布 · 修改后另存</small></div></header>
-            <dl><Field label="海域坐标">{acquisition ? `${acquisition.latitudeDeg}°N / ${acquisition.longitudeDeg}°E` : "原始坐标未保留"}</Field><Field label="水深">{p?.bathymetry?.length ? `最深 ${Math.max(...p.bathymetry.map((x: any) => Number(x.depth_meters)))} m` : "地形输入未保留"}</Field><Field label="收发深度">{item.axes.receiver_depth.minimum}–{item.axes.receiver_depth.maximum} m</Field><Field label="声场查询距离">0–{item.axes.horizontal_range.maximum / 1000} km</Field><Field label="频率">{formatFrequency(item.axes.frequency.minimum)}</Field><Field label="数据月份">{acquisition?.month ? `${acquisition.month}月` : "未保留"}</Field></dl>
+            <dl><Field label="海域坐标">{source?.latitude != null && source?.longitude != null ? `${source.latitude}°N / ${source.longitude}°E` : "原始坐标未保留"}</Field><Field label="水深">{source?.water_depth_m != null ? `${source.water_depth_m} m` : "水深输入未保留"}</Field><Field label="收发深度">{item.axes.receiver_depth.minimum}–{item.axes.receiver_depth.maximum} m</Field><Field label="声场查询距离">0–{item.axes.horizontal_range.maximum / 1000} km</Field><Field label="频率">{formatFrequency(item.axes.frequency.minimum)}</Field><Field label="数据月份">{source?.month ? `${source.month}月` : "未保留"}</Field></dl>
             <footer><Link to={`/environments/${item.environment_asset_id}`}>打开环境 →</Link><details><summary>版本标识</summary><code>{item.environment_asset_id}</code><p>校验值 {item.checksum.value}</p></details></footer>
           </article>;
         })}</div>

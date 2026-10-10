@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ from ns3_factory_backend.gateway import (
     WorkerGateway,
     WorkerProcessFailure,
     WorkerProtocolFailure,
+    verify_algorithm_process,
 )
 from ns3_factory_backend.wire import (
     Environment,
@@ -20,6 +22,23 @@ from ns3_factory_backend.wire import (
 )
 
 from helpers import completed, event, failed, started
+
+
+def test_registered_algorithm_checks_actual_process_and_frozen_definition(tmp_path: Path):
+    definition = tmp_path / "definition.json"
+    with Path(f"/proc/{os.getpid()}/exe").open("rb") as executable:
+        digest = hashlib.file_digest(executable, "sha256").hexdigest()
+    def request(expected):
+        content = json.dumps({"experiment": {"mac_mode": "RegisteredMac", "mac_algorithm": {"worker_sha256": expected}}}).encode()
+        definition.write_bytes(content)
+        return _command("actual-worker-check").model_copy(update={"authored_definition_path": str(definition), "authored_definition_sha256": hashlib.sha256(content).hexdigest()})
+    verify_algorithm_process(request(digest), os.getpid())
+    with pytest.raises(WorkerProcessFailure, match="Actual Worker"):
+        verify_algorithm_process(request("a" * 64), os.getpid())
+    command = request(digest)
+    definition.write_bytes(b"{}")
+    with pytest.raises(WorkerProcessFailure, match="checksum mismatch"):
+        verify_algorithm_process(command, os.getpid())
 
 
 def _command(run_id: str) -> StartRunCommand:

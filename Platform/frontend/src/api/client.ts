@@ -16,6 +16,7 @@ import type {
   TrajectoryAssetDto,
 } from "./types";
 import { acquireWithProgress, type AcquisitionProgress } from "./acquisition";
+import { isAlgorithmCatalog } from "../domain/algorithms";
 
 export type ApiFailureKind =
   | "NotFound"
@@ -198,6 +199,7 @@ export class ApiClient {
       isObject(value.edit) && typeof value.edit.available === "boolean" && isObject(value.rerun) && typeof value.rerun.available === "boolean");
   repeatRun = (id: string) => this.request(`/runs/${encodeURIComponent(id)}/rerun`, run, { method: "POST" });
   authoringCapabilities = () => this.request("/authoring/capabilities", anyObject);
+  algorithmCatalog = () => this.request("/algorithms", isAlgorithmCatalog);
   getRunDefinitionContext = (id: string) => this.request(
     `/runs/${encodeURIComponent(id)}/definition-context`,
     (value: unknown): value is RunDefinitionContextDto => isObject(value) &&
@@ -251,12 +253,15 @@ export class ApiClient {
   hydrologyCache = () => this.request("/authoring/environment/hydrology-cache", isArrayOf(anyObject));
   hydrologyProfile = (id: string) => this.request(`/authoring/environment/hydrology-cache/${encodeURIComponent(id)}`, anyObject);
   environmentInputs = (id: string) => this.request(`/environments/${encodeURIComponent(id)}/authoring-inputs`, anyObject);
+  environmentSummaries = () => this.request("/environments/authoring-summaries", anyObject);
   acquireTerrain = (request: Record<string, unknown>) =>
     this.request("/authoring/acquisition/terrain", anyObject, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
   createEnvironmentBuild = (draftId: string, revision?: number) =>
     this.request("/authoring/environment-builds", environmentBuild, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draft_id: draftId, expected_revision: revision }) });
   publishEnvironmentBuild = (buildId: string) =>
     this.request(`/authoring/environment-builds/${encodeURIComponent(buildId)}/publish`, anyObject, { method: "POST" });
+  getEnvironmentBuild = (buildId: string) =>
+    this.request(`/authoring/environment-builds/${encodeURIComponent(buildId)}`, environmentBuild);
   deleteDraft = async (draft: AuthoringDraftDto) => {
     const response = await fetch(this.url(`/authoring/drafts/${draft.kind}/${encodeURIComponent(draft.draft_id)}`), { method: "DELETE" });
     if (!response.ok) throw new ApiFailure("ApiFailure", "DeleteFailed", "草稿删除失败");

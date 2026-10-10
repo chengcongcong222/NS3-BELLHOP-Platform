@@ -15,6 +15,7 @@
 #include <nlohmann/json.hpp>
 
 #include <ns3_factory/trajectory/asset.hpp>
+#include <ns3_factory/planning/registered_algorithms.hpp>
 
 #include "internal/simulation_worker.hpp"
 
@@ -81,7 +82,7 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document)
         "center_frequency_hz", "occupied_bandwidth_hz", "source_level_db",
         "network_update_interval_cycles", "minimum_bearing_points", "maximum_fusion_period_ns",
         "target_x_m", "target_y_m", "maximum_ber", "planning_cycle_duration_ns", "adaptive_tdma",
-        "flows", "fusion_receiver_node_id"}, "experiment keys");
+        "flows", "fusion_receiver_node_id", "mac_algorithm"}, "experiment keys");
     require(experiment.at("routing_mode") == "Direct" || experiment.at("routing_mode") == "ShortestPath", "routing_mode");
     require(experiment.at("workload") == "CommunicationOnly" || experiment.at("workload") == "BearingFusion", "workload");
     integer(experiment.at("planning_cycle_duration_ns"), i64, "planning_cycle_duration_ns");
@@ -100,11 +101,26 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document)
         experiment.at("waveform_noise") == "Awgn", "waveform_noise");
     if(experiment.contains("waveform_noise_psd_db_re_1upa2_per_hz"))
       real(experiment.at("waveform_noise_psd_db_re_1upa2_per_hz"), "waveform_noise_psd_db_re_1upa2_per_hz");
-    if(experiment.at("mac_mode") == "AdaptiveTdma") {
+    if(experiment.at("mac_mode") == "RegisteredMac") {
+      require(!experiment.contains("slot_duration_ns") && !experiment.contains("guard_interval_ns") &&
+          (!experiment.contains("adaptive_tdma") || experiment.at("adaptive_tdma").is_null()), "registered MAC legacy parameters");
+      const auto& a = experiment.at("mac_algorithm");
+      keys(a, {"id", "version", "package_sha256", "interface", "parameters", "worker_sha256"}, "mac_algorithm keys");
+      require(a.at("interface") == "planning-mac-v1", "algorithm interface");
+      require(a.at("worker_sha256").is_string() && a.at("worker_sha256").get<std::string>().size() == 64, "worker checksum");
+      planning::MacAlgorithmConfiguration config{a.at("id").get<std::string>(), a.at("version").get<std::string>(),
+          a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>()};
+      const auto* algorithm = planning::FindAlgorithm(config);
+      require(algorithm != nullptr, "algorithm package unavailable");
+      const auto valid = planning::ValidateParameters(*algorithm, config.parameters);
+      if(!valid) return std::unexpected(valid.error());
+    } else if(experiment.at("mac_mode") == "AdaptiveTdma") {
+      require(!experiment.contains("mac_algorithm"), "unexpected registered algorithm");
       require(!experiment.contains("slot_duration_ns") && !experiment.contains("guard_interval_ns"), "adaptive slot parameters");
       keys(experiment.at("adaptive_tdma"), {"safety_margin_ns"}, "adaptive_tdma keys");
       integer(experiment.at("adaptive_tdma").at("safety_margin_ns"), i64, "safety_margin_ns");
     } else {
+      require(!experiment.contains("mac_algorithm"), "unexpected registered algorithm");
       require(experiment.at("mac_mode") == "Tdma", "mac_mode");
       require(!experiment.contains("adaptive_tdma") || experiment.at("adaptive_tdma").is_null(), "configured adaptive parameters");
       integer(experiment.at("slot_duration_ns"), i64, "slot_duration_ns");
@@ -202,7 +218,7 @@ inline auto LoadAuthoredRunDefinition(
     const auto workload = e.at("workload").get<std::string>();
     if((routing_mode != "DirectToFusionCenter" &&
         routing_mode != "ShortestPath" && !(planning_v2 && routing_mode == "Direct")) ||
-       (mac_mode != "Tdma" && !(planning_v2 && mac_mode == "AdaptiveTdma")) ||
+       (mac_mode != "Tdma" && !(planning_v2 && (mac_mode == "AdaptiveTdma" || mac_mode == "RegisteredMac"))) ||
        (workload != "BearingFusion" && workload != "CommunicationOnly")) {
       return std::unexpected(Error{ErrorCode::kInvalidArgument,
           "Authored Experiment selects an unsupported routing, MAC, or workload"});
@@ -219,6 +235,12 @@ inline auto LoadAuthoredRunDefinition(
         planning->safety_margin = SimDuration::FromNanoseconds(
             e.at("adaptive_tdma").at("safety_margin_ns").get<std::int64_t>());
       }
+      if(mac_mode == "RegisteredMac") {
+        const auto& a = e.at("mac_algorithm");
+        planning->mac_algorithm.emplace(planning::MacAlgorithmConfiguration{
+            a.at("id").get<std::string>(), a.at("version").get<std::string>(),
+            a.at("package_sha256").get<std::string>(), a.at("parameters").get<planning::Parameters>()});
+      }
       if(e.contains("fusion_receiver_node_id") && !e.at("fusion_receiver_node_id").is_null())
         planning->fusion_receiver_node_id = NodeId{e.at("fusion_receiver_node_id").get<std::uint64_t>()};
       for(const auto& flow : e.value("flows", json::array())) planning->flows.push_back({
@@ -234,9 +256,10 @@ inline auto LoadAuthoredRunDefinition(
              ? application::RoutingMode::kShortestPath
              : routing_mode == "Direct" ? application::RoutingMode::kDirect
                                          : application::RoutingMode::kDirectToFusionCenter},
-        {mac_mode == "AdaptiveTdma" ? application::MacMode::kAdaptiveTdma : application::MacMode::kTdma,
-         SimDuration::FromNanoseconds(mac_mode == "AdaptiveTdma" ? 0 : e.at("slot_duration_ns").get<std::int64_t>()),
-         SimDuration::FromNanoseconds(mac_mode == "AdaptiveTdma" ? 0 : e.at("guard_interval_ns").get<std::int64_t>())},
+        {mac_mode == "RegisteredMac" ? application::MacMode::kRegistered :
+            mac_mode == "AdaptiveTdma" ? application::MacMode::kAdaptiveTdma : application::MacMode::kTdma,
+         SimDuration::FromNanoseconds(mac_mode != "Tdma" ? 0 : e.at("slot_duration_ns").get<std::int64_t>()),
+         SimDuration::FromNanoseconds(mac_mode != "Tdma" ? 0 : e.at("guard_interval_ns").get<std::int64_t>())},
         {e.at("bit_rate_bps").get<std::uint64_t>(),
          e.at("center_frequency_hz").get<double>(),
          e.at("occupied_bandwidth_hz").get<double>(),

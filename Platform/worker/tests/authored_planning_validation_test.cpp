@@ -138,6 +138,38 @@ auto StrictV2AndCompatibleV1() -> bool {
   return true;
 }
 
+auto RegisteredAlgorithmRejectsBypasses() -> bool {
+  TemporaryDefinition fixture;
+  auto valid = BaseDocument();
+  const auto& packages = planning::RegisteredAlgorithms();
+  const auto found = std::find_if(packages.begin(), packages.end(), [](const auto& a) { return a.id == "platform.adaptive-tdma"; });
+  CHECK(found != packages.end());
+  auto& e = valid["experiment"];
+  e["mac_mode"] = "RegisteredMac";
+  e.erase("adaptive_tdma");
+  e["mac_algorithm"] = {{"id", found->id}, {"version", found->version},
+      {"package_sha256", found->package_sha256}, {"interface", "planning-mac-v1"},
+      {"worker_sha256", std::string(64, 'a')}, {"parameters", {{"safety_margin_ns", "0"}}}};
+  const auto loaded = fixture.Load(valid);
+  CHECK(loaded && loaded->experiment.mac().mode == MacMode::kRegistered);
+  const std::vector<std::function<void(Json&)>> mutations{
+      [](Json& j) { j["mac_algorithm"]["version"] = "99.0.0"; },
+      [](Json& j) { j["mac_algorithm"]["package_sha256"] = std::string(64, 'f'); },
+      [](Json& j) { j["mac_algorithm"]["parameters"]["unknown"] = "1"; },
+      [](Json& j) { j["mac_algorithm"]["parameters"]["safety_margin_ns"] = 0; },
+      [](Json& j) { j["mac_algorithm"]["parameters"]["safety_margin_ns"] = "-1"; },
+      [](Json& j) { j["slot_duration_ns"] = 123; },
+      [](Json& j) { j["mac_algorithm"]["script"] = "ignored?"; },
+      [](Json& j) { j["mac_mode"] = "AdaptiveTdma"; j["adaptive_tdma"] = {{"safety_margin_ns", 0}}; },
+  };
+  for(const auto& mutate : mutations) {
+    auto rejected = valid;
+    mutate(rejected["experiment"]);
+    CHECK(!fixture.Load(rejected));
+  }
+  return true;
+}
+
 auto ConfiguredGuardUsesActualAirtime() -> bool {
   const auto duration = [](std::int64_t ns) { return SimDuration::FromNanoseconds(ns); };
   const auto experiment = ExperimentDefinition::Create(*ExperimentId::Create("guard-experiment"), 1,
@@ -170,5 +202,5 @@ auto ConfiguredGuardUsesActualAirtime() -> bool {
 }  // namespace
 
 int main() {
-  return StrictV2AndCompatibleV1() && ConfiguredGuardUsesActualAirtime() ? EXIT_SUCCESS : EXIT_FAILURE;
+  return RegisteredAlgorithmRejectsBypasses() && StrictV2AndCompatibleV1() && ConfiguredGuardUsesActualAirtime() ? EXIT_SUCCESS : EXIT_FAILURE;
 }

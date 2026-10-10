@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -33,6 +35,28 @@ class WorkerProtocolFailure(GatewayFailure):
 
 class WorkerProcessFailure(GatewayFailure):
     code = "WorkerProcessFailure"
+
+
+def verify_algorithm_process(command: StartRunCommand, pid: int) -> None:
+    """Check the actual child executable before supplying any simulation input.
+
+    Registered packages currently require Linux/WSL procfs. A deployment may
+    replace the executable path after catalog validation; /proc/PID/exe still
+    identifies the child that was really launched, avoiding that race.
+    """
+    if command.authored_definition_path is None:
+        return
+    content = Path(command.authored_definition_path).read_bytes()
+    if hashlib.sha256(content).hexdigest() != command.authored_definition_sha256:
+        raise WorkerProcessFailure("Frozen run definition checksum mismatch")
+    config = json.loads(content).get("experiment", {})
+    if config.get("mac_mode") != "RegisteredMac":
+        return
+    expected = config.get("mac_algorithm", {}).get("worker_sha256")
+    with Path(f"/proc/{pid}/exe").open("rb") as executable:
+        actual = hashlib.file_digest(executable, "sha256").hexdigest()
+    if actual != expected:
+        raise WorkerProcessFailure("Actual Worker does not match the frozen algorithm executable")
 
 
 def completed_matches_command(
@@ -126,6 +150,8 @@ class WorkerGateway:
             assert process.stdout is not None
             assert process.stderr is not None
             stderr_task = asyncio.create_task(self._capture_stderr(process.stderr))
+
+            await asyncio.to_thread(verify_algorithm_process, command, process.pid)
 
             frame = encode_start_run_command(command) + b"\n"
             try:

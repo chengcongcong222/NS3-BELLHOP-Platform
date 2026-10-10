@@ -13,6 +13,7 @@
 #include <ns3_factory/application/ids.hpp>
 #include <ns3_factory/contracts/state.hpp>
 #include <ns3_factory/contracts/time.hpp>
+#include <ns3_factory/planning/mac_algorithm.hpp>
 
 namespace ns3_factory::application {
 
@@ -120,6 +121,7 @@ enum class RoutingMode : std::uint8_t {
 enum class MacMode : std::uint8_t {
   kTdma = 1,
   kAdaptiveTdma = 2,
+  kRegistered = 3,
 };
 
 enum class RxQualityMode : std::uint8_t {
@@ -191,6 +193,7 @@ struct PlanningExecutionConfiguration final {
   contracts::SimDuration safety_margin;
   std::vector<TrafficFlow> flows;
   std::optional<contracts::NodeId> fusion_receiver_node_id;
+  std::optional<planning::MacAlgorithmConfiguration> mac_algorithm{};
   auto operator==(const PlanningExecutionConfiguration&) const -> bool = default;
 };
 
@@ -390,7 +393,7 @@ inline auto ExperimentDefinition::Create(
       routing.mode != RoutingMode::kShortestPath &&
       !(planning && routing.mode == RoutingMode::kDirect)) ||
      (mac.mode != MacMode::kTdma &&
-      !(planning && mac.mode == MacMode::kAdaptiveTdma)) ||
+      !(planning && (mac.mode == MacMode::kAdaptiveTdma || mac.mode == MacMode::kRegistered))) ||
      (mac.mode == MacMode::kTdma && mac.slot_duration <= contracts::SimDuration::Zero()) ||
      mac.guard_interval < contracts::SimDuration::Zero() ||
      phy.bit_rate_bits_per_second == 0U ||
@@ -419,11 +422,17 @@ inline auto ExperimentDefinition::Create(
                          "Experiment definition is invalid"});
   }
   if(planning) {
+    if((mac.mode == MacMode::kRegistered) != planning->mac_algorithm.has_value() ||
+       (planning->mac_algorithm && (planning->mac_algorithm->id.empty() ||
+        planning->mac_algorithm->version.empty() || planning->mac_algorithm->package_sha256.size() != 64))) {
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kInvalidArgument,
+          "Registered MAC requires explicit algorithm identity and package checksum"});
+    }
     if(planning->cycle_duration <= contracts::SimDuration::Zero() ||
        planning->safety_margin < contracts::SimDuration::Zero() ||
        routing.mode == RoutingMode::kDirectToFusionCenter ||
        fusion.workload == ApplicationWorkload::kAcceptanceBearingFusion ||
-       (mac.mode == MacMode::kAdaptiveTdma &&
+       ((mac.mode == MacMode::kAdaptiveTdma || mac.mode == MacMode::kRegistered) &&
         (mac.slot_duration != contracts::SimDuration::Zero() ||
          mac.guard_interval != contracts::SimDuration::Zero())) ||
        (fusion.workload == ApplicationWorkload::kCommunicationOnly

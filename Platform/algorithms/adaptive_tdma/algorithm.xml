@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<algorithm id="platform.adaptive-tdma" version="1.0.0" interface="planning-mac-v1"
+           label="自适应 TDMA" entry="ns3_factory::algorithms::BuildAdaptiveTdma">
+  <description>按待发数据、发送时长和传播时延分配机会；多节点轮流发送。</description>
+  <parameter id="safety_margin_ns" label="额外安全间隔" type="duration_ns" unit="s"
+             default="0" min="0" max="60000000000" advanced="true"
+             help="自动计算物理占用后追加的间隔，通常保持 0。" />
+</algorithm>

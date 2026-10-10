@@ -2,6 +2,7 @@
 
 #include <ns3_factory/application/domain.hpp>
 #include <ns3_factory/contracts/planning_input.hpp>
+#include <ns3_factory/planning/registered_algorithms.hpp>
 #include "internal/adaptive_tdma_mac_planner.hpp"
 #include "internal/composite_protocol_cycle_planner.hpp"
 #include "internal/configured_tdma_mac_planner.hpp"
@@ -98,6 +99,39 @@ class FrameConfiguredMac final : public planning::internal::IMacPlanner {
   std::reference_wrapper<const ExperimentDefinition> definition_;
 };
 
+class RegisteredMacPlanner final : public planning::internal::IMacPlanner {
+ public:
+  explicit RegisteredMacPlanner(const ExperimentDefinition& definition) : definition_(definition) {}
+  auto Build(const contracts::WorldSnapshot&, const contracts::StructureSnapshot&) const
+      -> contracts::Result<planning::internal::MacPlanningResult> override {
+    return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+        "Registered MAC requires explicit planning input"});
+  }
+  auto Build(const contracts::WorldSnapshot& world, const contracts::StructureSnapshot& structure,
+             const contracts::PlanningInput& input) const
+      -> contracts::Result<planning::internal::MacPlanningResult> override {
+    using namespace contracts;
+    const auto valid = ValidatePlanningInput(input, world, structure);
+    if(!valid) return std::unexpected(valid.error());
+    const auto& config = *definition_.get().planning()->mac_algorithm;
+    const auto* algorithm = planning::FindAlgorithm(config);
+    if(!algorithm) return std::unexpected(Error{ErrorCode::kFailedPrecondition,
+        "Exact MAC algorithm package is not installed"});
+    const auto parameters = planning::ValidateParameters(*algorithm, config.parameters);
+    if(!parameters) return std::unexpected(parameters.error());
+    const auto duration = definition_.get().planning()->cycle_duration;
+    const auto end = CheckedAdd(world.committed_at(), duration);
+    if(!end) return std::unexpected(Error{ErrorCode::kOverflow, "Algorithm cycle end overflows"});
+    const auto timing = CycleTiming::Create(structure.cycle_id(), world.version(), world.committed_at(), *end);
+    if(!timing) return std::unexpected(timing.error());
+    auto result = algorithm->build(world, structure, input, duration, config.parameters);
+    if(!result) return std::unexpected(result.error());
+    return planning::internal::MacPlanningResult::Create(*timing, std::move(*result));
+  }
+ private:
+  std::reference_wrapper<const ExperimentDefinition> definition_;
+};
+
 class PlanningExecutionPlanner final : public planning::internal::IProtocolCyclePlanner {
  public:
   explicit PlanningExecutionPlanner(const ExperimentDefinition& definition) : definition_(definition) {}
@@ -113,7 +147,7 @@ class PlanningExecutionPlanner final : public planning::internal::IProtocolCycle
     const auto& d = definition_.get();
     if(!d.planning() ||
        (d.routing().mode != RoutingMode::kDirect && d.routing().mode != RoutingMode::kShortestPath) ||
-       (d.mac().mode != MacMode::kTdma && d.mac().mode != MacMode::kAdaptiveTdma)) {
+       (d.mac().mode != MacMode::kTdma && d.mac().mode != MacMode::kAdaptiveTdma && d.mac().mode != MacMode::kRegistered)) {
       return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
           "Planning execution requires an explicit supported routing and MAC mode"});
     }
@@ -125,6 +159,10 @@ class PlanningExecutionPlanner final : public planning::internal::IProtocolCycle
       auto policy = AdaptiveTdmaPolicy::Create(d.planning()->cycle_duration, d.planning()->safety_margin);
       if(!policy) return std::unexpected(policy.error());
       AdaptiveTdmaMacPlanner mac{*policy};
+      return CompositeProtocolCyclePlanner{routing, mac}.Build(world, structure, input);
+    }
+    if(d.mac().mode == MacMode::kRegistered) {
+      RegisteredMacPlanner mac{d};
       return CompositeProtocolCyclePlanner{routing, mac}.Build(world, structure, input);
     }
     FrameConfiguredMac mac{d};

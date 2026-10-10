@@ -5,6 +5,7 @@ import { apiClient } from "../api/client";
 import type { AuthoringDraftDto } from "../api/types";
 import { DraftEnvironmentProfile } from "../components/EnvironmentProfile";
 import { newEnvironmentDraft } from "../domain/workspace";
+import { automaticSampling, depthSamples } from "../domain/environmentSampling";
 import { installApi, renderRoute } from "./render";
 
 it("loading terrain cannot clamp or rescale the sound speed profile", () => {
@@ -38,23 +39,120 @@ it("requires an explicit environment name before saving and focuses its input", 
   expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
 });
 
-it("saves explicitly applied uniform depths through the real authoring adapter", async () => {
+it("combines preview and Bellhop configuration without a separate preview step", async () => {
+  installApi({ "/authoring/drafts?kind=environment": { body: [] } });
+  renderRoute("/workspace/environment");
+  const button = await screen.findByRole("button", { name: "3配置与预览" });
+  expect(document.querySelectorAll(".build-step-rail button")).toHaveLength(4);
+  expect(document.querySelector(".build-step-rail")?.textContent).not.toContain("数据预览");
+  fireEvent.click(button);
+  expect(document.querySelector(".environment-builder")?.getAttribute("data-step")).toBe("4");
+  expect(screen.getByText("水文预览与计算范围")).toBeTruthy();
+  expect(screen.getByText("Bellhop 离线构建")).toBeTruthy();
+});
+
+it("saves automatic full-depth samples directly through the authoring adapter", async () => {
   installApi({ "/authoring/drafts?kind=environment": { body: [] } });
   const save = vi.spyOn(apiClient, "createDraft").mockImplementation(async (kind, name, payload) => ({
     kind, name, payload, draft_id: "uniform-depths", revision: 1, created_at: "", updated_at: "", validation_issues: [],
   }));
   renderRoute("/workspace/environment");
   fireEvent.change(await screen.findByLabelText("环境名称"), { target: { value: "均分采样海域" } });
-  fireEvent.change(screen.getByLabelText("发送深度起点（m）"), { target: { value: "10" } });
-  fireEvent.change(screen.getByLabelText("发送深度终点（m）"), { target: { value: "70" } });
   fireEvent.change(screen.getByLabelText("发送深度采样点数"), { target: { value: "4" } });
-  fireEvent.click(screen.getAllByRole("button", { name: "应用均分", hidden: true })[0]);
   await userEvent.click(screen.getByRole("button", { name: "保存草稿" }));
   await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
   const bellhop = save.mock.calls[0][2].bellhop as Record<string, unknown>;
-  expect(bellhop.source_depths_meters).toEqual([10, 30, 50, 70]);
-  expect(bellhop.receiver_depths_meters).toEqual([8, 20, 40, 60, 75]);
+  expect(bellhop.source_depths_meters).toEqual(depthSamples(automaticSampling("4"), 200).points);
+  expect(bellhop.receiver_depths_meters).toEqual(depthSamples(automaticSampling(), 200).points);
   save.mockRestore();
+});
+
+const test5Draft = (): AuthoringDraftDto => ({ kind: "environment", draft_id: "test5", revision: 1,
+  name: "测试5", created_at: "", updated_at: "", validation_issues: [], payload: {
+    maximum_depth_meters: 175, maximum_range_meters: 10000,
+    sound_speed_profile: [{ depth_meters: 0, speed_meters_per_second: 1500 }, { depth_meters: 175, speed_meters_per_second: 1490 }],
+    bathymetry: [{ range_meters: 0, depth_meters: 175 }, { range_meters: 10000, depth_meters: 175 }],
+    sources: { bottom_boundary: { kind: "ideal-flat-bottom" } },
+    bellhop: { source_depths_meters: depthSamples(automaticSampling("64"), 175).points,
+      receiver_depths_meters: depthSamples(automaticSampling("64"), 175).points, range_sample_count: 3000 },
+  } });
+
+it("reopens a completed build using its frozen inputs without saving or recalculating", async () => {
+  const snapshot = test5Draft();
+  (snapshot.payload.bellhop as any).range_sample_count = 20;
+  const fetch = installApi({
+    "/authoring/drafts?kind=environment": { body: [{ ...snapshot, name: "后来修改的草稿", revision: 2 }] },
+    "/authoring/environment-builds/previous": { body: { build_id: "previous", draft_id: "test5", state: "Completed", steps: [],
+      artifact: { source_snapshot: snapshot, published: false }, failure: null } },
+    "/authoring/environment-builds/previous/acoustic-plots?source_index=0&receiver_index=0&range_index=0&view=rays": { body: { available: false, reason: "旧声线未保存" } },
+  });
+  renderRoute("/workspace/environment?draft=test5&build=previous");
+  await screen.findByText("旧声线未保存");
+  expect((screen.getByLabelText("环境名称") as HTMLInputElement).value).toBe("测试5");
+  expect(screen.getByRole("button", { name: "发布为正式环境" }).hasAttribute("disabled")).toBe(false);
+  expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  fireEvent.change(screen.getByLabelText("环境名称"), { target: { value: "编辑后的名称" } });
+  expect(screen.getByRole("button", { name: "发布为正式环境" }).hasAttribute("disabled")).toBe(true);
+});
+
+it("blocks Test5 before sending a build request and makes a budget adjustment explicit", async () => {
+  const draft = test5Draft();
+  const fetch = installApi({ "/authoring/drafts?kind=environment": { body: [draft] } });
+  renderRoute("/workspace/environment?draft=test5");
+  await screen.findByDisplayValue("测试5");
+  const start = screen.getByRole("button", { name: "开始离线声场构建", hidden: true });
+  expect(start.hasAttribute("disabled")).toBe(true);
+  expect(screen.getByLabelText("计算规模检查").textContent).toContain("12,288,000");
+  expect(screen.getByLabelText("计算规模检查").textContent).toContain("2～1000");
+  fireEvent.click(start);
+  expect(fetch.mock.calls.some(([url, init]) => String(url).includes("environment-builds") && init?.method === "POST")).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "距离点数改为 48", hidden: true }));
+  expect(start.hasAttribute("disabled")).toBe(false);
+  expect(screen.getByLabelText("计算规模检查").textContent).toContain("196,608");
+  expect((screen.getByLabelText("发送深度采样（m，逗号分隔）") as HTMLTextAreaElement).value).toBe((draft.payload.bellhop as any).source_depths_meters.join(", "));
+});
+
+it("reopens saved hydrology regardless of JSON key order but still detects changed coordinates", async () => {
+  const draft = test5Draft();
+  (draft.payload.bellhop as any).range_sample_count = 20;
+  draft.payload.acquisition = { latitudeDeg: 18, longitudeDeg: 110, month: 4, requestedSspDepthMeters: 200 };
+  (draft.payload.sources as any).ssp = { request: { latitude_deg: 18, longitude_deg: 110, maximum_depth_meters: 200, month: 4, use_reference_cache: false } };
+  installApi({ "/authoring/drafts?kind=environment": { body: [draft] } });
+  renderRoute("/workspace/environment?draft=test5");
+  await screen.findByDisplayValue("测试5");
+  const start = screen.getByRole("button", { name: "开始离线声场构建", hidden: true });
+  expect(start.hasAttribute("disabled")).toBe(false);
+  expect(screen.queryByText(/采集参数已改变/)).toBeNull();
+  fireEvent.change(screen.getByLabelText("经度（°）"), { target: { value: "120" } });
+  expect(start.hasAttribute("disabled")).toBe(true);
+  expect(screen.getByText(/采集参数已改变/)).toBeTruthy();
+});
+
+it("shows the returned build failure above the editable form without switching to plots", async () => {
+  const draft = test5Draft();
+  (draft.payload.bellhop as any).range_sample_count = 20;
+  installApi({ "/authoring/drafts?kind=environment": { body: [draft] } });
+  const update = vi.spyOn(apiClient, "updateDraft").mockResolvedValue({ ...draft, revision: 2 });
+  const build = vi.spyOn(apiClient, "createEnvironmentBuild").mockResolvedValue({ build_id: "failed-build", draft_id: "test5", state: "Failed", steps: [], created_at: "", updated_at: "", artifact: null, failure: { code: "EnvironmentBuildFailed", message: "离线计算超时，请减少计算规模" } });
+  renderRoute("/workspace/environment?draft=test5");
+  await screen.findByDisplayValue("测试5");
+  fireEvent.click(screen.getByRole("button", { name: "开始离线声场构建", hidden: true }));
+  await waitFor(() => expect(document.querySelector(".environment-action-feedback [role=alert]")?.textContent).toContain("离线计算超时"));
+  expect(document.querySelector(".environment-builder")?.getAttribute("data-view")).toBe("inputs");
+  expect(document.querySelector(".environment-builder")?.getAttribute("data-step")).toBe("4");
+  expect(screen.queryByText("声场计算未完成，请查看错误信息。")).toBeNull();
+  expect(screen.getByRole("button", { name: "开始离线声场构建" }).hasAttribute("disabled")).toBe(false);
+  update.mockRestore(); build.mockRestore();
+});
+
+it("does not save an empty automatic count as a previously valid array", async () => {
+  const fetch = installApi({ "/authoring/drafts?kind=environment": { body: [] } });
+  renderRoute("/workspace/environment");
+  fireEvent.change(await screen.findByLabelText("环境名称"), { target: { value: "空点数" } });
+  fireEvent.change(screen.getByLabelText("发送深度采样点数"), { target: { value: "" } });
+  await userEvent.click(screen.getByRole("button", { name: "保存草稿" }));
+  await waitFor(() => expect(document.querySelector(".environment-action-feedback [role=alert]")?.textContent).toContain("请填写深度采样点数"));
+  expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
 });
 
 it("keeps failed save feedback visible and clears the pending message", async () => {
@@ -77,7 +175,7 @@ it("has one publish action with pending and success feedback above the result ta
       sources: { bottom_boundary: { kind: "ideal-flat-bottom" } },
     } };
   installApi({ "/authoring/drafts?kind=environment": { body: [draft] }, "/environments": { body: [] },
-    "/authoring/environment-builds/build-test/acoustic-plots?source_index=0&receiver_index=0&range_index=0": { body: { available: false, reason: "测试仅验证发布交互" } } });
+    "/authoring/environment-builds/build-test/acoustic-plots?source_index=0&receiver_index=0&range_index=0&view=rays": { body: { available: false, reason: "测试仅验证发布交互" } } });
   const update = vi.spyOn(apiClient, "updateDraft").mockImplementation(async (_old, name, payload) => ({ ...draft, name, payload, revision: 2 }));
   const build = vi.spyOn(apiClient, "createEnvironmentBuild").mockResolvedValue({ build_id: "build-test", draft_id: "water", state: "Completed", steps: [], created_at: "", updated_at: "", artifact: {}, failure: null });
   let complete!: (value: Record<string, unknown>) => void;
@@ -190,7 +288,7 @@ it("reuses a saved profile with its exact query and does not fetch online or exp
   expect(screen.queryByLabelText("采用平坦海底计算边界（非实测地形）")).toBeNull();
   expect(screen.queryByRole("button", { name: "确认计算水深与范围" })).toBeNull();
   expect(screen.getByRole("button", { name: "开始离线声场构建" }).hasAttribute("disabled")).toBe(false);
-  await userEvent.click(screen.getByRole("button", { name: "下一步：计算参数" }));
+  expect(screen.queryByRole("button", { name: "下一步：计算参数" })).toBeNull();
   expect(document.querySelector(".environment-builder")?.getAttribute("data-step")).toBe("4");
   fireEvent.change(screen.getByLabelText("计算水深（m，不超过声速剖面）"), { target: { value: "101" } });
   expect(screen.getByRole("button", { name: "开始离线声场构建" }).hasAttribute("disabled")).toBe(true);

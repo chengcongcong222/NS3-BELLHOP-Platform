@@ -178,6 +178,23 @@ class ResourceCatalogConfigurationError(RuntimeError):
     pass
 
 
+def inspect_environment(executable: Path, repository_root: Path,
+                        asset_id: str) -> EnvironmentResource:
+    """Fully validate only the selected package through the C++ authority."""
+    try:
+        process = subprocess.run(
+            [str(executable), "--environment", str(repository_root), asset_id],
+            check=False, capture_output=True, timeout=120)
+        if process.returncode != 0:
+            raise ValueError("package rejected")
+        environment = EnvironmentResource.model_validate_json(process.stdout)
+        if environment.environment_asset_id != asset_id:
+            raise ValueError("package identity mismatch")
+        return environment
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        raise ResourceCatalogConfigurationError("selected environment failed full validation") from error
+
+
 class ResourceCatalog:
     """Immutable, deterministic HTTP index over authoritative adapter output."""
 
@@ -253,7 +270,7 @@ class ResourceCatalog:
                 ],
                 check=False,
                 capture_output=True,
-                timeout=30,
+                timeout=120,
             )
         except (OSError, subprocess.SubprocessError) as error:
             raise ResourceCatalogConfigurationError(

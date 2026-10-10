@@ -5,6 +5,7 @@ import { vi } from "vitest";
 import { AppRoutes } from "../app/App";
 import { acceptanceEvidence, environment, experiment, scenario, systemInfo } from "./fixtures";
 import type { RunDefinitionContextDto, RunDto } from "../api/types";
+import { algorithmCatalog } from "./algorithmFixtures";
 
 type Fixture = { status?: number; body: unknown; stream?: boolean } | Error;
 type FixtureMap = Record<string, Fixture>;
@@ -38,6 +39,8 @@ export function installApi(fixtures: FixtureMap) {
     const fixture = fixtures[`${method} ${url}`] ?? fixtures[url] ??
       (method === "GET" ? knownRunContext(url, fixtures) : undefined) ??
       (url === "/system/info" ? { body: systemInfo } : undefined) ??
+      (url === "/algorithms" ? { body: algorithmCatalog } : undefined) ??
+      (url === "/environments/authoring-summaries" ? { body: {} } : undefined) ??
       (url === `/environments/${environment.environment_asset_id}` ? { body: environment } : undefined) ??
       (url === `/scenarios/${scenario.scenario_id}/versions/${scenario.version}` ? { body: scenario } : undefined) ??
       (url === `/experiments/${experiment.experiment_id}/versions/${experiment.version}` ? { body: experiment } : undefined) ??

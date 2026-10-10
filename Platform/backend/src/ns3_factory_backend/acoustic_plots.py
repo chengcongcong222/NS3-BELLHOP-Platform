@@ -88,9 +88,52 @@ def arrivals_plot(path: Path, expected_sha: str | None, source_index: int, recei
             "tl_definition": "非相干多径能量损失：-10 log10 Σ|a|²；不是相干声场，不补齐无到达网格"}
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _display_points(points: list[list[float]]) -> list[list[float]]:
+    """Thin only the drawing, retaining actual vertices and turning points."""
+    if len(points) <= 1200:
+        return points
+    keep = set(range(0, len(points), math.ceil(len(points) / 1200))) | {len(points) - 1}
+    for axis in (0, 1):
+        direction = 0
+        for i in range(1, len(points)):
+            delta = points[i][axis] - points[i - 1][axis]
+            next_direction = (delta > 0) - (delta < 0)
+            if next_direction:
+                if direction and direction != next_direction:
+                    keep.update((i - 1, i))
+                direction = next_direction
+    if len(keep) > 8000:
+        raise ValueError("单条声线转折过多，超出显示规模")
+    return [points[i] for i in sorted(keep)]
+
+
 def ray_plot(path: Path, expected_sha: str, source_depth_m: float | None = None) -> dict:
-    lines, sha = _document(path, expected_sha)
-    rows = iter(line.strip() for line in lines if line.strip())
+    # Read one trace at a time, not the entire file into Python strings/lists.
+    # This is a renderer budget, independent of the authoritative arrival field.
+    limit = 256 * 1024 * 1024
+    if path.stat().st_size > limit:
+        raise ValueError("声线文件超过当前绘图读取上限 256 MiB")
+    digest = hashlib.sha256()
+    def records(stream):
+        size = 0
+        while raw := stream.readline(65537):
+            size += len(raw)
+            if len(raw) > 65536 or size > limit:
+                raise ValueError("声线文件超出绘图读取规模")
+            digest.update(raw)
+            line = raw.decode("utf-8").strip()
+            if line:
+                yield line
+    stream = path.open("rb")
+    rows = records(stream)
     try:
         next(rows)  # upstream title
         frequency = float(next(rows))
@@ -101,45 +144,89 @@ def ray_plot(path: Path, expected_sha: str, source_depth_m: float | None = None)
                 or sources[:2] != [1, 1] or not 1 <= sources[2] <= 64
                 or len(beams) != 2 or any(not 1 <= v <= 100000 for v in beams)):
             raise ValueError("不支持的声线坐标或声源布局")
-        rays, total = [], 0
+        rays, total, selected_count, display_count = [], 0, 0, 0
+        origins = set()
+        selected_depth = source_depth_m
+        if selected_depth is not None and (type(selected_depth) not in (int, float) or not math.isfinite(selected_depth)):
+            raise ValueError("声源深度必须为有限数字")
         for angle_text in rows:
             angle = float(angle_text)
             n, surface, seabed = [int(v) for v in next(rows).split()]
             total += n
-            if n < 1 or total > 500000 or min(surface, seabed) < 0:
+            if not 1 <= n <= 250000 or total > 8000000 or min(surface, seabed) < 0:
                 raise ValueError("声线图超出安全采样规模")
             points = [[float(v) for v in next(rows).split()] for _ in range(n)]
             if any(len(p) != 2 or not all(math.isfinite(v) for v in p) for p in points) or not math.isfinite(angle):
                 raise ValueError("非法声线采样")
-            rays.append({"angle_degrees": angle, "points": points})
-        if (not rays or not all(math.isfinite(v) for v in [frequency, top, bottom])
+            origin = tuple(points[0])
+            origins.add(origin)
+            if source_depth_m is None and (selected_depth is None or origin[1] < selected_depth):
+                selected_depth, rays, selected_count, display_count = origin[1], [], 0, 0
+            if math.isclose(origin[1], selected_depth, rel_tol=1e-6, abs_tol=1e-5):
+                display = _display_points(points)
+                selected_count += n
+                display_count += len(display)
+                if display_count > 100000:
+                    raise ValueError("所选深度的声线超出显示规模")
+                rays.append({"angle_degrees": angle, "points": display})
+        if (not origins or not all(math.isfinite(v) for v in [frequency, top, bottom])
                 or frequency <= 0 or bottom <= top):
             raise ValueError("没有有效声线")
         # Upstream .ray records carry their actual source as the first point.
         # Group by those saved origins, never by ray order or an assumed beam
         # count: upstream omits rays that did not produce a valid trace.
-        origins = {tuple(ray["points"][0]) for ray in rays}
         if (len(origins) != sources[2] or len({p[0] for p in origins}) != 1
                 or any(not top < p[1] < bottom for p in origins)):
             raise ValueError("声线的实际发射位置与声明的源深度数量不一致")
         depths = sorted(p[1] for p in origins)
-        selected_depth = depths[0] if source_depth_m is None else source_depth_m
-        if type(selected_depth) not in (int, float) or not math.isfinite(selected_depth):
-            raise ValueError("声源深度必须为有限数字")
         matching = [depth for depth in depths if math.isclose(depth, selected_depth, rel_tol=1e-6, abs_tol=1e-5)]
         if len(matching) > 1:
             raise ValueError("声源深度精度不足，无法区分已保存声线")
-        if not matching:
-            return {"available": False, "source_depths_m": depths,
-                    "reason": f"未保存发射深度 {selected_depth:g} m 的声线。此产物只包含 "
-                              + "、".join(f"{depth:g} m" for depth in depths)
-                              + "；请另存并重新计算以生成所需声源的真实声线。"}
-        selected_depth = matching[0]
-        selected_rays = [ray for ray in rays if ray["points"][0][1] == selected_depth]
     except (ValueError, StopIteration) as error:
         raise ValueError("Bellhop 声线数据格式不完整或不受支持") from error
-    return {"available": True, "frequency_hz": frequency, "rays": selected_rays, "sha256": sha,
-            "source_depth_m": selected_depth, "source_depths_m": depths}
+    finally:
+        rows.close()
+        stream.close()
+    sha = digest.hexdigest()
+    if sha != expected_sha:
+        raise ValueError("声学图形源文件校验失败，不能展示已改变的结果")
+    if not matching:
+        return {"available": False, "source_depths_m": depths,
+                "reason": f"未保存发射深度 {selected_depth:g} m 的声线。此产物只包含 "
+                          + "、".join(f"{depth:g} m" for depth in depths)
+                          + "；请另存并重新计算以生成所需声源的真实声线。"}
+    return {"available": True, "frequency_hz": frequency, "rays": rays, "sha256": sha,
+            "source_depth_m": matching[0], "source_depths_m": depths,
+            "display_sampling": {"original_points": selected_count, "displayed_points": display_count,
+                                 "method": "saved-vertices-with-turning-points"}}
+
+
+def rays_only_plot(artifact: dict, source_index: int) -> dict:
+    """No arrivals body read, no TL/impulse calculation, no Bellhop invocation."""
+    summary = artifact.get("input_summary", {})
+    sources, frequency = summary.get("source_depths_meters"), summary.get("frequency_hz")
+    if sources is None or frequency is None:
+        # Compatibility for old artifacts without an input manifest: bounded
+        # header only, cross-checked against the independently hashed .ray.
+        with Path(artifact["arrivals_path"]).open("rb") as stream:
+            header = [stream.readline(65537) for _ in range(3)]
+        if any(len(line) > 65536 for line in header) or header[0].strip().strip(b"'\"") != b"2D":
+            raise ValueError("无法读取历史声场的发射深度")
+        frequency = float(header[1])
+        axis = [float(v) for v in header[2].split()]
+        if not axis or axis[0] != len(axis) - 1:
+            raise ValueError("声场发射深度数量不一致")
+        sources = axis[1:]
+    if (not isinstance(sources, list) or not 1 <= len(sources) <= 64
+            or any(type(v) not in (int, float) or not math.isfinite(v) or v <= 0 for v in sources)
+            or any(a >= b for a, b in zip(sources, sources[1:]))
+            or type(frequency) not in (int, float) or not math.isfinite(frequency) or frequency <= 0):
+        raise ValueError("声场输入摘要中的频率或发射深度无效")
+    if not 0 <= source_index < len(sources):
+        raise ValueError("请选择已计算的发射深度，不能外推")
+    return {"available": True, "frequency_hz": frequency, "source_depths_m": sources,
+            "arrivals_sha256": artifact.get("arrivals_sha256"),
+            "ray_plot": ray_plot_for_source(artifact.get("ray_plot", {}), sources[source_index], frequency)}
 
 
 def ray_plot_for_source(artifact: dict, source_depth_m: float, frequency_hz: float) -> dict:
@@ -177,7 +264,7 @@ def produce_ray_plot(payload: dict, job_root: Path, executable: Path) -> dict:
         if result.returncode != 0:
             raise ValueError("声线辅助计算未完成")
         ray = root / "environment.ray"
-        sha = hashlib.sha256(ray.read_bytes()).hexdigest()
+        sha = file_sha256(ray)
         parsed = ray_plot(ray, sha)  # validate every saved source before publishing
         expected = inputs["bellhop"]["source_depths_meters"]
         if (len(parsed["source_depths_m"]) != len(expected)

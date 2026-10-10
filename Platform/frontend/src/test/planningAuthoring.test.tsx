@@ -96,7 +96,7 @@ describe("PlanningV1 experiment authoring", () => {
     await userEvent.click(screen.getByRole("link", { name: /实验工作台/ }));
     await screen.findByDisplayValue("未命名网络实验");
     expect((screen.getByLabelText("使用已有节点场景") as HTMLSelectElement).value).toBe("");
-    expect((screen.getByLabelText("MAC") as HTMLSelectElement).value).toBe("AdaptiveTdma");
+    await waitFor(() => expect((screen.getByLabelText("MAC") as HTMLSelectElement).value).toMatch(/^platform.adaptive-tdma@1.0.0@/));
     await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
     await waitFor(() => expect(fetch.mock.calls.filter(([url, init]) => String(url) === "/authoring/drafts" && init?.method === "POST")).toHaveLength(2));
     expect(fetch.mock.calls.some(([, init]) => init?.method === "PUT")).toBe(false);
@@ -127,7 +127,7 @@ describe("PlanningV1 experiment authoring", () => {
 
   it("round-trips explicit bidirectional and multiple-destination flows without a centre or manual slots", async () => {
     const { records } = server(); const page = await openNew();
-    expect((screen.getByLabelText("MAC") as HTMLSelectElement).value).toBe("AdaptiveTdma");
+    expect((screen.getByLabelText("MAC") as HTMLSelectElement).value).toMatch(/^platform.adaptive-tdma@1.0.0@/);
     expect(screen.queryByLabelText("每个时隙（s）")).toBeNull();
     expect(screen.queryByLabelText("时隙保护时间（s）")).toBeNull();
     await userEvent.selectOptions(screen.getByLabelText("业务负载"), "CommunicationOnly");
@@ -137,10 +137,10 @@ describe("PlanningV1 experiment authoring", () => {
     await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
     await waitFor(() => expect(records.get("experiment")?.revision).toBe(1));
     const payload = records.get("experiment")!.payload;
-    expect(payload).toMatchObject({ execution_mode: "PlanningV1", routing_mode: "Direct", mac_mode: "AdaptiveTdma", planning_cycle_duration_ns: "30000000000", adaptive_tdma: { safety_margin_ns: "0" }, flows: [
+    expect(payload).toMatchObject({ execution_mode: "PlanningV1", routing_mode: "Direct", mac_mode: "RegisteredMac", planning_cycle_duration_ns: "30000000000", mac_algorithm: { id: "platform.adaptive-tdma", version: "1.0.0", parameters: { safety_margin_ns: "0" } }, flows: [
       { source_node_id: "0", destination_node_id: "1", packets_per_cycle: 1 }, { source_node_id: "1", destination_node_id: "0", packets_per_cycle: 1 }, { source_node_id: "0", destination_node_id: "2", packets_per_cycle: 2 },
     ] });
-    for (const field of ["slot_duration_ns", "guard_interval_ns", "fusion_receiver_node_id", "target_x_m", "minimum_bearing_points", "network_update_interval_cycles"]) expect(payload).not.toHaveProperty(field);
+    for (const field of ["slot_duration_ns", "guard_interval_ns", "adaptive_tdma", "fusion_receiver_node_id", "target_x_m", "minimum_bearing_points", "network_update_interval_cycles"]) expect(payload).not.toHaveProperty(field);
     expect(records.get("scenario")!.payload.fusion_center_node_id).toBeNull();
     page.unmount(); renderRoute("/workspace/experiment?draft=planning-experiment");
     await waitFor(() => expect((screen.getByLabelText("源节点 1") as HTMLSelectElement).value).toBe("0"));

@@ -8,7 +8,7 @@ type Plot = { available: boolean; reason?: string; frequency_hz: number;
   source_depths_m: number[]; receiver_depths_m: number[]; ranges_m: number[];
   field: { receiver_index: number; range_index: number; tl_db: number | null }[];
   arrivals_sha256: string; tl_definition: string;
-  ray_plot: { available: boolean; reason?: string; source_depth_m: number; frequency_hz: number; sha256: string; rays: { angle_degrees: number; points: number[][] }[] };
+  ray_plot: { available: boolean; reason?: string; source_depth_m: number; frequency_hz: number; sha256: string; display_sampling?: { original_points: number; displayed_points: number }; rays: { angle_degrees: number; points: number[][] }[] };
 };
 
 export function AcousticPlots({ environmentId, buildId }: { environmentId?: string; buildId?: string }) {
@@ -22,8 +22,11 @@ function ResourcePlots({ environmentId, buildId }: { environmentId?: string; bui
   const query = useQuery({ queryKey: ["acoustic-plots", environmentId, buildId, source],
     queryFn: async () => {
       const base = buildId ? `/authoring/environment-builds/${encodeURIComponent(buildId)}` : `/environments/${encodeURIComponent(environmentId!)}`;
-      const response = await fetch(apiClient.url(`${base}/acoustic-plots?source_index=${source}&receiver_index=0&range_index=0`));
-      if (!response.ok) throw new Error("声学图暂时无法读取，请检查离线产物或服务版本。");
+      const response = await fetch(apiClient.url(`${base}/acoustic-plots?source_index=${source}&receiver_index=0&range_index=0&view=rays`));
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(typeof detail?.error?.message === "string" ? detail.error.message : "声线读取失败，请重试或检查已保存的计算结果。");
+      }
       return await response.json() as Plot;
     }, retry: false });
   const data = query.data;
@@ -36,14 +39,14 @@ function ResourcePlots({ environmentId, buildId }: { environmentId?: string; bui
   return <section className="acoustic-plots" aria-label="Bellhop 信道图">
     <header><div><h2>水声信道</h2><small>{data?.available ? `${compactNumber(data.frequency_hz / 1000)} kHz · 离线计算结果` : "读取正式离线计算结果"}</small></div>
       <strong>声线路径</strong></header>
-    {query.isPending && <p role="status">正在读取信道图…</p>}{query.error && <><ErrorState error={query.error} /><button onClick={() => query.refetch()}>重试</button></>}
+    {query.isPending && <p role="status">正在校验并读取声线…</p>}{query.error && <><ErrorState error={query.error} /><button onClick={() => query.refetch()}>重试</button></>}
     {data && !data.available && <p>{data.reason}</p>}
     {data?.available && <>
-      <div className="acoustic-selectors"><label>发射深度<select value={source} onChange={e => { setSource(Number(e.target.value)); setRayAngle("all"); }}>{data.source_depths_m.map((v, i) => <option key={i} value={i}>{v} m</option>)}</select></label>
+      <div className="acoustic-selectors"><label>发射深度<select value={source} onChange={e => { setSource(Number(e.target.value)); setRayAngle("all"); }}>{data.source_depths_m.map((v, i) => <option key={i} value={i}>{compactNumber(v, 3)} m</option>)}</select></label>
         {matchingRay && <label>发射角（已计算声线）<select value={rayAngle} onChange={e => setRayAngle(e.target.value)}><option value="all">全部（{ray!.rays.length} 条）</option>{[...new Set(ray!.rays.map(r => r.angle_degrees))].sort((a, b) => a - b).map(angle => <option key={angle} value={String(angle)}>{compactNumber(angle, 3)}°</option>)}</select></label>}
       </div>
       {matchingRay ? <><Rays data={ray!} selectedRays={selectedRays} /><p>发射深度 {ray!.source_depth_m} m · {compactNumber(ray!.frequency_hz / 1000)} kHz · 显示 {selectedRays.length} / {ray!.rays.length} 条真实声线。</p><div className="ray-legend"><span>红色：初始朝海面</span><span>蓝色：初始水平或朝海底</span><small>颜色区分发射方向，不表示声强。</small></div></> : <p>{ray?.available ? `未保存发射深度 ${data.source_depths_m[source]} m 的声线；请另存并重新计算，不以其他深度的声线替代。` : ray?.reason}</p>}
-      <details><summary>计算说明与数据来源</summary><p>仅绘制已保存的声线；筛选角度不重算、不改变坐标轴范围。修改频率、环境或采样范围后需要重新计算。</p><code>到达数据 SHA256 {data.arrivals_sha256}</code>{matchingRay && <p><code>声线数据 SHA256 {ray!.sha256}</code></p>}</details>
+      <details><summary>计算说明与数据来源</summary><p>仅绘制已保存的声线；筛选角度不重算、不改变坐标轴范围。修改频率、环境或采样范围后需要重新计算。</p>{ray?.display_sampling && ray.display_sampling.displayed_points < ray.display_sampling.original_points && <p>显示已抽稀：保留原始端点和转折点，未修改计算数据。</p>}<code>声场构建记录 SHA256 {data.arrivals_sha256}</code>{matchingRay && <p><code>声线数据 SHA256 {ray!.sha256}</code></p>}</details>
     </>}
   </section>;
 }

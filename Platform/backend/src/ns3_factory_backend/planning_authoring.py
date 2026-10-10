@@ -22,7 +22,7 @@ def planning_issues(payload: dict, nodes: list[dict] | None = None) -> list[str]
         return ["规划配置必须明确选择 PlanningV1"]
     if payload.get("routing_mode") not in {"Direct", "ShortestPath"}:
         issues.append("规划执行必须明确选择已实现的路由")
-    if payload.get("mac_mode") not in {"AdaptiveTdma", "Tdma"}:
+    if payload.get("mac_mode") not in {"AdaptiveTdma", "Tdma", "RegisteredMac"}:
         issues.append("规划执行必须明确选择已实现的 MAC")
     if "network_update_interval_cycles" in payload and payload["network_update_interval_cycles"] != "1":
         issues.append("PlanningV1 每个业务周期重新规划，network_update_interval_cycles 仅可省略或填写字符串 1")
@@ -59,7 +59,15 @@ def planning_issues(payload: dict, nodes: list[dict] | None = None) -> list[str]
             raise ValueError("总运行时长超出纳秒范围")
     except ValueError as error:
         issues.append(f"规划周期无效：{error}")
-    if payload.get("mac_mode") == "AdaptiveTdma":
+    if payload.get("mac_mode") != "RegisteredMac" and "mac_algorithm" in payload:
+        issues.append("非注册算法不能携带 mac_algorithm 参数")
+    if payload.get("mac_mode") == "RegisteredMac":
+        if any(key in payload for key in ("slot_duration_ns", "guard_interval_ns", "adaptive_tdma")):
+            issues.append("算法参数请只在对应算法中设置，不能混用旧时隙参数")
+        selection = payload.get("mac_algorithm")
+        if not isinstance(selection, dict) or set(selection) != {"id", "version", "package_sha256", "interface", "parameters"}:
+            issues.append("请选择已安装算法并填写对应参数")
+    elif payload.get("mac_mode") == "AdaptiveTdma":
         if "slot_duration_ns" in payload or "guard_interval_ns" in payload:
             issues.append("AdaptiveTdma 不接受手工时隙或保护时间，请移除对应字段")
         adaptive = payload.get("adaptive_tdma")

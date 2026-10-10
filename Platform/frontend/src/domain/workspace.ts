@@ -1,4 +1,5 @@
 import type { CommunicationFlowDto, EnvironmentDto, ExperimentDto, ScenarioDto } from "../api/types";
+import type { AlgorithmSelection } from "./algorithms";
 
 export type DraftKind = "environment" | "scenario" | "experiment";
 export type DraftProvenance =
@@ -13,6 +14,7 @@ export interface ExperimentDraft {
   executionMode?: string;
   planningCycleDurationNs?: string;
   adaptiveSafetyMarginNs?: string;
+  macAlgorithm?: AlgorithmSelection;
   flows?: CommunicationFlowDto[];
   fusionReceiverNodeId?: string | null;
 }

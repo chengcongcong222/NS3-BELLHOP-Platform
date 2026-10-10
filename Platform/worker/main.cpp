@@ -9,6 +9,7 @@
 
 #include "adapter/json_line_message_sink.hpp"
 #include "adapter/authored_run_definition.hpp"
+#include "adapter/algorithm_catalog.hpp"
 #include "internal/environment_asset_repository.hpp"
 #include "internal/simulation_worker.hpp"
 
@@ -119,6 +120,10 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
 }  // namespace
 
 auto main(int argc, char** argv) -> int {
+  if(argc == 2 && std::string_view{argv[1]} == "--algorithm-catalog") {
+    std::cout << worker::adapter::AlgorithmCatalogJson().dump() << '\n';
+    return 0;
+  }
   if(argc == 2) {
     return RunWireWorker(std::filesystem::path{argv[1]});
   }
