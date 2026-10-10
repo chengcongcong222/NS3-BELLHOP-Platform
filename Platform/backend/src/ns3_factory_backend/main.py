@@ -1,17 +1,25 @@
 from __future__ import annotations
 
 import os
+import atexit
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from .api import BackendSettings, create_app
+from .algorithm_installation import InstallationLease
 
 
 _catalog_adapter = os.environ.get("PLATFORM_RESOURCE_CATALOG_ADAPTER")
+_installation_root = os.environ.get("PLATFORM_ALGORITHM_INSTALL_ROOT")
+_installation = InstallationLease(Path(_installation_root)) if _installation_root else None
+if _installation is not None:
+    atexit.register(_installation.close)
 
 
 app = create_app(
     BackendSettings(
-        worker_executable=Path(os.environ.get("PLATFORM_SIM_WORKER", "")),
+        worker_executable=(_installation.worker if _installation is not None
+                           else Path(os.environ.get("PLATFORM_SIM_WORKER", ""))),
         environment_repository_root=Path(
             os.environ.get("PLATFORM_ENVIRONMENT_REPOSITORY", "")
         ),
@@ -74,3 +82,17 @@ app = create_app(
         ),
     )
 )
+
+if _installation is not None:
+    _original_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def _managed_lifespan(application):
+        try:
+            async with _original_lifespan(application):
+                yield
+        finally:
+            # The original lifespan first reaps all owned workers.
+            _installation.close()
+
+    app.router.lifespan_context = _managed_lifespan

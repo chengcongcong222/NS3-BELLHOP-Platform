@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<algorithm id="user.integration_probe" version="1.0.0" interface="planning-mac-v1"
+           label="示例定序调度" entry="user_integration_probe::Build">
+  <description>开发接入示例：按节点编号分配发送机会，不作为研究算法或默认协议。</description>
+  <parameter id="order" label="发送顺序" type="enum" default="升序"><option value="升序"/><option value="降序"/></parameter>
+  <parameter id="gap_ns" label="附加间隔" type="duration_ns" unit="s" default="0" min="0" max="60000000000" advanced="true" help="在发送及传播时长之外追加间隔。"/>
+</algorithm>

@@ -1,4 +1,4 @@
-"""Build-time compiler for trusted, header-only planning MAC packages. No XML execution."""
+"""Build-time compiler for trusted planning MAC packages. No XML execution."""
 from __future__ import annotations
 
 import argparse
@@ -31,6 +31,8 @@ def scalar_valid(field: dict, value: str) -> bool:
 def load_package(directory: Path) -> dict:
     directory = directory.resolve(strict=True)
     xml = directory / "algorithm.xml"
+    if xml.is_symlink():
+        raise ValueError("Algorithm descriptors must not be symbolic links")
     content = xml.read_bytes()
     if len(content) > 65536 or b"<!" in content or b"\x00" in content:
         raise ValueError("XML must be bounded UTF-8 without DTD, entities or declarations")
@@ -90,6 +92,7 @@ def load_package(directory: Path) -> dict:
         raise ValueError("At most 32 parameters per package")
     package["parameters"] = fields
     headers = sorted(directory.rglob("*.hpp"))
+    sources = sorted((directory / "src").rglob("*.cpp"))
     if not (directory / "algorithm.hpp").is_file():
         raise ValueError("Package must contain algorithm.hpp")
     digest = hashlib.sha256(content)
@@ -98,8 +101,16 @@ def load_package(directory: Path) -> dict:
             raise ValueError("Package headers must not escape the package")
         digest.update(header.relative_to(directory).as_posix().encode())
         digest.update(header.read_bytes())
+    # Preserve the published header-only v1 hash. Multi-source packages also
+    # bind every compiled source; resource files are not implicitly executable.
+    for source in sources:
+        if source.is_symlink() or not source.resolve().is_relative_to(directory):
+            raise ValueError("Package sources must not escape the package")
+        digest.update(source.relative_to(directory).as_posix().encode())
+        digest.update(source.read_bytes())
     package["package_sha256"] = digest.hexdigest()
     package["header"] = str(directory / "algorithm.hpp")
+    package["sources"] = [str(source) for source in sources]
     return package
 
 
@@ -126,9 +137,22 @@ def compile_packages(directories: list[Path]) -> str:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--cmake-output", type=Path)
     parser.add_argument("packages", nargs="+", type=Path)
     args = parser.parse_args()
     generated = compile_packages(args.packages)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if not args.output.exists() or args.output.read_text() != generated:
         args.output.write_text(generated)
+    if args.cmake_output:
+        def cmake_quote(value):
+            if any(char in value for char in (';', '\n', '\r', '$', '"', '\\')):
+                raise ValueError("Unsupported package path for CMake")
+            return '"' + value + '"'
+        packages = [load_package(p) for p in args.packages]
+        text = "set(PLATFORM_ALGORITHM_SOURCES\n" + "".join(
+            "  " + cmake_quote(s) + "\n" for p in packages for s in p["sources"]) + ")\n"
+        text += "set(PLATFORM_ALGORITHM_INCLUDES\n" + "".join(
+            "  " + cmake_quote(str(p.resolve() / "include")) + "\n" for p in args.packages) + ")\n"
+        if not args.cmake_output.exists() or args.cmake_output.read_text() != text:
+            args.cmake_output.write_text(text)

@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import shutil
 from pathlib import Path
 from compile_catalog import compile_packages, load_package
 
@@ -7,6 +8,25 @@ ROOT = Path(__file__).parent
 
 
 class CatalogTests(unittest.TestCase):
+    def test_multi_source_identity_and_path_rejection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp) / "package"
+            shutil.copytree(ROOT / "examples/ordered_mac", directory)
+            previous = load_package(directory)["package_sha256"]
+            (directory / "src").mkdir()
+            source = directory / "src/helper.cpp"
+            source.write_text("int package_helper() { return 1; }\n")
+            package = load_package(directory)
+            self.assertNotEqual(previous, package["package_sha256"])
+            self.assertEqual(package["sources"], [str(source)])
+            source.write_text("int package_helper() { return 2; }\n")
+            self.assertNotEqual(package["package_sha256"], load_package(directory)["package_sha256"])
+            source.unlink()
+            source.symlink_to(Path(temp) / "external.cpp")
+            (Path(temp) / "external.cpp").write_text("int external;\n")
+            with self.assertRaises(ValueError):
+                load_package(directory)
+
     def test_builtin_and_external_package(self):
         first = compile_packages([ROOT / "adaptive_tdma", ROOT / "examples/ordered_mac"])
         self.assertEqual(first, compile_packages([ROOT / "examples/ordered_mac", ROOT / "adaptive_tdma"]))

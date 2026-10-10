@@ -5,18 +5,28 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(PLATFORM_MAC_PLUGIN_DIRS "" CACHE STRING "Additional trusted planning MAC package directories")
 set(mac_packages "${PROJECT_SOURCE_DIR}/algorithms/adaptive_tdma" ${PLATFORM_MAC_PLUGIN_DIRS})
 foreach(package IN LISTS mac_packages)
-  file(GLOB_RECURSE package_inputs CONFIGURE_DEPENDS "${package}/*.hpp" "${package}/algorithm.xml")
+  file(GLOB_RECURSE package_inputs CONFIGURE_DEPENDS "${package}/*.hpp" "${package}/src/*.cpp" "${package}/algorithm.xml")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${package_inputs})
 endforeach()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/algorithms/compile_catalog.py")
 set(algorithm_header "${CMAKE_CURRENT_BINARY_DIR}/generated/ns3_factory/planning/registered_algorithms.hpp")
 execute_process(COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/algorithms/compile_catalog.py"
-  --output "${algorithm_header}" ${mac_packages} COMMAND_ERROR_IS_FATAL ANY)
+  --output "${algorithm_header}" --cmake-output "${CMAKE_CURRENT_BINARY_DIR}/algorithm_sources.cmake"
+  ${mac_packages} COMMAND_ERROR_IS_FATAL ANY)
+include("${CMAKE_CURRENT_BINARY_DIR}/algorithm_sources.cmake")
+if(PLATFORM_ALGORITHM_SOURCES)
+  add_library(platform_algorithm_sources STATIC ${PLATFORM_ALGORITHM_SOURCES})
+  target_include_directories(platform_algorithm_sources PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    ${PLATFORM_ALGORITHM_INCLUDES})
+  target_link_libraries(platform_algorithm_sources PUBLIC Platform::contracts)
+  target_link_libraries(platform_planning INTERFACE platform_algorithm_sources)
+endif()
 
 target_include_directories(
   platform_planning
   INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include"
             "${CMAKE_CURRENT_BINARY_DIR}/generated"
+            ${PLATFORM_ALGORITHM_INCLUDES}
 )
 target_link_libraries(platform_planning INTERFACE Platform::contracts)
 
