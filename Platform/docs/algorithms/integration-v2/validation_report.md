@@ -75,3 +75,9 @@ ON Worker SHA256：`3abe91ebf220223902e3d38871b656f22247cca46a371797c1d4a09935f3
 `/home/ccc/build/ns3-bellhop-alg02-clean-on` 的 `Testing/Temporary/LastTest.log`
 保存完整门禁输出。环境额外门禁首次漏传 publisher 环境变量失败，补全后57/57通过；
 未把这一环境错误记为产品通过，也未修改断言规避。
+
+最终干净提交的 CLI 安装日志：`/home/ccc/build/alg02-packages/candidate-pdlvsqha/build.log`。
+release `57a26dc3f6152846c2a45c0a9e236b1a322e38f95e7b09c2ab92318c374b8fcf`，
+manifest 源码提交 `292b3dbe6f776b6e45c3842b4fcb11ac10e91cab`、source_dirty=false。
+通过 `protocolctl replay` 重放仓库中的轮询样本得到 Matched。该安装根只用于本轮隔离
+验证，8011/8012及4181/4182原服务进程保持不动。
