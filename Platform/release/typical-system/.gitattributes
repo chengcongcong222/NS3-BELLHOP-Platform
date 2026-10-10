@@ -1,2 +1,7 @@
 # The manifest validates exact bytes, including line endings, on every host.
 data/** -text
+# Bellhop's native fixed-width numerical output contains meaningful formatting
+# and is kept unchanged under the SHA256 manifest, not reviewed as source code.
+data/**/*.arr -diff
+data/**/*.ray -diff
+data/**/*.prt -diff
