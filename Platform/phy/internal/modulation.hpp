@@ -354,7 +354,7 @@ class OsdmModulator final : public IModulator {
     }
     const auto valid = SamplesPerSymbol(config);
     if(!valid) return std::unexpected(valid.error());
-    return ModulateOsdmBpsk(
+    return ModulateOsdm(
         frame.bits(), config.sample_rate_hz,
         config.symbol_amplitude_upa, config.osdm);
   }
@@ -374,7 +374,7 @@ class OsdmDemodulator final : public IDemodulator {
     }
     const auto valid = SamplesPerSymbol(config);
     if(!valid) return std::unexpected(valid.error());
-    auto bits = DemodulateOsdmBpsk(
+    auto bits = DemodulateOsdm(
         waveform, expected_bit_count, config.sample_rate_hz, config.osdm);
     if(!bits) return std::unexpected(bits.error());
     return BitFrame::Create(std::move(*bits));

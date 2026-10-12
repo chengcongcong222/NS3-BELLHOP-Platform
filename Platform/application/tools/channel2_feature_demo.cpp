@@ -157,11 +157,17 @@ auto ExecuteDemo(const Options& options) -> int {
       scheme, 6'000.0, symbol_rate,
       std::pow(10.0,
                experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
-      25'000.0, 30.0, OsdmConfig{256U, 16U, 64U}};
+      25'000.0, 30.0,
+      OsdmConfig{1024U, 16U, 640U, OsdmConstellation::kQpsk,
+                 true, 0.05, 1280U}};
+  const auto equalization =
+      scheme == ModulationScheme::kOsdm
+          ? ChannelEqualizationMode::kTrainingSequenceMmse
+          : ChannelEqualizationMode::kIdealFrequencyDomainMmse;
   WaveformPhyConfig config{
       modulation,
       4'000.0, noise,
-      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+      {equalization}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor executor{repository, WaveformExecutionOptions{config, &observer}};
   const auto framed_sample_count =
@@ -177,10 +183,13 @@ auto ExecuteDemo(const Options& options) -> int {
             << "\nchannel_source=Bellhop-derived .arr; reference environment, NOT field measurement"
             << "\nmodulation=" << options.modulation << " noise=" << options.noise
             << " seed=" << options.seed
-            << " equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate="
+            << " equalization="
+            << (scheme == ModulationScheme::kOsdm
+                    ? "training-sequence-mmse" : "ideal-frequency-domain-mmse")
+            << " fs=6000 carrier=25000 rate="
             << symbol_rate << " slot_seconds=6\n";
   if(scheme == ModulationScheme::kOsdm) {
-    std::cout << "osdm_base_constellation=BPSK K=256 M=16 N=16 CP=64"
+    std::cout << "osdm_base_constellation=QPSK K=1024 M=16 N=64 CP=640 training=CAZAC"
                  " framed_samples=" << framed_sample_count << '\n';
   }
   if(options.noise == "awgn") {

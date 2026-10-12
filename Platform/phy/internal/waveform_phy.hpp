@@ -37,12 +37,21 @@ struct WaveformPhyConfig final {
      c.occupied_bandwidth_hz / 2.0 >= c.modulation.acoustic_carrier_hz ||
      (c.equalization.mode != ChannelEqualizationMode::kDisabled &&
       c.equalization.mode !=
-          ChannelEqualizationMode::kIdealFrequencyDomainMmse) ||
+          ChannelEqualizationMode::kIdealFrequencyDomainMmse &&
+      c.equalization.mode !=
+          ChannelEqualizationMode::kTrainingSequenceMmse) ||
      c.frame_format != WaveformFrameFormat::kPayloadWithCrc32 ||
      c.maximum_samples < *minimum_samples) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,
                                  "Invalid waveform band, equalizer, frame or "
                                  "sample limit"});
+  }
+  if(c.equalization.mode == ChannelEqualizationMode::kTrainingSequenceMmse &&
+     (c.modulation.scheme != ModulationScheme::kOsdm ||
+      !c.modulation.osdm.training_preamble_enabled)) {
+    return std::unexpected(
+        Error{ErrorCode::kFailedPrecondition,
+              "Training-sequence equalization requires framed OSDM"});
   }
   auto noise = GenerateNoise(c.noise, 1, c.modulation.sample_rate_hz,
                              c.modulation.acoustic_carrier_hz);

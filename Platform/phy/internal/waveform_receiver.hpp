@@ -4,6 +4,7 @@
 #include "channel_processor.hpp"
 #include "modulation.hpp"
 #include "noise_generator.hpp"
+#include "osdm_receiver.hpp"
 
 namespace ns3_factory::phy::internal {
 
@@ -33,7 +34,21 @@ struct WaveformReceiverOutput final {
   auto received = AddWaveforms(*channel_output, *noise);
   if(!received) return std::unexpected(received.error());
   auto decoder_input = *received;
-  if(equalization.mode != ChannelEqualizationMode::kDisabled) {
+  if(equalization.mode == ChannelEqualizationMode::kTrainingSequenceMmse) {
+    if(modulation.scheme != ModulationScheme::kOsdm ||
+       !modulation.osdm.training_preamble_enabled) {
+      return std::unexpected(
+          Error{ErrorCode::kFailedPrecondition,
+                "Training-sequence equalization requires framed OSDM"});
+    }
+    const auto noise_power = channel_equalizer_detail::MeanPower(*noise);
+    auto equalized = EqualizeOsdmWithTraining(
+        decoder_input, frame_bit_count, modulation.symbol_amplitude_upa,
+        noise_power, modulation.osdm);
+    if(!equalized) return std::unexpected(equalized.error());
+    decoder_input = std::move(*equalized);
+  } else if(equalization.mode ==
+            ChannelEqualizationMode::kIdealFrequencyDomainMmse) {
     const auto transmitted_power =
         modulation.symbol_amplitude_upa * modulation.symbol_amplitude_upa;
     const auto noise_power = channel_equalizer_detail::MeanPower(*noise);
@@ -42,6 +57,10 @@ struct WaveformReceiverOutput final {
         noise_power, equalization);
     if(!equalized) return std::unexpected(equalized.error());
     decoder_input = std::move(*equalized);
+  } else if(equalization.mode != ChannelEqualizationMode::kDisabled) {
+    return std::unexpected(
+        Error{ErrorCode::kInvalidArgument,
+              "Unknown channel equalization mode"});
   } else if(ideal_phase_synchronization) {
     auto phase = IdealReferencePhase(taps);
     if(!phase) return std::unexpected(phase.error());

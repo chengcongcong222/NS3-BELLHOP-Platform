@@ -21,6 +21,7 @@ namespace ns3_factory::phy::internal {
 enum class ChannelEqualizationMode : std::uint8_t {
   kDisabled = 0,
   kIdealFrequencyDomainMmse = 1,
+  kTrainingSequenceMmse = 2,
 };
 
 struct ChannelEqualizationConfig final {

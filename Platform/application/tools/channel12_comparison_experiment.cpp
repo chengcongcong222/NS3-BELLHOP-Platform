@@ -218,10 +218,11 @@ auto RunPair(const EnvironmentAssetRepository& repository,
           std::pow(10.0,
                    experiment.phy().source_level_db_re_1upa_at_1m / 20.0),
           experiment.phy().center_frequency_hz, 30.0,
-          OsdmConfig{256U, 16U, 64U}},
+          OsdmConfig{1024U, 16U, 640U, OsdmConstellation::kQpsk,
+                     true, 0.05, 1280U}},
       experiment.phy().occupied_bandwidth_hz,
       AwgnNoiseConfig{options.noise_psd_db, seed},
-      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+      {ChannelEqualizationMode::kTrainingSequenceMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor waveform{
       repository, WaveformExecutionOptions{

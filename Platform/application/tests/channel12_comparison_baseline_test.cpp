@@ -173,9 +173,11 @@ auto TestRealRunsShareTargetPacketBasis() -> bool {
           ModulationScheme::kOsdm, 6'000.0, 6'000.0,
           std::pow(10.0,
                    experiment->phy().source_level_db_re_1upa_at_1m / 20.0),
-          25'000.0, 30.0, OsdmConfig{256U, 16U, 64U}},
+          25'000.0, 30.0,
+          OsdmConfig{1024U, 16U, 640U, OsdmConstellation::kQpsk,
+                     true, 0.05, 1280U}},
       4'000.0, NoNoiseConfig{},
-      {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+      {ChannelEqualizationMode::kTrainingSequenceMmse}, true,
       WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
   AcceptanceRunExecutor waveform{
       *repository,

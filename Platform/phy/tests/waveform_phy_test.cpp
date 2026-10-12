@@ -24,11 +24,18 @@ auto Config(ModulationScheme scheme = ModulationScheme::kBpsk)
     -> WaveformPhyConfig {
   const auto symbol_rate =
       scheme == ModulationScheme::kOsdm ? 6'000.0 : 60.0;
+  auto osdm = OsdmConfig{256U, 16U, 64U};
+  auto equalization = ChannelEqualizationMode::kIdealFrequencyDomainMmse;
+  if(scheme == ModulationScheme::kOsdm) {
+    osdm = OsdmConfig{256U, 16U, 64U, OsdmConstellation::kQpsk,
+                      true, 0.05, 128U};
+    equalization = ChannelEqualizationMode::kTrainingSequenceMmse;
+  }
   const ModulationConfig modulation{
       scheme, 6'000.0, symbol_rate, 1'000.0, 25'000.0, 30.0,
-      OsdmConfig{256U, 16U, 64U}};
+      osdm};
   return {modulation, 4'000.0, NoNoiseConfig{},
-          {ChannelEqualizationMode::kIdealFrequencyDomainMmse}, true,
+          {equalization}, true,
           WaveformFrameFormat::kPayloadWithCrc32, 1'000'000U};
 }
 
@@ -84,7 +91,7 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
             "true BER and no noise") ||
      !Check(emission->duration().nanoseconds() ==
                 (scheme == ModulationScheme::kOsdm
-                     ? 53'333'334 : 800'000'000),
+                     ? 106'666'667 : 800'000'000),
             "CRC and OSDM framing overhead in duration")) return false;
 
   // Replace only the evaluation truth. Decisions/payload must stay identical.
@@ -107,7 +114,12 @@ auto RoundTrip(ModulationScheme scheme) -> bool {
   std::vector<WaveformBuffer::Sample> samples{
       (*artifact)->transmitted_waveform().samples().begin(),
       (*artifact)->transmitted_waveform().samples().end()};
-  for(std::size_t i = 0; i < 100; ++i) {
+  const auto corruption_begin =
+      scheme == ModulationScheme::kOsdm ? 384U : 0U;
+  for(std::size_t offset = 0U;
+      offset < 100U && corruption_begin + offset < samples.size();
+      ++offset) {
+    const auto i = corruption_begin + offset;
     if(scheme == ModulationScheme::kBpsk ||
        scheme == ModulationScheme::kOsdm) samples[i] = -samples[i];
     else samples[i] = std::conj(samples[i]);

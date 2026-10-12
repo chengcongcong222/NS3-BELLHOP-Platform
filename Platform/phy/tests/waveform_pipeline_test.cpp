@@ -14,6 +14,7 @@
 #include "internal/channel_processor.hpp"
 #include "internal/modulation.hpp"
 #include "internal/noise_generator.hpp"
+#include "internal/osdm_receiver.hpp"
 #include "internal/packet_bit_adapter.hpp"
 #include "internal/waveform.hpp"
 #include "internal/waveform_pipeline.hpp"
@@ -44,8 +45,11 @@ using ns3_factory::phy::internal::MultipathTap;
 using ns3_factory::phy::internal::NoiseProfile;
 using ns3_factory::phy::internal::NoNoiseConfig;
 using ns3_factory::phy::internal::OsdmConfig;
+using ns3_factory::phy::internal::OsdmConstellation;
 using ns3_factory::phy::internal::OsdmForwardBlock;
 using ns3_factory::phy::internal::OsdmInverseBlock;
+using ns3_factory::phy::internal::EqualizeOsdmWithTraining;
+using ns3_factory::phy::internal::SynchronizeAndEstimateOsdmChannel;
 using ns3_factory::phy::internal::RecoverPayloadBytes;
 using ns3_factory::phy::internal::RunWaveformPipeline;
 using ns3_factory::phy::internal::WaveformBuffer;
@@ -199,6 +203,66 @@ auto TestOsdmMatlabReferenceAndRoundTrip() -> bool {
                "OSDM recovers a padded multi-block frame") &&
          Check(result && result->bit_error_count() == 0U,
                "OSDM noiseless known-channel BER is zero");
+}
+
+auto TestOsdmQpskTrainingSynchronizationAndEqualization() -> bool {
+  const auto source = BitFrame::Create(
+      {0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0,
+       1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1,
+       1, 0, 0, 1, 0});
+  if(!source) return Check(false, "OSDM QPSK source bits");
+  const OsdmConfig osdm{32U, 4U, 8U, OsdmConstellation::kQpsk,
+                        true, 0.05, 32U};
+  const ModulationConfig modulation{
+      ModulationScheme::kOsdm, 8'000.0, 8'000.0, 1.0e4, 12'000.0, 0.0,
+      osdm};
+  const auto modulator = CreateModulator(modulation.scheme);
+  const auto demodulator = CreateDemodulator(modulation.scheme);
+  if(!modulator || !demodulator) {
+    return Check(false, "OSDM QPSK modem creation");
+  }
+  const auto transmitted = (*modulator)->Modulate(*source, modulation);
+  if(!transmitted ||
+     !Check(transmitted->sample_count() == 80U,
+            "OSDM QPSK training and data sample count")) {
+    return false;
+  }
+  const std::vector<MultipathTap> taps{
+      MultipathTap{0.0, std::polar(0.8, 0.3)},
+      MultipathTap{3.0 / modulation.sample_rate_hz,
+                   std::polar(0.25, -0.7)}};
+  const auto propagated = ApplyMultipath(*transmitted, taps);
+  if(!propagated) return Check(false, "OSDM QPSK multipath propagation");
+
+  constexpr std::size_t timing_offset = 5U;
+  std::vector<WaveformBuffer::Sample> delayed_samples(
+      timing_offset, {0.0, 0.0});
+  delayed_samples.insert(delayed_samples.end(),
+                         propagated->samples().begin(),
+                         propagated->samples().end());
+  const auto delayed = WaveformBuffer::Create(
+      propagated->sample_rate_hz(), std::move(delayed_samples));
+  if(!delayed) return Check(false, "OSDM delayed receive waveform");
+
+  const auto estimate = SynchronizeAndEstimateOsdmChannel(
+      *delayed, modulation.symbol_amplitude_upa, osdm);
+  if(!Check(estimate &&
+                estimate->training_body_start_sample ==
+                    timing_offset + osdm.cyclic_prefix_samples &&
+                estimate->frequency_response.size() == 32U,
+            "OSDM preamble finds frame timing and estimates H")) return false;
+
+  const auto equalized = EqualizeOsdmWithTraining(
+      *delayed, source->bit_count(), modulation.symbol_amplitude_upa,
+      0.0, osdm);
+  if(!equalized) {
+    return Check(false,
+                 "OSDM training synchronization and estimated-channel MMSE");
+  }
+  const auto recovered = (*demodulator)->Demodulate(
+      *equalized, source->bit_count(), modulation);
+  return Check(recovered && *recovered == *source,
+               "OSDM QPSK recovers through estimated multipath channel");
 }
 
 auto TestKnownChannelEqualizationRemovesStrongMultipath() -> bool {
@@ -401,6 +465,7 @@ int main() {
       TestDigitalPacketPayloadExtraction() &&
       TestChannelPathAdapterAndFractionalDelay() &&
       TestOsdmMatlabReferenceAndRoundTrip() &&
+      TestOsdmQpskTrainingSynchronizationAndEqualization() &&
       TestBpskAwgnRoundTrip() &&
       TestKnownChannelEqualizationRemovesStrongMultipath() &&
       TestBfskWenzRoundTrip() &&

@@ -37,6 +37,7 @@ using ns3_factory::phy::internal::BuildDelayAlignmentMatrix;
 using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::OsdmConfig;
+using ns3_factory::phy::internal::OsdmConstellation;
 using ns3_factory::phy::internal::NoNoiseConfig;
 using ns3_factory::phy::internal::NoiseProfile;
 using ns3_factory::phy::internal::RunWaveformPipeline;
@@ -267,13 +268,15 @@ auto TestChannel3ReusesWaveformPipeline() -> bool {
                                     1.0,
                                     12345.0,
                                     0.0,
-                                    OsdmConfig{8U, 2U, 2U}};
+                                    OsdmConfig{
+                                        8U, 2U, 2U, OsdmConstellation::kQpsk,
+                                        true, 0.05, 8U}};
   const auto result = RunWaveformPipeline(
       *source,
       WaveformPipelineConfig{modulation,
                              *taps,
                              NoiseProfile{NoNoiseConfig{}},
-                             {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
+                             {ChannelEqualizationMode::kTrainingSequenceMmse},
                              true});
   return Check(result && result->recovered() == *source,
                "External CIR reuses the OSDM waveform modules") &&

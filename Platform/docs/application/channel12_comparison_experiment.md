@@ -10,8 +10,9 @@ changing the default worker, frontend, runtime scheduler, or PHY contracts.
 The executable runs the same Acceptance4Node feature workload against the same
 Bellhop-derived reference environment twice for each seed: optional
 sampled-scalar Channel 1, then OSDM waveform Channel 2. Channel 1 retains its
-coherent-BPSK/AWGN probability model; Channel 2 uses BPSK constellation mapping
-inside OSDM with `K=256`, `M=16`, `N=16`, and `CP=64`.
+coherent-BPSK/AWGN probability model; Channel 2 uses QPSK constellation mapping
+inside OSDM with `K=1024`, `M=16`, `N=64`, `CP=640`, and one
+cyclically-prefixed deterministic CAZAC training block before the data blocks.
 The experiment rejects any pair whose current-hop target
 TransmissionId/PacketId/receiver/payload-bit set differs. Both paths use
 15-byte feature payloads plus the same CRC32 test trailer and 6-second TDMA
@@ -25,8 +26,9 @@ complex samples from that same PSD with an explicit seed. The two generators
 do **not** produce the same sample-wise noise realization. Channel 1 uses
 Bellhop's incoherent aggregate TL and independent bit-error draws; Channel 2
 uses Bellhop's path delays/complex gains, waveform convolution, an
-ideal-known-channel frequency-domain MMSE equalizer, CP removal, and OSDM
-inverse transformation. These are intentionally different
+automatic training correlation, training-derived frequency-response estimate,
+frequency-domain MMSE equalization, CP removal, and OSDM inverse
+transformation. These are intentionally different
 physical approximations; matching PSD is not matching a multipath receiver.
 
 A repetition is one full paired simulation run. For each channel, pooled
@@ -72,8 +74,10 @@ The paired differences and both paired-bootstrap intervals are `[0,0]` for
 this explicit zero-dB PSD fixture. That result verifies the OSDM integration
 and removal of the earlier unmitigated multipath errors; it does **not**
 establish that either channel has zero population BER or that Channel 2 is
-generally better. The Channel 2 receiver is currently idealized because it
-uses the exact simulated CIR rather than estimating it from a preamble. Noise
-stress points and additional sea states are required for a meaningful
-performance boundary, and future equalizers must be compared using this same
-paired packet basis.
+generally better. The Channel 2 receiver no longer consumes the exact
+simulated CIR for synchronization or equalization; it estimates the block-static
+channel from the received training preamble. It still uses the simulation's
+generated noise power as the MMSE regularization input and does not compensate
+Doppler. Noise stress points and additional sea states are required for a
+meaningful performance boundary, and future equalizers must be compared using
+this same paired packet basis.
