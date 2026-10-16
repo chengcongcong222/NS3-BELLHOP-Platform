@@ -51,6 +51,8 @@
 #analysis-network, #analysis-fusion { grid-column: 1 / -1; }
 .analysis-layout:has(#analysis-waveform) #analysis-acoustic, .analysis-layout:has(#analysis-waveform) #analysis-waveform { grid-column: auto; }
 .analysis-layout:not(:has(#analysis-waveform)) #analysis-acoustic { grid-column: 1 / -1; }
+.analysis-layout:not(:has(#analysis-acoustic)) #analysis-waveform { grid-column: 1 / -1; }
+.result-analysis-paper > .analysis-section .recorded-source > dl { grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr); align-items: baseline; }
 .analysis-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin-top: 14px; }
 .analysis-figure { margin: 0; min-width: 0; background: #f5f8fb; border: 1px solid #cbd5df; padding: 8px 10px 2px; border-radius: 3px; }
 .analysis-figure figcaption { font-size: 14px; color: #243b50; display: flex; justify-content: space-between; }

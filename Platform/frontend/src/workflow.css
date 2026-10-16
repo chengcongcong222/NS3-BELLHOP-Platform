@@ -175,6 +175,10 @@
 .unified-scene .form-grid > .field-explanation { grid-column: 1 / -1; }
 .unified-scene .waveform-config { background: #eaf1f7; border: 1px solid #cbd5df; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .unified-scene .waveform-config label { margin: 0; }
+.unified-scene .waveform-config > .parameter-detail { grid-column: 1 / -1; min-width: 0; }
+.unified-scene .waveform-config > .parameter-detail[open] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.unified-scene .waveform-config > .parameter-detail > summary,
+.unified-scene .waveform-config > .parameter-detail > small { grid-column: 1 / -1; }
 .unified-scene .waveform-config p { grid-column: 1 / -1; color: #243b50; font-size: 12px; line-height: 1.55; margin: 0; }
 .unified-scene :is(.property-help, .field-explanation, small, .runtime-authority-note) { color: #243b50; font-size: 12px; line-height: 1.55; }
 .experiment-inspector .panel.form-panel { padding: 10px 0; margin: 0; border: 0; border-bottom: 1px solid #cbd5df; border-radius: 0; background: transparent; box-shadow: none; }
