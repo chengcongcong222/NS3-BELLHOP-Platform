@@ -4,7 +4,7 @@
     "platform_name": "NS3-BELLHOP Platform",
     "platform_version": "0.1.0",
     "product_baseline": "P0-S5-05",
-    "release_id": "OSDM-UWA-INTEGRATION-20261016-UI1155584",
+    "release_id": "OSDM-UWA-INTEGRATION-20261016-UI090d689",
     "build_target": "linux-x86_64",
     "reference_environment_asset_id": "reference-shallow-water-v1",
     "reference_environment_checksum": "fb64e543f9042c52",
@@ -24,7 +24,7 @@
       "api_schema_version": "1",
       "worker_wire_schema_version": "1",
       "acceptance_evidence_schema_version": "1",
-      "frontend_release": "index-DGyfKJdY.js"
+      "frontend_release": "index-eZZApcsW.js"
     },
     "runtime_mode": "single-active-run-process-local-catalog"
   },
@@ -237,11 +237,11 @@
   "runs": [
     {
       "run": {
-        "run_id": "run-e6f01f1689444d2fbc243a7f3c0b07f9",
-        "experiment_id": "experiment-745ba7ad2820-r3",
-        "experiment_version": "3",
-        "scenario_id": "scenario-e71fada7c0d6-r3",
-        "scenario_version": "3",
+        "run_id": "run-5245e92ba0404cdcb7fb69aac8a56822",
+        "experiment_id": "experiment-745ba7ad2820-r4",
+        "experiment_version": "4",
+        "scenario_id": "scenario-e71fada7c0d6-r4",
+        "scenario_version": "4",
         "environment_asset_id": "uwa-blue-1-element-0",
         "environment_format_version": "1",
         "lifecycle": "Completed",
@@ -251,14 +251,14 @@
         "event_stream_complete": true,
         "failure": null,
         "provenance": {
-          "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+          "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
           "experiment": {
-            "id": "experiment-745ba7ad2820-r3",
-            "version": 3
+            "id": "experiment-745ba7ad2820-r4",
+            "version": 4
           },
           "scenario": {
-            "id": "scenario-e71fada7c0d6-r3",
-            "version": 3
+            "id": "scenario-e71fada7c0d6-r4",
+            "version": 4
           },
           "environment": {
             "asset_id": "uwa-blue-1-element-0",
@@ -385,12 +385,12 @@
         }
       },
       "context": {
-        "run_id": "run-e6f01f1689444d2fbc243a7f3c0b07f9",
+        "run_id": "run-5245e92ba0404cdcb7fb69aac8a56822",
         "source": "AuthoredDefinition",
-        "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+        "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
         "scenario": {
-          "scenario_id": "scenario-e71fada7c0d6-r3",
-          "version": "3",
+          "scenario_id": "scenario-e71fada7c0d6-r4",
+          "version": "4",
           "name": "C-Blue连续噪声-集成验证 · 录音链路",
           "nodes": [
             {
@@ -451,12 +451,12 @@
           "spatial_domain": null
         },
         "experiment": {
-          "experiment_id": "experiment-745ba7ad2820-r3",
-          "version": "3",
+          "experiment_id": "experiment-745ba7ad2820-r4",
+          "version": "4",
           "name": "C-Blue连续噪声-集成验证",
           "scenario": {
-            "scenario_id": "scenario-e71fada7c0d6-r3",
-            "version": "3"
+            "scenario_id": "scenario-e71fada7c0d6-r4",
+            "version": "4"
           },
           "routing": {
             "mode": "Direct"
@@ -524,18 +524,18 @@
         },
         "limitations": [],
         "actions": {
-          "run_id": "run-e6f01f1689444d2fbc243a7f3c0b07f9",
+          "run_id": "run-5245e92ba0404cdcb7fb69aac8a56822",
           "experiment_name": "C-Blue连续噪声-集成验证",
           "scenario_name": "C-Blue连续噪声-集成验证 · 录音链路",
           "environment_asset_id": "uwa-blue-1-element-0",
           "edit": {
             "available": true,
             "experiment_draft_id": "experiment-745ba7ad2820",
-            "captured_revision": 3,
-            "current_revision": 3,
+            "captured_revision": 4,
+            "current_revision": 4,
             "scenario_draft_id": "scenario-e71fada7c0d6",
-            "captured_scenario_revision": 3,
-            "current_scenario_revision": 3,
+            "captured_scenario_revision": 4,
+            "current_scenario_revision": 4,
             "reason": null
           },
           "rerun": {
@@ -629,11 +629,11 @@
         }
       },
       "result": {
-        "run_id": "run-e6f01f1689444d2fbc243a7f3c0b07f9",
-        "experiment_id": "experiment-745ba7ad2820-r3",
-        "experiment_version": "3",
-        "scenario_id": "scenario-e71fada7c0d6-r3",
-        "scenario_version": "3",
+        "run_id": "run-5245e92ba0404cdcb7fb69aac8a56822",
+        "experiment_id": "experiment-745ba7ad2820-r4",
+        "experiment_version": "4",
+        "scenario_id": "scenario-e71fada7c0d6-r4",
+        "scenario_version": "4",
         "environment_asset_id": "uwa-blue-1-element-0",
         "environment_format_version": "1",
         "projection": {
@@ -789,14 +789,14 @@
           ]
         },
         "provenance": {
-          "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+          "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
           "experiment": {
-            "id": "experiment-745ba7ad2820-r3",
-            "version": 3
+            "id": "experiment-745ba7ad2820-r4",
+            "version": 4
           },
           "scenario": {
-            "id": "scenario-e71fada7c0d6-r3",
-            "version": 3
+            "id": "scenario-e71fada7c0d6-r4",
+            "version": 4
           },
           "environment": {
             "asset_id": "uwa-blue-1-element-0",
@@ -1215,11 +1215,11 @@
     },
     {
       "run": {
-        "run_id": "run-71747d5aa07c43358d56107cd9075e6a",
-        "experiment_id": "experiment-745ba7ad2820-r3",
-        "experiment_version": "3",
-        "scenario_id": "scenario-e71fada7c0d6-r3",
-        "scenario_version": "3",
+        "run_id": "run-e76cf50f35c54cdc888963429a8052aa",
+        "experiment_id": "experiment-745ba7ad2820-r4",
+        "experiment_version": "4",
+        "scenario_id": "scenario-e71fada7c0d6-r4",
+        "scenario_version": "4",
         "environment_asset_id": "uwa-blue-1-element-0",
         "environment_format_version": "1",
         "lifecycle": "Completed",
@@ -1229,14 +1229,14 @@
         "event_stream_complete": true,
         "failure": null,
         "provenance": {
-          "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+          "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
           "experiment": {
-            "id": "experiment-745ba7ad2820-r3",
-            "version": 3
+            "id": "experiment-745ba7ad2820-r4",
+            "version": 4
           },
           "scenario": {
-            "id": "scenario-e71fada7c0d6-r3",
-            "version": 3
+            "id": "scenario-e71fada7c0d6-r4",
+            "version": 4
           },
           "environment": {
             "asset_id": "uwa-blue-1-element-0",
@@ -1363,12 +1363,12 @@
         }
       },
       "context": {
-        "run_id": "run-71747d5aa07c43358d56107cd9075e6a",
+        "run_id": "run-e76cf50f35c54cdc888963429a8052aa",
         "source": "AuthoredDefinition",
-        "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+        "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
         "scenario": {
-          "scenario_id": "scenario-e71fada7c0d6-r3",
-          "version": "3",
+          "scenario_id": "scenario-e71fada7c0d6-r4",
+          "version": "4",
           "name": "C-Blue连续噪声-集成验证 · 录音链路",
           "nodes": [
             {
@@ -1429,12 +1429,12 @@
           "spatial_domain": null
         },
         "experiment": {
-          "experiment_id": "experiment-745ba7ad2820-r3",
-          "version": "3",
+          "experiment_id": "experiment-745ba7ad2820-r4",
+          "version": "4",
           "name": "C-Blue连续噪声-集成验证",
           "scenario": {
-            "scenario_id": "scenario-e71fada7c0d6-r3",
-            "version": "3"
+            "scenario_id": "scenario-e71fada7c0d6-r4",
+            "version": "4"
           },
           "routing": {
             "mode": "Direct"
@@ -1502,18 +1502,18 @@
         },
         "limitations": [],
         "actions": {
-          "run_id": "run-71747d5aa07c43358d56107cd9075e6a",
+          "run_id": "run-e76cf50f35c54cdc888963429a8052aa",
           "experiment_name": "C-Blue连续噪声-集成验证",
           "scenario_name": "C-Blue连续噪声-集成验证 · 录音链路",
           "environment_asset_id": "uwa-blue-1-element-0",
           "edit": {
             "available": true,
             "experiment_draft_id": "experiment-745ba7ad2820",
-            "captured_revision": 3,
-            "current_revision": 3,
+            "captured_revision": 4,
+            "current_revision": 4,
             "scenario_draft_id": "scenario-e71fada7c0d6",
-            "captured_scenario_revision": 3,
-            "current_scenario_revision": 3,
+            "captured_scenario_revision": 4,
+            "current_scenario_revision": 4,
             "reason": null
           },
           "rerun": {
@@ -1607,11 +1607,11 @@
         }
       },
       "result": {
-        "run_id": "run-71747d5aa07c43358d56107cd9075e6a",
-        "experiment_id": "experiment-745ba7ad2820-r3",
-        "experiment_version": "3",
-        "scenario_id": "scenario-e71fada7c0d6-r3",
-        "scenario_version": "3",
+        "run_id": "run-e76cf50f35c54cdc888963429a8052aa",
+        "experiment_id": "experiment-745ba7ad2820-r4",
+        "experiment_version": "4",
+        "scenario_id": "scenario-e71fada7c0d6-r4",
+        "scenario_version": "4",
         "environment_asset_id": "uwa-blue-1-element-0",
         "environment_format_version": "1",
         "projection": {
@@ -1767,14 +1767,14 @@
           ]
         },
         "provenance": {
-          "definition_sha256": "aebaf84fddbd4f37a4b40fe45bbfda8f67493a1c3db477e3e661cc6b9bbb7cbc",
+          "definition_sha256": "7487f9587c49ee6da23d004f35a27bd81eca0c5341012411bea8c0533025bf07",
           "experiment": {
-            "id": "experiment-745ba7ad2820-r3",
-            "version": 3
+            "id": "experiment-745ba7ad2820-r4",
+            "version": 4
           },
           "scenario": {
-            "id": "scenario-e71fada7c0d6-r3",
-            "version": 3
+            "id": "scenario-e71fada7c0d6-r4",
+            "version": 4
           },
           "environment": {
             "asset_id": "uwa-blue-1-element-0",
@@ -2193,11 +2193,11 @@
     },
     {
       "run": {
-        "run_id": "run-f65b88ea37894e5e86445a0c73b103dc",
-        "experiment_id": "experiment-fc23aeb44513-r3",
-        "experiment_version": "13",
-        "scenario_id": "scenario-327eff7149f9-r13",
-        "scenario_version": "13",
+        "run_id": "run-7040d8b606f142dfad275e30f8507690",
+        "experiment_id": "experiment-fc23aeb44513-r4",
+        "experiment_version": "14",
+        "scenario_id": "scenario-327eff7149f9-r14",
+        "scenario_version": "14",
         "environment_asset_id": "reference-shallow-water-v1",
         "environment_format_version": "1",
         "lifecycle": "Completed",
@@ -2207,14 +2207,14 @@
         "event_stream_complete": true,
         "failure": null,
         "provenance": {
-          "definition_sha256": "593b66cb6e4608c08036237c927339006f24af430a3d45e41b4dafda83d36d58",
+          "definition_sha256": "f143aaa83796e80b83a97208bc2bd3762dbe2ec1f2f0b8e3b463ef8b91b902bc",
           "experiment": {
-            "id": "experiment-fc23aeb44513-r3",
-            "version": 13
+            "id": "experiment-fc23aeb44513-r4",
+            "version": 14
           },
           "scenario": {
-            "id": "scenario-327eff7149f9-r13",
-            "version": 13
+            "id": "scenario-327eff7149f9-r14",
+            "version": 14
           },
           "environment": {
             "asset_id": "reference-shallow-water-v1",
@@ -2284,12 +2284,12 @@
         }
       },
       "context": {
-        "run_id": "run-f65b88ea37894e5e86445a0c73b103dc",
+        "run_id": "run-7040d8b606f142dfad275e30f8507690",
         "source": "AuthoredDefinition",
-        "definition_sha256": "593b66cb6e4608c08036237c927339006f24af430a3d45e41b4dafda83d36d58",
+        "definition_sha256": "f143aaa83796e80b83a97208bc2bd3762dbe2ec1f2f0b8e3b463ef8b91b902bc",
         "scenario": {
-          "scenario_id": "scenario-327eff7149f9-r13",
-          "version": "13",
+          "scenario_id": "scenario-327eff7149f9-r14",
+          "version": "14",
           "name": "收口1010-三节点场景",
           "nodes": [
             {
@@ -2372,12 +2372,12 @@
           "spatial_domain": null
         },
         "experiment": {
-          "experiment_id": "experiment-fc23aeb44513-r3",
-          "version": "13",
+          "experiment_id": "experiment-fc23aeb44513-r4",
+          "version": "14",
           "name": "B-OSDM-集成验证",
           "scenario": {
-            "scenario_id": "scenario-327eff7149f9-r13",
-            "version": "13"
+            "scenario_id": "scenario-327eff7149f9-r14",
+            "version": "14"
           },
           "routing": {
             "mode": "Direct"
@@ -2452,18 +2452,18 @@
         },
         "limitations": [],
         "actions": {
-          "run_id": "run-f65b88ea37894e5e86445a0c73b103dc",
+          "run_id": "run-7040d8b606f142dfad275e30f8507690",
           "experiment_name": "B-OSDM-集成验证",
           "scenario_name": "收口1010-三节点场景",
           "environment_asset_id": "reference-shallow-water-v1",
           "edit": {
             "available": true,
             "experiment_draft_id": "experiment-fc23aeb44513",
-            "captured_revision": 3,
-            "current_revision": 3,
+            "captured_revision": 4,
+            "current_revision": 4,
             "scenario_draft_id": "scenario-327eff7149f9",
-            "captured_scenario_revision": 13,
-            "current_scenario_revision": 13,
+            "captured_scenario_revision": 14,
+            "current_scenario_revision": 14,
             "reason": null
           },
           "rerun": {
@@ -2475,11 +2475,11 @@
         "recorded_channel": null
       },
       "result": {
-        "run_id": "run-f65b88ea37894e5e86445a0c73b103dc",
-        "experiment_id": "experiment-fc23aeb44513-r3",
-        "experiment_version": "13",
-        "scenario_id": "scenario-327eff7149f9-r13",
-        "scenario_version": "13",
+        "run_id": "run-7040d8b606f142dfad275e30f8507690",
+        "experiment_id": "experiment-fc23aeb44513-r4",
+        "experiment_version": "14",
+        "scenario_id": "scenario-327eff7149f9-r14",
+        "scenario_version": "14",
         "environment_asset_id": "reference-shallow-water-v1",
         "environment_format_version": "1",
         "projection": {
@@ -2789,14 +2789,14 @@
           ]
         },
         "provenance": {
-          "definition_sha256": "593b66cb6e4608c08036237c927339006f24af430a3d45e41b4dafda83d36d58",
+          "definition_sha256": "f143aaa83796e80b83a97208bc2bd3762dbe2ec1f2f0b8e3b463ef8b91b902bc",
           "experiment": {
-            "id": "experiment-fc23aeb44513-r3",
-            "version": 13
+            "id": "experiment-fc23aeb44513-r4",
+            "version": 14
           },
           "scenario": {
-            "id": "scenario-327eff7149f9-r13",
-            "version": 13
+            "id": "scenario-327eff7149f9-r14",
+            "version": 14
           },
           "environment": {
             "asset_id": "reference-shallow-water-v1",
@@ -3428,7 +3428,7 @@
     },
     {
       "run": {
-        "run_id": "run-2301c2bc851c4c4c8bd14871089f54d6",
+        "run_id": "run-cf0e0818133745e780f1ecd38d0b1aed",
         "experiment_id": "acceptance4-experiment",
         "experiment_version": "1",
         "scenario_id": "acceptance4-scenario",
@@ -3444,7 +3444,7 @@
         "provenance": null
       },
       "context": {
-        "run_id": "run-2301c2bc851c4c4c8bd14871089f54d6",
+        "run_id": "run-cf0e0818133745e780f1ecd38d0b1aed",
         "source": "Preset",
         "definition_sha256": null,
         "scenario": {
@@ -3588,7 +3588,7 @@
           "这个预置案例未公开轨迹资源绑定详情；运行位置以正式事件记录为准。"
         ],
         "actions": {
-          "run_id": "run-2301c2bc851c4c4c8bd14871089f54d6",
+          "run_id": "run-cf0e0818133745e780f1ecd38d0b1aed",
           "experiment_name": "Acceptance 4-Node Experiment",
           "scenario_name": "Acceptance 4-Node Scenario",
           "environment_asset_id": "reference-shallow-water-v1",
@@ -3622,7 +3622,7 @@
         "recorded_channel": null
       },
       "result": {
-        "run_id": "run-2301c2bc851c4c4c8bd14871089f54d6",
+        "run_id": "run-cf0e0818133745e780f1ecd38d0b1aed",
         "experiment_id": "acceptance4-experiment",
         "experiment_version": "1",
         "scenario_id": "acceptance4-scenario",
