@@ -32,6 +32,7 @@ export function runPhysicalMode(result: ResultDto | undefined, implementation: s
     if (mode !== "unknown") return mode;
   }
   if (implementation === "Channel2Waveform" || implementation === "Channel2") return "B";
+  if (implementation === "Channel3Recorded") return "C";
   if (implementation === "Channel1Abstract" || implementation === "Channel1") return "A";
   return events.some(e => e.trace.kind === "Reception" && e.trace.payload.waveform) ? "B" : "unknown";
 }

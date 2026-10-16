@@ -20,6 +20,7 @@
 
 #include "internal/simulation_worker.hpp"
 #include "planning_context_json.hpp"
+#include "recorded_run_channel.hpp"
 
 namespace ns3_factory::worker::adapter {
 
@@ -60,7 +61,7 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document,bool flow_
     keys(document, {"schema", "execution_mode", "scenario_id", "scenario_source_revision",
         "scenario_name", "spatial_domain", "experiment_id", "experiment_source_revision",
         "version", "environment", "fusion_center_node_id", "nodes", "trajectory_bindings",
-        "trajectory_assets", "experiment"}, "document keys");
+        "trajectory_assets", "experiment", "recorded_channel"}, "document keys");
     integer(document.at("version"), u64, "version");
     for(const auto field : {"scenario_source_revision", "experiment_source_revision"})
       if(document.contains(field)) integer(document.at(field), u64, field);
@@ -84,7 +85,7 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document,bool flow_
         "center_frequency_hz", "occupied_bandwidth_hz", "source_level_db",
         "network_update_interval_cycles", "minimum_bearing_points", "maximum_fusion_period_ns",
         "target_x_m", "target_y_m", "maximum_ber", "planning_cycle_duration_ns", "adaptive_tdma",
-        "flows", "fusion_receiver_node_id", "mac_algorithm"}, "experiment keys");
+        "flows", "fusion_receiver_node_id", "mac_algorithm", "osdm"}, "experiment keys");
     require(experiment.at("routing_mode") == "Direct" || experiment.at("routing_mode") == "ShortestPath", "routing_mode");
     require(experiment.at("workload") == "CommunicationOnly" || experiment.at("workload") == "BearingFusion", "workload");
     integer(experiment.at("planning_cycle_duration_ns"), i64, "planning_cycle_duration_ns");
@@ -96,9 +97,11 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document,bool flow_
                            "target_x_m", "target_y_m", "maximum_ber"}) real(experiment.at(field), field);
     if(experiment.contains("deterministic_seed")) integer(experiment.at("deterministic_seed"), u64, "deterministic_seed");
     if(experiment.contains("physical_layer")) require(experiment.at("physical_layer") == "Channel1Abstract" ||
-        experiment.at("physical_layer") == "Channel2Waveform", "physical_layer");
+        experiment.at("physical_layer") == "Channel2Waveform" ||
+        experiment.at("physical_layer") == "Channel3Recorded", "physical_layer");
     if(experiment.contains("waveform_modulation")) require(experiment.at("waveform_modulation") == "Bpsk" ||
-        experiment.at("waveform_modulation") == "Bfsk", "waveform_modulation");
+        experiment.at("waveform_modulation") == "Bfsk" ||
+        experiment.at("waveform_modulation") == "Osdm", "waveform_modulation");
     if(experiment.contains("waveform_noise")) require(experiment.at("waveform_noise") == "None" ||
         experiment.at("waveform_noise") == "Awgn", "waveform_noise");
     if(experiment.contains("waveform_noise_psd_db_re_1upa2_per_hz"))
@@ -201,13 +204,17 @@ inline auto LoadAuthoredRunDefinition(
     if(!input) return std::unexpected(Error{ErrorCode::kNotFound,
         "Authored run definition is unavailable"});
     auto document = json::parse(input);
+    const bool recorded_mode=document.at("schema")=="ns3-factory-authored-run-v4";
+    if(recorded_mode!=(request.physical_layer==PhysicalLayerImplementation::kChannel3Recorded)||
+       recorded_mode!=document.contains("recorded_channel"))
+      throw std::invalid_argument("Recorded mode requires matching v4 definition and command");
     const bool flow_scoped=document.at("schema")=="ns3-factory-authored-run-v3";
     if(flow_scoped) {
       NormalizePlanningV3Integers(document);
       if(document.at("experiment").at("mac_mode")!="RegisteredMac")
         throw std::invalid_argument("Authored v3 requires explicit flow-scoped MAC");
     }
-    const bool planning_v2 = flow_scoped || document.at("schema") == "ns3-factory-authored-run-v2";
+    const bool planning_v2 = recorded_mode || flow_scoped || document.at("schema") == "ns3-factory-authored-run-v2";
     if(planning_v2) {
       const auto valid = ValidatePlanningV2Document(document,flow_scoped);
       if(!valid) return std::unexpected(valid.error());
@@ -346,8 +353,61 @@ inline auto LoadAuthoredRunDefinition(
     }
     auto bound = trajectory::BoundTrajectories::Create(repository, std::move(bindings));
     if(!bound) return std::unexpected(bound.error());
+    std::optional<phy::internal::OsdmConfig> osdm;
+    if(request.waveform_modulation == WaveformModulation::kOsdm) {
+      if(!planning_v2 || request.physical_layer == PhysicalLayerImplementation::kChannel1Abstract ||
+         e.value("waveform_modulation", "") != "Osdm")
+        throw std::invalid_argument("OSDM command/definition mismatch or unsupported execution mode");
+      const auto& o = e.at("osdm");
+      if(!o.is_object() || o.size() != 6 || !o.contains("constellation") ||
+         (o.at("constellation") != "Bpsk" && o.at("constellation") != "Qpsk"))
+        throw std::invalid_argument("Invalid OSDM configuration");
+      for(const auto key : {"block_length", "vector_length", "cyclic_prefix", "maximum_sync_search"})
+        if(!o.at(key).is_number_unsigned() || o.at(key).get<std::uint64_t>() == 0 ||
+           o.at(key).get<std::uint64_t>() > 16384)
+          throw std::invalid_argument("OSDM count exceeds explicit compute budget");
+      if(!o.at("minimum_sync_correlation").is_number())
+        throw std::invalid_argument("OSDM synchronization threshold must be numeric");
+      osdm = phy::internal::OsdmConfig{o.at("block_length").get<std::size_t>(),
+          o.at("vector_length").get<std::size_t>(), o.at("cyclic_prefix").get<std::size_t>(),
+          o.at("constellation") == "Qpsk" ? phy::internal::OsdmConstellation::kQpsk : phy::internal::OsdmConstellation::kBpsk,
+          true, o.at("minimum_sync_correlation").get<double>(), o.at("maximum_sync_search").get<std::size_t>()};
+      auto valid = phy::internal::ValidateOsdmConfig(*osdm);
+      if(!valid) return std::unexpected(valid.error());
+    } else if(e.contains("osdm") || e.value("waveform_modulation", "") == "Osdm") {
+      throw std::invalid_argument("Inactive or mismatched OSDM parameters");
+    }
+    std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded;
+    if(recorded_mode) {
+      if(e.at("physical_layer")!="Channel3Recorded"||e.at("workload")!="CommunicationOnly"||
+         (e.at("mac_mode")!="AdaptiveTdma"&&e.at("mac_mode")!="Tdma")||
+         e.at("routing_mode")!="Direct"||e.at("source_level_db")!=0||nodes.size()!=2||
+         request.quality_mode!=application::RxQualityMode::kNone)
+        throw std::invalid_argument("Recorded link experiment requires two endpoints, direct communication, relative unit amplitude and non-oracle TDMA");
+      const auto& rc=document.at("recorded_channel");
+      if(rc.at("manifest").at("asset_id")!=request.environment.asset_id||request.environment.asset_format_version!=1)
+        throw std::invalid_argument("Recorded source identity mismatch");
+      const auto sender=planning_json::Unsigned(rc.at("transmitter_node_id"));
+      const auto receiver=planning_json::Unsigned(rc.at("receiver_node_id"));
+      for(const auto& node:nodes) {
+        if((node.node_id.value()!=sender&&node.node_id.value()!=receiver)||
+           node.capability.can_transmit!=(node.node_id.value()==sender)||
+           node.capability.can_receive!=(node.node_id.value()==receiver))
+          throw std::invalid_argument("Recorded directed link does not cover physical node capabilities");
+      }
+      for(const auto& a:document.at("trajectory_assets")) for(const auto& track:a.at("tracks")) {
+        const auto& first=track.at("points").at(0);
+        for(const auto& point:track.at("points")) for(const auto axis:{"x_m","y_m","z_m"})
+          if(point.at(axis)!=first.at(axis))throw std::invalid_argument("Recorded Doppler cannot be combined with synthetic trajectory motion");
+      }
+      const auto rate=static_cast<double>(experiment->phy().bit_rate_bits_per_second);
+      const auto fs=osdm ? rate / *phy::internal::BitsPerOsdmSymbol(*osdm) : rate*100;
+      auto loaded=LoadRecordedRunChannel(path.parent_path().parent_path(),rc,fs);
+      if(!loaded)return std::unexpected(loaded.error());
+      recorded=std::move(*loaded);
+    }
     return internal::RunExecutionDefinition{
-        std::move(*scenario), std::move(*experiment), std::move(*bound)};
+        std::move(*scenario), std::move(*experiment), std::move(*bound), std::move(osdm),std::move(recorded)};
   } catch(const std::exception& error) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,
         std::string{"Invalid authored run definition: "} + error.what()});

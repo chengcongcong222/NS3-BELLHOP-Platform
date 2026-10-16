@@ -99,56 +99,131 @@ struct MultipathTap final {
   return {};
 }
 
+// Sparse R maps provider path gains to the waveform delay grid.
+// R[waveform_delay_index, path_index] is a real interpolation weight.
+struct DelayAlignmentEntry final {
+  std::size_t waveform_delay_index;
+  std::size_t path_index;
+  double weight;
+};
+
+struct DelayAlignmentMatrix final {
+  std::size_t row_count;
+  std::size_t column_count;
+  std::vector<DelayAlignmentEntry> entries;
+
+  [[nodiscard]] auto Multiply(
+      std::span<const std::complex<double>> path_gains) const
+      -> Result<std::vector<std::complex<double>>> {
+    if(path_gains.size() != column_count) {
+      return std::unexpected(
+          Error{ErrorCode::kInvalidArgument,
+                "Delay alignment matrix column count does not match gains"});
+    }
+    for(const auto gain : path_gains) {
+      if(!std::isfinite(gain.real()) || !std::isfinite(gain.imag())) {
+        return std::unexpected(
+            Error{ErrorCode::kInvalidArgument,
+                  "Delay alignment matrix gains must be finite"});
+      }
+    }
+    std::vector<std::complex<double>> aligned(row_count);
+    for(const auto& entry : entries) {
+      aligned[entry.waveform_delay_index] +=
+          entry.weight * path_gains[entry.path_index];
+    }
+    return aligned;
+  }
+};
+
+[[nodiscard]] inline auto BuildDelayAlignmentMatrix(
+    std::span<const MultipathTap> taps, double waveform_sample_rate_hz)
+    -> Result<DelayAlignmentMatrix> {
+  const auto validation = ValidateMultipathTaps(taps);
+  if(!validation) return std::unexpected(validation.error());
+  if(!std::isfinite(waveform_sample_rate_hz) ||
+     waveform_sample_rate_hz <= 0.0) {
+    return std::unexpected(
+        Error{ErrorCode::kInvalidArgument,
+              "Waveform sample rate must be finite and positive"});
+  }
+  if(taps.size() > std::numeric_limits<std::size_t>::max() / 2U) {
+    return std::unexpected(
+        Error{ErrorCode::kOverflow, "Too many channel paths"});
+  }
+
+  std::vector<DelayAlignmentEntry> entries;
+  entries.reserve(taps.size() * 2U);
+  long double maximum_position = 0.0L;
+  for(std::size_t path_index = 0; path_index < taps.size(); ++path_index) {
+    const auto position =
+        static_cast<long double>(taps[path_index].excess_delay_seconds) *
+        static_cast<long double>(waveform_sample_rate_hz);
+    if(!std::isfinite(position) ||
+       position > static_cast<long double>(
+                      std::numeric_limits<std::size_t>::max() - 1U)) {
+      return std::unexpected(
+          Error{ErrorCode::kOverflow,
+                "Multipath delay exceeds waveform addressable range"});
+    }
+    maximum_position = std::max(maximum_position, position);
+    const auto lower = static_cast<std::size_t>(std::floor(position));
+    const auto fraction = static_cast<double>(position - lower);
+    entries.push_back({lower, path_index, 1.0 - fraction});
+    if(fraction > 0.0) {
+      entries.push_back({lower + 1U, path_index, fraction});
+    }
+  }
+  const auto row_count =
+      static_cast<std::size_t>(std::ceil(maximum_position)) + 1U;
+  return DelayAlignmentMatrix{row_count, taps.size(), std::move(entries)};
+}
+
+// Convert provider paths into the causal complex impulse response sampled on
+// the waveform grid. Fractional path delays are distributed over adjacent
+// samples by the same sparse alignment matrix used during propagation.
+[[nodiscard]] inline auto BuildSampledImpulseResponse(
+    std::span<const MultipathTap> taps, double waveform_sample_rate_hz)
+    -> Result<std::vector<std::complex<double>>> {
+  const auto alignment =
+      BuildDelayAlignmentMatrix(taps, waveform_sample_rate_hz);
+  if(!alignment) return std::unexpected(alignment.error());
+
+  std::vector<std::complex<double>> gains;
+  gains.reserve(taps.size());
+  for(const auto& tap : taps) gains.push_back(tap.pressure_gain);
+  return alignment->Multiply(gains);
+}
+
 // Provider path gains are absolute. Aggregate transmission loss is not
-// applied again here. Fractional path delays use deterministic interpolation.
+// applied again here. First h_wave = R * h_path, then y = h_wave * x.
 [[nodiscard]] inline auto ApplyMultipath(
     const WaveformBuffer& transmitted,
     std::span<const MultipathTap> taps) -> Result<WaveformBuffer> {
-  const auto validation = ValidateMultipathTaps(taps);
-  if(!validation) {
-    return std::unexpected(validation.error());
-  }
-
-  double maximum_delay_samples = 0.0;
-  for(const auto& tap : taps) {
-    maximum_delay_samples =
-        std::max(maximum_delay_samples,
-                 tap.excess_delay_seconds * transmitted.sample_rate_hz());
-  }
-  if(!std::isfinite(maximum_delay_samples) ||
-     maximum_delay_samples >
-         static_cast<double>(
-             std::numeric_limits<std::size_t>::max() -
-             transmitted.sample_count())) {
+  const auto impulse_response =
+      BuildSampledImpulseResponse(taps, transmitted.sample_rate_hz());
+  if(!impulse_response) return std::unexpected(impulse_response.error());
+  const auto tail_samples = impulse_response->size() - 1U;
+  if(tail_samples >
+     std::numeric_limits<std::size_t>::max() - transmitted.sample_count()) {
     return std::unexpected(
         Error{ErrorCode::kOverflow,
               "Multipath delay exceeds waveform addressable range"});
   }
 
-  const auto tail_samples =
-      static_cast<std::size_t>(std::ceil(maximum_delay_samples));
   std::vector<WaveformBuffer::Sample> received(
       transmitted.sample_count() + tail_samples,
       WaveformBuffer::Sample{});
 
-  for(const auto& tap : taps) {
-    const auto delay_samples =
-        tap.excess_delay_seconds * transmitted.sample_rate_hz();
-    const auto integer_delay =
-        static_cast<std::size_t>(std::floor(delay_samples));
-    const auto fraction =
-        delay_samples - static_cast<double>(integer_delay);
-
+  for(std::size_t delay_index = 0; delay_index < impulse_response->size();
+      ++delay_index) {
+    if((*impulse_response)[delay_index] == WaveformBuffer::Sample{}) continue;
     for(std::size_t source_index = 0;
         source_index < transmitted.sample_count();
         ++source_index) {
-      const auto delayed =
-          transmitted.samples()[source_index] * tap.pressure_gain;
-      const auto target_index = source_index + integer_delay;
-      received[target_index] += delayed * (1.0 - fraction);
-      if(fraction > 0.0 && target_index + 1U < received.size()) {
-        received[target_index + 1U] += delayed * fraction;
-      }
+      received[source_index + delay_index] +=
+          transmitted.samples()[source_index] *
+          (*impulse_response)[delay_index];
     }
   }
 

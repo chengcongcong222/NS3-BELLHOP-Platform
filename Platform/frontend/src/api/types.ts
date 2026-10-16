@@ -132,7 +132,7 @@ export interface ExperimentDto {
     guard_interval_ns: DecimalString | null;
   };
   phy: {
-    physical_layer?: "Channel1Abstract" | "Channel2Waveform";
+    physical_layer?: "Channel1Abstract" | "Channel2Waveform" | "Channel3Recorded";
     waveform_modulation?: string;
     waveform_noise?: string;
     waveform_noise_psd_db_re_1upa2_per_hz?: number;
@@ -163,6 +163,29 @@ export interface RunDefinitionContextDto {
   experiment: ExperimentDto;
   execution: Record<string, unknown>;
   limitations: string[];
+  recorded_channel?: RecordedChannelConfig;
+}
+
+export interface RecordedChannelDto {
+  manifest_sha256: string;
+  manifest: {
+    asset_id: string; version: number; name: string; source_sha256: string;
+    citation: string; license: string; fc: number; usable_bandwidth_hz: number;
+    fs_delay: number; fs_time: number; duration_s: number;
+    selected_index: number; axis_kind: string; reference_revision: string;
+    [key: string]: unknown;
+  };
+}
+export interface RecordedChannelConfig extends RecordedChannelDto {
+  transmitter_node_id: string; receiver_node_id: string; start_sample: string;
+  modeled_reference_delay_ns: string; relative_amplitude: number;
+  noise: { mode: string; [key: string]: unknown };
+}
+export interface RecordedNoiseDto {
+  manifest_sha256: string;
+  manifest: { asset_id: string; version: number; name: string; seed: number;
+    alpha: number; amplitude_scale: number; sample_rate_hz: number; shape: number[];
+    center_frequency_hz: number; bandwidth_hz: number; elements: number[] };
 }
 
 export interface CommunicationFlowDto {
@@ -378,6 +401,8 @@ export interface ChannelOutcomeTraceDto {
           aggregate_transmission_loss_db: number;
           path_count: DecimalString;
         }
+      | { type: "Recorded"; reference_delay_ns: DecimalString; receive_duration_ns: DecimalString;
+          gain_reference: "Normalized"; delay_reference: "Modeled" }
       | { type: "NoArrival" };
   };
 }
@@ -386,8 +411,10 @@ export interface ReceptionWaveformDto {
   payload_bit_count: DecimalString;
   bit_error_count: DecimalString;
   crc_ok: boolean;
-  signal_power_upa2: number;
-  noise_power_upa2: number;
+  signal_power_upa2?: number;
+  noise_power_upa2?: number;
+  signal_power_relative?: number;
+  noise_power_relative?: number;
 }
 
 export interface ReceptionTraceDto {

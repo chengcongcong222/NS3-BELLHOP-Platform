@@ -65,7 +65,7 @@ class TemporaryDefinition final {
     path_ = pattern;
   }
   ~TemporaryDefinition() { std::error_code ignored; std::filesystem::remove(path_, ignored); }
-  auto Load(const Json& document) -> Result<worker::internal::RunExecutionDefinition> {
+  auto Load(const Json& document, bool osdm = false) -> Result<worker::internal::RunExecutionDefinition> {
     {
       std::ofstream output{path_, std::ios::trunc};
       output << document.dump();
@@ -75,7 +75,8 @@ class TemporaryDefinition final {
         *RunId::Create("planning-run"), *ScenarioId::Create("planning-scenario"),
         *ExperimentId::Create("planning-experiment"), 1, {"field-v1", 1},
         AcceptanceProfile::kAcceptance4Node, 1, RxQualityMode::kNone, 45.0, 42,
-        PhysicalLayerImplementation::kChannel1Abstract, WaveformModulation::kBpsk,
+        osdm ? PhysicalLayerImplementation::kChannel2Waveform : PhysicalLayerImplementation::kChannel1Abstract,
+        osdm ? WaveformModulation::kOsdm : WaveformModulation::kBpsk,
         WaveformNoiseModel::kNone, 0.0};
     return LoadAuthoredRunDefinition(path_, request);
   }
@@ -87,6 +88,17 @@ auto StrictV2AndCompatibleV1() -> bool {
   TemporaryDefinition fixture;
   const auto valid = BaseDocument();
   CHECK(fixture.Load(valid));
+  auto modem = valid;
+  modem["experiment"]["physical_layer"] = "Channel2Waveform";
+  modem["experiment"]["waveform_modulation"] = "Osdm";
+  modem["experiment"]["osdm"] = {{"block_length",256}, {"vector_length",16},
+    {"cyclic_prefix",64}, {"constellation","Qpsk"}, {"minimum_sync_correlation",0.05},
+    {"maximum_sync_search",128}};
+  auto loaded = fixture.Load(modem,true);
+  CHECK(loaded && loaded->osdm && loaded->osdm->cyclic_prefix_samples == 64);
+  CHECK(!fixture.Load(modem)); // command/definition cannot silently disagree
+  modem["experiment"]["osdm"]["block_length"] = 255;
+  CHECK(!fixture.Load(modem,true));
   const std::vector<std::function<void(Json&)>> mutations{
       [](Json& j) { j["experiment"]["planning_cycle_duration_ns"] = 1.5; },
       [](Json& j) { j["experiment"]["planning_cycle_duration_ns"] = std::numeric_limits<std::uint64_t>::max(); },

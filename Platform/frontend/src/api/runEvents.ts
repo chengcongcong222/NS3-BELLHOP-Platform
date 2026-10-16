@@ -136,7 +136,7 @@ export class RunEventProjection {
         next.cycleCommitCount = (BigInt(next.cycleCommitCount) + 1n).toString();
       }
       if (parsed.trace.kind === "ChannelOutcome") {
-        const outcomeField = parsed.trace.payload.outcome.type === "Signal"
+        const outcomeField = parsed.trace.payload.outcome.type !== "NoArrival"
           ? "channelSignalCount"
           : "channelNoArrivalCount";
         next[outcomeField] = (BigInt(next[outcomeField]) + 1n).toString();
@@ -206,11 +206,24 @@ function isChannelOutcome(payload: Record<string, unknown>): boolean {
   if (!isUnsigned(payload.transmission_id) || !isUnsigned(payload.receiver_node_id) ||
       !isObject(payload.outcome)) return false;
   if (payload.outcome.type === "NoArrival") return true;
+  if (payload.outcome.type === "Recorded") return typeof payload.outcome.reference_delay_ns === "string" &&
+    typeof payload.outcome.receive_duration_ns === "string" &&
+    isInt64(payload.outcome.reference_delay_ns) && isInt64(payload.outcome.receive_duration_ns) &&
+    BigInt(payload.outcome.reference_delay_ns) >= 0n && BigInt(payload.outcome.receive_duration_ns) > 0n &&
+    payload.outcome.gain_reference === "Normalized" && payload.outcome.delay_reference === "Modeled";
   return payload.outcome.type === "Signal" &&
     typeof payload.outcome.first_arrival_delay_ns === "string" &&
     isInt64(payload.outcome.first_arrival_delay_ns) &&
     isFiniteNumber(payload.outcome.aggregate_transmission_loss_db) &&
     isUnsigned(payload.outcome.path_count);
+}
+
+function validWaveformPower(w: Record<string, unknown>): boolean {
+  const relative = w.signal_power_relative !== undefined || w.noise_power_relative !== undefined;
+  if (relative && (w.signal_power_upa2 !== undefined || w.noise_power_upa2 !== undefined)) return false;
+  const signal = relative ? w.signal_power_relative : w.signal_power_upa2;
+  const noise = relative ? w.noise_power_relative : w.noise_power_upa2;
+  return isFiniteNumber(signal) && signal >= 0 && isFiniteNumber(noise) && noise >= 0;
 }
 
 function isReception(payload: Record<string, unknown>): boolean {
@@ -222,7 +235,7 @@ function isReception(payload: Record<string, unknown>): boolean {
   const w = payload.waveform;
   if (w !== undefined && w !== null && (!isObject(w) || !isUnsigned(w.payload_bit_count) || w.payload_bit_count === "0" ||
       !isUnsigned(w.bit_error_count) || BigInt(w.bit_error_count) > BigInt(w.payload_bit_count) || typeof w.crc_ok !== "boolean" ||
-      !isFiniteNumber(w.signal_power_upa2) || w.signal_power_upa2 < 0 || !isFiniteNumber(w.noise_power_upa2) || w.noise_power_upa2 < 0)) return false;
+      !validWaveformPower(w))) return false;
   if (payload.quality === null) return true;
   return isObject(payload.quality) &&
     isFiniteNumber(payload.quality.signal_to_noise_ratio_db) &&

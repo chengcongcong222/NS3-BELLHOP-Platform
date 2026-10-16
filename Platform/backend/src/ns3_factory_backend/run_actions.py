@@ -102,15 +102,32 @@ def validate_repeat_resources(snapshot: RunSnapshot, command: StartRunCommand,
                               trajectories: TrajectoryStore) -> dict | None:
     from .run_context import load_captured_definition
     definition = load_captured_definition(snapshot) if snapshot.authored_definition_path else None
-    if not (repository_root / command.environment.asset_id).is_dir():
-        raise CatalogError("EnvironmentNotFound", "原运行绑定的环境资源已不存在，不能按原配置重新运行。")
-    environment = get_environment(command.environment.asset_id)
-    if environment.asset_format_version != command.environment.asset_format_version:
-        raise CatalogError("InvalidReference", "原运行环境版本不一致，不能替换为其他版本。")
-    expected_checksum = (definition["environment"].get("checksum") if definition is not None
-                         else manifest.environment.checksum.value if manifest else None)
-    if expected_checksum is not None and environment.checksum.value != expected_checksum:
-        raise CatalogError("InvalidReference", "原运行环境校验和不一致，不能静默使用变化后的环境。")
+    if command.execution.physical_layer == "Channel3Recorded":
+        from .recorded_channels import inspect
+        if not definition or "recorded_channel" not in definition:
+            raise CatalogError("RecordedChannelInvalid", "原运行未保留录音绑定。")
+        original = definition["recorded_channel"]
+        current = inspect(Path(snapshot.authored_definition_path).parent.parent / "recorded-channels",
+                          original["manifest"]["asset_id"], original["manifest"]["version"], verify=True)
+        if current["manifest"] != original["manifest"] or current["manifest_sha256"] != original["manifest_sha256"]:
+            raise CatalogError("RecordedChannelInvalid", "原录音版本发生变化，未使用替代数据。")
+        if original["noise"]["mode"] == "ContinuousLibrary":
+            from .recorded_channels import inspect_noise
+            noise = original["noise"]
+            current_noise = inspect_noise(Path(snapshot.authored_definition_path).parent.parent / "recorded-noise",
+                noise["manifest"]["asset_id"], noise["manifest"]["version"], verify=True)
+            if current_noise != {k: noise[k] for k in ("manifest", "manifest_sha256")}:
+                raise CatalogError("RecordedChannelInvalid", "原连续噪声版本发生变化，未重新生成替代样本。")
+    else:
+        if not (repository_root / command.environment.asset_id).is_dir():
+            raise CatalogError("EnvironmentNotFound", "原运行绑定的环境资源已不存在，不能按原配置重新运行。")
+        environment = get_environment(command.environment.asset_id)
+        if environment.asset_format_version != command.environment.asset_format_version:
+            raise CatalogError("InvalidReference", "原运行环境版本不一致，不能替换为其他版本。")
+        expected_checksum = (definition["environment"].get("checksum") if definition is not None
+                             else manifest.environment.checksum.value if manifest else None)
+        if expected_checksum is not None and environment.checksum.value != expected_checksum:
+            raise CatalogError("InvalidReference", "原运行环境校验和不一致，不能静默使用变化后的环境。")
     if definition is not None:
         try:
             for frozen in definition["trajectory_assets"]:
@@ -147,6 +164,9 @@ def _timing(definition: dict | None, command: StartRunCommand,
         overhead = 4 if command.execution.physical_layer == "Channel2Waveform" else 0
         encoded = payload_bytes + overhead
         airtime = (encoded * 8 * 1_000_000_000 + rate - 1) // rate
+        if config and command.execution.waveform_modulation == "Osdm":
+            from .modem_configuration import osdm_airtime_ns
+            airtime = osdm_airtime_ns(payload_bytes, rate, config["osdm"])
         minimum = airtime + guard
         return RunTimingDiagnostic(planned_payload_bytes=str(payload_bytes), frame_overhead_bytes=str(overhead),
             encoded_bytes=str(encoded), bit_rate_bits_per_second=str(rate),

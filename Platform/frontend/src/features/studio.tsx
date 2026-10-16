@@ -11,6 +11,7 @@ import { RunActions } from "../components/RunActions";
 import { SceneDepthProfile } from "../components/SceneDepthProfile";
 import { UuvNodeGlyph, type UuvNodeTone } from "../components/UuvNodeGlyph";
 import { ResultAnalysis } from "./resultAnalysis";
+import { RecordedLinkScene, RecordedSource } from "./recordedExperiment";
 import { definitionRunScene, mergePositionSamples, observedRunScene, type RunScene } from "../domain/runScene";
 import { physicalModeLabel } from "../productLanguage";
 import { formatNanoseconds } from "../domain/format";
@@ -153,7 +154,7 @@ export function StudioRunPage() {
 function StudioRunSession({ runId, livePresentation }: { runId: string; livePresentation: boolean }) {
   const run = useQuery({ ...queries.run(runId), refetchInterval: q => q.state.data?.lifecycle === "Completed" || q.state.data?.lifecycle === "Failed" ? false : 500 });
   const context = useQuery({ ...queries.runDefinitionContext(runId), enabled: !!run.data });
-  const environmentInputs = useQuery({ queryKey: ["environment-inputs", run.data?.environment_asset_id], queryFn: () => apiClient.environmentInputs(run.data!.environment_asset_id), enabled: !!run.data, retry: false });
+  const environmentInputs = useQuery({ queryKey: ["environment-inputs", run.data?.environment_asset_id], queryFn: () => apiClient.environmentInputs(run.data!.environment_asset_id), enabled: !!context.data && context.data.experiment.phy.physical_layer !== "Channel3Recorded", retry: false });
   const result = useQuery({ ...queries.result(runId), enabled: run.data?.lifecycle === "Completed" });
   const { projection, error, streamEnded } = useEvents(runId);
   const [observationLayer, setObservationLayer] = useState<"protocol" | "physical">("protocol");
@@ -206,7 +207,7 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
   const visible = protocolIntentEvents(prefix);
   const shownEvents = displayEvents(prefix, visibleKinds, observationLayer === "physical");
   const mode = runPhysicalMode(result.data, experiment?.phy.physical_layer, prefix);
-  const quality = qualityAt(visible, mode === "unknown" ? "unknown" : mode === "B");
+  const quality = qualityAt(visible, mode === "unknown" ? "unknown" : mode !== "A");
   const communication = communicationProgress(prefix, row?.event, shownEvents);
   const counts = projectionCounts(visible), trends = cumulativeTrends(visible);
   const capabilitiesByNode = new Map(context.data?.scenario.nodes.map(n => [n.node_id, n] as const) ?? []);
@@ -222,7 +223,8 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
   const firstTime = rows[0]?.at ?? "0", lastTime = rows.at(-1)?.at ?? firstTime;
   const playheadPercent = row ? timePercent(row.at, firstTime, lastTime) : 0;
   const shownCount = Math.max(0, index + 1);
-  const lastDelay = trends.delay.at(-1)?.value;
+  const lastDelay = mode === "C" && counts.signals > 0 && context.data?.recorded_channel
+    ? Number(context.data.recorded_channel.modeled_reference_delay_ns) / 1e9 : trends.delay.at(-1)?.value;
   const eventStack = studioEvents(shownEvents).slice(-100).reverse();
   const finishedJournal = streamEnded && ["Completed", "Failed"].includes(run.data.lifecycle);
   const finishedWithoutDisplayedEvents = finishedJournal && shownSequences.size === 0;
@@ -237,7 +239,7 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
       <aside className="studio-node-rail runtime-experiment-panel" aria-label="实验与节点">
         <div className="runtime-experiment-heading"><span>本次实验</span><Status value={run.data.lifecycle} /></div>
         <h1>{experiment?.name ?? "历史运行回放"}</h1>
-        <p className="runtime-mode">{mode === "unknown" ? "物理模式未记录" : physicalModeLabel(mode === "B" ? "Channel2Waveform" : "Channel1Abstract")}</p>
+        <p className="runtime-mode">{mode === "unknown" ? "物理模式未记录" : physicalModeLabel(mode === "C" ? "Channel3Recorded" : mode === "B" ? "Channel2Waveform" : "Channel1Abstract")}</p>
         <div className="runtime-time-summary"><div><small>当前展示仿真时间</small><strong title={row ? formatNanoseconds(row.at) : undefined}>{row ? secondsLabel(row.at) : "等待事件"}</strong></div><div><small>已展示周期</small><strong>{counts.cycles}{experiment ? <small> / {experiment.simulation_cycle_count}</small> : null}</strong></div></div>
         {progress !== null && <progress className="runtime-cycle-progress" aria-label="已展示周期进度" max={100} value={progress} />}
         <RunActions runId={runId} lifecycle={run.data.lifecycle} />
@@ -258,17 +260,21 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
             </span></button>;
         })}</div>
         <div className="studio-legend"><span><i className="legend-tx" />发送</span><span><i className="legend-arrival" />到达</span><span><i className="legend-success" />成功</span><span><i className="legend-failure" />失败</span></div>
+        {context.data?.recorded_channel && <RecordedSource source={context.data.recorded_channel} />}
       </aside>
-      <article className="studio-surface"><StudioCanvas scenario={scene} samples={samples} row={row} events={prefix} shown={shownEvents} selected={selected} select={select} environmentInputs={environmentInputs.data} /></article>
+      <article className="studio-surface">{context.data?.recorded_channel ? <RecordedLinkScene config={context.data.recorded_channel}
+        phase={row && shownSequences.has(row.event.sequence) ? row.kind : undefined}
+        failed={row?.event.trace.kind === "Reception" && row.event.trace.payload.disposition === "NotDecoded"} />
+        : <StudioCanvas scenario={scene} samples={samples} row={row} events={prefix} shown={shownEvents} selected={selected} select={select} environmentInputs={environmentInputs.data} />}</article>
       <aside className="studio-inspector link-inspector runtime-observation-panel" aria-label="通信观察与统计">
         <section className="runtime-view-toolbar"><div><strong>通信观察</strong><select aria-label="通信观测层" value={observationLayer} onChange={(event) => changeObservationLayer(event.target.value as "protocol" | "physical")}><option value="protocol">协议目标链路（默认）</option><option value="physical">完整物理信道（含旁听）</option></select></div><details><summary>显示范围与数据说明</summary><p>{observationLayer === "protocol" ? "只突出当前跳目标及其解码结果；真实旁听事件未删除，可切换完整物理信道查看。" : `当前显示共享声学信道全部候选接收：旁听 ${physicalCounts.overheard}，未解码 ${physicalCounts.notDecoded}。`}</p><p>信道计算不是到达事件；“实际到达”来自信号经过传播时延后的正式事件。</p></details></section>
         <section className="research-panel runtime-metrics-panel" aria-label="运行统计面板"><div className="runtime-stat-heading"><strong>当前进度统计</strong><button type="button" disabled={!result.data} onClick={() => setResultOpen(true)}>查看结果</button></div>
-        <section className="live-metric-strip" aria-label="当前展示进度统计"><span><small>最近接收信噪比 SNR</small><b>{quality.snr}</b></span><span><small>{mode === "B" ? "实际误码率 BER" : mode === "A" ? "理论误码率 BER" : "误码率 BER"}</small><b>{quality.ber}</b></span><span><small>节点发送速率</small><b>{experiment?.phy.bit_rate_bits_per_second ?? "—"}<small> bit/s</small></b></span><span><small>累计发送</small><b>{counts.transmissions}</b></span><span><small>目标链路交付</small><b>{counts.localDeliveries}</b></span><span><small>解码失败</small><b>{counts.notDecoded}</b></span><span><small>最近传播时延</small><b>{lastDelay === undefined ? "—" : `${lastDelay.toFixed(3)} s`}</b></span><span><small>融合轮次</small><b>{visible.filter((event) => event.trace.kind === "Fusion").length}</b></span><span><small>本轮有效观测</small><b>{visible.flatMap((event) => event.trace.kind === "Fusion" ? [event.trace.payload.observation_count] : []).at(-1) ?? "—"}</b></span></section>
+        <section className="live-metric-strip" aria-label="当前展示进度统计"><span><small>{mode === "C" ? "本次样本功率比（非标定）" : "最近接收信噪比 SNR"}</small><b>{quality.snr}</b></span><span><small>{(mode === "B" || mode === "C") ? "实际误码率 BER" : mode === "A" ? "理论误码率 BER" : "误码率 BER"}</small><b>{quality.ber}</b></span><span><small>节点发送速率</small><b>{experiment?.phy.bit_rate_bits_per_second ?? "—"}<small> bit/s</small></b></span><span><small>累计发送</small><b>{counts.transmissions}</b></span><span><small>目标链路交付</small><b>{counts.localDeliveries}</b></span><span><small>解码失败</small><b>{counts.notDecoded}</b></span><span><small>{mode === "C" ? "建模传播时延" : "最近传播时延"}</small><b>{lastDelay === undefined ? "—" : `${lastDelay.toFixed(3)} s`}</b></span><span><small>融合轮次</small><b>{visible.filter((event) => event.trace.kind === "Fusion").length}</b></span><span><small>本轮有效观测</small><b>{visible.flatMap((event) => event.trace.kind === "Fusion" ? [event.trace.payload.observation_count] : []).at(-1) ?? "—"}</b></span></section>
         <p className="quality-basis">{quality.basis}{mode === "A" ? "（不代表逐比特实测）" : ""}</p>
-        <details className="quality-coverage"><summary>统计范围 · {quality.evaluated}/{quality.receptions} 次已处理目标接收有质量记录</summary><p>仅统计当前观看进度；尚未到达、无到达路径和缺失的质量记录不计为零误码。节点发送速率是配置速率，不是网络有效吞吐量。</p>{mode === "B" && <p>错误比特 {quality.errors} / 已比较比特 {quality.bits}；校验通过 {quality.crcPass} / 失败 {quality.crcFail}。这是已有样本统计，不代表未观测链路。</p>}</details>
+        <details className="quality-coverage"><summary>统计范围 · {quality.evaluated}/{quality.receptions} 次已处理目标接收有质量记录</summary><p>仅统计当前观看进度；尚未到达、无到达路径和缺失的质量记录不计为零误码。节点发送速率是配置速率，不是网络有效吞吐量。</p>{(mode === "B" || mode === "C") && <p>错误比特 {quality.errors} / 已比较比特 {quality.bits}；校验通过 {quality.crcPass} / 失败 {quality.crcFail}。这是已有样本统计，不代表未观测链路。</p>}</details>
         </section>
         {communication && <section className="communication-progress" aria-label="当前发送的接收进度"><strong>N{communication.sender} → {communication.target.type === "Unicast" ? `N${communication.target.node_id}` : "广播"}</strong><div className="communication-progress-scroll"><table><thead><tr><th>接收节点</th><th>到达时间</th><th>接收结果</th></tr></thead><tbody>{communication.receivers.map(receiver => <tr key={receiver.node}><th>N{receiver.node}</th><td>{receiver.arrivedAt ? secondsLabel(receiver.arrivedAt) : "未显示"}</td><td>{receiver.outcome ?? "已到达 · 未显示接收结果"}{receiver.completedAt && <small>{secondsLabel(receiver.completedAt)}</small>}</td></tr>)}</tbody></table>{!communication.receivers.length && <p>当前进度及筛选下尚无接收记录。</p>}</div></section>}
-        {node && <section className="runtime-selected-node" aria-label="节点检查器"><div><strong>N{node.node_id} · 当前位置</strong><button onClick={() => select(null)}>返回事件</button></div><p>{p ? `X ${p.x_meters.toFixed(3)} · Y ${p.y_meters.toFixed(3)} · Z ${p.z_meters.toFixed(3)} m` : "该时刻无位置投影"}</p><small>正式轨迹样本之间仅做显示插值。</small></section>}
+        {node && mode !== "C" && <section className="runtime-selected-node" aria-label="节点检查器"><div><strong>N{node.node_id} · 当前位置</strong><button onClick={() => select(null)}>返回事件</button></div><p>{p ? `X ${p.x_meters.toFixed(3)} · Y ${p.y_meters.toFixed(3)} · Z ${p.z_meters.toFixed(3)} m` : "该时刻无位置投影"}</p><small>正式轨迹样本之间仅做显示插值。</small></section>}
         {row?.kind === "Fusion" && shownSequences.has(row.event.sequence) && row.event.trace.kind === "Fusion" && <p className="fusion-summary">N{row.event.trace.payload.fusion_center_node_id} 汇合 {row.event.trace.payload.observation_count} 条有效观测，产生本轮融合结果。</p>}
         {row && shownSequences.has(row.event.sequence) && <details className="event-technical"><summary>当前事件技术详情</summary>{eventTechnicalDetail(row.event)}</details>}
         <section className="research-panel runtime-log-panel" aria-label="事件日志面板"><div className="inspector-heading"><h2>实时事件堆栈</h2><span>最近 {eventStack.length} 条</span></div>

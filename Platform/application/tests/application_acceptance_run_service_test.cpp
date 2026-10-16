@@ -471,7 +471,8 @@ auto TestCommunicationOnlyUsesActualPayloadAirtime() -> bool {
           {{phy::internal::ModulationScheme::kBpsk, 6000, 60,
             std::pow(10.0, preset->phy().source_level_db_re_1upa_at_1m / 20.0),
             25000, 30},
-           4000, phy::internal::NoNoiseConfig{}, true,
+           4000, phy::internal::NoNoiseConfig{},
+           {phy::internal::ChannelEqualizationMode::kDisabled}, true,
            phy::internal::WaveformFrameFormat::kPayloadWithCrc32, 1'000'000}});
     }
     RunExecutionExecutor executor{*environments, nullptr, options};

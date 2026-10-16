@@ -161,7 +161,7 @@ inline auto TransmissionExecutor::ExecuteTransmission(
         receiver_state.motion.position,
         request.started_at,
         emission->center_frequency_hz(),
-        emission->bandwidth_hz());
+        emission->bandwidth_hz(), emission->duration());
     if(!query) {
       return std::unexpected(query.error());
     }
@@ -176,6 +176,14 @@ inline auto TransmissionExecutor::ExecuteTransmission(
       return std::unexpected(outcome_identity.error());
     }
 
+    if(const auto* recorded=std::get_if<contracts::RecordedChannelResponse>(&*outcome)) {
+      auto signal=contracts::ReceivedSignal::Create(*emission,*recorded);
+      if(!signal) return std::unexpected(signal.error());
+      received_signals.push_back(std::move(*signal));
+      channel_outcomes.push_back({receiver_state.node_id,
+          RecordedChannelExecutionSummary{recorded->reference_delay(),recorded->receive_duration()}});
+      continue;
+    }
     const auto* response =
         std::get_if<contracts::ChannelFieldResponse>(&*outcome);
     if(response == nullptr) {

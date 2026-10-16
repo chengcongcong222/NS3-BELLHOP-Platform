@@ -14,6 +14,7 @@ if(BUILD_TESTING)
       committed_state
       communication
       phy_channel
+      recorded_channel
       receiver_window
       rx_phy
       rx_quality

@@ -175,11 +175,15 @@ def validate_payload(kind: DraftKind, payload: dict[str, Any]) -> list[str]:
         if not re.fullmatch(r"(0|[1-9][0-9]*)", str(payload.get("deterministic_seed", ""))):
             issues.append("确定性 seed 必须是非负整数")
         if payload.get("physical_layer", "Channel1Abstract") not in {
-            "Channel1Abstract", "Channel2Waveform"
+            "Channel1Abstract", "Channel2Waveform", "Channel3Recorded"
         }:
             issues.append("物理层实现无效")
-        if payload.get("waveform_modulation", "Bpsk") not in {"Bpsk", "Bfsk"}:
+        if payload.get("waveform_modulation", "Bpsk") not in {"Bpsk", "Bfsk", "Osdm"}:
             issues.append("波形调制方式无效")
+        from .modem_configuration import validate_osdm
+        issues.extend(validate_osdm(payload))
+        from .recorded_channels import settings_issues
+        issues.extend(settings_issues(payload))
         if payload.get("waveform_noise", "None") not in {"None", "Awgn"}:
             issues.append("波形噪声配置无效")
         planning = payload.get("execution_mode") == "PlanningV1"

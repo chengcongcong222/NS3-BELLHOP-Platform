@@ -810,7 +810,9 @@ export function ExperimentAuthoringPage() {
   const loadedExperiment = useRef("");
   const [savedSignature, setSavedSignature] = useState("");
   const [physicalLayer, setPhysicalLayer] = useState<"Channel1Abstract" | "Channel2Waveform">("Channel1Abstract");
-  const [waveformModulation, setWaveformModulation] = useState<"Bpsk" | "Bfsk">("Bpsk");
+  const [waveformModulation, setWaveformModulation] = useState<"Bpsk" | "Bfsk" | "Osdm">("Bpsk");
+  const [osdm, setOsdm] = useState({ block_length: 256, vector_length: 16, cyclic_prefix: 64,
+    constellation: "Qpsk", minimum_sync_correlation: 0.05, maximum_sync_search: 128 });
   const [waveformNoise, setWaveformNoise] = useState<"None" | "Awgn">("None");
   const [waveformNoisePsd, setWaveformNoisePsd] = useState(0);
   const [slotDurationNs, setSlotDurationNs] = useState("6000000000");
@@ -873,7 +875,9 @@ export function ExperimentAuthoringPage() {
       updatedAt: selected.updated_at,
     });
     setPhysicalLayer(text("physical_layer", "Channel1Abstract") === "Channel2Waveform" ? "Channel2Waveform" : "Channel1Abstract");
-    setWaveformModulation(text("waveform_modulation", "Bpsk") === "Bfsk" ? "Bfsk" : "Bpsk");
+    const savedModem = text("waveform_modulation", "Bpsk");
+    setWaveformModulation(savedModem === "Osdm" ? "Osdm" : savedModem === "Bfsk" ? "Bfsk" : "Bpsk");
+    if (source.osdm && typeof source.osdm === "object") setOsdm(source.osdm as typeof osdm);
     setWaveformNoise(text("waveform_noise", "None") === "Awgn" ? "Awgn" : "None");
     setWaveformNoisePsd(number("waveform_noise_psd_db_re_1upa2_per_hz", 0));
     setSlotDurationNs(text("slot_duration_ns", "6000000000"));
@@ -897,7 +901,7 @@ export function ExperimentAuthoringPage() {
     deterministic_seed: value.deterministicSeed,
     network_update_interval_cycles: value.networkUpdateIntervalCycles,
     physical_layer: physicalLayer,
-    waveform_modulation: waveformModulation,
+    waveform_modulation: physicalLayer === "Channel1Abstract" ? "Bpsk" : waveformModulation,
     waveform_noise: waveformNoise,
     waveform_noise_psd_db_re_1upa2_per_hz: waveformNoisePsd,
     slot_duration_ns: slotDurationNs,
@@ -905,6 +909,8 @@ export function ExperimentAuthoringPage() {
     target_x_m: target.x,
     target_y_m: target.y,
   };
+  delete payload.osdm;
+  if (physicalLayer === "Channel2Waveform" && waveformModulation === "Osdm") payload.osdm = osdm;
   if (planning) {
     payload.execution_mode = "PlanningV1";
     payload.planning_cycle_duration_ns = value.planningCycleDurationNs;
@@ -1126,12 +1132,21 @@ export function ExperimentAuthoringPage() {
           </section>
           <section id="phy" className="panel form-panel">
             <h2>物理模式</h2>
-            <label>仿真模式<select aria-label="物理层实现" value={physicalLayer} onChange={e => setPhysicalLayer(e.target.value as "Channel1Abstract" | "Channel2Waveform")}>
-              <option value="Channel1Abstract">模式 A · 快速网络仿真</option><option value="Channel2Waveform">模式 B · 波形通信仿真</option>
+            <label>仿真模式<select aria-label="物理层实现" value={physicalLayer} onChange={e => {
+              if (e.target.value === "Channel3Recorded") {
+                if (window.confirm("模式 C 使用独立的录音链路配置。打开新实验？当前未保存的修改不会保留。")) navigate("/workspace/experiment?mode=C");
+              } else setPhysicalLayer(e.target.value as "Channel1Abstract" | "Channel2Waveform");
+            }}>
+              <option value="Channel1Abstract">模式 A · 快速网络仿真</option><option value="Channel2Waveform">模式 B · 波形通信仿真</option><option value="Channel3Recorded">模式 C · 实测信道回放</option>
             </select></label>
             <p className="property-help">{physicalLayer === "Channel1Abstract" ? "用于比较路由、接入与网络表现。以声学传播和接收模型计算结果，不逐比特生成波形。" : "逐比特生成、传播、解调波形，可观察实际误码与 CRC；计算量更大，多径畸变可能造成解码失败。"}</p>
             {physicalLayer === "Channel2Waveform" && <div className="waveform-config">
-              <label>调制方式<select value={waveformModulation} onChange={e => setWaveformModulation(e.target.value as "Bpsk" | "Bfsk")}><option value="Bpsk">BPSK · 二进制相移键控</option><option value="Bfsk">BFSK · 二进制频移键控</option></select></label>
+              <label>调制方式<select value={waveformModulation} onChange={e => setWaveformModulation(e.target.value as typeof waveformModulation)}><option value="Bpsk">BPSK · 二进制相移键控</option><option value="Bfsk">BFSK · 二进制频移键控</option><option value="Osdm" disabled={!planning}>OSDM · 训练序列信道估计</option></select></label>
+              {waveformModulation === "Osdm" && <details className="parameter-detail" open><summary>OSDM 分块与同步</summary>
+                <label>星座<select value={osdm.constellation} onChange={e => setOsdm({ ...osdm, constellation: e.target.value })}><option value="Bpsk">BPSK</option><option value="Qpsk">QPSK</option></select></label>
+                {([['block_length', '分块长度 K（样本）'], ['vector_length', '向量长度 M（样本）'], ['cyclic_prefix', '循环前缀（样本）'], ['maximum_sync_search', '同步搜索范围（样本）'], ['minimum_sync_correlation', '同步相关门限']] as const).map(([key, label]) => <label key={key}>{label}<input type="number" value={osdm[key]} step={key === 'minimum_sync_correlation' ? 0.01 : 1} onChange={e => setOsdm({ ...osdm, [key]: Number(e.target.value) })} /></label>)}
+                <small>训练序列估计信道；当前均衡器使用仿真噪声功率。标称比特率不含训练、补齐与循环前缀，MAC 按实际波形时长规划。</small>
+              </details>}
               <label>接收波形噪声<select value={waveformNoise} onChange={e => setWaveformNoise(e.target.value as "None" | "Awgn")}><option value="None">不额外加入噪声</option><option value="Awgn">加入高斯白噪声</option></select></label>
               {waveformNoise === "Awgn" && <label>噪声功率谱密度（dB re 1 μPa²/Hz）<input type="number" value={waveformNoisePsd} onChange={e => setWaveformNoisePsd(Number(e.target.value))} /><small>每赫兹带宽的噪声功率；数值越大噪声越强。它不是误码率，也不等于接收 SNR。</small></label>}
               <p className="property-help">关闭额外噪声仍保留真实多径影响，不保证所有链路解调成功。</p>

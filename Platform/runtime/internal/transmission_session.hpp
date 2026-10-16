@@ -23,9 +23,14 @@ struct SignalChannelExecutionSummary final {
 
 struct NoArrivalChannelExecutionSummary final {};
 
+struct RecordedChannelExecutionSummary final {
+  contracts::SimDuration reference_delay;
+  contracts::SimDuration receive_duration;
+};
+
 using ChannelExecutionOutcomeSummary =
     std::variant<SignalChannelExecutionSummary,
-                 NoArrivalChannelExecutionSummary>;
+                 NoArrivalChannelExecutionSummary, RecordedChannelExecutionSummary>;
 
 struct ChannelExecutionSummary final {
   contracts::NodeId receiver_node_id;

@@ -620,8 +620,7 @@ inline auto AcceptanceRunProjection::Build(
     } else if(const auto* channel =
                   std::get_if<contracts::ChannelOutcomeTrace>(
                       &event.payload())) {
-      if(std::holds_alternative<contracts::TraceSignalChannelOutcome>(
-             channel->outcome)) {
+      if(contracts::HasChannelSignal(channel->outcome)) {
         ++channel_signal_count;
       } else {
         ++channel_no_arrival_count;
@@ -688,8 +687,7 @@ inline auto AcceptanceRunProjection::Build(
         }
         attempt->channel_outcome_seen = true;
         attempt->signal_arrived =
-            std::holds_alternative<contracts::TraceSignalChannelOutcome>(
-                channel->outcome);
+            contracts::HasChannelSignal(channel->outcome);
       }
     } else if(const auto* reception =
                   std::get_if<contracts::ReceptionTrace>(&event.payload())) {

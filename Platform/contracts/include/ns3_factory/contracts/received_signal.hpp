@@ -18,14 +18,21 @@ class ReceivedSignal final {
       const ChannelFieldResponse& channel_response)
       -> Result<ReceivedSignal>;
 
+  [[nodiscard]] static auto Create(const TxEmission& emission,
+      const RecordedChannelResponse& response) -> Result<ReceivedSignal>;
+
   [[nodiscard]] constexpr auto emission() const noexcept
       -> const TxEmission& {
     return emission_;
   }
 
-  [[nodiscard]] auto channel_response() const noexcept
+  // Static-only compatibility accessor. General PHY must inspect recorded_response().
+  [[nodiscard]] auto channel_response() const
       -> const ChannelFieldResponse& {
-    return channel_response_;
+    return std::get<ChannelFieldResponse>(channel_response_);
+  }
+  [[nodiscard]] auto recorded_response() const noexcept -> const RecordedChannelResponse* {
+    return std::get_if<RecordedChannelResponse>(&channel_response_);
   }
 
   [[nodiscard]] constexpr auto transmission_id() const noexcept
@@ -33,18 +40,20 @@ class ReceivedSignal final {
     return emission_.transmission_id();
   }
 
-  [[nodiscard]] constexpr auto receiver_node_id() const noexcept -> NodeId {
-    return channel_response_.receiver_node_id();
+  [[nodiscard]] auto receiver_node_id() const noexcept -> NodeId {
+    return std::visit([](const auto& c) { return c.receiver_node_id(); },channel_response_);
   }
 
   [[nodiscard]] auto first_arrival_at() const noexcept -> SimTime {
-    return *CheckedAdd(emission_.started_at(),
-                       channel_response_.first_arrival_delay());
+    const auto delay=recorded_response() ? recorded_response()->reference_delay()
+                                        : channel_response().first_arrival_delay();
+    return *CheckedAdd(emission_.started_at(),delay);
   }
 
   [[nodiscard]] auto latest_excess_delay() const noexcept -> SimDuration {
     auto latest = SimDuration::Zero();
-    for(const auto& path : channel_response_.paths()) {
+    if(recorded_response()) return latest; // no static path interpretation
+    for(const auto& path : channel_response().paths()) {
       if(path.excess_delay() > latest) {
         latest = path.excess_delay();
       }
@@ -55,6 +64,7 @@ class ReceivedSignal final {
   // Complete physical influence occupies
   // [first_arrival_at, last_effect_end_at).
   [[nodiscard]] auto last_effect_end_at() const noexcept -> SimTime {
+    if(recorded_response()) return *CheckedAdd(first_arrival_at(),recorded_response()->receive_duration());
     const auto latest_path_start =
         CheckedAdd(first_arrival_at(), latest_excess_delay());
     return *CheckedAdd(*latest_path_start, emission_.duration());
@@ -79,10 +89,24 @@ class ReceivedSignal final {
   ReceivedSignal(const TxEmission& emission,
                  const ChannelFieldResponse& channel_response)
       : emission_(emission), channel_response_(channel_response) {}
+  ReceivedSignal(const TxEmission& emission,const RecordedChannelResponse& response)
+      : emission_(emission),channel_response_(response) {}
 
   TxEmission emission_;
-  ChannelFieldResponse channel_response_;
+  std::variant<ChannelFieldResponse, RecordedChannelResponse> channel_response_;
 };
+
+inline auto ReceivedSignal::Create(const TxEmission& emission,
+    const RecordedChannelResponse& response) -> Result<ReceivedSignal> {
+  if(emission.transmission_id()!=response.transmission_id())
+    return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Recorded response identity mismatch"});
+  const auto first=CheckedAdd(emission.started_at(),response.reference_delay());
+  if(!first || !CheckedAdd(*first,response.receive_duration()))
+    return std::unexpected(Error{ErrorCode::kOverflow,"Recorded receive envelope overflows simulation time"});
+  if(!std::isfinite(emission.center_frequency_hz()+emission.bandwidth_hz()/2))
+    return std::unexpected(Error{ErrorCode::kOverflow,"Recorded occupied band overflow"});
+  return ReceivedSignal{emission,response};
+}
 
 inline auto ReceivedSignal::Create(
     const TxEmission& emission,

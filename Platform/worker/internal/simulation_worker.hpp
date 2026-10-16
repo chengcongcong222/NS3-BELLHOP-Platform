@@ -41,6 +41,8 @@ struct RunExecutionDefinition final {
   application::ScenarioDefinition scenario;
   application::ExperimentDefinition experiment;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories;
+  std::optional<phy::internal::OsdmConfig> osdm;
+  std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded;
 };
 
 struct WorkerExecutionSnapshot final {
@@ -52,6 +54,9 @@ struct WorkerExecutionSnapshot final {
 [[nodiscard]] inline auto MakeAcceptancePresetDefinition(
     const RunExecutionRequest& request)
     -> contracts::Result<RunExecutionDefinition> {
+  if(request.physical_layer==PhysicalLayerImplementation::kChannel3Recorded)
+    return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+        "Recorded mode requires an explicit immutable authored recording, not an Acceptance preset"});
   auto scenario = application::internal::MakeAcceptanceScenarioPreset(
       request.profile,
       request.scenario_id,
@@ -159,8 +164,7 @@ class SimulationWorker final {
     }
     std::optional<application::internal::WaveformExecutionOptions>
         waveform_options;
-    if(request.physical_layer ==
-       PhysicalLayerImplementation::kChannel2Waveform) {
+    if(request.physical_layer != PhysicalLayerImplementation::kChannel1Abstract) {
       const auto& phy_config = definitions->experiment.phy();
       phy::internal::NoiseProfile noise = phy::internal::NoNoiseConfig{};
       if(request.waveform_noise == WaveformNoiseModel::kAwgn) {
@@ -168,7 +172,8 @@ class SimulationWorker final {
             request.waveform_noise_psd_db_re_1upa2_per_hz,
             request.deterministic_seed};
       }
-      const auto modulation =
+      const auto modulation = request.waveform_modulation == WaveformModulation::kOsdm
+          ? phy::internal::ModulationScheme::kOsdm :
           request.waveform_modulation == WaveformModulation::kBpsk
               ? phy::internal::ModulationScheme::kBpsk
               : phy::internal::ModulationScheme::kBfsk;
@@ -183,15 +188,42 @@ class SimulationWorker final {
                30.0},
               phy_config.occupied_bandwidth_hz,
               noise,
+              {phy::internal::ChannelEqualizationMode::kDisabled},
               true,
               phy::internal::WaveformFrameFormat::kPayloadWithCrc32,
               1'000'000},
           nullptr});
+      if(request.waveform_modulation == WaveformModulation::kOsdm) {
+        if(!definitions->osdm || !definitions->experiment.planning())
+          return EmitFailure(request.run_id, WorkerFailureCategory::kComposition,
+              {contracts::ErrorCode::kInvalidArgument, "OSDM requires explicit authored planning configuration"},
+              std::nullopt, output);
+        auto& c = waveform_options->phy;
+        c.modulation.osdm = *definitions->osdm;
+        const auto bits = phy::internal::BitsPerOsdmSymbol(c.modulation.osdm);
+        if(!bits) return EmitFailure(request.run_id, WorkerFailureCategory::kComposition,
+            bits.error(), std::nullopt, output);
+        c.modulation.sample_rate_hz = static_cast<double>(phy_config.bit_rate_bits_per_second) / *bits;
+        c.modulation.symbol_rate_baud = c.modulation.sample_rate_hz;
+        c.equalization.mode = phy::internal::ChannelEqualizationMode::kTrainingSequenceMmse;
+        c.ideal_phase_synchronization = false;
+        if(c.modulation.sample_rate_hz > c.occupied_bandwidth_hz)
+          return EmitFailure(request.run_id, WorkerFailureCategory::kComposition,
+              {contracts::ErrorCode::kInvalidArgument, "OSDM sample rate exceeds occupied bandwidth"},
+              std::nullopt, output);
+      }
     }
+    if(request.physical_layer==PhysicalLayerImplementation::kChannel3Recorded) {
+      if(!definitions->recorded||!waveform_options||request.waveform_noise!=WaveformNoiseModel::kNone)
+        return EmitFailure(request.run_id,WorkerFailureCategory::kComposition,
+            {contracts::ErrorCode::kFailedPrecondition,"Recorded operator/noise binding is missing"},std::nullopt,output);
+      waveform_options->phy.ideal_phase_synchronization=false;
+    } else if(definitions->recorded) return EmitFailure(request.run_id,WorkerFailureCategory::kComposition,
+        {contracts::ErrorCode::kFailedPrecondition,"Recorded source cannot be used as mode A/B"},std::nullopt,output);
     application::internal::RunExecutionExecutor executor = definitions->trajectories
         ? application::internal::RunExecutionExecutor{
               environments_.get(), definitions->trajectories,
-              std::move(waveform_options)}
+              std::move(waveform_options), definitions->recorded}
         : waveform_options
               ? application::internal::RunExecutionExecutor{
                     environments_.get(), std::move(*waveform_options)}

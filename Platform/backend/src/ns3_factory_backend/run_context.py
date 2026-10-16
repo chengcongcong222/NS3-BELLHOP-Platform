@@ -66,10 +66,11 @@ class RunCommunicationFlow(ResourceModel):
 
 
 class RunPhySummary(PhySummary):
-    physical_layer: Literal["Channel1Abstract", "Channel2Waveform"]
-    waveform_modulation: Literal["Bpsk", "Bfsk"]
+    physical_layer: Literal["Channel1Abstract", "Channel2Waveform", "Channel3Recorded"]
+    waveform_modulation: Literal["Bpsk", "Bfsk", "Osdm"]
     waveform_noise: Literal["None", "Awgn"]
     waveform_noise_psd_db_re_1upa2_per_hz: float
+    osdm: dict | None = None
 
 
 class RunFusionSummary(FusionSummary):
@@ -99,6 +100,7 @@ class RunDefinitionContext(ResourceModel):
     execution: Execution
     limitations: tuple[str, ...] = ()
     actions: RunActions | None = None
+    recorded_channel: dict | None = None
 
 
 def load_captured_definition(snapshot: RunSnapshot) -> dict:
@@ -110,8 +112,8 @@ def load_captured_definition(snapshot: RunSnapshot) -> dict:
         if hashlib.sha256(encoded).hexdigest() != snapshot.authored_definition_sha256:
             raise ValueError("definition checksum mismatch")
         definition = json.loads(encoded)
-        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
-                or (definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
+        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
+                or (definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
                     and definition.get("execution_mode") != "PlanningV1")
                 or definition["scenario_id"] != snapshot.scenario_id
                 or definition["experiment_id"] != snapshot.experiment_id
@@ -192,7 +194,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
     definition = load_captured_definition(snapshot)
     try:
         config = definition["experiment"]
-        planning = definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3"}
+        planning = definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
         # These fields occur in both the definition and the command. They must
         # agree; read endpoints must not repair or silently select either one.
         for key in ("physical_layer", "waveform_modulation", "waveform_noise",
@@ -232,6 +234,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
                     "center_frequency_hz": config["center_frequency_hz"],
                     "occupied_bandwidth_hz": config["occupied_bandwidth_hz"],
                     "source_level_db_re_1upa_at_1m": config["source_level_db"],
+                    "osdm": config.get("osdm"),
                     **execution.model_dump(exclude={"simulation_cycle_count", "deterministic_seed"})},
             "fusion": {"workload": config["workload"], "acceptance_profile": None,
                        "minimum_bearing_points": str(config["minimum_bearing_points"]),
@@ -254,6 +257,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
         })
         return RunDefinitionContext(run_id=snapshot.run_id, source="AuthoredDefinition",
                                     definition_sha256=snapshot.authored_definition_sha256,
-                                    scenario=scenario, experiment=experiment, execution=execution)
+                                    scenario=scenario, experiment=experiment, execution=execution,
+                                    recorded_channel=definition.get("recorded_channel"))
     except (ValueError, KeyError, TypeError, IndexError, ValidationError) as error:
         raise CatalogError("RunDefinitionUnavailable", "本次运行的冻结配置不完整或不一致，不能由当前草稿补齐。") from error

@@ -53,6 +53,23 @@ it("switches node/background inspector without losing protocol settings or using
   expect((screen.getByLabelText("调制方式") as HTMLSelectElement).value).toBe("Bfsk");
 });
 
+it("freezes OSDM framing with the experiment and removes it when changing modem", async () => {
+  const { records } = server(); renderRoute("/workspace/experiment");
+  await userEvent.selectOptions(await screen.findByLabelText("物理层实现"), "Channel2Waveform");
+  await userEvent.selectOptions(screen.getByLabelText("调制方式"), "Osdm");
+  fireEvent.change(screen.getByLabelText("循环前缀（样本）"), { target: { value: "96" } });
+  await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
+  await waitFor(() => expect(records.get("experiment")?.payload.osdm).toEqual({
+    block_length: 256, vector_length: 16, cyclic_prefix: 96, constellation: "Qpsk",
+    minimum_sync_correlation: 0.05, maximum_sync_search: 128 }));
+  expect(records.get("experiment")?.payload.waveform_modulation).toBe("Osdm");
+  await userEvent.selectOptions(screen.getByLabelText("调制方式"), "Bpsk");
+  expect(screen.queryByLabelText("循环前缀（样本）")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
+  await waitFor(() => expect(records.get("experiment")?.revision).toBe(2));
+  expect(records.get("experiment")?.payload).not.toHaveProperty("osdm");
+});
+
 it("keeps save controls in the left sidebar even when the node list is collapsed or a node is selected", async () => {
   const fetch = installApi(fixture); renderRoute("/workspace/experiment");
   await screen.findByRole("img", { name: "可编辑场景画布" });

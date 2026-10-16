@@ -236,7 +236,8 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
             assert imported.status_code == 201, imported.text
 
             async def execute(physical_layer: str, node_count: int, workload: str,
-                              mac_mode: str = "AdaptiveTdma", algorithm_id: str = "platform.adaptive-tdma"):
+                              mac_mode: str = "AdaptiveTdma", algorithm_id: str = "platform.adaptive-tdma",
+                              modem: str = "Bpsk"):
                 chosen = node_rows[:node_count]
                 scenario = await client.post("/authoring/drafts", json={
                     "kind": "scenario", "name": f"Planning {node_count} nodes", "payload": {
@@ -268,6 +269,11 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                     "deterministic_seed": "23", "physical_layer": physical_layer,
                     "waveform_modulation": "Bpsk", "waveform_noise": "None",
                 }
+                if modem == "Osdm":
+                    payload.update(waveform_modulation="Osdm", bit_rate_bits_per_second="6000",
+                        osdm={"block_length": 256, "vector_length": 16, "cyclic_prefix": 64,
+                              "constellation": "Qpsk", "minimum_sync_correlation": .05,
+                              "maximum_sync_search": 128})
                 if mac_mode == "AdaptiveTdma":
                     payload["adaptive_tdma"] = {"safety_margin_ns": "0"}
                 elif mac_mode == "RegisteredMac":
@@ -301,6 +307,14 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                 records = [json.loads(line[6:]) for line in stream.splitlines() if line.startswith("data: ")]
                 traces = [record["trace"] for record in records if "trace" in record]
                 transmissions = [trace["payload"] for trace in traces if trace["kind"] == "Transmission"]
+                if modem == "Osdm":
+                    from ns3_factory_backend.modem_configuration import osdm_airtime_ns
+                    assert context["experiment"]["phy"]["osdm"] == payload["osdm"]
+                    expected_airtime = osdm_airtime_ns(4 if workload == "CommunicationOnly" else 15,
+                                                     6000, payload["osdm"])
+                    assert transmissions
+                    assert all(int(tx["ended_at_ns"]) - int(tx["started_at_ns"]) == expected_airtime
+                               for tx in transmissions)
                 if workload == "CommunicationOnly":
                     assert context["scenario"]["fusion_center_node_id"] is None
                     assert result["fusion_results"] == []
@@ -322,7 +336,10 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                             # The actual multipath waveform can fail CRC even
                             # without added noise; scheduling does not force it.
                             assert target[0]["disposition"] in {"LocalDelivery", "NotDecoded"}
-                            assert target[0]["waveform"]["crc_ok"] == (target[0]["disposition"] == "LocalDelivery")
+                            if target[0]["waveform"] is None:
+                                assert modem == "Osdm" and target[0]["disposition"] == "NotDecoded"
+                            else:
+                                assert target[0]["waveform"]["crc_ok"] == (target[0]["disposition"] == "LocalDelivery")
                 else:
                     assert context["scenario"]["fusion_center_node_id"] == "0"
                     assert context["experiment"]["fusion_receiver_node_id"] == "99"
@@ -374,4 +391,6 @@ def test_planning_v2_no_sink_flows_and_independent_bearing_receiver(tmp_path: Pa
                 if os.environ.get("PLATFORM_EXPECT_EXTERNAL_MAC") == "1":
                     await execute(physical_layer, 3, "CommunicationOnly", "RegisteredMac", "example.ordered-mac")
             await execute("Channel1Abstract", 2, "CommunicationOnly", "Tdma")
+            await execute("Channel2Waveform", 2, "CommunicationOnly", modem="Osdm")
+            await execute("Channel2Waveform", 4, "BearingFusion", modem="Osdm")
     asyncio.run(run())

@@ -218,6 +218,9 @@ class ApiErrorEnvelope(HttpModel):
 
 
 _ERROR_STATUS = {
+    "RecordedChannelInvalid": status.HTTP_400_BAD_REQUEST,
+    "RecordedChannelUnavailable": status.HTTP_409_CONFLICT,
+    "RecordedNoiseUnavailable": status.HTTP_409_CONFLICT,
     "NotFound": status.HTTP_404_NOT_FOUND,
     "AlreadyExists": status.HTTP_409_CONFLICT,
     "InvalidRequest": status.HTTP_400_BAD_REQUEST,
@@ -283,6 +286,11 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
                 "environment": definition["environment"],
                 "physical_layer": definition["experiment"]["physical_layer"],
                 "deterministic_seed": definition["experiment"]["deterministic_seed"],
+                **({"recorded_channel": definition["recorded_channel"]}
+                   if "recorded_channel" in definition else {}),
+                **({"modem": {"modulation": definition["experiment"].get("waveform_modulation"),
+                              "osdm": definition["experiment"].get("osdm")}}
+                   if definition["experiment"]["physical_layer"] != "Channel1Abstract" else {}),
                 **({"mac_algorithm": definition["experiment"]["mac_algorithm"]}
                    if "mac_algorithm" in definition["experiment"] else {}),
                 "trajectory_bindings": definition["trajectory_bindings"],
@@ -890,17 +898,18 @@ def create_app(
         if scenario_draft.validation_issues:
             raise CatalogError("InvalidReference", "; ".join(scenario_draft.validation_issues))
         scenario_payload = scenario_draft.payload
+        recorded_mode = payload.get("physical_layer") == "Channel3Recorded"
         environment_id = str(scenario_payload.get("environment_asset_id", ""))
         environment_version = int(scenario_payload.get("environment_version", 1))
         environment_path = settings.environment_repository_root / environment_id
-        if not environment_path.is_dir():
+        if not recorded_mode and not environment_path.is_dir():
             raise CatalogError(
                 "EnvironmentNotFound",
                 f"Environment {environment_id} v{environment_version} is not in the Runtime repository.",
             )
         environment_checksum = None
         environment_resource = None
-        if settings.resource_catalog_adapter is not None:
+        if not recorded_mode and settings.resource_catalog_adapter is not None:
             try:
                 environment_resource = await verified_environment(environment_id)
             except ResourceCatalogError as error:
@@ -909,11 +918,11 @@ def create_app(
                 raise CatalogError("InvalidReference", "Environment asset format version does not match Scenario.")
             environment_checksum = environment_resource.checksum.value
         physical_layer = str(payload.get("physical_layer", "Channel1Abstract"))
-        if physical_layer not in {"Channel1Abstract", "Channel2Waveform"}:
+        if physical_layer not in {"Channel1Abstract", "Channel2Waveform", "Channel3Recorded"}:
             raise CatalogError("InvalidDraft", "Unknown physical layer implementation.")
         modulation = str(payload.get("waveform_modulation", "Bpsk"))
         noise_model = str(payload.get("waveform_noise", "None"))
-        if modulation not in {"Bpsk", "Bfsk"} or noise_model not in {"None", "Awgn"}:
+        if modulation not in {"Bpsk", "Bfsk", "Osdm"} or noise_model not in {"None", "Awgn"}:
             raise CatalogError("InvalidDraft", "Unknown waveform configuration.")
 
         bindings = scenario_payload.get("trajectory_bindings")
@@ -930,6 +939,12 @@ def create_app(
             raise CatalogError("InvalidReference", "Trajectory bindings must cover every Scenario node exactly.")
         from .scenario_trajectories import compile_bindings
         bindings, assets = compile_bindings(nodes, bindings, trajectories)
+        recorded_config = None
+        if recorded_mode:
+            from .recorded_channels import freeze
+            recorded_config = await run_in_threadpool(freeze, authoring_root / "recorded-channels",
+                payload, scenario_payload, nodes, assets)
+            environment_checksum = recorded_config["manifest_sha256"]
         fusion_center = scenario_payload.get("fusion_center_node_id")
         if fusion_center is None and not planning:
             raise CatalogError("InvalidReference", "旧版执行场景必须保留融合中心；无中心通信请明确使用 PlanningV1 和业务流。")
@@ -954,7 +969,7 @@ def create_app(
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
         definition = {
-            "schema": "ns3-factory-authored-run-v3" if flow_scoped else "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
+            "schema": "ns3-factory-authored-run-v4" if recorded_mode else "ns3-factory-authored-run-v3" if flow_scoped else "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
             "scenario_id": scenario_publication["published_id"],
             "scenario_source_revision": scenario_draft.revision,
             "scenario_name": scenario_draft.name,
@@ -1009,6 +1024,10 @@ def create_app(
                 "maximum_ber": float(payload.get("maximum_ber", 0.0001)),
             },
         }
+        if modulation == "Osdm":
+            definition["experiment"]["osdm"] = dict(payload["osdm"])
+        if recorded_config is not None:
+            definition["recorded_channel"] = recorded_config
         if planning:
             from .planning_authoring import freeze_planning_configuration
             definition["execution_mode"] = "PlanningV1"
@@ -1041,7 +1060,7 @@ def create_app(
                 simulation_cycle_count=str(payload["simulation_cycle_count"]),
                 deterministic_seed=str(payload["deterministic_seed"]),
                 rx_quality_mode=(
-                    "None" if physical_layer == "Channel2Waveform" else "ModeledBpskAwgn"
+                    "None" if physical_layer != "Channel1Abstract" else "ModeledBpskAwgn"
                 ),
                 equivalent_noise_power_db_re_1upa2=float(payload.get("equivalent_noise_power_db_re_1upa2", 45.0)),
                 physical_layer=physical_layer,
@@ -1068,6 +1087,16 @@ def create_app(
 
         snapshot = await catalog.create(command)
         return _run_resource(snapshot)
+
+    @app.get("/recorded-channels")
+    async def list_recorded_channels():
+        from .recorded_channels import list_recordings
+        return await run_in_threadpool(list_recordings, authoring_root / "recorded-channels")
+
+    @app.get("/recorded-noise")
+    async def list_recorded_noise():
+        from .recorded_channels import list_noise
+        return await run_in_threadpool(list_noise, authoring_root / "recorded-noise")
 
     @app.get("/environments", response_model=list[EnvironmentResource])
     async def list_environments() -> tuple[EnvironmentResource, ...]:
@@ -1218,8 +1247,9 @@ def create_app(
             definition = await run_in_threadpool(load_captured_definition, snapshot)
             await algorithms.freeze(definition["experiment"], frozen=True)
         try:
-            environment = (await verified_environment(command.environment.asset_id) if full else
-                           (await current_resources()).get_environment(command.environment.asset_id))
+            environment = None if command.execution.physical_layer == "Channel3Recorded" else (
+                await verified_environment(command.environment.asset_id) if full else
+                (await current_resources()).get_environment(command.environment.asset_id))
             return await run_in_threadpool(validate_repeat_resources, snapshot, command, run_manifests.get(snapshot.run_id),
                 settings.environment_repository_root,
                 lambda asset_id: environment, trajectories)

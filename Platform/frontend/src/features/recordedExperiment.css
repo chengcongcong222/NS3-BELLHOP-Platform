@@ -1,0 +1,29 @@
+.recorded-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; margin-bottom:12px; }
+.recorded-heading h1,.recorded-heading p { margin:0 0 4px; }
+.recorded-workspace { border:0; padding:0; display:grid; grid-template-columns:minmax(240px, 300px) minmax(340px, 1fr) minmax(260px, 340px); gap:12px; align-items:start; }
+.recorded-workspace .panel { padding:16px; min-width:0; }
+.recorded-workspace h2 { font-size:17px; margin:0 0 14px; }
+.recorded-workspace label { display:grid; gap:5px; margin-bottom:12px; }
+.recorded-workspace small,.recorded-workspace p { line-height:1.6; color:#40566a; }
+.recorded-workspace input,.recorded-workspace select { min-width:0; width:100%; }
+.recorded-workspace .form-grid { grid-template-columns:1fr 1fr; gap:10px; }
+.recorded-workspace details { padding:10px 0; border-top:1px solid #d6e1eb; }
+.recorded-workspace details summary { cursor:pointer; font-weight:600; margin-bottom:10px; }
+.recorded-source { padding:12px; margin:12px 0; background:#edf4f9; border:1px solid #c8d9e8; border-radius:6px; }
+.recorded-source h3 { margin:0 0 10px; font-size:15px; }
+.recorded-source dl { display:grid; gap:5px; margin:8px 0; font-size:13px; }
+.recorded-source dd { margin:0 0 6px; overflow-wrap:anywhere; font-weight:600; }
+.recorded-source dt { color:#526a7c; }
+.recorded-source details { font-size:12px; margin-top:8px; }
+.recorded-link-scene { display:flex; flex-direction:column; height:100%; color:#193f5b; }
+.recorded-link-scene header { display:flex; gap:16px; padding:14px; background:#edf4fa; border-bottom:1px solid #c9d8e5; }
+.recorded-link-scene header span { font-size:13px; }
+.recorded-link-scene svg { width:100%; flex:1; min-height:230px; max-height:500px; }
+.recorded-link-scene text { fill:#193f5b; font-size:16px; }
+.recorded-link-scene p { margin:10px 14px; line-height:1.6; font-size:13px; }
+.recorded-center .recorded-link-scene { height:auto; }
+.recorded-scope { border-top:1px solid #d6e1eb; margin-top:22px; padding-top:16px; }
+.recorded-assumptions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; font-size:13px; background:#f4f7fa; }
+.recorded-save-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+@media(max-width:1200px) { .recorded-workspace { grid-template-columns:1fr 1fr; } .recorded-center { grid-column:1 / -1; grid-row:1; } }
+@media(max-width:700px) { .recorded-workspace { display:flex; flex-direction:column; } .recorded-workspace>.panel { width:100%; } }

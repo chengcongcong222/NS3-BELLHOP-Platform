@@ -24,10 +24,12 @@ class TransmissionWaveformArtifact final {
   TransmissionWaveformArtifact(contracts::TransmissionId transmission_id,
                                contracts::PacketId packet_id,
                                BitFrame original_frame,
+                               std::size_t framed_bit_count,
                                WaveformBuffer transmitted_waveform)
       : transmission_id_(transmission_id),
         packet_id_(packet_id),
         original_frame_(std::move(original_frame)),
+        framed_bit_count_(framed_bit_count),
         transmitted_waveform_(std::move(transmitted_waveform)) {}
 
   [[nodiscard]] constexpr auto transmission_id() const noexcept
@@ -45,6 +47,11 @@ class TransmissionWaveformArtifact final {
     return original_frame_;
   }
 
+  [[nodiscard]] constexpr auto framed_bit_count() const noexcept
+      -> std::size_t {
+    return framed_bit_count_;
+  }
+
   [[nodiscard]] constexpr auto transmitted_waveform() const noexcept
       -> const WaveformBuffer& {
     return transmitted_waveform_;
@@ -54,6 +61,7 @@ class TransmissionWaveformArtifact final {
   contracts::TransmissionId transmission_id_;
   contracts::PacketId packet_id_;
   BitFrame original_frame_;
+  std::size_t framed_bit_count_;
   WaveformBuffer transmitted_waveform_;
 };
 

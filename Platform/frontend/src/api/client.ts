@@ -14,6 +14,8 @@ import type {
   ScenarioDto,
   SystemInfoDto,
   TrajectoryAssetDto,
+  RecordedChannelDto,
+  RecordedNoiseDto,
 } from "./types";
 import { acquireWithProgress, type AcquisitionProgress } from "./acquisition";
 import { isAlgorithmCatalog } from "../domain/algorithms";
@@ -173,6 +175,11 @@ export class ApiClient {
   }
 
   listEnvironments = () => this.request("/environments", isArrayOf(environment));
+  recordedChannels = () => this.request("/recorded-channels", isArrayOf((v: unknown): v is RecordedChannelDto =>
+    isObject(v) && isString(v.manifest_sha256) && isObject(v.manifest) && isString(v.manifest.asset_id)
+    && typeof v.manifest.duration_s === "number" && typeof v.manifest.fc === "number"));
+  recordedNoise = () => this.request("/recorded-noise", isArrayOf((v: unknown): v is RecordedNoiseDto =>
+    isObject(v) && isObject(v.manifest) && isString(v.manifest.asset_id) && typeof v.manifest.alpha === "number"));
   listTrajectories = () => this.request("/trajectories", isArrayOf(trajectory));
   translateTrajectory = (body: { source_asset_id: string; source_version: number; source_track_id: string; asset_id: string; name: string; x_m: number; y_m: number; z_m: number }) =>
     this.request("/authoring/trajectories/translate", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

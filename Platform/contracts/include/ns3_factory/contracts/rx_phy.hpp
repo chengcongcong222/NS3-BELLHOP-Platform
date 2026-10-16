@@ -86,6 +86,8 @@ inline auto RxDecodeRequest::Create(
 // Absolute multipath pressure gains and phases are not additionally applied.
 [[nodiscard]] inline auto ComputeP0ScalarReceivedLevelDbRe1upa(
     const ReceivedSignal& signal) -> Result<double> {
+  if(signal.recorded_response()) return std::unexpected(Error{ErrorCode::kUnsupported,
+      "Normalized recorded channel has no calibrated scalar received pressure"});
   const auto received_level =
       signal.emission().source_level_db_re_1upa_at_1m() -
       signal.channel_response().aggregate_transmission_loss_db();

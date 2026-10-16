@@ -115,16 +115,18 @@ class Execution(WireModel):
     rx_quality_mode: Literal["None", "ModeledBpskAwgn"]
     equivalent_noise_power_db_re_1upa2: FiniteFloat
     deterministic_seed: UIntDecimal
-    physical_layer: Literal["Channel1Abstract", "Channel2Waveform"] = (
+    physical_layer: Literal["Channel1Abstract", "Channel2Waveform", "Channel3Recorded"] = (
         "Channel1Abstract"
     )
-    waveform_modulation: Literal["Bpsk", "Bfsk"] = "Bpsk"
+    waveform_modulation: Literal["Bpsk", "Bfsk", "Osdm"] = "Bpsk"
     waveform_noise: Literal["None", "Awgn"] = "None"
     waveform_noise_psd_db_re_1upa2_per_hz: FiniteFloat = 0.0
 
     @model_validator(mode="after")
     def validate_physical_layer(self) -> "Execution":
-        if self.physical_layer == "Channel2Waveform" and self.rx_quality_mode != "None":
+        if self.waveform_modulation == "Osdm" and self.physical_layer == "Channel1Abstract":
+            raise ValueError("OSDM requires a waveform physical layer")
+        if self.physical_layer != "Channel1Abstract" and self.rx_quality_mode != "None":
             raise ValueError("Channel2Waveform requires rx_quality_mode=None")
         return self
 
@@ -230,8 +232,16 @@ class NoArrivalOutcome(WireModel):
     type: Literal["NoArrival"]
 
 
+class RecordedOutcome(WireModel):
+    type: Literal["Recorded"]
+    reference_delay_ns: Int64Decimal
+    receive_duration_ns: Int64Decimal
+    gain_reference: Literal["Normalized"]
+    delay_reference: Literal["Modeled"]
+
+
 ChannelOutcome: TypeAlias = Annotated[
-    SignalOutcome | NoArrivalOutcome, Field(discriminator="type")
+    SignalOutcome | NoArrivalOutcome | RecordedOutcome, Field(discriminator="type")
 ]
 
 
@@ -262,6 +272,21 @@ class ReceptionWaveform(WireModel):
         return self
 
 
+class RelativeReceptionWaveform(WireModel):
+    payload_bit_count: PositiveUIntDecimal
+    bit_error_count: UIntDecimal
+    crc_ok: bool
+    signal_power_relative: FiniteFloat
+    noise_power_relative: FiniteFloat
+
+    @model_validator(mode="after")
+    def valid_measurement(self):
+        if (int(self.bit_error_count) > int(self.payload_bit_count) or
+                self.signal_power_relative < 0 or self.noise_power_relative < 0):
+            raise ValueError("Invalid relative waveform measurement")
+        return self
+
+
 class ReceptionPayload(WireModel):
     reception_id: UIntDecimal
     transmission_id: UIntDecimal
@@ -271,7 +296,7 @@ class ReceptionPayload(WireModel):
         "NotDecoded", "Overheard", "LocalDelivery", "RelayEnqueue"
     ]
     quality: QualitySummary | None
-    waveform: ReceptionWaveform | None = None
+    waveform: ReceptionWaveform | RelativeReceptionWaveform | None = None
 
 
 class SignalArrivalPayload(WireModel):

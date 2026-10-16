@@ -53,9 +53,21 @@ struct TraceNoArrivalChannelOutcome final {
       const TraceNoArrivalChannelOutcome&) const noexcept -> bool = default;
 };
 
+// Mode C: a modeled flight-time reference plus a complete measured-operator
+// window. Coefficients are normalized, so absolute TL/path count are absent.
+struct TraceRecordedChannelOutcome final {
+  SimDuration reference_delay;
+  SimDuration receive_duration;
+  auto operator==(const TraceRecordedChannelOutcome&) const -> bool = default;
+};
+
 using TraceChannelOutcome =
     std::variant<TraceSignalChannelOutcome,
-                 TraceNoArrivalChannelOutcome>;
+                 TraceNoArrivalChannelOutcome, TraceRecordedChannelOutcome>;
+
+[[nodiscard]] inline bool HasChannelSignal(const TraceChannelOutcome& outcome) {
+  return !std::holds_alternative<TraceNoArrivalChannelOutcome>(outcome);
+}
 
 enum class TraceReceptionDisposition : std::uint8_t {
   kNotDecoded = 1,
@@ -116,6 +128,9 @@ struct TraceWaveformSummary final {
   bool crc_ok;
   double signal_power_upa2;
   double noise_power_upa2;
+  // Legacy members retain source compatibility; normalized values are encoded
+  // under relative-power JSON keys, never *_upa2 keys.
+  bool normalized_power = false;
   constexpr auto operator==(const TraceWaveformSummary&) const noexcept -> bool = default;
 };
 
@@ -235,6 +250,11 @@ inline auto TraceEvent::Create(SimTime occurred_at,
   } else if(const auto* channel =
                 std::get_if<ChannelOutcomeTrace>(&payload)) {
     kind = TraceKind::kChannelOutcome;
+    if(const auto* recorded=std::get_if<TraceRecordedChannelOutcome>(&channel->outcome);
+       recorded && (recorded->reference_delay.nanoseconds()<0 ||
+                    recorded->receive_duration.nanoseconds()<=0 ||
+                    !CheckedAdd(recorded->reference_delay,recorded->receive_duration)))
+      return std::unexpected(Error{ErrorCode::kInvalidArgument,"Invalid recorded channel trace envelope"});
     if(const auto* signal =
            std::get_if<TraceSignalChannelOutcome>(&channel->outcome);
        signal != nullptr &&

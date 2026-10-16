@@ -8,11 +8,12 @@ export function matchingRunExperiment(result: ResultDto, experiment?: Experiment
   return experiment?.experiment_id === result.experiment_id && experiment.version === result.experiment_version ? experiment : null;
 }
 
-export type PhysicalMode = "A" | "B" | "unknown";
+export type PhysicalMode = "A" | "B" | "C" | "unknown";
 
 export function physicalMode(result: ResultDto, implementation?: string | null): PhysicalMode {
   const provenance = result.provenance;
   const recorded = provenance?.physical_layer ?? implementation;
+  if (recorded === "Channel3Recorded") return "C";
   if (recorded === "Channel1Abstract" || recorded === "Channel1") return "A";
   if (recorded === "Channel2Waveform" || recorded === "Channel2") return "B";
   // Actual waveform evidence identifies B; absence of evidence cannot identify A.
@@ -31,12 +32,15 @@ export function sampleSummary(values: readonly number[]) {
 }
 
 /** Received waveform powers, never a scalar channel-model substitute. */
-export function waveformSignalToNoise(powers?: { signal_power_upa2: number; noise_power_upa2: number } | null): number | "no-noise" | "no-signal" | null {
-  if (!powers || !Number.isFinite(powers.signal_power_upa2) || !Number.isFinite(powers.noise_power_upa2)
-      || powers.signal_power_upa2 < 0 || powers.noise_power_upa2 < 0) return null;
-  if (powers.noise_power_upa2 === 0) return "no-noise";
-  if (powers.signal_power_upa2 === 0) return "no-signal";
-  return 10 * (Math.log10(powers.signal_power_upa2) - Math.log10(powers.noise_power_upa2));
+export function waveformSignalToNoise(powers?: { signal_power_upa2?: number; noise_power_upa2?: number;
+  signal_power_relative?: number; noise_power_relative?: number } | null): number | "no-noise" | "no-signal" | null {
+  const signal = powers?.signal_power_relative ?? powers?.signal_power_upa2;
+  const noise = powers?.noise_power_relative ?? powers?.noise_power_upa2;
+  if (signal === undefined || noise === undefined || !Number.isFinite(signal) || !Number.isFinite(noise)
+      || signal < 0 || noise < 0) return null;
+  if (noise === 0) return "no-noise";
+  if (signal === 0) return "no-signal";
+  return 10 * (Math.log10(signal) - Math.log10(noise));
 }
 
 export function waveformSummary(result: ResultDto) {
@@ -141,7 +145,7 @@ export function targetBerReference(result: ResultDto, stats: ReturnType<typeof r
     const target = tx.payload.target;
     if (target.type !== "Unicast") continue;
     let source: BerEvidenceSource | undefined, value: number | undefined;
-    if (mode === "B") {
+    if (mode === "B" || mode === "C") {
       const frames = framesByReceiver.get(`${tx.payload.transmission_id}:${target.node_id}`) ?? [];
       if (frames.length === 1 && BigInt(frames[0].payload_bit_count) > 0n) {
         source = "Waveform";
@@ -161,7 +165,7 @@ export function targetBerReference(result: ResultDto, stats: ReturnType<typeof r
   const groups = [...values].map(([source, samples]) => ({ source, maximum: samples.maximum, count: String(samples.count) }));
   // Historical reports keep the measured number even when source annotations
   // are unavailable. Do not label such a number Modeled, Measured or Waveform.
-  if (!groups.length && mode !== "B" && result.acceptance_report?.maximum_ber !== null && result.acceptance_report?.maximum_ber !== undefined) {
+  if (!groups.length && mode !== "B" && mode !== "C" && result.acceptance_report?.maximum_ber !== null && result.acceptance_report?.maximum_ber !== undefined) {
     groups.push({ source: "Unspecified", maximum: result.acceptance_report.maximum_ber, count: result.acceptance_report.evaluated_target_receptions });
   }
   return { groups, missing, complete: stats.complete && stats.targetAttempts > 0 && missing === 0, targetAttempts: stats.targetAttempts };

@@ -32,7 +32,8 @@ void Check(bool value, const char* message) {
 auto Config(bool strong_noise) -> WaveformPhyConfig {
   return {{ModulationScheme::kBpsk, 6000, 60, std::pow(10.0, 110.0 / 20),
            25000, 30},
-          4000, AwgnNoiseConfig{strong_noise ? 120.0 : 0.0, 42}, true,
+          4000, AwgnNoiseConfig{strong_noise ? 120.0 : 0.0, 42},
+          ChannelEqualizationConfig{ChannelEqualizationMode::kDisabled}, true,
           WaveformFrameFormat::kPayloadWithCrc32, 1'000'000};
 }
 auto Channel() -> AcousticFieldChannelProvider {

@@ -1,0 +1,22 @@
+{
+  "schema": "uwa-reference-lock-v1",
+  "python": {
+    "repository": "https://github.com/uwa-channels/python",
+    "commit": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+    "license": "MIT",
+    "replay_sha256": "bdd0b025f97edc5949bb54d531ba213fa62d9fcd3e4651db67737e4781c79013",
+    "noisegen_sha256": "11f09a3b51ee10abd0fef8f4276e0b6a246cd9de705fd3e249212e0cb3966550"
+  },
+  "numerical_dependencies": {"numpy": "2.2.6", "scipy": "1.15.3", "h5py": "3.14.0"},
+  "data": {
+    "record": "https://doi.org/10.5281/zenodo.21287414",
+    "license": "CC-BY-4.0",
+    "selected_file": "blue_1.mat",
+    "size_bytes": 206132594,
+    "md5": "6776481ad636e40b1d6038fa37121fb7",
+    "url": "https://zenodo.org/api/records/21287414/files/blue_1.mat/content",
+    "axis_semantics": "simultaneous receiver array elements, not network nodes"
+  },
+  "criterion": {"relative_l2_max": 0.000001, "fit_alignment_allowed": false,
+    "repeat": "exact samples for identical native build and input"}
+}

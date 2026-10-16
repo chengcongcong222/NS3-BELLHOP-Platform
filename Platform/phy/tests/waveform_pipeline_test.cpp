@@ -14,6 +14,7 @@
 #include "internal/channel_processor.hpp"
 #include "internal/modulation.hpp"
 #include "internal/noise_generator.hpp"
+#include "internal/osdm_receiver.hpp"
 #include "internal/packet_bit_adapter.hpp"
 #include "internal/waveform.hpp"
 #include "internal/waveform_pipeline.hpp"
@@ -30,6 +31,7 @@ using ns3_factory::contracts::SimDuration;
 using ns3_factory::contracts::TransmissionId;
 using ns3_factory::contracts::UnicastDestination;
 using ns3_factory::phy::internal::ApplyMultipath;
+using ns3_factory::phy::internal::ChannelEqualizationMode;
 using ns3_factory::phy::internal::AwgnNoiseConfig;
 using ns3_factory::phy::internal::BitFrame;
 using ns3_factory::phy::internal::BuildMultipathTaps;
@@ -41,6 +43,13 @@ using ns3_factory::phy::internal::ModulationConfig;
 using ns3_factory::phy::internal::ModulationScheme;
 using ns3_factory::phy::internal::MultipathTap;
 using ns3_factory::phy::internal::NoiseProfile;
+using ns3_factory::phy::internal::NoNoiseConfig;
+using ns3_factory::phy::internal::OsdmConfig;
+using ns3_factory::phy::internal::OsdmConstellation;
+using ns3_factory::phy::internal::OsdmForwardBlock;
+using ns3_factory::phy::internal::OsdmInverseBlock;
+using ns3_factory::phy::internal::EqualizeOsdmWithTraining;
+using ns3_factory::phy::internal::SynchronizeAndEstimateOsdmChannel;
 using ns3_factory::phy::internal::RecoverPayloadBytes;
 using ns3_factory::phy::internal::RunWaveformPipeline;
 using ns3_factory::phy::internal::WaveformBuffer;
@@ -131,6 +140,168 @@ auto TestChannelPathAdapterAndFractionalDelay() -> bool {
                "Fractional-delay second sample");
 }
 
+auto TestOsdmMatlabReferenceAndRoundTrip() -> bool {
+  const OsdmConfig reference_config{4U, 2U, 2U};
+  const std::vector<std::complex<double>> symbols{
+      {1.0, 0.0}, {2.0, 0.0}, {3.0, 0.0}, {4.0, 0.0}};
+  const auto transformed = OsdmForwardBlock(symbols, reference_config);
+  if(!transformed) return Check(false, "OSDM reference transform");
+
+  const auto sqrt_two = std::sqrt(2.0);
+  const std::vector<std::complex<double>> expected{
+      {2.0 * sqrt_two, 0.0}, {3.0 * sqrt_two, 0.0},
+      {-sqrt_two, 0.0}, {-sqrt_two, 0.0}};
+  for(std::size_t index = 0U; index < expected.size(); ++index) {
+    if(!Check(std::abs((*transformed)[index] - expected[index]) < 1.0e-12,
+              "OSDM matches MATLAB reshape and unitary IDFT")) {
+      return false;
+    }
+  }
+  const auto inverted = OsdmInverseBlock(*transformed, reference_config);
+  if(!inverted || inverted->size() != symbols.size()) {
+    return Check(false, "OSDM inverse transform");
+  }
+  for(std::size_t index = 0U; index < symbols.size(); ++index) {
+    if(!Check(std::abs((*inverted)[index] - symbols[index]) < 1.0e-12,
+              "OSDM forward/inverse identity")) {
+      return false;
+    }
+  }
+
+  const auto source = BitFrame::Create(
+      {0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1});
+  if(!source) return Check(false, "OSDM source bits");
+  const ModulationConfig modulation{
+      ModulationScheme::kOsdm, 8'000.0, 8'000.0, 1.0e4, 12'000.0, 0.0,
+      OsdmConfig{8U, 2U, 3U}};
+  const auto modulator = CreateModulator(modulation.scheme);
+  if(!modulator) return Check(false, "OSDM modulator creation");
+  const auto waveform = (*modulator)->Modulate(*source, modulation);
+  if(!waveform) return Check(false, "OSDM modulation");
+  if(!Check(waveform->sample_count() == 22U,
+            "OSDM block padding and CP sample count")) {
+    return false;
+  }
+  for(std::size_t cp_index = 0U; cp_index < 3U; ++cp_index) {
+    if(!Check(std::abs(waveform->samples()[cp_index] -
+                       waveform->samples()[8U + cp_index]) < 1.0e-12,
+              "OSDM cyclic prefix copies the block tail")) {
+      return false;
+    }
+  }
+
+  const WaveformPipelineConfig config{
+      modulation,
+      {MultipathTap{0.0, std::polar(0.35, 0.2)},
+       MultipathTap{2.0 / modulation.sample_rate_hz,
+                    std::polar(0.8, -0.5)}},
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
+      true};
+  const auto result = RunWaveformPipeline(*source, config);
+  return Check(result && result->recovered() == *source,
+               "OSDM recovers a padded multi-block frame") &&
+         Check(result && result->bit_error_count() == 0U,
+               "OSDM noiseless known-channel BER is zero");
+}
+
+auto TestOsdmQpskTrainingSynchronizationAndEqualization() -> bool {
+  const auto source = BitFrame::Create(
+      {0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0,
+       1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1,
+       1, 0, 0, 1, 0});
+  if(!source) return Check(false, "OSDM QPSK source bits");
+  const OsdmConfig osdm{32U, 4U, 8U, OsdmConstellation::kQpsk,
+                        true, 0.05, 32U};
+  const ModulationConfig modulation{
+      ModulationScheme::kOsdm, 8'000.0, 8'000.0, 1.0e4, 12'000.0, 0.0,
+      osdm};
+  const auto modulator = CreateModulator(modulation.scheme);
+  const auto demodulator = CreateDemodulator(modulation.scheme);
+  if(!modulator || !demodulator) {
+    return Check(false, "OSDM QPSK modem creation");
+  }
+  const auto transmitted = (*modulator)->Modulate(*source, modulation);
+  if(!transmitted ||
+     !Check(transmitted->sample_count() == 80U,
+            "OSDM QPSK training and data sample count")) {
+    return false;
+  }
+  const std::vector<MultipathTap> taps{
+      MultipathTap{0.0, std::polar(0.8, 0.3)},
+      MultipathTap{3.0 / modulation.sample_rate_hz,
+                   std::polar(0.25, -0.7)}};
+  const auto propagated = ApplyMultipath(*transmitted, taps);
+  if(!propagated) return Check(false, "OSDM QPSK multipath propagation");
+
+  constexpr std::size_t timing_offset = 5U;
+  std::vector<WaveformBuffer::Sample> delayed_samples(
+      timing_offset, {0.0, 0.0});
+  delayed_samples.insert(delayed_samples.end(),
+                         propagated->samples().begin(),
+                         propagated->samples().end());
+  const auto delayed = WaveformBuffer::Create(
+      propagated->sample_rate_hz(), std::move(delayed_samples));
+  if(!delayed) return Check(false, "OSDM delayed receive waveform");
+
+  const auto estimate = SynchronizeAndEstimateOsdmChannel(
+      *delayed, modulation.symbol_amplitude_upa, osdm);
+  if(!Check(estimate &&
+                estimate->training_body_start_sample ==
+                    timing_offset + osdm.cyclic_prefix_samples &&
+                estimate->frequency_response.size() == 32U,
+            "OSDM preamble finds frame timing and estimates H")) return false;
+
+  const auto equalized = EqualizeOsdmWithTraining(
+      *delayed, source->bit_count(), modulation.symbol_amplitude_upa,
+      0.0, osdm);
+  if(!equalized) {
+    return Check(false,
+                 "OSDM training synchronization and estimated-channel MMSE");
+  }
+  const auto recovered = (*demodulator)->Demodulate(
+      *equalized, source->bit_count(), modulation);
+  return Check(recovered && *recovered == *source,
+               "OSDM QPSK recovers through estimated multipath channel");
+}
+
+auto TestKnownChannelEqualizationRemovesStrongMultipath() -> bool {
+  const auto source = BitFrame::Create(
+      {0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0});
+  if(!source) return Check(false, "Equalizer source bits");
+
+  const ModulationConfig modulation{ModulationScheme::kBpsk,
+                                    8'000.0,
+                                    1'000.0,
+                                    1.0e4,
+                                    12'000.0,
+                                    0.0};
+  const std::vector<MultipathTap> taps{
+      MultipathTap{0.0, {0.35, 0.0}},
+      MultipathTap{8.0 / modulation.sample_rate_hz, {1.0, 0.0}}};
+  const WaveformPipelineConfig unequalized{
+      modulation,
+      taps,
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kDisabled},
+      true};
+  const WaveformPipelineConfig equalized{
+      modulation,
+      taps,
+      NoiseProfile{NoNoiseConfig{}},
+      {ChannelEqualizationMode::kIdealFrequencyDomainMmse},
+      true};
+
+  const auto before = RunWaveformPipeline(*source, unequalized);
+  const auto after = RunWaveformPipeline(*source, equalized);
+  return Check(before && before->bit_error_count() > 0U,
+               "Strong multipath creates errors without equalization") &&
+         Check(after && after->recovered() == *source,
+               "Known-channel equalizer restores BPSK bits") &&
+         Check(after && after->bit_error_count() == 0U,
+               "Known-channel equalizer removes noiseless multipath errors");
+}
+
 auto TestBpskAwgnRoundTrip() -> bool {
   const DigitalPacket packet{PacketId{20},
                              NodeId{1},
@@ -153,6 +324,7 @@ auto TestBpskAwgnRoundTrip() -> bool {
        MultipathTap{2.0 / modulation.sample_rate_hz,
                     std::polar(0.05, -0.2)}},
       NoiseProfile{AwgnNoiseConfig{-30.0, 1234U}},
+      {ChannelEqualizationMode::kDisabled},
       true};
   const auto result = RunWaveformPipeline(*source, config);
   if(!result) {
@@ -196,6 +368,7 @@ auto TestBfskWenzRoundTrip() -> bool {
        MultipathTap{2.0 / modulation.sample_rate_hz,
                     std::polar(0.03, 0.7)}},
       NoiseProfile{WenzNoiseConfig{0.4, 4.0, 5678U}},
+      {ChannelEqualizationMode::kDisabled},
       true};
   const auto result = RunWaveformPipeline(*source, config);
   if(!result) {
@@ -291,7 +464,10 @@ int main() {
   const auto passed =
       TestDigitalPacketPayloadExtraction() &&
       TestChannelPathAdapterAndFractionalDelay() &&
+      TestOsdmMatlabReferenceAndRoundTrip() &&
+      TestOsdmQpskTrainingSynchronizationAndEqualization() &&
       TestBpskAwgnRoundTrip() &&
+      TestKnownChannelEqualizationRemovesStrongMultipath() &&
       TestBfskWenzRoundTrip() &&
       TestNoiseDeterminismAndSelection() &&
       TestMultiPacketStatistics() &&

@@ -26,11 +26,13 @@ enum class WorkerFailureCategory : std::uint8_t {
 enum class PhysicalLayerImplementation : std::uint8_t {
   kChannel1Abstract = 1,
   kChannel2Waveform = 2,
+  kChannel3Recorded = 3,
 };
 
 enum class WaveformModulation : std::uint8_t {
   kBpsk = 1,
   kBfsk = 2,
+  kOsdm = 3,
 };
 
 enum class WaveformNoiseModel : std::uint8_t {

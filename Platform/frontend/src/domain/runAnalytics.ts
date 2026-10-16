@@ -12,6 +12,7 @@ export function eventTitle(event: RunEventDto): string {
   }
   if (trace.kind === "ChannelOutcome") return trace.payload.outcome.type === "NoArrival"
     ? `节点 ${trace.payload.receiver_node_id} 未获得有效声学到达`
+    : trace.payload.outcome.type === "Recorded" ? `已为节点 ${trace.payload.receiver_node_id} 选取录音信道片段`
     : `信道查询发现至节点 ${trace.payload.receiver_node_id} 的传播路径`;
   if (trace.kind === "SignalArrival") return `信号实际到达节点 ${trace.payload.receiver_node_id}`;
   if (trace.kind === "NodePosition") return `节点 ${trace.payload.node_id} 轨迹位置`;
@@ -26,6 +27,8 @@ export function eventTechnicalDetail(event: RunEventDto): string {
   if (trace.kind === "Transmission") return `TransmissionId ${trace.payload.transmission_id} · PacketId ${trace.payload.packet_id}`;
   if (trace.kind === "ChannelOutcome") return trace.payload.outcome.type === "NoArrival"
     ? `TransmissionId ${trace.payload.transmission_id} · formal NoArrival`
+    : trace.payload.outcome.type === "Recorded"
+    ? `录音时变回放 · 建模传播时延 ${formatNanoseconds(trace.payload.outcome.reference_delay_ns)} · 归一化系数（无绝对传输损失）`
     : `TransmissionId ${trace.payload.transmission_id} · ${formatNanoseconds(trace.payload.outcome.first_arrival_delay_ns)} · TL ${trace.payload.outcome.aggregate_transmission_loss_db} dB · ${trace.payload.outcome.path_count} paths`;
   if (trace.kind === "SignalArrival") return `TransmissionId ${trace.payload.transmission_id} · receiver N${trace.payload.receiver_node_id}`;
   if (trace.kind === "NodePosition") return `N${trace.payload.node_id} · (${trace.payload.x_meters}, ${trace.payload.y_meters}, ${trace.payload.z_meters}) m`;
@@ -84,7 +87,7 @@ export function projectionCounts(events: readonly RunEventDto[]) {
   let localDeliveries = 0; let overheard = 0; let notDecoded = 0; let relayEnqueue = 0;
   for (const event of events) {
     if (event.trace.kind === "Transmission") transmissions += 1;
-    if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "Signal") signals += 1;
+    if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type !== "NoArrival") signals += 1;
     if (event.trace.kind === "ChannelOutcome" && event.trace.payload.outcome.type === "NoArrival") noArrivals += 1;
     if (event.trace.kind === "Reception") {
       receptions += 1;

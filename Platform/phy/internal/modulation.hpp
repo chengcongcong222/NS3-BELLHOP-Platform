@@ -13,6 +13,7 @@
 
 #include <ns3_factory/contracts/errors.hpp>
 
+#include "osdm.hpp"
 #include "waveform.hpp"
 
 namespace ns3_factory::phy::internal {
@@ -21,6 +22,7 @@ enum class ModulationScheme : std::uint8_t {
   kBpsk = 1,
   kBfsk = 2,
   kQpsk = 3,
+  kOsdm = 4,
 };
 
 struct ModulationConfig final {
@@ -30,6 +32,7 @@ struct ModulationConfig final {
   double symbol_amplitude_upa;
   double acoustic_carrier_hz;
   double bfsk_frequency_deviation_hz;
+  OsdmConfig osdm{};
 
   auto operator==(const ModulationConfig&) const -> bool = default;
 };
@@ -90,6 +93,20 @@ class BitFrame final {
               "Modulation rates, amplitude, and carrier must be positive"});
   }
 
+  if(config.scheme == ModulationScheme::kOsdm) {
+    auto valid = ValidateOsdmConfig(config.osdm);
+    if(!valid) return std::unexpected(valid.error());
+    const auto tolerance =
+        1.0e-9 * std::max(1.0, std::abs(config.sample_rate_hz));
+    if(std::abs(config.sample_rate_hz - config.symbol_rate_baud) >
+       tolerance) {
+      return std::unexpected(
+          Error{ErrorCode::kFailedPrecondition,
+                "OSDM symbol rate must equal its complex sample rate"});
+    }
+    return 1U;
+  }
+
   const auto ratio = config.sample_rate_hz / config.symbol_rate_baud;
   const auto rounded = std::round(ratio);
   if(!std::isfinite(ratio) || rounded < 2.0 ||
@@ -114,6 +131,29 @@ class BitFrame final {
   }
 
   return static_cast<std::size_t>(rounded);
+}
+
+[[nodiscard]] inline auto ModulatedSampleCount(
+    std::size_t bit_count,
+    const ModulationConfig& config) -> Result<std::size_t> {
+  if(bit_count == 0U) {
+    return std::unexpected(
+        Error{ErrorCode::kInvalidArgument,
+              "Modulation requires at least one input bit"});
+  }
+  const auto samples_per_symbol = SamplesPerSymbol(config);
+  if(!samples_per_symbol) {
+    return std::unexpected(samples_per_symbol.error());
+  }
+  if(config.scheme == ModulationScheme::kOsdm) {
+    return OsdmModulatedSampleCount(bit_count, config.osdm);
+  }
+  if(bit_count >
+     std::numeric_limits<std::size_t>::max() / *samples_per_symbol) {
+    return std::unexpected(
+        Error{ErrorCode::kOverflow, "Modulated waveform length overflows"});
+  }
+  return bit_count * *samples_per_symbol;
 }
 
 class IModulator {
@@ -301,6 +341,46 @@ class BfskDemodulator final : public IDemodulator {
   }
 };
 
+class OsdmModulator final : public IModulator {
+ public:
+  [[nodiscard]] auto Modulate(
+      const BitFrame& frame,
+      const ModulationConfig& config) const
+      -> Result<WaveformBuffer> override {
+    if(config.scheme != ModulationScheme::kOsdm) {
+      return std::unexpected(
+          Error{ErrorCode::kFailedPrecondition,
+                "OSDM modulator received a non-OSDM configuration"});
+    }
+    const auto valid = SamplesPerSymbol(config);
+    if(!valid) return std::unexpected(valid.error());
+    return ModulateOsdm(
+        frame.bits(), config.sample_rate_hz,
+        config.symbol_amplitude_upa, config.osdm);
+  }
+};
+
+class OsdmDemodulator final : public IDemodulator {
+ public:
+  [[nodiscard]] auto Demodulate(
+      const WaveformBuffer& waveform,
+      std::size_t expected_bit_count,
+      const ModulationConfig& config) const
+      -> Result<BitFrame> override {
+    if(config.scheme != ModulationScheme::kOsdm) {
+      return std::unexpected(
+          Error{ErrorCode::kFailedPrecondition,
+                "OSDM demodulator received a non-OSDM configuration"});
+    }
+    const auto valid = SamplesPerSymbol(config);
+    if(!valid) return std::unexpected(valid.error());
+    auto bits = DemodulateOsdm(
+        waveform, expected_bit_count, config.sample_rate_hz, config.osdm);
+    if(!bits) return std::unexpected(bits.error());
+    return BitFrame::Create(std::move(*bits));
+  }
+};
+
 [[nodiscard]] inline auto CreateModulator(ModulationScheme scheme)
     -> Result<std::unique_ptr<IModulator>> {
   switch(scheme) {
@@ -312,6 +392,11 @@ class BfskDemodulator final : public IDemodulator {
     case ModulationScheme::kBfsk: {
       std::unique_ptr<IModulator> result =
           std::make_unique<BfskModulator>();
+      return result;
+    }
+    case ModulationScheme::kOsdm: {
+      std::unique_ptr<IModulator> result =
+          std::make_unique<OsdmModulator>();
       return result;
     }
     case ModulationScheme::kQpsk:
@@ -335,6 +420,11 @@ class BfskDemodulator final : public IDemodulator {
     case ModulationScheme::kBfsk: {
       std::unique_ptr<IDemodulator> result =
           std::make_unique<BfskDemodulator>();
+      return result;
+    }
+    case ModulationScheme::kOsdm: {
+      std::unique_ptr<IDemodulator> result =
+          std::make_unique<OsdmDemodulator>();
       return result;
     }
     case ModulationScheme::kQpsk:

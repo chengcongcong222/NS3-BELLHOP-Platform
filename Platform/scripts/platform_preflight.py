@@ -47,6 +47,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--platform-root", type=Path, required=True)
     parser.add_argument("--build-dir", type=Path, required=True)
+    parser.add_argument("--frontend-dist", type=Path)
     parser.add_argument("--environment-repository", type=Path, required=True)
     parser.add_argument(
         "--acceptance-environment-asset-id",
@@ -65,7 +66,7 @@ def main() -> None:
     environment_publisher = build / "worker" / "platform_environment_asset_publisher"
     backend_python = build / "backend" / "venv" / "bin" / "python"
     npm = root / "frontend" / "scripts" / "npm.sh"
-    frontend_dist = root / "frontend" / "dist"
+    frontend_dist = args.frontend_dist.resolve() if args.frontend_dist else root / "frontend" / "dist"
     baseline = root / "acceptance" / "acceptance4_baseline_v1.json"
     lock = root / "backend" / "requirements.lock"
     node_archive = root / "third_party" / "nodejs" / "node-v24.20.0-linux-x64.tar.xz"

@@ -180,6 +180,7 @@ function eventDetail(event: RunEventDto): string {
   }
   if (trace.kind === "ChannelOutcome") {
     if (trace.payload.outcome.type === "NoArrival") return "NoArrival";
+    if (trace.payload.outcome.type === "Recorded") return "录音时变回放 · 归一化信道 · 建模传播时延";
     return `Signal · delay ${formatNanoseconds(trace.payload.outcome.first_arrival_delay_ns)} · loss ${trace.payload.outcome.aggregate_transmission_loss_db} dB · ${trace.payload.outcome.path_count} paths`;
   }
   if (trace.kind === "SignalArrival") return `signal arrived at receiver N${trace.payload.receiver_node_id}`;

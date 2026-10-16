@@ -85,7 +85,8 @@ class ChannelQuery final {
                                    Position3d rx_position,
                                    SimTime emitted_at,
                                    double center_frequency_hz,
-                                   double bandwidth_hz)
+                                   double bandwidth_hz,
+                                   SimDuration encoded_duration = SimDuration::Zero())
       -> Result<ChannelQuery>;
 
   [[nodiscard]] constexpr auto transmission_id() const noexcept
@@ -126,6 +127,10 @@ class ChannelQuery final {
 
   auto operator==(const ChannelQuery&) const -> bool = default;
 
+  [[nodiscard]] constexpr auto encoded_duration() const noexcept -> SimDuration {
+    return encoded_duration_;
+  }
+
  private:
   constexpr ChannelQuery(TransmissionId transmission_id,
                          NodeId sender_node_id,
@@ -134,7 +139,7 @@ class ChannelQuery final {
                          Position3d rx_position,
                          SimTime emitted_at,
                          double center_frequency_hz,
-                         double bandwidth_hz) noexcept
+                         double bandwidth_hz, SimDuration encoded_duration) noexcept
       : transmission_id_(transmission_id),
         sender_node_id_(sender_node_id),
         receiver_node_id_(receiver_node_id),
@@ -142,7 +147,7 @@ class ChannelQuery final {
         rx_position_(rx_position),
         emitted_at_(emitted_at),
         center_frequency_hz_(center_frequency_hz),
-        bandwidth_hz_(bandwidth_hz) {}
+        bandwidth_hz_(bandwidth_hz), encoded_duration_(encoded_duration) {}
 
   TransmissionId transmission_id_;
   NodeId sender_node_id_;
@@ -152,6 +157,7 @@ class ChannelQuery final {
   SimTime emitted_at_;
   double center_frequency_hz_;
   double bandwidth_hz_;
+  SimDuration encoded_duration_;
 };
 
 inline auto ChannelQuery::Create(TransmissionId transmission_id,
@@ -161,7 +167,7 @@ inline auto ChannelQuery::Create(TransmissionId transmission_id,
                                  Position3d rx_position,
                                  SimTime emitted_at,
                                  double center_frequency_hz,
-                                 double bandwidth_hz)
+                                 double bandwidth_hz, SimDuration encoded_duration)
     -> Result<ChannelQuery> {
   const auto position_is_finite = [](const Position3d& position) {
     return std::isfinite(position.x_meters) &&
@@ -176,7 +182,7 @@ inline auto ChannelQuery::Create(TransmissionId transmission_id,
         Error{ErrorCode::kInvalidArgument,
               "ChannelQuery positions and physical values must be finite"});
   }
-  if(center_frequency_hz <= 0.0 || bandwidth_hz <= 0.0) {
+  if(center_frequency_hz <= 0.0 || bandwidth_hz <= 0.0 || encoded_duration.nanoseconds() < 0) {
     return std::unexpected(
         Error{ErrorCode::kOutOfRange,
               "ChannelQuery frequency and bandwidth must be positive"});
@@ -189,7 +195,7 @@ inline auto ChannelQuery::Create(TransmissionId transmission_id,
                       rx_position,
                       emitted_at,
                       center_frequency_hz,
-                      bandwidth_hz};
+                      bandwidth_hz, encoded_duration};
 }
 
 // A concrete channel result with at least one physical arrival. Scalar-only
@@ -330,8 +336,38 @@ class ChannelNoArrival final {
   NodeId receiver_node_id_;
 };
 
+// Recorded-channel estimates are normalized and synchronization-relative.
+// Never coerce them to static physical paths or an invented absolute TL.
+// operator_key identifies an immutable run-owned operator, not waveform data.
+class RecordedChannelResponse final {
+ public:
+  static auto Create(TransmissionId tx, NodeId rx, std::uint64_t operator_key,
+      std::uint64_t start_sample, SimDuration reference_delay,
+      SimDuration receive_duration) -> Result<RecordedChannelResponse> {
+    if(reference_delay.nanoseconds() < 0 || receive_duration.nanoseconds() <= 0 ||
+       !CheckedAdd(reference_delay, receive_duration))
+      return std::unexpected(Error{ErrorCode::kInvalidArgument,
+          "Invalid recorded receive envelope"});
+    return RecordedChannelResponse{tx,rx,operator_key,start_sample,reference_delay,receive_duration};
+  }
+  auto transmission_id() const noexcept { return tx_; }
+  auto receiver_node_id() const noexcept { return rx_; }
+  auto operator_key() const noexcept { return key_; }
+  auto start_sample() const noexcept { return start_; }
+  auto reference_delay() const noexcept { return delay_; }
+  auto receive_duration() const noexcept { return duration_; }
+  auto operator==(const RecordedChannelResponse&) const -> bool = default;
+ private:
+  RecordedChannelResponse(TransmissionId tx,NodeId rx,std::uint64_t key,
+      std::uint64_t start,SimDuration delay,SimDuration duration)
+      : tx_(tx),rx_(rx),key_(key),start_(start),delay_(delay),duration_(duration) {}
+  TransmissionId tx_; NodeId rx_;
+  std::uint64_t key_,start_;
+  SimDuration delay_,duration_;
+};
+
 using ChannelFieldOutcome =
-    std::variant<ChannelFieldResponse, ChannelNoArrival>;
+    std::variant<ChannelFieldResponse, ChannelNoArrival, RecordedChannelResponse>;
 
 // Providers must return the same transmission/receiver identity as the query.
 // Callers validate at the provider boundary before admitting a response to a

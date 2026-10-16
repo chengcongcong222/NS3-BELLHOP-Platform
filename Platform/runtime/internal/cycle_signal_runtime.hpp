@@ -182,6 +182,8 @@ inline auto CycleSignalRuntime::EmitTransmissionSuccess(
                 value.first_arrival_delay,
                 value.aggregate_transmission_loss_db,
                 static_cast<std::uint64_t>(value.path_count)};
+          } else if constexpr(std::is_same_v<Outcome, RecordedChannelExecutionSummary>) {
+            return contracts::TraceRecordedChannelOutcome{value.reference_delay,value.receive_duration};
           } else {
             return contracts::TraceNoArrivalChannelOutcome{};
           }

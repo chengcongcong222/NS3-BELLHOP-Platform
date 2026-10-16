@@ -104,7 +104,7 @@ static_assert(!HasReceiverCollection<ChannelNoArrival>);
 static_assert(!HasAggregateTransmissionLoss<ChannelNoArrival>);
 static_assert(!HasFirstArrivalDelay<ChannelNoArrival>);
 static_assert(!HasPropagationPaths<ChannelNoArrival>);
-static_assert(std::variant_size_v<ChannelFieldOutcome> == 2U);
+static_assert(std::variant_size_v<ChannelFieldOutcome> == 3U);
 static_assert(std::same_as<std::variant_alternative_t<0, ChannelFieldOutcome>,
                            ChannelFieldResponse>);
 static_assert(std::same_as<std::variant_alternative_t<1, ChannelFieldOutcome>,

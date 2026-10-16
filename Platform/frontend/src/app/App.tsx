@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { AppShell } from "../components/common";
 import {
@@ -13,6 +13,9 @@ import {
   ScenarioDetailPage,
 } from "../features/pages";
 import { StudioResultPage, StudioRunPage } from "../features/studio";
+import { RecordedExperimentPage } from "../features/recordedExperiment";
+import { queries } from "../api/queries";
+import { LoadingState, ErrorState } from "../components/common";
 import {
   EnvironmentAuthoringPage,
   ServerWorkspacePage,
@@ -38,6 +41,12 @@ function ScenarioEditorRedirect() {
 
 function ExperimentEditorRoute() {
   const [params] = useSearchParams();
+  const draft = params.get("draft");
+  const saved = useQuery({ ...queries.drafts("experiment"), enabled: !!draft });
+  if (draft && saved.isPending) return <LoadingState />;
+  if (draft && saved.error) return <ErrorState error={saved.error} />;
+  if (params.get("mode") === "C" || saved.data?.find(d => d.draft_id === draft)?.payload.physical_layer === "Channel3Recorded")
+    return <RecordedExperimentPage key={draft ?? "new"} />;
   return <ExperimentAuthoringPage key={JSON.stringify([params.get("draft"), params.get("scenario")])} />;
 }
 

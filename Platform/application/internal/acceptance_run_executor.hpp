@@ -34,6 +34,7 @@
 #include "internal/ns3_kernel_gateway.hpp"
 #include "internal/packet_queue_store.hpp"
 #include "internal/rate_based_tx_phy.hpp"
+#include "internal/sampled_scalar_phy.hpp"
 #include "internal/scalar_ber_rx_phy.hpp"
 #include "internal/scenario_runtime.hpp"
 #include "internal/single_sink_star_topology_policy.hpp"
@@ -76,7 +77,7 @@ class RecordingTraceSink final : public ITraceSink {
         if(found != waveform_rows_->rend()) {
           auto payload = *reception;
           payload.waveform = TraceWaveformSummary{found->payload_bit_count, found->bit_error_count,
-              found->crc_ok, found->channel_output_power_upa2, found->noise_power_upa2};
+              found->crc_ok, found->channel_output_power_upa2, found->noise_power_upa2, found->normalized_power};
           auto enriched = TraceEvent::Create(original.occurred_at(), payload);
           if(enriched) event = std::move(*enriched);
         }
@@ -317,6 +318,31 @@ struct WaveformExecutionOptions final {
   phy::internal::IWaveformReceptionObserver* observer = nullptr;
 };
 
+struct ScalarSamplingExecutionOptions final {
+  std::uint64_t deterministic_seed;
+  phy::internal::ISampledScalarReceptionObserver* observer;
+};
+
+inline auto RecordedPropagationTail(const phy::internal::RecordedWaveformChannel& source,
+    contracts::SimDuration airtime) -> contracts::Result<contracts::SimDuration> {
+  using namespace contracts;
+  auto maximum=SimDuration::Zero();
+  for(const auto& link:source.links()) {
+    // Only frozen timing bounds are exposed to the planner, not future CIR.
+    auto query=ChannelQuery::Create(TransmissionId{0},link.transmitter,link.receiver,
+        {},{},SimTime::Zero(),link.channel->carrier_hz,link.usable_bandwidth_hz,airtime);
+    if(!query)return std::unexpected(query.error());
+    auto result=source.Query(*query);
+    if(!result)return std::unexpected(result.error());
+    const auto& response=std::get<RecordedChannelResponse>(*result);
+    auto total=CheckedAdd(response.reference_delay(),response.receive_duration());
+    if(!total)return std::unexpected(Error{ErrorCode::kOverflow,"Recorded planning envelope overflow"});
+    maximum=std::max(maximum,SimDuration::FromNanoseconds(
+        std::max<std::int64_t>(0,total->nanoseconds()-airtime.nanoseconds())));
+  }
+  return maximum;
+}
+
 class RunExecutionExecutor final : public IRunExecutor {
  public:
   void BindPlanningEvidence(contracts::IPlanningEvidenceSink* sink) noexcept { planning_evidence_=sink; }
@@ -333,10 +359,16 @@ class RunExecutionExecutor final : public IRunExecutor {
   RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments,
       std::shared_ptr<const contracts::INodeTrajectory> trajectories,
-      std::optional<WaveformExecutionOptions> waveform = std::nullopt)
+      std::optional<WaveformExecutionOptions> waveform = std::nullopt,
+      std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded = nullptr)
       : environments_(environments),
         waveform_(std::move(waveform)),
-        trajectories_(std::move(trajectories)) {}
+        trajectories_(std::move(trajectories)), recorded_(std::move(recorded)) {}
+  RunExecutionExecutor(
+      const environment::internal::EnvironmentAssetRepository& environments,
+      ScalarSamplingExecutionOptions scalar_sampling)
+      : environments_(environments),
+        scalar_sampling_(std::move(scalar_sampling)) {}
 
   [[nodiscard]] auto Execute(
       const RunId& run_id,
@@ -348,24 +380,25 @@ class RunExecutionExecutor final : public IRunExecutor {
     auto asset_id = environment::internal::EnvironmentAssetId::Create(
         scenario.environment().asset_id);
     if(!asset_id) return std::unexpected(asset_id.error());
-    auto asset_record = environments_.get().Find(*asset_id);
-    if(!asset_record) {
+    auto asset_record = recorded_ ? Result<environment::internal::EnvironmentAssetRecord>{
+        std::unexpected(Error{ErrorCode::kUnsupported,"Recorded source does not use Bellhop"})}
+        : environments_.get().Find(*asset_id);
+    if(!recorded_ && !asset_record) {
       return std::unexpected(
           contracts::Error{asset_record.error().code,
                            "Environment asset missing: " +
                                asset_record.error().message});
     }
-    contracts::Result<std::shared_ptr<const environment::internal::AcousticFieldAsset>> asset=asset_record->asset;
-    if((*asset)->format_version() !=
+    std::shared_ptr<const environment::internal::AcousticFieldAsset> asset=recorded_ ? nullptr : asset_record->asset;
+    if(!recorded_ && asset->format_version() !=
        scenario.environment().asset_format_version) {
       return std::unexpected(
           contracts::Error{
               contracts::ErrorCode::kFailedPrecondition,
               "Environment asset format version does not match Scenario"});
     }
-    const auto maximum_depth = std::max(
-        (*asset)->source_depth_m().back(),
-        (*asset)->receiver_depth_m().back());
+    const auto maximum_depth = recorded_ ? 0.0 : std::max(
+        asset->source_depth_m().back(), asset->receiver_depth_m().back());
     const auto workload_payload_bytes =
         experiment.fusion().workload == ApplicationWorkload::kCommunicationOnly
             ? assembly::internal::kCommunicationTrafficPayload.size()
@@ -373,6 +406,10 @@ class RunExecutionExecutor final : public IRunExecutor {
     const bool planning_execution = experiment.planning().has_value();
     const bool flow_scoped = planning_execution && experiment.planning()->mac_algorithm &&
         experiment.planning()->mac_algorithm->interface=="planning-mac-v2";
+    if(recorded_ && (!planning_execution || !waveform_ || flow_scoped ||
+        experiment.fusion().workload!=ApplicationWorkload::kCommunicationOnly))
+      return std::unexpected(Error{ErrorCode::kUnsupported,
+          "Recorded execution requires explicit communication planning; no synthetic bearing observations or Bellhop link-prediction fallback"});
     if(experiment.scenario().scenario_id != scenario.scenario_id() ||
        experiment.scenario().scenario_version != scenario.version())
       return std::unexpected(Error{ErrorCode::kFailedPrecondition,
@@ -382,16 +419,21 @@ class RunExecutionExecutor final : public IRunExecutor {
     auto legacy_config = BuildAcceptanceConfig(
         scenario, experiment, *asset_id, maximum_depth,
         workload_payload_bytes +
-            (waveform_ ? phy::internal::kWaveformCrcBytes : 0U));
+            ((waveform_ || scalar_sampling_) ? phy::internal::kWaveformCrcBytes : 0U));
     if(!legacy_config) return std::unexpected(legacy_config.error());
     config.emplace(std::move(*legacy_config));
     }
     auto frequency_policy =
         environment::internal::DiscreteFrequencySelectionPolicy::Create(0.0);
     if(!frequency_policy) return std::unexpected(frequency_policy.error());
-    auto channel = environment::internal::AcousticFieldChannelProvider::Create(
-        *asset, *frequency_policy);
-    if(!channel) return std::unexpected(channel.error());
+    std::optional<environment::internal::AcousticFieldChannelProvider> acoustic_channel;
+    if(!recorded_) {
+      auto created=environment::internal::AcousticFieldChannelProvider::Create(asset,*frequency_policy);
+      if(!created) return std::unexpected(created.error());
+      acoustic_channel.emplace(std::move(*created));
+    }
+    const IChannelFieldProvider* channel=recorded_ ? static_cast<const IChannelFieldProvider*>(recorded_.get())
+                                                 : static_cast<const IChannelFieldProvider*>(&*acoustic_channel);
     auto initial_snapshot = planning_execution
         ? WorldSnapshot::Create(SnapshotVersion{0}, SimTime::Zero(),
             {scenario.nodes().begin(), scenario.nodes().end()})
@@ -441,8 +483,14 @@ class RunExecutionExecutor final : public IRunExecutor {
             ErrorCode::kFailedPrecondition,
             "Waveform execution requires quality_mode=None; observe actual waveform BER separately"});
       }
-      if(modulation.symbol_rate_baud !=
-             static_cast<double>(experiment.phy().bit_rate_bits_per_second) ||
+      // Legacy one-bit symbols use the experiment bit rate directly. OSDM is
+      // block modulation: its symbol rate is the complex sample clock, while
+      // actual airtime comes from K/M/CP framing in WaveformTxPhy.
+      const auto rate_matches =
+          modulation.scheme == phy::internal::ModulationScheme::kOsdm ||
+          modulation.symbol_rate_baud ==
+              static_cast<double>(experiment.phy().bit_rate_bits_per_second);
+      if(!rate_matches ||
          modulation.acoustic_carrier_hz !=
              experiment.phy().center_frequency_hz ||
          waveform_->phy.occupied_bandwidth_hz !=
@@ -456,7 +504,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       auto created_tx =
           phy::internal::WaveformTxPhy::Create(waveform_->phy, waveform_store);
       auto created_rx = phy::internal::WaveformRxPhy::Create(
-          waveform_->phy, waveform_store, &result_observer);
+          waveform_->phy, waveform_store, &result_observer, recorded_.get());
       if(!created_tx) return std::unexpected(created_tx.error());
       if(!created_rx) return std::unexpected(created_rx.error());
       waveform_tx.emplace(std::move(*created_tx));
@@ -514,6 +562,27 @@ class RunExecutionExecutor final : public IRunExecutor {
           config->fusion_center_node_id(), *queues);
       }
     }
+    phy::internal::ScalarFrameStore scalar_frame_store;
+    std::optional<phy::internal::SampledScalarTxPhy> sampled_tx;
+    std::optional<phy::internal::SampledScalarRxPhy> sampled_rx;
+    if(scalar_sampling_) {
+      if(experiment.phy().quality_mode != RxQualityMode::kNone ||
+         scalar_sampling_->observer == nullptr) {
+        return std::unexpected(Error{
+            ErrorCode::kFailedPrecondition,
+            "Sampled scalar comparison requires quality_mode=None and observer"});
+      }
+      auto created_tx = phy::internal::SampledScalarTxPhy::Create(
+          tx_phy->config(), scalar_frame_store);
+      auto created_rx = phy::internal::SampledScalarRxPhy::Create(
+          experiment.phy().bit_rate_bits_per_second,
+          scalar_sampling_->deterministic_seed, scalar_frame_store,
+          *scalar_sampling_->observer);
+      if(!created_tx) return std::unexpected(created_tx.error());
+      if(!created_rx) return std::unexpected(created_rx.error());
+      sampled_tx.emplace(std::move(*created_tx));
+      sampled_rx.emplace(std::move(*created_rx));
+    }
 
     kernel::internal::Ns3KernelGateway gateway;
     runtime::internal::WorldStateStore world{std::move(*initial_snapshot)};
@@ -537,11 +606,14 @@ class RunExecutionExecutor final : public IRunExecutor {
                                   : static_cast<const structure::internal::ILogicalTopologyPolicy&>(topology)};
     std::optional<ConfiguredPlanner> legacy_planner;
     if(config) legacy_planner.emplace(*config, experiment.routing().mode);
-    const auto environment_checksum=environment::internal::package_detail::ChecksumHex(asset_record->metadata.payload_checksum);
     // This catalog stores immutable revision-qualified IDs, not an independent
     // numeric revision column. Use its content version, not the format version.
-    PlanningExecutionPlanner generic_planner{experiment,run_id.value(),PlanningEnvironment{
-        std::cref(*channel),scenario.environment().asset_id,"fnv1a64:"+environment_checksum,environment_checksum},planning_evidence_};
+    PlanningExecutionPlanner generic_planner{experiment};
+    if(!recorded_) {
+      const auto checksum=environment::internal::package_detail::ChecksumHex(asset_record->metadata.payload_checksum);
+      generic_planner=PlanningExecutionPlanner{experiment,run_id.value(),PlanningEnvironment{
+          std::cref(*acoustic_channel),scenario.environment().asset_id,"fnv1a64:"+checksum,checksum},planning_evidence_};
+    }
     ConstantNoise noise{
         experiment.phy().equivalent_noise_power_db_re_1upa2};
     DeterministicRxPhy deterministic_rx;
@@ -556,8 +628,12 @@ class RunExecutionExecutor final : public IRunExecutor {
         waveform_
             ? assembly::internal::PhyExecutionComposition::Waveform(
                   *waveform_tx, *channel, noise, *waveform_rx, waveform_store)
-            : assembly::internal::PhyExecutionComposition::Abstract(
-                  *tx_phy, *channel, noise, rx_phy);
+            : scalar_sampling_
+                  ? assembly::internal::PhyExecutionComposition::AbstractWithArtifacts(
+                        *sampled_tx, *channel, noise, *sampled_rx,
+                        scalar_frame_store)
+                  : assembly::internal::PhyExecutionComposition::Abstract(
+                        *tx_phy, *channel, noise, rx_phy);
     assembly::internal::ScenarioRuntime runtime{
         gateway,
         world,
@@ -581,11 +657,14 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(!bound_evidence) return std::unexpected(bound_evidence.error());
     }
     if(planning_execution) {
-      const auto airtime = phy::internal::ComputePayloadAirtime(
-          workload_payload_bytes + (waveform_ ? phy::internal::kWaveformCrcBytes : 0U),
-          experiment.phy().bit_rate_bits_per_second);
+      const auto airtime = waveform_
+          ? phy::internal::ComputeWaveformAirtime(workload_payload_bytes, waveform_->phy)
+          : phy::internal::ComputePayloadAirtime(workload_payload_bytes +
+                (scalar_sampling_ ? phy::internal::kWaveformCrcBytes : 0U),
+                experiment.phy().bit_rate_bits_per_second);
       if(!airtime) return std::unexpected(airtime.error());
-      const auto tail = MaximumAssetPropagationTail(**asset);
+      const auto tail = recorded_ ? RecordedPropagationTail(*recorded_,*airtime)
+                                  : MaximumAssetPropagationTail(*asset);
       if(!tail) return std::unexpected(tail.error());
       auto occupied = CheckedAdd(*airtime, *tail);
       if(occupied) occupied = CheckedAdd(*occupied, experiment.planning()->safety_margin);
@@ -672,7 +751,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(std::holds_alternative<CycleCommitTrace>(event.payload())) ++summary.cycle_count;
       if(std::holds_alternative<TransmissionTrace>(event.payload())) ++summary.transmission_count;
       if(const auto* channel_event = std::get_if<ChannelOutcomeTrace>(&event.payload())) {
-        if(std::holds_alternative<TraceSignalChannelOutcome>(channel_event->outcome)) ++summary.channel_signal_count;
+        if(HasChannelSignal(channel_event->outcome)) ++summary.channel_signal_count;
         else ++summary.channel_no_arrival_count;
       }
       if(const auto* reception = std::get_if<ReceptionTrace>(&event.payload())) {
@@ -712,7 +791,9 @@ class RunExecutionExecutor final : public IRunExecutor {
       environments_;
   std::optional<WaveformExecutionOptions> waveform_;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
+  std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded_;
   contracts::IPlanningEvidenceSink* planning_evidence_{};
+  std::optional<ScalarSamplingExecutionOptions> scalar_sampling_;
 };
 
 // Compatibility name for preset-focused callers. Both paths now execute the

@@ -8,6 +8,8 @@ state_dir="${PLATFORM_DEMO_STATE_DIR:-${platform_root}/.runtime/demo}"
 environment_repository="${PLATFORM_ENVIRONMENT_REPOSITORY:-${state_dir}/environment-repository}"
 backend_port="${PLATFORM_BACKEND_PORT:-8000}"
 frontend_port="${PLATFORM_FRONTEND_PORT:-4173}"
+backend_source="${PLATFORM_BACKEND_SOURCE_ROOT:-${platform_root}/backend/src}"
+frontend_dist="${PLATFORM_FRONTEND_DIST_ROOT:-${platform_root}/frontend/dist}"
 pid_dir="${state_dir}/pids"
 log_dir="${state_dir}/logs"
 
@@ -35,6 +37,7 @@ preflight() {
   python3 "${platform_root}/scripts/platform_preflight.py" \
     --platform-root "${platform_root}" \
     --build-dir "${build_dir}" \
+    --frontend-dist "${frontend_dist}" \
     --environment-repository "${environment_repository}" \
     --acceptance-environment-asset-id "${acceptance_environment_asset_id}" \
     --backend-port "${backend_port}" \
@@ -85,6 +88,10 @@ start() {
   fi
   prepare_ocean_authoring
   preflight
+  if [[ ! -f "${backend_source}/ns3_factory_backend/main.py" ]]; then
+    echo "START_BACKEND_SOURCE_UNAVAILABLE: ${backend_source}" >&2
+    exit 2
+  fi
   # A delivery/worktree directory can legitimately be copied without its Git
   # administration directory.  The demo must remain runnable in that state:
   # source revision is provenance only and is not a runtime dependency.
@@ -100,7 +107,7 @@ start() {
       source_revision="local-tree-without-git-metadata"
     fi
   fi
-  PYTHONPATH="${platform_root}/backend/src" \
+  PYTHONPATH="${backend_source}" \
   PLATFORM_BELLHOP_EXECUTABLE="${PLATFORM_BELLHOP_EXECUTABLE:-${platform_root}/.runtime/tools/bellhopcuda/bin/bellhopcxx2d}" \
   PYTHONDONTWRITEBYTECODE=1 \
   PLATFORM_SIM_WORKER="${worker}" \
@@ -120,7 +127,7 @@ start() {
 
   (
     cd "${platform_root}/frontend"
-    nohup setsid "${npm}" run preview -- --host 127.0.0.1 --port "${frontend_port}" \
+    nohup setsid "${npm}" run preview -- --host 127.0.0.1 --port "${frontend_port}" --strictPort --outDir "${frontend_dist}" \
       >"${log_dir}/frontend.log" 2>&1 &
     echo "$!" >"${pid_dir}/frontend.pid"
   )

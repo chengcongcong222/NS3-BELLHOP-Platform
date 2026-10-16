@@ -8,6 +8,8 @@ import type { ExperimentDto, ResultDto, RunEventDto } from "../api/types";
 import { ErrorState, LoadingState } from "../components/common";
 import { formatNanoseconds } from "../domain/format";
 import { acceptanceReference, matchingRunExperiment, physicalMode, resultEventStatistics, sampleSummary, targetBerReference, waveformSummary, type BerEvidenceSource } from "../domain/resultAnalysis";
+import type { RecordedChannelConfig } from "../api/types";
+import { RecordedSource } from "./recordedExperiment";
 import { cumulativeTrends, type TrendPoint } from "../domain/runAnalytics";
 import "./resultAnalysis.css";
 
@@ -92,18 +94,24 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
   const sources = result.visualization?.fusion_sources.filter(item => item.fusion_sequence === fused?.fusion_sequence);
   const distinctSources = sources ? [...new Set(sources.map(item => item.node_id))] : null;
   const communicationOnly = experiment?.fusion.workload === "CommunicationOnly";
-  const observedSnr = mode === "B" ? stats.waveformSnr : mode === "A" ? stats.snr : [];
+  const observedSnr = (mode === "B" || mode === "C") ? stats.waveformSnr : mode === "A" ? stats.snr : [];
   const delaySummary = sampleSummary(stats.delay), lossSummary = sampleSummary(stats.loss), snrSummary = sampleSummary(observedSnr);
-  const unavailableSnr = mode === "B" && stats.waveformNoNoise > 0 && stats.waveformNoSignal === 0 && stats.waveformPowerMissing === 0
-    ? "未加噪声" : mode === "B" && stats.waveformNoSignal > 0 && stats.waveformNoNoise === 0 && stats.waveformPowerMissing === 0 ? "无信号功率" : "尚无可计算记录";
+  const unavailableSnr = (mode === "B" || mode === "C") && stats.waveformNoNoise > 0 && stats.waveformNoSignal === 0 && stats.waveformPowerMissing === 0
+    ? "未加噪声" : (mode === "B" || mode === "C") && stats.waveformNoSignal > 0 && stats.waveformNoNoise === 0 && stats.waveformPowerMissing === 0 ? "无信号功率" : "尚无可计算记录";
   const modeled = stats.events.flatMap(event => event.trace.kind === "Reception" && event.trace.payload.quality?.source === "Modeled" ? [{ timeNs: event.trace.occurred_at_ns, value: event.trace.payload.quality.bit_error_rate }] : []);
-  const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", "水声链路"], ...(mode === "B" ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
+  const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", "水声链路"], ...((mode === "B" || mode === "C") ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
   return <article className="result-analysis-paper">
-    <header className="analysis-heading"><h2>{experiment?.name ?? "本次仿真结果"}</h2><div className="analysis-mode">{mode === "A" ? "模式 A · 快速抽象仿真" : mode === "B" ? "模式 B · 波形级仿真" : "物理模式未随结果提供"}</div></header>
+    <header className="analysis-heading"><h2>{experiment?.name ?? "本次仿真结果"}</h2><div className="analysis-mode">{mode === "A" ? "模式 A · 快速抽象仿真" : mode === "C" ? "模式 C · 实测信道回放" : mode === "B" ? "模式 B · 波形级仿真" : "物理模式未随结果提供"}</div></header>
     <nav className="analysis-nav" aria-label="结果分区">{sections.map(([id, title]) => <a key={id} href={`#analysis-${id}`}>{title}</a>)}</nav>
     <section id="analysis-overview" className="analysis-section"><h3><span aria-hidden="true">01</span>运行概览</h3><div className="analysis-summary">
       <div><small>仿真时长</small><strong title={formatNanoseconds(p.simulation_duration_ns)}>{seconds(p.simulation_duration_ns)}</strong></div><div><small>参与节点</small><strong>{p.node_count}<em> 个</em></strong></div><div><small>发送次数</small><strong>{p.transmission_count}<em> 次</em></strong></div><div><small>数据送达</small><strong>{p.local_delivery_count}<em> 次</em></strong></div>
     </div><p className="analysis-note">汇总覆盖完整运行。{stats.complete ? "图表所需记录已载入。" : `图表目前载入 ${stats.events.length} 条事件，尚未载入的记录不当作零。`}下方解释每个数字的含义，详细记录可按需展开。</p></section>
+    {mode === "C" && <section id="analysis-acoustic" className="analysis-section"><h3>录音资源与实验假设</h3>
+      {result.provenance?.recorded_channel ? <RecordedSource source={result.provenance.recorded_channel as RecordedChannelConfig} /> : <p>此记录没有完整录音来源清单。</p>}
+      <p>下方误码与 CRC 来自本次波形回放解码，不是数据采集时的原始通信结果。录音为归一化信道估计，不提供绝对传播损失或声压级。</p>
+      <SampleTable rows={[["本次接收样本信号 / 噪声功率比（非标定）", "dB", stats.waveformSnr]]} />
+      <p>{stats.waveformNoNoise} 次未额外加噪声。脉冲噪声的样本功率比不解释为理论 SNR。</p>
+    </section>}
     <div className="analysis-layout">
       <section id="analysis-network" className="analysis-section"><h3><span aria-hidden="true">02</span>网络性能</h3><div className="analysis-two-column"><ExplainedValues rows={[
         { label: "节点发送速率", value: experiment?.phy.bit_rate_bits_per_second ?? "配置快照未提供", unit: experiment ? "bit/s" : undefined, explanation: "本次运行冻结的实验配置：节点发送时每秒传出的数据位数，不是整场实验的有效吞吐量。" },
@@ -120,7 +128,7 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
         {stats.receiveDurationSeconds.length > 0 && <><SampleTable rows={[["目标链路发送至接收处理结束", "s", stats.receiveDurationSeconds]]} /><p className="analysis-note">上表含发送时长、传播和接收处理，包含成功与失败；并非从业务产生到最终交付的端到端时延。</p></>}
         <p className="analysis-note">旁听：数据不是发给该节点，但该节点听到了并解出了它。中继入队：节点将数据放入待转发队列，还不等于送达最终业务。</p></details>
       </section>
-      <section id="analysis-acoustic" className="analysis-section"><h3><span aria-hidden="true">03</span>水声链路</h3>
+      {mode !== "C" && <section id="analysis-acoustic" className="analysis-section"><h3><span aria-hidden="true">03</span>水声链路</h3>
         <div className={mode === "B" ? "analysis-acoustic-overview" : "analysis-acoustic-overview analysis-two-column"}><ExplainedValues rows={[
           { label: "平均信号传播用时", value: delaySummary ? number(delaySummary.mean) : "尚无记录", unit: delaySummary ? "s" : undefined, explanation: "声波从发出到第一条传播路径抵达的平均用时，不含排队和发送数据所需时间。" },
           ...(lossSummary ? [{ label: "平均信号衰减", value: number(lossSummary.mean, 2), unit: "dB", explanation: "信号经过水中环境后的衰减。同样的发送条件下，数值越大，接收信号通常越弱。" }] : []),
@@ -140,16 +148,16 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
           const item = event.trace.payload, outcome = event.trace.payload.outcome, tx = stats.transmissions.get(item.transmission_id);
           return <tr key={event.sequence}><td>{number(Number(BigInt(event.trace.occurred_at_ns)) / 1e9)}</td><td>{item.transmission_id}</td><td>{tx ? `N${tx.payload.sender_node_id}` : "未载入发送记录"} → N{item.receiver_node_id}</td><td>{number(Number(BigInt(outcome.first_arrival_delay_ns)) / 1e9)}</td><td>{number(outcome.aggregate_transmission_loss_db, 2)}</td><td>{outcome.path_count}</td></tr>;
         })}</tbody></table></div><p className="analysis-note">来源为信道查询结果，不将查询时间称为信号到达时间；含非目标接收节点。</p></details></details>
-      </section>
-      {mode === "B" && <section id="analysis-waveform" className="analysis-section"><h3><span aria-hidden="true">04</span>波形通信</h3>{waveform.frames ? <><ExplainedValues rows={[
+      </section>}
+      {(mode === "B" || mode === "C") && <section id="analysis-waveform" className="analysis-section"><h3><span aria-hidden="true">04</span>波形通信</h3>{waveform.frames ? <><ExplainedValues rows={[
         { label: "解出的数据中有多少错误比特？", value: String(waveform.errors), unit: "bit", explanation: `把收到的 0、1 和发送内容逐位比较；这次共比较 ${waveform.bits} bit。` },
         { label: "错误比特占比", value: waveform.ber === null ? "无法计算" : percent(waveform.ber), explanation: "错误比特数除以比较比特总数。它描述数据位的错误，不是消息丢失率。" },
         { label: "数据完整性检查", value: `${waveform.crcPassed} 次通过 / ${waveform.crcFailed} 次未通过`, explanation: "使用随数据携带的校验码（CRC）检查是否损坏。通过只表示校验未检出问题，不表示已交给业务程序。" },
       ]} /><p className="analysis-note">这里统计所有接收节点，包括旁听。因此校验通过次数与上面的“数据送达”次数可能不同。</p>
       <details className="analysis-diagnostic"><summary>查看逐次接收的数据校验记录</summary><Facts rows={[
         ["接收帧记录", waveform.frames, "每次发送 × 接收节点，含旁听"], ["实际误码数 / 比较比特数", `${waveform.errors} / ${waveform.bits}`, "各接收帧相加"], ["加权实际误码率 BER", waveform.ber === null ? "—" : berNumber(waveform.ber), "Σ 误码数 / Σ 比较比特数"], ["帧 CRC 通过 / 失败", `${waveform.crcPassed} / ${waveform.crcFailed}`, "帧完整性检查，不等于上层交付"], ["帧 CRC 通过比例", percent(waveform.crcPassed / waveform.frames), "已记录接收帧"],
-      ]} /><h4>逐帧误码与校验</h4><p className="analysis-note">一帧是一次接收的数据块；同一次发送在两个节点被接收，会留下两行记录。</p><div className="analysis-scroll"><table><thead><tr><th>发送 / 接收节点</th><th>实际误码数 / 比较比特数（bit）</th><th>实际 BER</th><th>帧 CRC</th></tr></thead><tbody>{result.visualization?.waveform.map((item, index) => <tr key={`${item.transmission_id}-${item.receiver_node_id}-${index}`}><td>{item.transmission_id} / N{item.receiver_node_id}</td><td>{item.bit_error_count} / {item.payload_bit_count}</td><td>{BigInt(item.payload_bit_count) ? berNumber(Number(item.bit_error_count) / Number(item.payload_bit_count)) : "—"}</td><td><span className={item.crc_ok ? "crc-intact" : "crc-damaged"}>{item.crc_ok ? "通过" : "失败"}</span></td></tr>)}</tbody></table></div></details></> : <p className="analysis-note">本次选择模式 B，但结果未保存波形接收帧；没有记录不表示误码为零。</p>}<p className="analysis-note">这些数值来自接收波形解调与发送比特比较，不是硬件实测。</p></section>}
-      <section id="analysis-fusion" className="analysis-section"><h3><span aria-hidden="true">{mode === "B" ? "05" : "04"}</span>探测与融合</h3>{communicationOnly ? <p className="analysis-note">本实验未启用融合业务。网络、声学与适用模式的波形统计正常展示，无融合不代表运行失败。</p> : <>
+      ]} /><h4>逐帧误码与校验</h4><p className="analysis-note">一帧是一次接收的数据块；同一次发送在两个节点被接收，会留下两行记录。</p><div className="analysis-scroll"><table><thead><tr><th>发送 / 接收节点</th><th>实际误码数 / 比较比特数（bit）</th><th>实际 BER</th><th>帧 CRC</th></tr></thead><tbody>{result.visualization?.waveform.map((item, index) => <tr key={`${item.transmission_id}-${item.receiver_node_id}-${index}`}><td>{item.transmission_id} / N{item.receiver_node_id}</td><td>{item.bit_error_count} / {item.payload_bit_count}</td><td>{BigInt(item.payload_bit_count) ? berNumber(Number(item.bit_error_count) / Number(item.payload_bit_count)) : "—"}</td><td><span className={item.crc_ok ? "crc-intact" : "crc-damaged"}>{item.crc_ok ? "通过" : "失败"}</span></td></tr>)}</tbody></table></div></details></> : <p className="analysis-note">本次选择模式 {mode}，但结果未保存波形接收帧；没有记录不表示误码为零。</p>}<p className="analysis-note">这些数值来自接收波形解调与发送比特比较，不是硬件实测。</p></section>}
+      <section id="analysis-fusion" className="analysis-section"><h3><span aria-hidden="true">{(mode === "B" || mode === "C") ? "05" : "04"}</span>探测与融合</h3>{communicationOnly ? <p className="analysis-note">本实验未启用融合业务。网络、声学与适用模式的波形统计正常展示，无融合不代表运行失败。</p> : <>
         <div className="analysis-process"><span>产生特征报告 <b>{result.visualization?.generated_feature_count ?? "—"}</b></span><i>→</i><span>网络交付后筛选有效观测</span><i>→</i><span>形成融合结果 <b>{result.fusion_results.length}</b> 轮</span></div>
         {fused ? <div className="analysis-fusion-layout"><div className="analysis-fusion-list">{result.fusion_results.map(item => <button key={item.fusion_sequence} type="button" aria-pressed={item.fusion_sequence === fused.fusion_sequence} onClick={() => selectFusion(item.fusion_sequence)}><strong>第 {item.fusion_sequence} 轮结果</strong><span title={formatNanoseconds(item.completed_at_ns)}>{seconds(item.completed_at_ns)} · {item.observation_count} 条观测</span></button>)}</div><div><ExplainedValues rows={[
           { label: "用了多少条有效观测？", value: fused.observation_count, unit: "条", explanation: "这一轮实际采用的方位观测。同一个节点可以贡献多条观测，因此它不等于参与节点数。" },
@@ -170,7 +178,7 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
       </tbody></table></div>
       <p className="analysis-note">融合窗口耗时从本轮最早的有效观测采样时刻算起，到通信周期结束时产生融合结果为止，包含传输和等待；不是算法计算耗时。当前没有独立的完整探测周期记录，不能把上述时间或相邻结果的时间差冒充探测周期。</p>
     </section>
-    <details className="analysis-methods"><summary>统计口径与当前数据覆盖</summary><p>业务交付率、业务丢包率、端到端时延和有效吞吐量需要业务包产生总数、产生时间、有效字节及最终去重交付；当前记录不齐全，因此暂不计算。这是业务统计缺口，与选择模式 A 或 B 无关。</p><p>未发送的排队数据不会出现在发送事件中。重传与多跳转发也不能仅凭重复数据包编号区分；不从未解码次数推导碰撞。最大多径时延扩展、完整波形样本目前未随结果提供。</p><p>各类信道与接收统计覆盖已保存的真实接收节点，包括旁听。只有累计计数绘制阶梯线；来自不同链路的观测使用散点，不冒充单条链路的连续变化。模式 C 尚无正式实现，本页不提供虚拟模式或替代数据。</p>
+    <details className="analysis-methods"><summary>统计口径与当前数据覆盖</summary><p>业务交付率、业务丢包率、端到端时延和有效吞吐量需要业务包产生总数、产生时间、有效字节及最终去重交付；当前记录不齐全，因此暂不计算。这是业务统计缺口，与选择模式 A 或 B 无关。</p><p>未发送的排队数据不会出现在发送事件中。重传与多跳转发也不能仅凭重复数据包编号区分；不从未解码次数推导碰撞。最大多径时延扩展、完整波形样本目前未随结果提供。</p><p>各类信道与接收统计覆盖已保存的真实接收节点，包括旁听。只有累计计数绘制阶梯线；来自不同链路的观测使用散点，不冒充单条链路的连续变化。模式 C 回放实测信道估计；不将仿真解调统计称为海试实测误码。</p>
       <p>参考要求读取版本化项目基线（Acceptance4Node v1）。误码对照按每次单播的目标接收分组，展示各证据来源的最大值，不把模型估计、仿真逐比特结果或实测记录混为同一种证据；没有路径或没有解码证据时不补零。</p>
     </details>
     <details className="analysis-methods"><summary>本次实验的资源版本</summary><Facts rows={[["实验", result.experiment_id, `版本 ${result.experiment_version}`], ["场景", result.scenario_id, `版本 ${result.scenario_version}`], ["环境", result.environment_asset_id, `格式版本 ${result.environment_format_version}`], ["最终状态快照", p.final_snapshot_version], ["运行编号", result.run_id], ["仿真时长原始值", p.simulation_duration_ns, "ns"]]} /></details>
