@@ -1,6 +1,6 @@
 # ADR-0011: Recorded-channel integration and OSDM execution
 
-- Status: Accepted for implementation; delivery gates remain open.
+- Status: Accepted; bounded six-stage delivery verified 2026-10-16 (see `docs/channel3/closeout.md`).
 - Authorization: user-approved six-stage integration, 2026-10-16.
 - Baseline: `7468e59df88348c304a0eb3f03ecc0be67d58b0b`.
 - Incoming: `34ca091242e85a0a5cafffc071358c6c93309be6` (includes CIR branch).
