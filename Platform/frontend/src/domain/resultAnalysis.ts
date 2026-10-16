@@ -109,7 +109,8 @@ export function resultEventStatistics(result: ResultDto, input: readonly RunEven
   // history may be charted, but must not silently become a run-wide denominator.
   const countsMatch = BigInt(transmissions.size) === BigInt(result.projection.transmission_count)
     && BigInt(localDelivery + overheard + notDecoded + relay) === BigInt(result.projection.reception_count)
-    && BigInt(delay.length) === BigInt(result.projection.channel_signal_count)
+    && BigInt(events.filter(item => item.trace.kind === "ChannelOutcome" &&
+      (item.trace.payload.outcome.type === "Signal" || item.trace.payload.outcome.type === "Recorded")).length) === BigInt(result.projection.channel_signal_count)
     && BigInt(localDelivery) === BigInt(result.projection.local_delivery_count)
     && BigInt(events.filter(item => item.trace.kind === "ChannelOutcome" && item.trace.payload.outcome.type === "NoArrival").length) === BigInt(result.projection.channel_no_arrival_count)
     && BigInt(events.filter(item => item.trace.kind === "CycleCommit").length) === BigInt(result.projection.cycle_count)

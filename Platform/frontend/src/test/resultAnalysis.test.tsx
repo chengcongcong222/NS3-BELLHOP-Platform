@@ -20,6 +20,20 @@ const events: RunEventDto[] = [
 ];
 
 describe("result statistics retain measurement scope", () => {
+  it("counts recorded channel events as covered without inventing Bellhop loss or delay samples", () => {
+    const recorded: RunEventDto[] = events.map(event => event.trace.kind === "ChannelOutcome" ? {
+      ...event, trace: { ...event.trace, payload: { ...event.trace.payload, outcome: {
+        type: "Recorded", reference_delay_ns: "2000000000", receive_duration_ns: "500000000",
+        gain_reference: "Normalized", delay_reference: "Modeled",
+      } } },
+    } : event);
+    const stats = resultEventStatistics({ ...result, fusion_results: [] }, recorded, true);
+    expect(stats.complete).toBe(true);
+    expect(stats.loss).toEqual([]);
+    expect(stats.delay).toEqual([]);
+    expect(stats.paths).toEqual([]);
+    expect(resultEventStatistics({ ...result, fusion_results: [] }, recorded.slice(1), true).complete).toBe(false);
+  });
   it("computes waveform SNR from recorded powers without replacing absent or unbounded values with zero", () => {
     expect(waveformSignalToNoise({ signal_power_upa2: 1000, noise_power_upa2: 1 })).toBe(30);
     expect(waveformSignalToNoise({ signal_power_upa2: 1e300, noise_power_upa2: 1e-300 })).toBe(6000);

@@ -1005,6 +1005,7 @@ export function ExperimentAuthoringPage() {
   if (scenarios.isPending || environments.isPending || trajectories.isPending || scenarioDrafts.isPending || (requestedDraftId && experimentDrafts.isPending)) return <LoadingState />;
   const loadError = scenarios.error || environments.error || trajectories.error || scenarioDrafts.error || (requestedDraftId && experimentDrafts.error);
   if (loadError) return <ErrorState error={loadError} />;
+  if (selectedScenarioDraft?.payload.environment_source === "Recorded") return <p role="alert">录音链路不支持 Bellhop 几何配置。请从工作台打开原模式 C 实验。<Link to="/">返回工作台</Link></p>;
   if (requestedDraftId && !experimentDrafts.data?.some(draft => draft.draft_id === requestedDraftId)) return <p role="alert">这个实验草稿不存在，未改用其他案例。<Link to="/workspace/experiment">新建实验</Link></p>;
   if (requestedDraftId && server?.draft_id !== requestedDraftId) return <LoadingState />;
   const coverage = trajectoryRunCoverage(scene, trajectories.data ?? [], value.simulationCycleCount,
@@ -1038,7 +1039,7 @@ export function ExperimentAuthoringPage() {
                 }}
               >
                 <option value="">新建节点场景</option>
-                {scenarioDrafts.data.map((x) => (
+                {scenarioDrafts.data.filter(x => x.payload.environment_source !== "Recorded").map((x) => (
                   <option value={x.draft_id} key={x.draft_id}>
                     {x.name} · 修订 {x.revision}
                   </option>

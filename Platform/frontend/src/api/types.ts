@@ -172,7 +172,7 @@ export interface RecordedChannelDto {
     asset_id: string; version: number; name: string; source_sha256: string;
     citation: string; license: string; fc: number; usable_bandwidth_hz: number;
     fs_delay: number; fs_time: number; duration_s: number;
-    selected_index: number; axis_kind: string; reference_revision: string;
+    element: number; axis_kind: string; reference_revision: string;
     [key: string]: unknown;
   };
 }

@@ -14,8 +14,17 @@
     "selected_file": "blue_1.mat",
     "size_bytes": 206132594,
     "md5": "6776481ad636e40b1d6038fa37121fb7",
+    "sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
     "url": "https://zenodo.org/api/records/21287414/files/blue_1.mat/content",
     "axis_semantics": "simultaneous receiver array elements, not network nodes"
+  },
+  "noise_data": {
+    "record": "https://doi.org/10.5281/zenodo.21287414",
+    "selected_file": "blue_noise.mat",
+    "size_bytes": 155097,
+    "md5": "039ffcd3d74cb87f418b052933e0b750",
+    "sha256": "3d69f59552c5ebf9f7764e8c4acc7ccfb58b96efd3b64a42b17cf21b5685d26d",
+    "license": "CC-BY-4.0"
   },
   "criterion": {"relative_l2_max": 0.000001, "fit_alignment_allowed": false,
     "repeat": "exact samples for identical native build and input"}

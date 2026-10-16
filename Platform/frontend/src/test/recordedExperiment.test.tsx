@@ -53,6 +53,7 @@ it("saves the exact recording, continuous noise, modem and scene before starting
   const { mock, records } = server(); renderRoute("/workspace/experiment?mode=C");
   await userEvent.selectOptions(await screen.findByLabelText("录音资源"), "blue-1");
   await userEvent.selectOptions(screen.getByLabelText("连续噪声"), "blue-noise");
+  await userEvent.click(screen.getByText("OSDM 分块与同步"));
   fireEvent.change(screen.getByLabelText("循环前缀"), { target: { value: "96" } });
   await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
   await screen.findByText("已保存 · 修订 1");

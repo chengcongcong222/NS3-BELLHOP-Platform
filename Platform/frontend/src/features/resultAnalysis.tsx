@@ -99,7 +99,7 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
   const unavailableSnr = (mode === "B" || mode === "C") && stats.waveformNoNoise > 0 && stats.waveformNoSignal === 0 && stats.waveformPowerMissing === 0
     ? "未加噪声" : (mode === "B" || mode === "C") && stats.waveformNoSignal > 0 && stats.waveformNoNoise === 0 && stats.waveformPowerMissing === 0 ? "无信号功率" : "尚无可计算记录";
   const modeled = stats.events.flatMap(event => event.trace.kind === "Reception" && event.trace.payload.quality?.source === "Modeled" ? [{ timeNs: event.trace.occurred_at_ns, value: event.trace.payload.quality.bit_error_rate }] : []);
-  const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", "水声链路"], ...((mode === "B" || mode === "C") ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
+  const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", mode === "C" ? "录音依据" : "水声链路"], ...((mode === "B" || mode === "C") ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
   return <article className="result-analysis-paper">
     <header className="analysis-heading"><h2>{experiment?.name ?? "本次仿真结果"}</h2><div className="analysis-mode">{mode === "A" ? "模式 A · 快速抽象仿真" : mode === "C" ? "模式 C · 实测信道回放" : mode === "B" ? "模式 B · 波形级仿真" : "物理模式未随结果提供"}</div></header>
     <nav className="analysis-nav" aria-label="结果分区">{sections.map(([id, title]) => <a key={id} href={`#analysis-${id}`}>{title}</a>)}</nav>

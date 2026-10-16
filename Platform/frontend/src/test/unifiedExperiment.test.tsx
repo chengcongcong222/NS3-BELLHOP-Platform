@@ -13,6 +13,20 @@ const fixture = { "/environments": { body: [environment] }, "/scenarios": { body
   "/experiments": { body: [experiment] }, "/trajectories": { body: [trajectory] },
   "/authoring/drafts?kind=scenario": { body: [] }, "/authoring/drafts?kind=experiment": { body: [] } };
 
+it("does not offer a recorded link as a Bellhop scene or open it through a geometry URL", async () => {
+  const recorded: AuthoringDraftDto = { draft_id: "scene-recorded", kind: "scenario", name: "录音示意场景", revision: 1,
+    created_at: "2026-10-16", updated_at: "2026-10-16", validation_issues: [],
+    payload: { environment_source: "Recorded", environment_asset_id: "blue", nodes: [], trajectory_bindings: [] } };
+  installApi({ ...fixture, "/authoring/drafts?kind=scenario": { body: [recorded] } });
+  const page = renderRoute("/workspace/experiment");
+  const selector = await screen.findByLabelText("使用已有节点场景");
+  expect(within(selector).queryByRole("option", { name: /录音示意/ })).toBeNull();
+  page.unmount();
+  renderRoute("/workspace/experiment?scenario=scene-recorded");
+  await screen.findByText(/录音链路不支持 Bellhop 几何配置/);
+  expect(screen.queryByRole("button", { name: "保存并运行" })).toBeNull();
+});
+
 function server(legacy = false) {
   const records = new Map<string, AuthoringDraftDto>();
   if (legacy) records.set("experiment", { kind: "experiment", draft_id: "experiment-exact", name: "旧配置式实验", revision: 0, payload: {}, created_at: "2026-09-17", updated_at: "2026-09-17", validation_issues: [] });
