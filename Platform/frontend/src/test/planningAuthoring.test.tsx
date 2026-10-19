@@ -194,7 +194,7 @@ describe("PlanningV1 experiment authoring", () => {
     expect(within(checks).getByText("实验配置：普通通信必须配置至少一条显式业务流")).toBeTruthy();
     expect(within(checks).getByText(/暂不能运行/)).toBeTruthy();
     expect(within(checks).getByText(/在“网络”中配置通信流或应用接收节点/)).toBeTruthy();
-    expect(screen.getByText(/已保存 · 修订 1 · 尚有待完善项/)).toBeTruthy();
+    expect(screen.getByText(/已保存 · 尚有待完善项/)).toBeTruthy();
     expect(fetch.mock.calls.some(([url]) => String(url).endsWith("/runs"))).toBe(false);
     await addFlow("0", "1", 1);
     expect(within(checks).getByText(/以上为上次保存的检查结果/)).toBeTruthy();

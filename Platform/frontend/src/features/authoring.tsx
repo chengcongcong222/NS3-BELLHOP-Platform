@@ -1,4 +1,7 @@
 import { AcousticPlots } from "../components/AcousticPlots";
+import { OsdmSettings } from "../components/OsdmSettings";
+import type { OsdmConfig } from "../domain/experimentPresets";
+import { useExperimentIdentity } from "./experimentEditorContext";
 import { DepthSamplingInput } from "../components/DepthSamplingInput";
 import { acousticParameterErrors, automaticSampling, depthSamples, restoreSampling, samplingBudget, type DepthSampling } from "../domain/environmentSampling";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -767,8 +770,7 @@ const experimentInitial: ExperimentDraft = {
 export function ExperimentAuthoringPage() {
   const algorithmCatalog = useQuery({ queryKey: ["algorithms"], queryFn: apiClient.algorithmCatalog, retry: false, staleTime: 30000 });
   const capabilities = useQuery({ queryKey: ["authoring-capabilities"], queryFn: apiClient.authoringCapabilities, retry: false });
-  const [params] = useSearchParams();
-  const requestedDraftId = params.get("draft");
+  const { context: editorContext, draftId: requestedDraftId, scenarioId: initialScenarioId } = useExperimentIdentity();
   const scenarios = useQuery(queries.scenarios());
   const environments = useQuery(queries.environments());
   const trajectories = useQuery(queries.trajectories());
@@ -779,7 +781,7 @@ export function ExperimentAuthoringPage() {
   const experimentDrafts = useQuery({ ...queries.drafts("experiment"), enabled: Boolean(requestedDraftId) });
   const client = useQueryClient();
   const navigate = useNavigate();
-  const [value, setValue] = useState(() => ({ ...experimentInitial, scenarioId: params.get("scenario") ?? "" }));
+  const [value, setValue] = useState(() => ({ ...experimentInitial, scenarioId: initialScenarioId ?? "" }));
   const planning = value.executionMode === "PlanningV1";
   const [server, setServer] = useState<AuthoringDraftDto | null>(null);
   useEffect(() => {
@@ -790,6 +792,12 @@ export function ExperimentAuthoringPage() {
   const installedAlgorithm = value.macAlgorithm && algorithmCatalog.data?.algorithms.find(a => algorithmKey(a) === algorithmKey(value.macAlgorithm!));
   const algorithmErrors = value.macMode === "RegisteredMac" ? algorithmIssues(value.macAlgorithm, algorithmCatalog.data) : [];
   const [scene, setScene] = useState<ScenarioDraft>(() => scenarioInitial([], ""));
+  const selection = editorContext?.selection;
+  const reportResource = editorContext?.reportResource;
+  useEffect(() => { reportResource?.(scene.environmentAssetId); }, [reportResource, scene.environmentAssetId]);
+  useEffect(() => {
+    if (selection) setScene(s => ({ ...s, environmentAssetId: selection.id }));
+  }, [selection]);
   const sceneEnvironmentInputs = useQuery({ queryKey: ["environment-inputs", scene.environmentAssetId],
     queryFn: () => apiClient.environmentInputs(scene.environmentAssetId), enabled: !!scene.environmentAssetId,
     staleTime: Infinity });
@@ -811,8 +819,7 @@ export function ExperimentAuthoringPage() {
   const [savedSignature, setSavedSignature] = useState("");
   const [physicalLayer, setPhysicalLayer] = useState<"Channel1Abstract" | "Channel2Waveform">("Channel1Abstract");
   const [waveformModulation, setWaveformModulation] = useState<"Bpsk" | "Bfsk" | "Osdm">("Bpsk");
-  const [osdm, setOsdm] = useState({ block_length: 256, vector_length: 16, cyclic_prefix: 64,
-    constellation: "Qpsk", minimum_sync_correlation: 0.05, maximum_sync_search: 128 });
+  const [osdm, setOsdm] = useState<OsdmConfig | null>(null);
   const [waveformNoise, setWaveformNoise] = useState<"None" | "Awgn">("None");
   const [waveformNoisePsd, setWaveformNoisePsd] = useState(0);
   const [slotDurationNs, setSlotDurationNs] = useState("6000000000");
@@ -951,6 +958,8 @@ export function ExperimentAuthoringPage() {
     }
   }, [server, sceneServer, signature]);
   const saveComposition = async () => {
+    if (requestedDraftId && server?.draft_id !== requestedDraftId) throw new Error("原实验尚未读取完成，未创建替代实验。");
+    if (physicalLayer === "Channel2Waveform" && waveformModulation === "Osdm" && !osdm) throw new Error("请先读取或选择完整 OSDM 配置。");
     if (scene.spatialDomain && (capabilities.data?.scene_domain_validation !== true || !isSceneDomain(scene.spatialDomain))) throw new Error("场景范围不合法或当前后端不支持范围校验，未保存或运行。");
     if (scene.trajectoryBindings?.some(binding => binding.placement_mode === "RelativeToNodeStart") && capabilities.data?.relative_trajectory_placement !== true) throw new Error("当前服务不支持跟随场景起点的轨迹绑定，请使用新版服务。未保存或启动运行。");
     if (value.scenarioId && !sceneServer) throw new Error("所选场景未能载入。请重新选择，不能替换为默认场景。");
@@ -1002,6 +1011,8 @@ export function ExperimentAuthoringPage() {
       navigate(`/runs/${created.run_id}?presentation=live`);
     },
   });
+  useEffect(() => { editorContext?.registerSave(save.mutateAsync); });
+  useEffect(() => { editorContext?.reportState(signature !== savedSignature, save.isPending || run.isPending); });
   if (scenarios.isPending || environments.isPending || trajectories.isPending || scenarioDrafts.isPending || (requestedDraftId && experimentDrafts.isPending)) return <LoadingState />;
   const loadError = scenarios.error || environments.error || trajectories.error || scenarioDrafts.error || (requestedDraftId && experimentDrafts.error);
   if (loadError) return <ErrorState error={loadError} />;
@@ -1022,7 +1033,9 @@ export function ExperimentAuthoringPage() {
   const inspector = (
         <div className="experiment-inspector" data-section={inspectorSection}>
           <div className="studio-pane-title"><strong>环境与实验参数</strong></div>
-          <nav className="inspector-tabs" aria-label="实验参数分组">{[["basic", "资源"], ["network", "网络"], ["phy", "物理模式"], ["execution", "运行"]].map(([id, label]) => <button type="button" key={id} className={id === inspectorSection ? "selected" : ""} onClick={() => setInspectorSection(id)}>{label}</button>)}</nav>
+          <nav className="inspector-tabs" aria-label="实验参数分组"><button type="button" className={inspectorSection === "basic" ? "selected" : ""} onClick={() => setInspectorSection("basic")}>常用设置</button>
+            <details className="research-navigation"><summary>研究设置</summary>{[["network", "网络"], ["phy", "物理模式"], ["execution", "运行"]].map(([id, label]) => <button type="button" key={id} className={id === inspectorSection ? "selected" : ""} onClick={() => setInspectorSection(id)}>{label}</button>)}</details>
+          </nav>
           {planning && sceneBusinessReset && needsBusinessEndpoints && <p className="property-help" role="status">场景已切换，通信流和应用接收点已清空。请在“网络”中为新场景重新指定业务端点。</p>}
           {value.executionMode !== undefined && !planning && <p role="alert">此草稿的执行模式不受当前工作台支持，不能按历史模式运行。可以新建实验重新配置。</p>}
           <section id="basic" className="panel form-panel">
@@ -1050,12 +1063,21 @@ export function ExperimentAuthoringPage() {
             {!sceneSwitching && value.scenarioId && !sceneServer && <p role="alert">当前场景引用无法读取，请重新选择。</p>}
             {sceneEnvironmentInputs.isFetching && <p role="status">正在读取场景环境…</p>}
             {environmentNames.error && <ErrorState error={environmentNames.error} />}
-            <label>实验环境<select value={scene.environmentAssetId} onChange={e => setScene({ ...scene, environmentAssetId: e.target.value })}>
+            <details className="resource-binding-details"><summary>场景环境绑定详情</summary><label>实验环境<select value={scene.environmentAssetId} onChange={e => setScene({ ...scene, environmentAssetId: e.target.value })}>
               <option value="">请选择已发布环境</option>{environments.data!.map((environment, index) => <option key={environment.environment_asset_id} value={environment.environment_asset_id}>{String((environmentNames.data?.[environment.environment_asset_id] as { name?: string } | undefined)?.name ?? (environment.environment_asset_id === "reference-shallow-water-v1" ? "南海浅水参考环境" : `已发布环境 ${index + 1}`))} · v{environment.asset_format_version}</option>)}
-            </select></label>
-            <p className="property-help">点击画布节点，在此选择轨迹和收发能力。环境需先在环境建设中发布。</p>
-            <p className="property-help">{planning ? "场景至少需要一个节点；通信流需要不同的源和目的节点，融合业务需要接收节点和其他可发送的观测节点。" : "历史执行方式支持 3～6 个节点。其他规模可编辑、保存，尚不能启动运行。"}</p>
+            </select></label></details>
+            <p className="property-help">环境在上方选择；点击节点设置轨迹和收发能力。</p>
             {scene.spatialDomain && <p className="property-help">此历史场景保留原边界校验，以免改变已有实验。地形关联编辑已冻结；新场景不启用该功能。</p>}
+            <h3>实验任务与通信方案</h3>
+            <label>实验任务<select value={value.workload} onChange={e => set("workload", e.target.value as ExperimentDraft["workload"])}><option value="CommunicationOnly">通信性能实验</option><option value="BearingFusion">方位探测与定位</option></select></label>
+            <p className="property-help">{installedAlgorithm?.label ?? (value.macMode === "AdaptiveTdma" ? "自适应 TDMA" : value.macMode === "Tdma" ? "配置式 TDMA" : "已保存算法方案")} · {value.routingMode === "Direct" ? "直接发送" : value.routingMode === "ShortestPath" ? "最短路径" : "案例路由"}</p>
+            {value.workload === "BearingFusion" && <p className="property-help">集中式方位交汇 · 至少 {value.minimumBearingPoints} 条有效观测。目标可在画布中调整。</p>}
+            {needsBusinessEndpoints && <button type="button" onClick={() => setInspectorSection("network")}>配置必要的通信对象</button>}
+            <label>通信接收<select value={physicalLayer} onChange={e => setPhysicalLayer(e.target.value as typeof physicalLayer)}><option value="Channel1Abstract">快速网络实验 · A</option><option value="Channel2Waveform">波形通信实验 · B</option></select></label>
+            {physicalLayer === "Channel2Waveform" && <label>波形体制<select value={waveformModulation} onChange={e => setWaveformModulation(e.target.value as typeof waveformModulation)}><option value="Bpsk">单载波 BPSK</option><option value="Bfsk">单载波 BFSK</option><option value="Osdm" disabled={!planning}>OSDM</option></select></label>}
+            {physicalLayer === "Channel2Waveform" && waveformModulation === "Osdm" && <p className="property-help">OSDM 完整配置随实验保存；参数见研究设置 → 物理模式。</p>}
+            <label>运行周期数<input type="number" min="1" step="1" value={value.simulationCycleCount} onChange={e => set("simulationCycleCount", e.target.value)} /></label>
+            <p className="duration-preview">{coverage.endNs === null ? "请检查周期配置" : `预计仿真 ${Number(coverage.endNs) / 1e9} s`} · {value.bitRateBitsPerSecond} bit/s</p>
           </section>
           <section id="network" className="panel form-panel">
             <h2>网络与协议</h2>
@@ -1133,21 +1155,13 @@ export function ExperimentAuthoringPage() {
           </section>
           <section id="phy" className="panel form-panel">
             <h2>物理模式</h2>
-            <label>仿真模式<select aria-label="物理层实现" value={physicalLayer} onChange={e => {
-              if (e.target.value === "Channel3Recorded") {
-                if (window.confirm("模式 C 使用独立的录音链路配置。打开新实验？当前未保存的修改不会保留。")) navigate("/workspace/experiment?mode=C");
-              } else setPhysicalLayer(e.target.value as "Channel1Abstract" | "Channel2Waveform");
-            }}>
-              <option value="Channel1Abstract">模式 A · 快速网络仿真</option><option value="Channel2Waveform">模式 B · 波形通信仿真</option><option value="Channel3Recorded">模式 C · 实测信道回放</option>
+            <label>接收方法<select aria-label="物理层实现" value={physicalLayer} onChange={e => setPhysicalLayer(e.target.value as "Channel1Abstract" | "Channel2Waveform")}>
+              <option value="Channel1Abstract">模式 A · 快速网络仿真</option><option value="Channel2Waveform">模式 B · 波形通信仿真</option>
             </select></label>
             <p className="property-help">{physicalLayer === "Channel1Abstract" ? "用于比较路由、接入与网络表现。以声学传播和接收模型计算结果，不逐比特生成波形。" : "逐比特生成、传播、解调波形，可观察实际误码与 CRC；计算量更大，多径畸变可能造成解码失败。"}</p>
             {physicalLayer === "Channel2Waveform" && <div className="waveform-config">
               <label>调制方式<select value={waveformModulation} onChange={e => setWaveformModulation(e.target.value as typeof waveformModulation)}><option value="Bpsk">BPSK · 二进制相移键控</option><option value="Bfsk">BFSK · 二进制频移键控</option><option value="Osdm" disabled={!planning}>OSDM · 训练序列信道估计</option></select></label>
-              {waveformModulation === "Osdm" && <details className="parameter-detail" open><summary>OSDM 分块与同步</summary>
-                <label>星座<select value={osdm.constellation} onChange={e => setOsdm({ ...osdm, constellation: e.target.value })}><option value="Bpsk">BPSK</option><option value="Qpsk">QPSK</option></select></label>
-                {([['block_length', '分块长度 K（样本）'], ['vector_length', '向量长度 M（样本）'], ['cyclic_prefix', '循环前缀（样本）'], ['maximum_sync_search', '同步搜索范围（样本）'], ['minimum_sync_correlation', '同步相关门限']] as const).map(([key, label]) => <label key={key}>{label}<input type="number" value={osdm[key]} step={key === 'minimum_sync_correlation' ? 0.01 : 1} onChange={e => setOsdm({ ...osdm, [key]: Number(e.target.value) })} /></label>)}
-                <small>训练序列估计信道；当前均衡器使用仿真噪声功率。标称比特率不含训练、补齐与循环前缀，MAC 按实际波形时长规划。</small>
-              </details>}
+              {waveformModulation === "Osdm" && <OsdmSettings layer="Channel2Waveform" value={osdm} onChange={setOsdm} allowInitialPreset={server?.payload.waveform_modulation !== "Osdm"} />}
               <label>接收波形噪声<select value={waveformNoise} onChange={e => setWaveformNoise(e.target.value as "None" | "Awgn")}><option value="None">不额外加入噪声</option><option value="Awgn">加入高斯白噪声</option></select></label>
               {waveformNoise === "Awgn" && <label>噪声功率谱密度（dB re 1 μPa²/Hz）<input type="number" value={waveformNoisePsd} onChange={e => setWaveformNoisePsd(Number(e.target.value))} /><small>每赫兹带宽的噪声功率；数值越大噪声越强。它不是误码率，也不等于接收 SNR。</small></label>}
               <p className="property-help">关闭额外噪声仍保留真实多径影响，不保证所有链路解调成功。</p>
@@ -1179,12 +1193,12 @@ export function ExperimentAuthoringPage() {
     <div className="unified-experiment-toolbar">
       <div><h1>实验工作台</h1><small>节点、轨迹与网络配置 · 同页保存</small></div>
       <label>实验名称<input value={value.name} onChange={e => set("name", e.target.value)} disabled={save.isPending || run.isPending} /></label>
-      <span role="status">{server ? signature === savedSignature ? `已保存 · 修订 ${server.revision}${savedIssues.length ? " · 尚有待完善项" : ""}` : `修订 ${server.revision} · 编辑中` : "尚未保存"}</span>
+      <span role="status">{server ? signature === savedSignature ? `已保存${savedIssues.length ? " · 尚有待完善项" : ""}` : "有未保存修改" : "尚未保存"}</span>
       <button type="button" onClick={() => save.mutate()} disabled={save.isPending || run.isPending}>保存实验草稿</button>
       <button type="button" className="primary-button" onClick={() => run.mutate()} disabled={run.isPending || save.isPending}>{run.isPending ? "正在保存并启动…" : "保存并运行"}</button>
     </div>
     {(save.error || run.error) && <ErrorState error={save.error || run.error} />}
-    {server && <p className="studio-save-note">场景与实验草稿已保存到服务器 · 场景修订 {sceneServer?.revision} / 实验修订 {server.revision}。保存草稿不代表已通过运行检查。</p>}
+    {server && <details className="studio-save-note"><summary>保存与版本记录</summary>场景修订 {sceneServer?.revision} / 实验修订 {server.revision}。保存草稿不代表已通过运行检查。</details>}
     {savedIssues.length > 0 && <section className="studio-save-note" aria-label="保存校验" aria-live="polite">
       <strong>草稿已保存，以下问题尚待完善，暂不能运行</strong>
       <ul>{savedIssues.map((issue, index) => <li key={index}>{issue}</li>)}</ul>

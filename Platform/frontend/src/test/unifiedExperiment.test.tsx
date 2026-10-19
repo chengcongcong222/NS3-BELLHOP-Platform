@@ -13,6 +13,39 @@ const fixture = { "/environments": { body: [environment] }, "/scenarios": { body
   "/experiments": { body: [experiment] }, "/trajectories": { body: [trajectory] },
   "/authoring/drafts?kind=scenario": { body: [] }, "/authoring/drafts?kind=experiment": { body: [] } };
 
+it("cancels a cross-source switch and preserves unsaved inputs when switching back", async () => {
+  const mock = installApi({ ...fixture, "/recorded-noise": { body: [] } });
+  renderRoute("/workspace/experiment");
+  fireEvent.change(await screen.findByLabelText("实验名称"), { target: { value: "未保存的节点实验" } });
+  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Recorded:");
+  await userEvent.click(screen.getByRole("button", { name: "取消" }));
+  expect((screen.getByLabelText("实验名称") as HTMLInputElement).value).toBe("未保存的节点实验");
+  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Recorded:");
+  await userEvent.click(screen.getByRole("button", { name: "保留当前输入，打开另一类实验" }));
+  await screen.findByRole("img", { name: "录音链路画布" });
+  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Bellhop:");
+  await userEvent.click(screen.getByRole("button", { name: "保留当前输入，打开另一类实验" }));
+  await screen.findByRole("img", { name: "可编辑场景画布" });
+  const visible = screen.getByRole("region", { name: "实验操作" });
+  expect((within(visible).getByLabelText("实验名称") as HTMLInputElement).value).toBe("未保存的节点实验");
+  expect(mock.mock.calls.every(([, init]) => !init?.method || init.method === "GET")).toBe(true);
+});
+
+it("saved Bellhop draft wins over a conflicting legacy mode=C hint", async () => {
+  const draft: AuthoringDraftDto = { kind: "experiment", draft_id: "old-b", name: "历史B", revision: 1,
+    created_at: "2026-10-16", updated_at: "2026-10-16", validation_issues: [], payload: { physical_layer: "Channel2Waveform" } };
+  installApi({ ...fixture, "/authoring/drafts?kind=experiment": { body: [draft] } });
+  renderRoute("/workspace/experiment?draft=old-b&mode=C");
+  await screen.findByRole("img", { name: "可编辑场景画布" });
+  expect(screen.queryByRole("img", { name: "录音链路画布" })).toBeNull();
+});
+
+it("missing draft never falls back to a new C experiment", async () => {
+  installApi(fixture); renderRoute("/workspace/experiment?draft=missing&mode=C");
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: "保存并运行" })).toBeNull();
+});
+
 it("does not offer a recorded link as a Bellhop scene or open it through a geometry URL", async () => {
   const recorded: AuthoringDraftDto = { draft_id: "scene-recorded", kind: "scenario", name: "录音示意场景", revision: 1,
     created_at: "2026-10-16", updated_at: "2026-10-16", validation_issues: [],
@@ -71,14 +104,15 @@ it("freezes OSDM framing with the experiment and removes it when changing modem"
   const { records } = server(); renderRoute("/workspace/experiment");
   await userEvent.selectOptions(await screen.findByLabelText("物理层实现"), "Channel2Waveform");
   await userEvent.selectOptions(screen.getByLabelText("调制方式"), "Osdm");
-  fireEvent.change(screen.getByLabelText("循环前缀（样本）"), { target: { value: "96" } });
+  await userEvent.click(screen.getByText("OSDM 分块与同步"));
+  fireEvent.change(await screen.findByLabelText("循环前缀"), { target: { value: "96" } });
   await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
   await waitFor(() => expect(records.get("experiment")?.payload.osdm).toEqual({
     block_length: 256, vector_length: 16, cyclic_prefix: 96, constellation: "Qpsk",
     minimum_sync_correlation: 0.05, maximum_sync_search: 128 }));
   expect(records.get("experiment")?.payload.waveform_modulation).toBe("Osdm");
   await userEvent.selectOptions(screen.getByLabelText("调制方式"), "Bpsk");
-  expect(screen.queryByLabelText("循环前缀（样本）")).toBeNull();
+  expect(screen.queryByLabelText("循环前缀")).toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
   await waitFor(() => expect(records.get("experiment")?.revision).toBe(2));
   expect(records.get("experiment")?.payload).not.toHaveProperty("osdm");

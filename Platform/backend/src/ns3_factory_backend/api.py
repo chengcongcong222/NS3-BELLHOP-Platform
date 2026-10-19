@@ -570,6 +570,11 @@ def create_app(
         from .scenario_trajectories import internal_placement
         return [asset for asset in trajectories.list() if not internal_placement(asset)]
 
+    @app.get("/authoring/experiment-presets")
+    async def list_experiment_presets():
+        from .experiment_presets import experiment_presets
+        return experiment_presets()
+
     @app.get("/authoring/capabilities")
     async def authoring_capabilities():
         return {"relative_trajectory_placement": True, "exact_run_repeat": True, "scene_domain_validation": True}

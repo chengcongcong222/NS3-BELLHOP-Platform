@@ -1,0 +1,18 @@
+.s.................s..................s................................. [ 20%]
+............s......................................s.................... [ 41%]
+........................................................................ [ 61%]
+........................................................................ [ 82%]
+...............................................................          [100%]
+=============================== warnings summary ===============================
+Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3-BELLHOP-Platform-ux-channel-unify/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] Platform/backend/tests/acoustic_plots_test.py:18: requires real Bellhop
+SKIPPED [1] Platform/backend/tests/acoustic_plots_test.py:194: optional offline Bellhop executable is not installed
+SKIPPED [1] Platform/backend/tests/algorithm_v2_e2e_test.py:17: explicit ALG02 gate requires an installed v2 package and ns-3 authority adapters
+SKIPPED [1] Platform/backend/tests/environment_inputs_test.py:140: requires explicit real offline Bellhop executable
+SKIPPED [1] Platform/backend/tests/ocean_acquisition_test.py:115: could not import 'netCDF4': No module named 'netCDF4'
+346 passed, 5 skipped, 1 warning in 13.04s

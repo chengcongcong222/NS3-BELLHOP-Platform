@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "../api/client";
 import { queries } from "../api/queries";
 import type { AuthoringDraftDto, RecordedChannelConfig, RecordedChannelDto } from "../api/types";
 import { ErrorState, LoadingState } from "../components/common";
 import { UuvNodeGlyph } from "../components/UuvNodeGlyph";
 import "./recordedExperiment.css";
+import { OsdmSettings } from "../components/OsdmSettings";
+import type { OsdmConfig } from "../domain/experimentPresets";
+import { useExperimentIdentity } from "./experimentEditorContext";
 
 export function RecordedSource({ source }: { source: RecordedChannelDto | RecordedChannelConfig }) {
   const m = source.manifest;
   return <section className="recorded-source" aria-label="录音来源">
     <h3>{m.name} · v{m.version}</h3>
-    <dl><dt>工作频率 / 可用带宽</dt><dd>{m.fc / 1000} / {m.usable_bandwidth_hz / 1000} kHz</dd>
+    <dl><dt>工作频率 / 可用带宽</dt><dd>{Number((m.fc / 1000).toPrecision(4))} / {Number((m.usable_bandwidth_hz / 1000).toPrecision(4))} kHz</dd>
       <dt>可用时长</dt><dd>{m.duration_s.toFixed(3)} s</dd>
       <dt>选取对象</dt><dd>{m.axis_kind === "ReceiverElement" ? "接收阵元" : "独立试次"} {Number(m.element) + 1}</dd>
       <dt>幅度与坐标</dt><dd>归一化幅度 · 测量几何未导入</dd></dl>
@@ -45,18 +48,24 @@ const initial = {
   name: "录音链路实验", asset: "", start: 0, delay: 2, amplitude: 1, noise: "",
   rate: "6000", bandwidth: 5000, cycles: "2", period: 5, seed: "23", packets: 1,
   mac: "AdaptiveTdma", margin: 0.1, slot: 5, guard: 0.1, modulation: "Osdm",
-  osdm: { block_length: 256, vector_length: 16, cyclic_prefix: 128, constellation: "Qpsk", minimum_sync_correlation: 0.05, maximum_sync_search: 256 },
+  osdm: null as OsdmConfig | null,
 };
 
 /** Same resource/definition/run chain; the recording-specific editor prevents
  * accidental reuse of geometric Bellhop assumptions, not an alternate engine. */
 export function RecordedExperimentPage() {
-  const [params] = useSearchParams(), navigate = useNavigate(), client = useQueryClient();
-  const draftId = params.get("draft");
+  const navigate = useNavigate(), client = useQueryClient();
+  const { context: editorContext, draftId } = useExperimentIdentity();
   const catalog = useQuery({ queryKey: ["recorded-channels"], queryFn: apiClient.recordedChannels });
   const noises = useQuery({ queryKey: ["recorded-noise"], queryFn: apiClient.recordedNoise });
   const drafts = useQuery({ ...queries.drafts(), enabled: !!draftId });
   const [value, setValue] = useState(initial);
+  const selection = editorContext?.selection;
+  const reportResource = editorContext?.reportResource;
+  useEffect(() => { reportResource?.(value.asset); }, [reportResource, value.asset]);
+  useEffect(() => {
+    if (selection) setValue(v => ({ ...v, asset: selection.id }));
+  }, [selection]);
   const [saved, setSaved] = useState<AuthoringDraftDto | null>(null);
   const [savedScene, setSavedScene] = useState<AuthoringDraftDto | null>(null);
   const trajectory = useRef<string | null>(null);
@@ -85,7 +94,14 @@ export function RecordedExperimentPage() {
   const selectedNoise = noises.data?.find(n => n.manifest.asset_id === value.noise);
   const ns = (v: number) => String(Math.round(v * 1e9));
   const saveComposition = async () => {
+    if (draftId && loaded.current !== draftId) throw new Error("原实验尚未读取完成，未创建替代实验。");
+    if (saved) {
+      const original = saved.payload.recorded_channel as { version: number; noise: { mode: string; version?: number } };
+      if (original.version !== 1 || (original.noise.mode === "ContinuousLibrary" && original.noise.version !== 1))
+        throw new Error("原录音或噪声版本不受当前系统支持，不能自动换成版本 1。");
+    }
     if (!value.name.trim()) throw new Error("请填写实验名称。");
+    if (value.modulation === "Osdm" && !value.osdm) throw new Error("请等待 OSDM 预设读取，或在研究设置中明确选择完整配置。");
     if (!source) throw new Error("请选择已导入的录音资源。");
     if (value.noise && !selectedNoise) throw new Error("所选连续噪声资源不可用，未改为无噪声运行。");
     if (![value.start, value.delay, value.amplitude, value.bandwidth, value.period, value.margin, value.slot, value.guard].every(Number.isFinite)
@@ -134,39 +150,46 @@ export function RecordedExperimentPage() {
     if (issues.length) throw new Error(`草稿已保存，运行前请修正：${issues.join("；")}`);
     return apiClient.createAuthoringRun(experiment.draft_id, experiment.revision);
   }, onSuccess: result => { void client.invalidateQueries({ queryKey: ["runs"] }); navigate(`/runs/${result.run_id}?presentation=live`); } });
+  useEffect(() => { editorContext?.registerSave(save.mutateAsync); });
+  useEffect(() => { editorContext?.reportState(savedValue !== JSON.stringify(value), save.isPending || run.isPending); });
   if (catalog.isPending || (draftId && drafts.isPending)) return <LoadingState />;
   if (catalog.error || drafts.error) return <ErrorState error={catalog.error || drafts.error} />;
   if (draftId && (!existing || existing.payload.physical_layer !== "Channel3Recorded")) return <p role="alert">此录音实验不存在或模式不符，未加载默认案例。</p>;
   if (existing && !drafts.data?.some(d => d.draft_id === existing.payload.scenario_id)) return <p role="alert">实验所绑定的场景不存在，不能替换为默认场景。</p>;
   if (existing && loaded.current !== existing.draft_id) return <LoadingState />;
   return <div className="recorded-experiment-page">
-    <header className="panel recorded-heading"><div><h1>实验工作台 · 模式 C</h1><p>实测信道估计回放，不经过 WOA / Bellhop。</p></div><Link to="/workspace/experiment">新建模式 A / B 实验</Link></header>
+    <header className="panel recorded-heading"><div><h1>实验工作台</h1><p>实录链路回放</p></div></header>
     <fieldset disabled={save.isPending || run.isPending} className="recorded-workspace">
-      <section className="panel recorded-setup"><h2>录音与实验</h2>
+      <section className="panel recorded-setup"><h2>实验工作台</h2>
         <label>实验名称<input value={value.name} onChange={e => set("name", e.target.value)} /></label>
-        <label>录音资源<select value={value.asset} onChange={e => { const s = catalog.data!.find(x => x.manifest.asset_id === e.target.value); setValue(v => ({ ...v, asset: e.target.value, bandwidth: s?.manifest.usable_bandwidth_hz ?? v.bandwidth })); }}><option value="">请选择录音</option>{catalog.data!.map(s => <option value={s.manifest.asset_id} key={s.manifest.asset_id}>{s.manifest.name} · v{s.manifest.version}</option>)}</select></label>
+        <div className="recorded-save-actions"><button onClick={() => save.mutate()}>保存实验草稿</button><button className="primary-button" onClick={() => run.mutate()}>{run.isPending ? "正在启动…" : "保存并运行"}</button></div>
+        <p role="status">{saved ? savedValue === JSON.stringify(value) ? "已保存" : "有未保存修改" : "尚未保存"}</p>
+        {(save.error || run.error) && <ErrorState error={save.error || run.error} />}
+        {saved && saved.validation_issues.length > 0 && <p role="alert">{saved.validation_issues.join("；")}</p>}
+        {!editorContext && <label>录音资源<select value={value.asset} onChange={e => { const s = catalog.data!.find(x => x.manifest.asset_id === e.target.value); setValue(v => ({ ...v, asset: e.target.value, bandwidth: s?.manifest.usable_bandwidth_hz ?? v.bandwidth })); }}><option value="">请选择录音</option>{catalog.data!.map(s => <option value={s.manifest.asset_id} key={s.manifest.asset_id}>{s.manifest.name} · v{s.manifest.version}</option>)}</select></label>}
         {!catalog.data?.length && <p role="status">尚无录音资源。请按集成手册在服务器导入官方 MAT 文件，不会使用 Bellhop 环境替代。</p>}
         {source && <RecordedSource source={source} />}
         <div className="form-grid"><label>录音起点（s）<input type="number" min="0" step="0.1" value={value.start} onChange={e => set("start", Number(e.target.value))} /></label>
           <label>建模传播时延（s）<input type="number" min="0" step="0.1" value={value.delay} onChange={e => set("delay", Number(e.target.value))} /></label></div>
         <small>时延是本实验的显式假设，不由归一化录音推算距离。它会影响 MAC 排槽和到达时刻。</small>
         <label>相对发送幅度<input type="number" min="0.001" step="0.1" value={value.amplitude} onChange={e => set("amplitude", Number(e.target.value))} /></label>
-        <div className="recorded-save-actions"><button onClick={() => save.mutate()}>保存实验草稿</button><button className="primary-button" onClick={() => run.mutate()}>{run.isPending ? "正在启动…" : "保存并运行"}</button></div>
-        <p role="status">{saved ? savedValue === JSON.stringify(value) ? `已保存 · 修订 ${saved.revision}` : "有未保存修改" : "尚未保存"}</p>
-        {(save.error || run.error) && <ErrorState error={save.error || run.error} />}
-        {saved && saved.validation_issues.length > 0 && <p role="alert">{saved.validation_issues.join("；")}</p>}
       </section>
       <main className="panel recorded-center"><RecordedLinkScene /><section className="recorded-scope"><h2>当前实验范围</h2><p>一个只发节点 → 一个只收节点，统计波形解码、误码、CRC 与交付。选中的阵元只作为这条接收链路，不虚构阵列组网。</p><p>规划器只使用冻结的时延与接收时长上界，不读取未来录音系数。实验结束与录音覆盖不足均不会补默认数据。</p></section></main>
       <section className="panel recorded-parameters"><h2>调制、规划与时长</h2>
         <label>调制方式<select value={value.modulation} onChange={e => set("modulation", e.target.value)}><option value="Osdm">OSDM · 训练序列估计</option><option value="Bpsk">BPSK</option><option value="Bfsk">BFSK</option></select></label>
-        <div className="form-grid"><label>标称比特率（bit/s）<input value={value.rate} onChange={e => set("rate", e.target.value)} /></label><label>占用带宽（Hz）<input type="number" value={value.bandwidth} onChange={e => set("bandwidth", Number(e.target.value))} /></label></div>
-        {value.modulation === "Osdm" && <details><summary>OSDM 分块与同步</summary><label>星座<select value={value.osdm.constellation} onChange={e => set("osdm", { ...value.osdm, constellation: e.target.value })}><option value="Qpsk">QPSK</option><option value="Bpsk">BPSK</option></select></label><div className="form-grid">{([['block_length', '分块长度 K'], ['vector_length', '向量长度 M'], ['cyclic_prefix', '循环前缀'], ['maximum_sync_search', '同步搜索样本数'], ['minimum_sync_correlation', '同步相关门限']] as const).map(([k, label]) => <label key={k}>{label}<input type="number" step={k === "minimum_sync_correlation" ? .01 : 1} value={value.osdm[k]} onChange={e => set("osdm", { ...value.osdm, [k]: Number(e.target.value) })} /></label>)}</div><small>MAC 按包含训练、补齐和循环前缀的真实波形时长排槽。</small></details>}
+        <p>{value.rate} bit/s · {Number((value.bandwidth / 1000).toPrecision(4))} kHz 带宽</p>
+        <details><summary>研究设置 · 速率与带宽</summary><div className="form-grid"><label>标称比特率（bit/s）<input value={value.rate} onChange={e => set("rate", e.target.value)} /></label><label>占用带宽（Hz）<input type="number" value={value.bandwidth} onChange={e => set("bandwidth", Number(e.target.value))} /></label></div></details>
+        {value.modulation === "Osdm" && <OsdmSettings layer="Channel3Recorded" value={value.osdm} onChange={v => set("osdm", v)} allowInitialPreset={saved?.payload.waveform_modulation !== "Osdm"} />}
         <label>连续噪声<select value={value.noise} onChange={e => { const n = noises.data?.find(n => n.manifest.asset_id === e.target.value); setValue(v => ({ ...v, noise: e.target.value, bandwidth: n ? Math.min(v.bandwidth, n.manifest.bandwidth_hz) : v.bandwidth })); }}><option value="">不额外加入</option>{noises.data?.filter(n => !source || n.manifest.center_frequency_hz === source.manifest.fc && n.manifest.elements[0] === Number(source.manifest.element)).map(n => <option value={n.manifest.asset_id} key={n.manifest.asset_id}>{n.manifest.name}</option>)}{value.noise && !selectedNoise && <option value={value.noise} disabled>原噪声资源不可用</option>}</select></label>
         {noises.error && <p role="alert">噪声目录读取失败；不会替换已保存的选择。</p>}
         {selectedNoise ? <small>官方统计模型生成 · α={selectedNoise.manifest.alpha} · 幅度 ×{selectedNoise.manifest.amplitude_scale} · 固定编号 {selectedNoise.manifest.seed} · {selectedNoise.manifest.shape[0] / selectedNoise.manifest.sample_rate_hz} s。全程使用同一连续样本，不逐包重抽。</small> : <small>录音是估计的信道，不是带原始背景噪声的音频。</small>}
+        <label>周期数<input type="number" min="1" value={value.cycles} onChange={e => set("cycles", e.target.value)} /></label>
+        <p>{value.mac === "AdaptiveTdma" ? "自适应 TDMA" : "配置式 TDMA"} · 直接路由 · 每周期 {value.packets} 包</p>
+        <details><summary>研究设置 · 网络与业务节拍</summary>
         <label>MAC 规划<select value={value.mac} onChange={e => set("mac", e.target.value)}><option value="AdaptiveTdma">自适应 TDMA</option><option value="Tdma">配置式 TDMA</option></select></label>
-        <div className="form-grid"><label>业务周期（s）<input type="number" min="0.001" step="1" value={value.period} onChange={e => set("period", Number(e.target.value))} /></label><label>周期数<input type="number" min="1" value={value.cycles} onChange={e => set("cycles", e.target.value)} /></label><label>每周期包数<input type="number" min="1" value={value.packets} onChange={e => set("packets", Number(e.target.value))} /></label></div>
-        <details><summary>规划私有参数</summary>{value.mac === "AdaptiveTdma" ? <label>安全余量（s）<input type="number" min="0" step="0.1" value={value.margin} onChange={e => set("margin", Number(e.target.value))} /></label> : <><label>时隙长度（s）<input type="number" value={value.slot} onChange={e => set("slot", Number(e.target.value))} /></label><label>保护时间（s）<input type="number" value={value.guard} onChange={e => set("guard", Number(e.target.value))} /></label></>}</details>
+        <div className="form-grid"><label>业务周期（s）<input type="number" min="0.001" step="1" value={value.period} onChange={e => set("period", Number(e.target.value))} /></label><label>每周期包数<input type="number" min="1" value={value.packets} onChange={e => set("packets", Number(e.target.value))} /></label></div>
+        {value.mac === "AdaptiveTdma" ? <label>安全余量（s）<input type="number" min="0" step="0.1" value={value.margin} onChange={e => set("margin", Number(e.target.value))} /></label> : <><label>时隙长度（s）<input type="number" value={value.slot} onChange={e => set("slot", Number(e.target.value))} /></label><label>保护时间（s）<input type="number" value={value.guard} onChange={e => set("guard", Number(e.target.value))} /></label></>}
+        <small>实录链路仅支持当前直接路由及两种 TDMA 组合，不支持任意多节点协议。</small></details>
         <p className="duration-preview">仿真 {value.period * Number(value.cycles)} s · 使用录音 {value.start}～{value.start + value.period * Number(value.cycles)} s</p>
         <details><summary>可重复性</summary><label>随机序列编号<input value={value.seed} onChange={e => set("seed", e.target.value)} /></label><small>录音系数不随此编号变化；重复使用同一资源、片段和参数。</small></details>
       </section>

@@ -13,13 +13,12 @@ import {
   ScenarioDetailPage,
 } from "../features/pages";
 import { StudioResultPage, StudioRunPage } from "../features/studio";
-import { RecordedExperimentPage } from "../features/recordedExperiment";
+import { UnifiedExperimentEditor } from "../features/UnifiedExperimentEditor";
 import { queries } from "../api/queries";
 import { LoadingState, ErrorState } from "../components/common";
 import {
   EnvironmentAuthoringPage,
   ServerWorkspacePage,
-  ExperimentAuthoringPage,
   TrajectoryAuthoringPage,
 } from "../features/authoring";
 import {
@@ -45,9 +44,11 @@ function ExperimentEditorRoute() {
   const saved = useQuery({ ...queries.drafts("experiment"), enabled: !!draft });
   if (draft && saved.isPending) return <LoadingState />;
   if (draft && saved.error) return <ErrorState error={saved.error} />;
-  if (params.get("mode") === "C" || saved.data?.find(d => d.draft_id === draft)?.payload.physical_layer === "Channel3Recorded")
-    return <RecordedExperimentPage key={draft ?? "new"} />;
-  return <ExperimentAuthoringPage key={JSON.stringify([params.get("draft"), params.get("scenario")])} />;
+  const existing = saved.data?.find(d => d.draft_id === draft);
+  if (draft && !existing) return <p role="alert">实验草稿不存在，未加载默认实验。</p>;
+  const recorded = existing ? existing.payload.physical_layer === "Channel3Recorded" : params.get("mode") === "C";
+  return <UnifiedExperimentEditor key={JSON.stringify([draft, params.get("scenario")])}
+    initialKind={recorded ? "Recorded" : "Bellhop"} draftId={draft} scenarioId={params.get("scenario")} />;
 }
 
 export function AppRoutes() {

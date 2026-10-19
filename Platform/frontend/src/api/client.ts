@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import { acquireWithProgress, type AcquisitionProgress } from "./acquisition";
 import { isAlgorithmCatalog } from "../domain/algorithms";
+import { isExperimentPresets } from "../domain/experimentPresets";
 
 export type ApiFailureKind =
   | "NotFound"
@@ -206,6 +207,7 @@ export class ApiClient {
       isObject(value.edit) && typeof value.edit.available === "boolean" && isObject(value.rerun) && typeof value.rerun.available === "boolean");
   repeatRun = (id: string) => this.request(`/runs/${encodeURIComponent(id)}/rerun`, run, { method: "POST" });
   authoringCapabilities = () => this.request("/authoring/capabilities", anyObject);
+  experimentPresets = () => this.request("/authoring/experiment-presets", isExperimentPresets);
   algorithmCatalog = () => this.request("/algorithms", isAlgorithmCatalog);
   getRunDefinitionContext = (id: string) => this.request(
     `/runs/${encodeURIComponent(id)}/definition-context`,

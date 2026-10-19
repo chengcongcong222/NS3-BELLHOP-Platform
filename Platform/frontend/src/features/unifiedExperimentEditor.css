@@ -1,0 +1,21 @@
+.resource-experiment-bar { display:flex; align-items:center; gap:16px; padding:8px 12px; margin-bottom:8px; border:1px solid #c5d7e6; background:#eef5fa; border-radius:6px; }
+.resource-experiment-bar label { display:flex; align-items:center; gap:12px; font-weight:600; }
+.resource-experiment-bar label { white-space:nowrap; }
+.resource-experiment-bar select { min-width:280px; max-width:480px; }
+.resource-experiment-bar small { color:#40566a; }
+.resource-experiment-shell > [hidden] { display:none !important; }
+.resource-experiment-shell .recorded-heading { display:none; }
+.resource-experiment-shell { height:100%; display:flex; flex-direction:column; min-height:0; }
+.app-shell:has(.resource-experiment-shell) { height:100dvh; min-height:0; }
+.app-shell > main:has(> .resource-experiment-shell) { overflow:hidden; min-height:0; padding:6px 10px; }
+.resource-experiment-shell > div:not(.resource-experiment-bar):not(.scene-switch-backdrop) { min-height:0; flex:1; }
+.resource-experiment-shell .recorded-experiment-page { height:100%; }
+.resource-experiment-shell .recorded-workspace { height:100%; grid-template-columns:240px minmax(300px,1fr) 340px; align-items:stretch; }
+.resource-experiment-shell .recorded-center { grid-column:2; grid-row:1; min-height:0; }
+.resource-experiment-shell .recorded-setup { grid-column:1; grid-row:1; overflow:auto; }
+.resource-experiment-shell .recorded-parameters { grid-column:3; grid-row:1; overflow:auto; }
+.resource-experiment-shell .recorded-center .recorded-link-scene { height:65%; }
+.resource-experiment-shell .research-navigation { padding:4px; }
+.resource-experiment-shell .research-navigation summary { cursor:pointer; }
+.osdm-settings > p { margin:6px 0; font-size:13px; }
+@media(max-width:1000px) { .resource-experiment-bar { flex-wrap:wrap; } .resource-experiment-shell .recorded-workspace { display:flex; flex-direction:column; height:auto; } .resource-experiment-shell .recorded-center { min-height:350px; } }

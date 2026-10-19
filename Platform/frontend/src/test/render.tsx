@@ -40,6 +40,11 @@ export function installApi(fixtures: FixtureMap) {
       (method === "GET" ? knownRunContext(url, fixtures) : undefined) ??
       (url === "/system/info" ? { body: systemInfo } : undefined) ??
       (url === "/algorithms" ? { body: algorithmCatalog } : undefined) ??
+      (url === "/recorded-channels" ? { body: [] } : undefined) ??
+      (url === "/authoring/experiment-presets" ? { body: [
+        { id: "bellhop-osdm", version: 1, name: "Bellhop OSDM 标准配置", physical_layer: "Channel2Waveform", osdm: { block_length: 256, vector_length: 16, cyclic_prefix: 64, constellation: "Qpsk", minimum_sync_correlation: .05, maximum_sync_search: 128 } },
+        { id: "recorded-osdm", version: 1, name: "实录 OSDM 标准配置", physical_layer: "Channel3Recorded", osdm: { block_length: 256, vector_length: 16, cyclic_prefix: 128, constellation: "Qpsk", minimum_sync_correlation: .05, maximum_sync_search: 256 } },
+      ] } : undefined) ??
       (url === "/environments/authoring-summaries" ? { body: {} } : undefined) ??
       (url === `/environments/${environment.environment_asset_id}` ? { body: environment } : undefined) ??
       (url === `/scenarios/${scenario.scenario_id}/versions/${scenario.version}` ? { body: scenario } : undefined) ??
@@ -56,7 +61,7 @@ export function installApi(fixtures: FixtureMap) {
   return fetchMock;
 }
 
-export function renderRoute(path: string) {
+export function renderRoute(path: string): ReturnType<typeof render> {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });

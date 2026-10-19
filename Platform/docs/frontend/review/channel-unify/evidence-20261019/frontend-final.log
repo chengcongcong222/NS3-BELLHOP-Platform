@@ -1,0 +1,13 @@
+
+> ns3-bellhop-platform-frontend@0.0.0 test
+> vitest run --reporter=dot
+
+
+ RUN  v4.1.11 /home/ccc/work/NS3-BELLHOP-Platform-ux-channel-unify/Platform/frontend
+
+··························································································································································································································································································
+
+ Test Files  33 passed (33)
+      Tests  282 passed (282)
+   Start at  08:51:32
+   Duration  11.25s (transform 7.03s, setup 4.65s, import 13.44s, tests 61.54s, environment 33.92s)

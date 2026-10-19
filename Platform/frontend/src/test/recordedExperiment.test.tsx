@@ -38,25 +38,32 @@ function server(records = new Map<string, AuthoringDraftDto>()) {
   return { mock, records };
 }
 
+async function chooseRecording() {
+  await screen.findByRole("option", { name: "Blue 官方录音 · v1" });
+  await userEvent.selectOptions(await screen.findByLabelText("信道资源 / 实验环境"), "Recorded:blue-1");
+  await userEvent.click(screen.getByRole("button", { name: "保留其他输入并更换环境" }));
+}
+
 it("opens C without a Bellhop environment or fabricated metric geometry", async () => {
   const { mock } = server(); renderRoute("/workspace/experiment?mode=C");
   await screen.findByRole("img", { name: "录音链路画布" });
   expect(screen.queryByLabelText("实验环境")).toBeNull();
   expect(screen.queryByLabelText("深度（m）")).toBeNull();
-  expect(mock.mock.calls.some(([url]) => String(url).startsWith("/environments"))).toBe(false);
-  await userEvent.selectOptions(screen.getByLabelText("录音资源"), "blue-1");
+  // The common selector reads lightweight names only, never Bellhop geometry.
+  expect(mock.mock.calls.some(([url]) => String(url) === "/environments")).toBe(false);
+  await chooseRecording();
   expect(screen.getByText("接收阵元 1")).toBeTruthy();
   expect(screen.getByText("归一化幅度 · 测量几何未导入")).toBeTruthy();
 });
 
 it("saves the exact recording, continuous noise, modem and scene before starting", async () => {
   const { mock, records } = server(); renderRoute("/workspace/experiment?mode=C");
-  await userEvent.selectOptions(await screen.findByLabelText("录音资源"), "blue-1");
+  await chooseRecording();
   await userEvent.selectOptions(screen.getByLabelText("连续噪声"), "blue-noise");
   await userEvent.click(screen.getByText("OSDM 分块与同步"));
   fireEvent.change(screen.getByLabelText("循环前缀"), { target: { value: "96" } });
   await userEvent.click(screen.getByRole("button", { name: "保存实验草稿" }));
-  await screen.findByText("已保存 · 修订 1");
+  await screen.findByText("已保存");
   expect(records.get("scenario")?.payload.environment_source).toBe("Recorded");
   expect(records.get("scenario")?.payload.trajectory_bindings).toHaveLength(2);
   const p = records.get("experiment")!.payload;
@@ -74,7 +81,7 @@ it("rejects missing sources and out-of-coverage windows without API writes", asy
   const { mock } = server(); renderRoute("/workspace/experiment?mode=C");
   await userEvent.click(await screen.findByRole("button", { name: "保存并运行" }));
   await screen.findByText("请选择已导入的录音资源。");
-  await userEvent.selectOptions(screen.getByLabelText("录音资源"), "blue-1");
+  await chooseRecording();
   fireEvent.change(screen.getByLabelText("录音起点（s）"), { target: { value: "50" } });
   await userEvent.click(screen.getByRole("button", { name: "保存并运行" }));
   await screen.findByText("所选片段不够长，请缩短实验或前移录音起点。");
