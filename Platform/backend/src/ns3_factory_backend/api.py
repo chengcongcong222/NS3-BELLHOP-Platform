@@ -127,6 +127,14 @@ class CreateRunRequest(HttpModel):
     experiment_version: PositiveUIntDecimal
 
 
+class CreateRunGroupRequest(HttpModel):
+    draft_id: StableId
+    expected_revision: PositiveUIntDecimal
+    request_idempotency_key: StableId
+    family: Literal["GeometricAcousticNetwork"] = "GeometricAcousticNetwork"
+    mode: Literal["Both"] = "Both"
+
+
 class FailureResource(HttpModel):
     code: str
     message: str
@@ -469,6 +477,8 @@ def create_app(
         tempfile.mkdtemp(prefix="ns3-platform-authoring-")
     )
     authoring = AuthoringStore(authoring_root)
+    from .run_groups import RunGroups
+    groups = RunGroups(catalog, authoring_root / "run-groups")
     trajectories = TrajectoryStore(authoring_root / "published" / "trajectories")
     reference_asset_root = settings.authoring_reference_asset_root or (
         Path(__file__).resolve().parents[3]
@@ -483,6 +493,7 @@ def create_app(
             yield
         finally:
             await catalog.shutdown()
+            await groups.shutdown()
 
     app = FastAPI(
         title="NS3-BELLHOP Platform Run API", version="1", lifespan=lifespan
@@ -835,13 +846,9 @@ def create_app(
         )
         return _run_resource(snapshot)
 
-    @app.post(
-        "/authoring/experiments/{draft_id}/runs",
-        response_model=RunResource,
-        status_code=status.HTTP_201_CREATED,
-    )
-    async def create_authoring_experiment_run(draft_id: str, if_match: str | None = Header(default=None)) -> RunResource:
-        """Freeze and run one exact authored Experiment/Scenario composition."""
+    async def prepare_authoring_experiment_run(draft_id: str, if_match: str | None,
+                                               physical_override: str | None = None):
+        """Freeze without starting a Worker; shared by ordinary and grouped runs."""
         try:
             draft = authoring.get("experiment", draft_id)
         except KeyError as error:
@@ -850,7 +857,13 @@ def create_app(
             raise CatalogError("DraftConflict", "实验已被其他编辑更新，请重新保存并运行。")
         if draft.validation_issues:
             raise CatalogError("DraftValidationFailed", "; ".join(draft.validation_issues))
-        payload = draft.payload
+        payload = dict(draft.payload)
+        if physical_override is not None:
+            if (payload.get("execution_mode") != "PlanningV1" or
+                    payload.get("workload") != "CommunicationOnly" or
+                    payload.get("physical_layer") == "Channel3Recorded"):
+                raise CatalogError("InvalidRequest", "成对执行暂只接受几何场景 PlanningV1 普通通信；融合业务的共同观测冻结尚未实现。")
+            payload["physical_layer"] = physical_override
         planning = payload.get("execution_mode") == "PlanningV1"
         frozen_algorithm = await algorithms.freeze(payload)
         flow_scoped = frozen_algorithm is not None and frozen_algorithm["interface"] == "planning-mac-v2"
@@ -892,12 +905,8 @@ def create_app(
                     "waveform_noise": noise_model,
                     "waveform_noise_psd_db_re_1upa2_per_hz": float(payload.get("waveform_noise_psd_db_re_1upa2_per_hz", 0.0)),
                 })})
-                run_executions[run_id] = captured.execution.model_copy(deep=True)
                 return captured
-            snapshot = await catalog.create(preset_command)
-            run_manifests[snapshot.run_id] = make_manifest(
-                snapshot.run_id, system_info, environment, scenario, experiment)
-            return _run_resource(snapshot)
+            return preset_command, (environment, scenario, experiment)
         if payload.get("scenario_revision") is not None and payload["scenario_revision"] != scenario_draft.revision:
             raise CatalogError("DraftConflict", "节点场景已被其他编辑更新，请重新保存当前实验后运行。")
         if scenario_draft.validation_issues:
@@ -970,6 +979,9 @@ def create_app(
             spatial_domain = validate_paths(nodes, bindings, assets, environment_resource,
                 await environment_authoring_inputs(environment_id) if environment_resource is not None else None,
                 scenario_payload.get("spatial_domain"), duration_ns)
+        if (authoring.get("scenario", scenario_draft.draft_id).revision != scenario_draft.revision or
+                authoring.get("experiment", draft.draft_id).revision != draft.revision):
+            raise CatalogError("DraftConflict", "配置在冻结过程中发生变化；未启动运行，请重新保存。")
         scenario_publication = authoring.publish_draft("scenario", scenario_draft.draft_id)
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
@@ -1087,11 +1099,50 @@ def create_app(
                 authored_definition_path=str(definition_path),
                 authored_definition_sha256=digest,
             )
-            run_executions[run_id] = captured.execution.model_copy(deep=True)
             return captured
 
+        return command, None
+
+    @app.post("/authoring/experiments/{draft_id}/runs", response_model=RunResource,
+              status_code=status.HTTP_201_CREATED)
+    async def create_authoring_experiment_run(draft_id: str, if_match: str | None = Header(default=None)) -> RunResource:
+        command, manifest_inputs = await prepare_authoring_experiment_run(draft_id, if_match)
         snapshot = await catalog.create(command)
+        run_executions[snapshot.run_id] = (await catalog.captured_command(snapshot.run_id)).execution
+        if manifest_inputs is not None:
+            run_manifests[snapshot.run_id] = make_manifest(snapshot.run_id, system_info, *manifest_inputs)
         return _run_resource(snapshot)
+
+    @app.post("/run-groups", status_code=status.HTTP_201_CREATED)
+    async def create_run_group(body: CreateRunGroupRequest):
+        async def prepare():
+            from .paired_inputs import paired_inputs
+            a, _ = await prepare_authoring_experiment_run(body.draft_id, body.expected_revision, "Channel1Abstract")
+            b, _ = await prepare_authoring_experiment_run(body.draft_id, body.expected_revision, "Channel2Waveform")
+            commands = (a("capture-a"), b("capture-b"))
+            definitions = tuple(json.loads(Path(c.authored_definition_path).read_bytes()) for c in commands)
+            common, workload = paired_inputs(definitions, commands)
+            common["system_identity"] = system_info.model_dump(mode="json")
+            return (a, b), common, definitions, workload
+        record = await groups.create(body.request_idempotency_key, body.model_dump(mode="json"), prepare)
+        if not record["archived"]:
+            for member in record["members"]:
+                run_executions[member["run_id"]] = (await catalog.captured_command(member["run_id"])).execution
+        return record
+
+    @app.get("/run-groups")
+    async def list_run_groups():
+        return [await groups.view(key) for key in sorted(groups.store.records)]
+
+    @app.get("/run-groups/{group_id}")
+    @app.get("/run-groups/{group_id}/results")
+    @app.get("/run-groups/{group_id}/export")
+    async def get_run_group(group_id: str):
+        return await groups.view(group_id)
+
+    @app.post("/run-groups/{group_id}/cancel-pending")
+    async def cancel_group_pending(group_id: str):
+        return await groups.cancel_pending(group_id)
 
     @app.get("/recorded-channels")
     async def list_recorded_channels():

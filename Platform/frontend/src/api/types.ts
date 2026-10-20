@@ -255,6 +255,23 @@ export interface RunVisualization {
   waveform: { transmission_id: DecimalString; receiver_node_id: DecimalString; payload_bit_count: DecimalString; bit_error_count: DecimalString; crc_ok: boolean }[];
 }
 
+export interface RunGroupDto {
+  group_id: string;
+  state: string;
+  archived: boolean;
+  common_snapshot_sha256: string;
+  workload_sha256: string;
+  workload: { count: string };
+  archive_failure?: { code: string; message: string };
+  members: Array<{
+    member: "A" | "B";
+    run_id: string;
+    state: string;
+    result: ResultDto | null;
+    failure: { code: string; message: string } | null;
+  }>;
+}
+
 export interface ResultDto {
   provenance?: { physical_layer?: string; [key: string]: unknown } | null;
   visualization?: RunVisualization | null;

@@ -31,6 +31,7 @@ export function RunCatalogPage() {
   const currentPage = Math.min(page, pageCount - 1);
   const visibleGroups = [...groups.entries()].slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   return <div className="run-library"><PageHeader title="运行与结果" detail="按实验归档每次运行；展开查看当时的场景、环境与结果，原记录不会被重跑覆盖。" />
+    <Link to="/run-groups">查看 A/B 对照实验与历史归档 →</Link>
     <div className="run-library-toolbar"><label>查找实验或运行<input type="search" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="实验、场景、环境或运行编号" /></label><label>运行状态<select value={lifecycle} onChange={event => { setLifecycle(event.target.value); setPage(0); }}><option value="All">全部状态</option><option value="Running">运行中</option><option value="Completed">已完成</option><option value="Failed">运行失败</option><option value="Created">已创建</option></select></label><span className="run-library-count">{groups.size} 个实验 · {[...groups.values()].reduce((count, records) => count + records.length, 0)} 次运行</span><Link to="/workspace/experiment">新建实验</Link></div>
     {!groups.size && <p>尚无匹配的运行记录。实验草稿可从首页“我的实验”继续编辑。</p>}
     {visibleGroups.map(([key, records], index) => {

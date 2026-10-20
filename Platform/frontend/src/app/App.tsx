@@ -14,6 +14,7 @@ import {
 } from "../features/pages";
 import { StudioResultPage, StudioRunPage } from "../features/studio";
 import { UnifiedExperimentEditor } from "../features/UnifiedExperimentEditor";
+import { RunGroupPage, RunGroupCatalogPage } from "../features/runGroups";
 import { queries } from "../api/queries";
 import { LoadingState, ErrorState } from "../components/common";
 import {
@@ -71,6 +72,8 @@ export function AppRoutes() {
         <Route path="/experiments/:experimentId/versions/:version" element={<ExperimentDetailPage />} />
         <Route path="/workspace/experiment" element={<ExperimentEditorRoute />} />
         <Route path="/runs" element={<RunCatalogPage />} />
+        <Route path="/run-groups" element={<RunGroupCatalogPage />} />
+        <Route path="/run-groups/:groupId" element={<RunGroupPage />} />
         <Route path="/runs/:runId" element={<StudioRunPage />} />
         <Route path="/results" element={<ResultCatalogPage />} />
         <Route path="/results/:runId" element={<StudioResultPage />} />

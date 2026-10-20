@@ -8,6 +8,7 @@ import type {
   ResultDto,
   ResultSummaryDto,
   RunDto,
+  RunGroupDto,
   RunActionsDto,
   RunDefinitionContextDto,
   RunSummaryDto,
@@ -82,6 +83,13 @@ const result = ((value: unknown): value is ResultDto =>
   isString(value.run_id) &&
   isObject(value.projection) &&
   isString(value.projection.simulation_duration_ns)) as Validator<ResultDto>;
+const runGroup = (value: unknown): value is RunGroupDto =>
+  isObject(value) && isString(value.group_id) && isString(value.state) && typeof value.archived === "boolean"
+  && isString(value.common_snapshot_sha256) && isString(value.workload_sha256)
+  && isObject(value.workload) && isString(value.workload.count)
+  && Array.isArray(value.members) && value.members.length === 2 && value.members.every(m =>
+    isObject(m) && ["A", "B"].includes(String(m.member)) && isString(m.run_id) && isString(m.state)
+    && (m.result === null || result(m.result)));
 const resultSummary = ((value: unknown): value is ResultSummaryDto =>
   isObject(value) &&
   isString(value.catalog_sequence) &&
@@ -176,6 +184,13 @@ export class ApiClient {
   }
 
   listEnvironments = () => this.request("/environments", isArrayOf(environment));
+  listRunGroups = () => this.request("/run-groups", isArrayOf(runGroup));
+  getRunGroup = (id: string) => this.request(`/run-groups/${encodeURIComponent(id)}`, runGroup);
+  cancelPendingGroup = (id: string) => this.request(`/run-groups/${encodeURIComponent(id)}/cancel-pending`, runGroup, { method: "POST" });
+  createRunGroup = (draftId: string, revision: number, key: string) => this.request("/run-groups", runGroup, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ draft_id: draftId, expected_revision: String(revision), request_idempotency_key: key }),
+  });
   recordedChannels = () => this.request("/recorded-channels", isArrayOf((v: unknown): v is RecordedChannelDto =>
     isObject(v) && isString(v.manifest_sha256) && isObject(v.manifest) && isString(v.manifest.asset_id)
     && typeof v.manifest.duration_s === "number" && typeof v.manifest.fc === "number"));

@@ -110,6 +110,7 @@ class InMemoryRunCatalog:
     async def create_batch(
         self,
         command_factories: tuple[Callable[[str], StartRunCommand], ...],
+        before_start: Callable[[tuple[StartRunCommand, ...]], None] | None = None,
     ) -> tuple[RunSnapshot, ...]:
         """Atomically admit one run or an A/B pair to the SAME worker owner.
 
@@ -137,6 +138,8 @@ class InMemoryRunCatalog:
                     raise CatalogError("InvalidRequest", "Command RunId does not match allocation.")
                 staged[run_id] = _RunEntry(command=command,
                     catalog_sequence=self._next_catalog_sequence + offset)
+            if before_start is not None:
+                before_start(tuple(entry.command.model_copy(deep=True) for entry in staged.values()))
             self._entries.update(staged)
             self._next_catalog_sequence += len(staged)
             self._pending_run_ids.extend(staged)
