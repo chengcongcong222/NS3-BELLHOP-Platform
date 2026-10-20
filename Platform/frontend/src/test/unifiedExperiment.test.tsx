@@ -17,13 +17,15 @@ it("cancels a cross-source switch and preserves unsaved inputs when switching ba
   const mock = installApi({ ...fixture, "/recorded-noise": { body: [] } });
   renderRoute("/workspace/experiment");
   fireEvent.change(await screen.findByLabelText("实验名称"), { target: { value: "未保存的节点实验" } });
-  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Recorded:");
+  expect(within(screen.getByLabelText("信道资源 / 实验环境")).queryByRole("option", { name: "打开实录链路配置" })).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "实录信道通信" }));
   await userEvent.click(screen.getByRole("button", { name: "取消" }));
   expect((screen.getByLabelText("实验名称") as HTMLInputElement).value).toBe("未保存的节点实验");
-  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Recorded:");
+  await userEvent.click(screen.getByRole("button", { name: "实录信道通信" }));
   await userEvent.click(screen.getByRole("button", { name: "保留当前输入，打开另一类实验" }));
   await screen.findByRole("img", { name: "录音链路画布" });
-  await userEvent.selectOptions(screen.getByLabelText("信道资源 / 实验环境"), "Bellhop:");
+  expect(within(screen.getByLabelText("信道资源 / 实验环境")).queryByRole("option", { name: "打开 Bellhop 场景配置" })).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "几何声场网络" }));
   await userEvent.click(screen.getByRole("button", { name: "保留当前输入，打开另一类实验" }));
   await screen.findByRole("img", { name: "可编辑场景画布" });
   const visible = screen.getByRole("region", { name: "实验操作" });

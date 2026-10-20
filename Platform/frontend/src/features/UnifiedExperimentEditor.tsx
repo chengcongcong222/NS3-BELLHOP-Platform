@@ -47,27 +47,36 @@ export function UnifiedExperimentEditor({ initialKind, draftId, scenarioId }: {
     } catch (e) { setError(e); } finally { setSaving(false); }
   };
   return <div className="resource-experiment-shell">
+    <nav className="experiment-family-tabs" aria-label="实验类型">
+      {(["Bellhop", "Recorded"] as const).map(family => <button key={family}
+        type="button" aria-label={family === "Bellhop" ? "几何声场网络" : "实录信道通信"}
+        aria-pressed={kind === family} disabled={saving || busy}
+        onClick={() => { if (family !== kind) setPending({ kind: family, id: "" }); }}>
+        <strong>{family === "Bellhop" ? "几何声场网络" : "实录信道通信"}</strong>
+        <span>{family === "Bellhop" ? "位置驱动 · Bellhop" : "实测 CIR · 逻辑链路"}</span>
+      </button>)}
+    </nav>
     <div className="resource-experiment-bar">
       <label>信道资源 / 实验环境<select value={bindings[kind] ? `${kind}:${bindings[kind]}` : ""} disabled={saving || busy} onChange={e => {
         const [nextKind, ...id] = e.target.value.split(":");
         setPending({ kind: nextKind as ResourceKind, id: id.join(":") });
       }}>
         <option value="" disabled>{kind === "Bellhop" ? "Bellhop 计算声场 · 几何场景" : "UWA 实录信道 · 单向链路"}</option>
-        <optgroup label="Bellhop 已发布声场">
+        {kind === "Bellhop" && <optgroup label="Bellhop 已发布声场">
           <option value="Bellhop:">打开 Bellhop 场景配置</option>
           {Object.entries(environments.data ?? {}).map(([id, s]) => <option key={id} value={`Bellhop:${id}`}>{String((s as { name?: string }).name ?? id)}</option>)}
-        </optgroup>
+        </optgroup>}
         {bindings[kind] && (kind === "Bellhop" ? !(bindings[kind]! in (environments.data ?? {})) : !recordings.data?.some(r => r.manifest.asset_id === bindings[kind])) && <option value={`${kind}:${bindings[kind]}`} disabled>原资源不可用 · {bindings[kind]}</option>}
-        <optgroup label="UWA 已导入时变信道">
+        {kind === "Recorded" && <optgroup label="UWA 已导入时变信道">
           <option value="Recorded:">打开实录链路配置</option>
           {recordings.data?.map(r => <option key={r.manifest.asset_id} value={`Recorded:${r.manifest.asset_id}`}>{r.manifest.name} · v{r.manifest.version}</option>)}
-        </optgroup>
+        </optgroup>}
       </select></label>
-      <small>{kind === "Recorded" ? "单向双端点 · 示意坐标 · 仅波形接收" : "真实节点几何与轨迹 · 快速网络或波形接收"}</small>
+      <small>{kind === "Recorded" ? "单链路实录回放 · 非地理坐标" : "节点几何与轨迹参与声场查询"}</small>
     </div>
     {(environments.error || recordings.error) && <details><summary>资源目录读取异常</summary><ErrorState error={environments.error || recordings.error} /></details>}
     {pending && <div className="scene-switch-backdrop"><section role="alertdialog" aria-modal="true" aria-labelledby="resource-switch-title" className="scene-switch-dialog">
-      <h2 id="resource-switch-title">切换实验环境</h2>
+      <h2 id="resource-switch-title">{pending.kind === kind ? "切换实验环境" : "切换实验类型"}</h2>
       <p>{pending.kind === kind ? "将替换当前编辑缓冲区的环境选择；其他输入保留，保存前会重新校验。" : "不同信道类型使用独立实验。当前输入暂存于本页，已有实验不会被改写。刷新前请保存。"}</p>
       {error != null && <ErrorState error={error} />}
       <button autoFocus disabled={saving} onClick={() => { setPending(null); setError(null); }}>取消</button>

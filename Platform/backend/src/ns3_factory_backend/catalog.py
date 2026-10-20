@@ -97,31 +97,79 @@ class InMemoryRunCatalog:
         self._entries: dict[str, _RunEntry] = {}
         self._next_catalog_sequence = 1
         self._active_run_id: str | None = None
+        self._pending_run_ids: list[str] = []
+        self._closing = False
         self._condition = asyncio.Condition()
 
     async def create(
         self,
         command_factory: Callable[[str], StartRunCommand],
     ) -> RunSnapshot:
+        return (await self.create_batch((command_factory,)))[0]
+
+    async def create_batch(
+        self,
+        command_factories: tuple[Callable[[str], StartRunCommand], ...],
+    ) -> tuple[RunSnapshot, ...]:
+        """Atomically admit one run or an A/B pair to the SAME worker owner.
+
+        Factories must be side-effect-free and receive only an identity, never
+        derive scientific randomness from it. Validate all commands before
+        publishing any member. Durable group publication belongs to the group
+        service, not this volatile catalog.
+        """
         async with self._condition:
-            if self._active_run_id is not None:
+            if self._closing:
+                raise CatalogError("BackendUnavailable", "The backend is shutting down.")
+            if not 1 <= len(command_factories) <= 2:
+                raise CatalogError("InvalidRequest", "Expected one Run or an A/B pair.")
+            if self._active_run_id is not None or self._pending_run_ids:
                 raise CatalogError(
                     "BackendBusy", "The P0 backend already has an active Run."
                 )
-            run_id = self._id_factory()
-            if run_id in self._entries:
-                raise CatalogError("AlreadyExists", "Generated RunId already exists.")
-            command = command_factory(run_id)
-            entry = _RunEntry(
-                command=command,
-                catalog_sequence=self._next_catalog_sequence,
-            )
-            self._next_catalog_sequence += 1
-            self._entries[run_id] = entry
-            self._active_run_id = run_id
-            created = self._snapshot(entry)
-            entry.task = asyncio.create_task(self._execute(run_id, entry))
+            staged: dict[str, _RunEntry] = {}
+            for offset, factory in enumerate(command_factories):
+                run_id = self._id_factory()
+                if run_id in self._entries or run_id in staged:
+                    raise CatalogError("AlreadyExists", "Generated RunId already exists.")
+                command = factory(run_id).model_copy(deep=True)
+                if command.run_id != run_id:
+                    raise CatalogError("InvalidRequest", "Command RunId does not match allocation.")
+                staged[run_id] = _RunEntry(command=command,
+                    catalog_sequence=self._next_catalog_sequence + offset)
+            self._entries.update(staged)
+            self._next_catalog_sequence += len(staged)
+            self._pending_run_ids.extend(staged)
+            created = tuple(self._snapshot(entry) for entry in staged.values())
+            self._start_next_locked()
             return created
+
+    def _start_next_locked(self) -> None:
+        if self._closing or self._active_run_id is not None or not self._pending_run_ids:
+            return
+        run_id = self._pending_run_ids.pop(0)
+        entry = self._entries[run_id]
+        self._active_run_id = run_id
+        entry.task = asyncio.create_task(self._execute(run_id, entry))
+
+    async def cancel_pending(self, run_id: str) -> RunSnapshot:
+        """Never cancel an admitted active Worker; group status owns Canceled."""
+        async with self._condition:
+            entry = self._find(run_id)
+            if run_id not in self._pending_run_ids:
+                raise CatalogError("RunNotPending", "Only a queued member can be canceled.")
+            self._pending_run_ids.remove(run_id)
+            entry.lifecycle = "Failed"
+            entry.failure = BackendFailure("CanceledBeforeStart", "Queued Run canceled before execution.")
+            self._condition.notify_all()
+            return self._snapshot(entry)
+
+    async def wait_terminal(self, run_id: str) -> RunSnapshot:
+        async with self._condition:
+            await self._condition.wait_for(
+                lambda: self._find(run_id).lifecycle in {"Completed", "Failed"}
+            )
+            return self._snapshot(self._find(run_id))
 
     async def get(self, run_id: str) -> RunSnapshot:
         async with self._condition:
@@ -161,7 +209,14 @@ class InMemoryRunCatalog:
 
     async def shutdown(self) -> None:
         """Stop accepting work and release every active worker owned by the app."""
-
+        async with self._condition:
+            self._closing = True
+            for run_id in self._pending_run_ids:
+                entry = self._entries[run_id]
+                entry.lifecycle = "Failed"
+                entry.failure = BackendFailure("Interrupted", "Backend stopped before execution.")
+            self._pending_run_ids.clear()
+            self._condition.notify_all()
         shutdown = getattr(self._gateway, "shutdown", None)
         if shutdown is not None:
             await shutdown()
@@ -179,7 +234,8 @@ class InMemoryRunCatalog:
         if pending:
             await asyncio.gather(*pending, return_exceptions=True)
         for task in done:
-            task.exception()
+            if not task.cancelled():
+                task.exception()
 
     async def validate_cursor(self, run_id: str, cursor: int) -> None:
         async with self._condition:
@@ -219,6 +275,13 @@ class InMemoryRunCatalog:
 
     async def _execute(self, run_id: str, entry: _RunEntry) -> None:
         async with self._condition:
+            if self._closing:
+                entry.lifecycle = "Failed"
+                entry.failure = BackendFailure("Interrupted", "Backend stopped before execution.")
+                if self._active_run_id == run_id:
+                    self._active_run_id = None
+                self._condition.notify_all()
+                return
             entry.lifecycle = "Running"
             self._condition.notify_all()
 
@@ -254,6 +317,12 @@ class InMemoryRunCatalog:
                         "RunFailed", outcome.failed.error.message
                     )
                 self._condition.notify_all()
+        except asyncio.CancelledError:
+            async with self._condition:
+                entry.lifecycle = "Failed"
+                entry.failure = BackendFailure("Interrupted", "Worker task interrupted.")
+                self._condition.notify_all()
+            raise
         except GatewayFailure as error:
             async with self._condition:
                 entry.lifecycle = "Failed"
@@ -274,6 +343,7 @@ class InMemoryRunCatalog:
             async with self._condition:
                 if self._active_run_id == run_id:
                     self._active_run_id = None
+                self._start_next_locked()
                 self._condition.notify_all()
 
     def _find(self, run_id: str) -> _RunEntry:

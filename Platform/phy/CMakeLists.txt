@@ -7,6 +7,9 @@ target_include_directories(
 target_link_libraries(platform_phy INTERFACE Platform::contracts)
 
 if(BUILD_TESTING)
+  add_executable(platform_phy_receiver_sample_mixer_test tests/receiver_sample_mixer_test.cpp)
+  target_link_libraries(platform_phy_receiver_sample_mixer_test PRIVATE Platform::phy)
+  add_test(NAME platform_phy_receiver_sample_mixer_test COMMAND platform_phy_receiver_sample_mixer_test)
   add_executable(platform_phy_recorded_waveform_channel_test tests/recorded_waveform_channel_test.cpp)
   target_link_libraries(platform_phy_recorded_waveform_channel_test PRIVATE Platform::phy)
   add_test(NAME platform_phy_recorded_waveform_channel_test COMMAND platform_phy_recorded_waveform_channel_test)
