@@ -14,7 +14,10 @@ from run_definition_context_test import _application
 
 
 async def prepared():
-    return (_command, _command), {"scene": "fixture"}, ({"member": "A"}, {"member": "B"}), {"packets": []}
+    return (_command, _command), {"scene": "fixture"}, (
+        {"member": "A", "experiment": {"workload": "CommunicationOnly"}},
+        {"member": "B", "experiment": {"workload": "CommunicationOnly"}},
+    ), {"packets": []}
 
 
 async def settle(groups):
@@ -112,6 +115,7 @@ def test_result_archive_failure_is_visible_not_false_completion(tmp_path, monkey
         runs = catalog(gateway)
         groups = RunGroups(runs, tmp_path)
         group = await groups.create("late-disk-full", {}, prepared)
+        original_save = groups.store.save
         def fail(record):
             raise OSError("private filesystem path")
         monkeypatch.setattr(groups.store, "save", fail)
@@ -124,6 +128,11 @@ def test_result_archive_failure_is_visible_not_false_completion(tmp_path, monkey
         assert "private filesystem" not in json.dumps(result)
         restored = RunGroupStore(tmp_path).get(group["group_id"])
         assert all(m["state"] == "Interrupted" for m in restored["members"])
+        monkeypatch.setattr(groups.store, "save", original_save)
+        recovered = await groups.retry_archive(group["group_id"])
+        assert recovered["state"] == "Completed"
+        assert all(m["result"] for m in recovered["members"])
+        assert gateway.calls == ["run-a", "run-b"]
         await runs.shutdown()
     asyncio.run(check())
 

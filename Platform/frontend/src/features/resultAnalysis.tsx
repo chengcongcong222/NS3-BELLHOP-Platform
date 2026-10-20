@@ -93,7 +93,7 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
   const fused = result.fusion_results.find(item => item.fusion_sequence === fusionId) ?? result.fusion_results[0];
   const sources = result.visualization?.fusion_sources.filter(item => item.fusion_sequence === fused?.fusion_sequence);
   const distinctSources = sources ? [...new Set(sources.map(item => item.node_id))] : null;
-  const communicationOnly = experiment?.fusion.workload === "CommunicationOnly";
+  const communicationOnly = (experiment?.fusion.workload ?? result.provenance?.workload) === "CommunicationOnly";
   const observedSnr = (mode === "B" || mode === "C") ? stats.waveformSnr : mode === "A" ? stats.snr : [];
   const delaySummary = sampleSummary(stats.delay), lossSummary = sampleSummary(stats.loss), snrSummary = sampleSummary(observedSnr);
   const unavailableSnr = (mode === "B" || mode === "C") && stats.waveformNoNoise > 0 && stats.waveformNoSignal === 0 && stats.waveformPowerMissing === 0

@@ -5,7 +5,7 @@ import acceptanceBaseline from "../../../acceptance/acceptance4_baseline_v1.json
 export const acceptanceReference = acceptanceBaseline.hard_requirements;
 
 export function matchingRunExperiment(result: ResultDto, experiment?: ExperimentDto | null) {
-  return experiment?.experiment_id === result.experiment_id && experiment.version === result.experiment_version ? experiment : null;
+  return experiment && experiment.experiment_id === result.experiment_id && experiment.version === result.experiment_version ? experiment : null;
 }
 
 export type PhysicalMode = "A" | "B" | "C" | "unknown";

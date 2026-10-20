@@ -256,6 +256,8 @@ export interface RunVisualization {
 }
 
 export interface RunGroupDto {
+  rerun_available?: boolean;
+  parent_group_id?: string | null;
   group_id: string;
   state: string;
   archived: boolean;

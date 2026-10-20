@@ -1,0 +1,5044 @@
+{
+  "executed_by": "Chromium CDP automation",
+  "seeded_inputs_via": "ASGI authoring API; no seeded results",
+  "checks": [
+    {
+      "action": "browser save-and-run A+B",
+      "group_id": "group-a3bf02acead74b0eaf4b3ae3af788da5"
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1600,
+      "height": 1000,
+      "scroll": 1600
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1440,
+      "height": 900,
+      "scroll": 1440
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1366,
+      "height": 768,
+      "scroll": 1351
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1024,
+      "height": 768,
+      "scroll": 1009
+    },
+    {
+      "action": "comparison viewport",
+      "width": 800,
+      "height": 900,
+      "scroll": 800
+    },
+    {
+      "action": "browser frozen group rerun",
+      "group_id": "group-615f384e0e8f4da1970ac3d70791773e"
+    }
+  ],
+  "exceptions": [],
+  "groups": [
+    {
+      "schema": "ns3-factory-run-group-v1",
+      "group_id": "group-a3bf02acead74b0eaf4b3ae3af788da5",
+      "request_key": "pair-ca249ad2-6162-49b6-9597-da86ff0e2cd3",
+      "request_sha256": "024bfd2114fd6898539cc34d6c988dcf0ef0c9d4b42e06ad02ac692caa0c80dd",
+      "archived": false,
+      "parent_group_id": null,
+      "common_snapshot": {
+        "definition": {
+          "environment": {
+            "asset_id": "reference-shallow-water-v1",
+            "checksum": "fb64e543f9042c52",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": {
+              "safety_margin_ns": 0
+            },
+            "bit_rate_bps": 60,
+            "center_frequency_hz": 25000,
+            "deterministic_seed": 23,
+            "flows": [
+              {
+                "destination_node_id": 1,
+                "packets_per_cycle": 2,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 0,
+                "packets_per_cycle": 1,
+                "source_node_id": 1
+              }
+            ],
+            "fusion_receiver_node_id": null,
+            "mac_mode": "AdaptiveTdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "Explicit planning",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "planning_cycle_duration_ns": 30000000000,
+            "routing_mode": "Direct",
+            "source_level_db": 190,
+            "target_x_m": 200,
+            "target_y_m": 150,
+            "workload": "CommunicationOnly"
+          },
+          "experiment_id": "experiment-73647bf54195-r7",
+          "experiment_source_revision": 7,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 100,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 200,
+              "y_m": 0,
+              "z_m": -20
+            }
+          ],
+          "scenario_id": "scenario-8c7c895fd465-r8",
+          "scenario_name": "浏览器三节点对照",
+          "scenario_source_revision": 8,
+          "schema": "ns3-factory-authored-run-v2",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "planning-tracks",
+              "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 8
+        },
+        "execution": {
+          "simulation_cycle_count": "2",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23"
+        },
+        "system_identity": {
+          "schema_version": 1,
+          "platform_name": "NS3-BELLHOP Platform",
+          "platform_version": "0.1.0",
+          "product_baseline": "P0-S5-05",
+          "release_id": "dual-workbench-test",
+          "build_target": "linux-x86_64",
+          "reference_environment_asset_id": "reference-shallow-water-v1",
+          "reference_environment_checksum": "fb64e543f9042c52",
+          "build": {
+            "source_revision": "64da585-working-tree",
+            "configuration": "ns3-on",
+            "cxx_standard": "23"
+          },
+          "simulation": {
+            "engine": "ns-3",
+            "version": "3.47",
+            "time_authority": "ns3::Simulator",
+            "scheduler_authority": "ns3::Simulator",
+            "scheduling_gateway": "M1 / Ns3KernelGateway"
+          },
+          "interfaces": {
+            "api_schema_version": "1",
+            "worker_wire_schema_version": "1",
+            "acceptance_evidence_schema_version": "1",
+            "frontend_release": "p0-s5-05"
+          },
+          "runtime_mode": "single-active-run-process-local-catalog"
+        }
+      },
+      "common_snapshot_sha256": "2e04dc725aee97e71e459d160f8042af3222c346a475fa6cdc435ca4fafef6a1",
+      "workload": {
+        "generator": "CommunicationTrafficApplication/COMM-cycle-start-v1",
+        "packets": [
+          {
+            "cycle": "0",
+            "packet_id": "1000000",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000001",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000002",
+            "source_node_id": "0",
+            "destination_node_id": "2",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000003",
+            "source_node_id": "1",
+            "destination_node_id": "0",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000004",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000005",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000006",
+            "source_node_id": "0",
+            "destination_node_id": "2",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000007",
+            "source_node_id": "1",
+            "destination_node_id": "0",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          }
+        ],
+        "count": "8"
+      },
+      "workload_sha256": "4878598813d3590bcd5f79d4e43fa58d1f4f453df8f26f8ed4dc4161f31c91d4",
+      "events_available": false,
+      "members": [
+        {
+          "member": "A",
+          "run_id": "run-e2fa847606ca428c87281a77c0485151",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [
+                {
+                  "destination_node_id": 1,
+                  "packets_per_cycle": 2,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 2,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 0,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 1
+                }
+              ],
+              "fusion_receiver_node_id": null,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel1Abstract",
+              "planning_cycle_duration_ns": 30000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 200,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "CommunicationOnly"
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_source_revision": 7,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 8,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 8
+          },
+          "definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-8c7c895fd465-r8",
+              "experiment_id": "experiment-73647bf54195-r7",
+              "definition_version": "8",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "2",
+              "rx_quality_mode": "ModeledBpskAwgn",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel1Abstract",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "ModeledBpskAwgn",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel1Abstract",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-e2fa847606ca428c87281a77c0485151",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "60000000000",
+              "simulation_duration_ns": "60000000000",
+              "final_snapshot_version": "2",
+              "cycle_count": "2",
+              "node_count": "3",
+              "transmission_count": "8",
+              "channel_signal_count": "16",
+              "channel_no_arrival_count": "0",
+              "reception_count": "16",
+              "local_delivery_count": "8"
+            },
+            "acceptance_report": null,
+            "fusion_results": [],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "0",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "820809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "820809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "820809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "841325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "841325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "841325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2476361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2476361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2476361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2544157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2544157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2544157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3297171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3297171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3297171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4952723178",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4952723178",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4952723178",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5020519415",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5020519415",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5020519415",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5084457040",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5084457040",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5084457040",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5773532983",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5773532983",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5773532983",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5794048878",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5794048878",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5794048878",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7429084767",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7429084767",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7429084767",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7496881004",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7496881004",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7496881004",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7560818629",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7560818629",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7560818629",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "8249894572",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "8249894572",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "8249894572",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "8270410467",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "8270410467",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "8270410467",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30820809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30820809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30820809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32476361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32476361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32476361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32544157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32544157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32544157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32608095451",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32608095451",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32608095451",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33297171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33297171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33297171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33317687289",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33317687289",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33317687289",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34952723178",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34952723178",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34952723178",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35020519415",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35020519415",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35020519415",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35084457040",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35084457040",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35084457040",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35773532983",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35773532983",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35773532983",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35794048878",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35794048878",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35794048878",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37429084767",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37429084767",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37429084767",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37496881004",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37496881004",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37496881004",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37560818629",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37560818629",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37560818629",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "38249894572",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "38249894572",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "38249894572",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "38270410467",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "38270410467",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "38270410467",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "60000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "60000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "60000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [],
+              "waveform": []
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_version": "8",
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_version": "8",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84",
+              "physical_layer": "Channel1Abstract",
+              "workload": "CommunicationOnly"
+            }
+          },
+          "failure": null
+        },
+        {
+          "member": "B",
+          "run_id": "run-4156e9b0c276488da0e3b270e00ef519",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [
+                {
+                  "destination_node_id": 1,
+                  "packets_per_cycle": 2,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 2,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 0,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 1
+                }
+              ],
+              "fusion_receiver_node_id": null,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel2Waveform",
+              "planning_cycle_duration_ns": 30000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 200,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "CommunicationOnly"
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_source_revision": 7,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 8,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 8
+          },
+          "definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-8c7c895fd465-r8",
+              "experiment_id": "experiment-73647bf54195-r7",
+              "definition_version": "8",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "2",
+              "rx_quality_mode": "None",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel2Waveform",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel2Waveform",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-4156e9b0c276488da0e3b270e00ef519",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "60000000000",
+              "simulation_duration_ns": "60000000000",
+              "final_snapshot_version": "2",
+              "cycle_count": "2",
+              "node_count": "3",
+              "transmission_count": "8",
+              "channel_signal_count": "16",
+              "channel_no_arrival_count": "0",
+              "reception_count": "16",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "0",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "1354143138",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "1354143138",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "1354143138",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "1374659033",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "1374659033",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "1374659033",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3009694922",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3009694922",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3009694922",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3077491159",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3077491159",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3077491159",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4363838060",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4363838060",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4363838060",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6019389844",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6019389844",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6019389844",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6087186081",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6087186081",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6087186081",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6151123706",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6151123706",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6151123706",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7373532982",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7373532982",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7373532982",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7394048877",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7394048877",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7394048877",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9029084766",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9029084766",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9029084766",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9096881003",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9096881003",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9096881003",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9160818628",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9160818628",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9160818628",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "10383227904",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "10383227904",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "10383227904",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "10403743799",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "10403743799",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "10403743799",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "31354143138",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "31354143138",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "31354143138",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33009694922",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33009694922",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33009694922",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33077491159",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33077491159",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33077491159",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33141428784",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33141428784",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33141428784",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34363838060",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34363838060",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34363838060",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34384353955",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34384353955",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34384353955",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36019389844",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36019389844",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36019389844",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36087186081",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36087186081",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36087186081",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36151123706",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36151123706",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36151123706",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37373532982",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37373532982",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37373532982",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37394048877",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37394048877",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37394048877",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39029084766",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39029084766",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39029084766",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39096881003",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39096881003",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39096881003",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39160818628",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39160818628",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39160818628",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "40383227904",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "40383227904",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "40383227904",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "40403743799",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "40403743799",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "40403743799",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "60000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "60000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "60000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [],
+              "waveform": [
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1006",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1006",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1007",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1007",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                }
+              ]
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_version": "8",
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_version": "8",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f",
+              "physical_layer": "Channel2Waveform",
+              "workload": "CommunicationOnly"
+            }
+          },
+          "failure": null
+        }
+      ],
+      "state": "Completed",
+      "rerun_available": true
+    },
+    {
+      "schema": "ns3-factory-run-group-v1",
+      "group_id": "group-615f384e0e8f4da1970ac3d70791773e",
+      "request_key": "repeat-0b9e1aa7-0812-44bd-8712-4927c91465e0",
+      "request_sha256": "3241093222e6737e3a1a521e47264630d63038d3c88e5503884bced284edc1a8",
+      "archived": false,
+      "parent_group_id": "group-a3bf02acead74b0eaf4b3ae3af788da5",
+      "common_snapshot": {
+        "definition": {
+          "environment": {
+            "asset_id": "reference-shallow-water-v1",
+            "checksum": "fb64e543f9042c52",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": {
+              "safety_margin_ns": 0
+            },
+            "bit_rate_bps": 60,
+            "center_frequency_hz": 25000,
+            "deterministic_seed": 23,
+            "flows": [
+              {
+                "destination_node_id": 1,
+                "packets_per_cycle": 2,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 0,
+                "packets_per_cycle": 1,
+                "source_node_id": 1
+              }
+            ],
+            "fusion_receiver_node_id": null,
+            "mac_mode": "AdaptiveTdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "Explicit planning",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "planning_cycle_duration_ns": 30000000000,
+            "routing_mode": "Direct",
+            "source_level_db": 190,
+            "target_x_m": 200,
+            "target_y_m": 150,
+            "workload": "CommunicationOnly"
+          },
+          "experiment_id": "experiment-73647bf54195-r7",
+          "experiment_source_revision": 7,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 100,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 200,
+              "y_m": 0,
+              "z_m": -20
+            }
+          ],
+          "scenario_id": "scenario-8c7c895fd465-r8",
+          "scenario_name": "浏览器三节点对照",
+          "scenario_source_revision": 8,
+          "schema": "ns3-factory-authored-run-v2",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "planning-tracks",
+              "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 100000000000,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 8
+        },
+        "execution": {
+          "simulation_cycle_count": "2",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23"
+        },
+        "system_identity": {
+          "schema_version": 1,
+          "platform_name": "NS3-BELLHOP Platform",
+          "platform_version": "0.1.0",
+          "product_baseline": "P0-S5-05",
+          "release_id": "dual-workbench-test",
+          "build_target": "linux-x86_64",
+          "reference_environment_asset_id": "reference-shallow-water-v1",
+          "reference_environment_checksum": "fb64e543f9042c52",
+          "build": {
+            "source_revision": "64da585-working-tree",
+            "configuration": "ns3-on",
+            "cxx_standard": "23"
+          },
+          "simulation": {
+            "engine": "ns-3",
+            "version": "3.47",
+            "time_authority": "ns3::Simulator",
+            "scheduler_authority": "ns3::Simulator",
+            "scheduling_gateway": "M1 / Ns3KernelGateway"
+          },
+          "interfaces": {
+            "api_schema_version": "1",
+            "worker_wire_schema_version": "1",
+            "acceptance_evidence_schema_version": "1",
+            "frontend_release": "p0-s5-05"
+          },
+          "runtime_mode": "single-active-run-process-local-catalog"
+        }
+      },
+      "common_snapshot_sha256": "2e04dc725aee97e71e459d160f8042af3222c346a475fa6cdc435ca4fafef6a1",
+      "workload": {
+        "generator": "CommunicationTrafficApplication/COMM-cycle-start-v1",
+        "packets": [
+          {
+            "cycle": "0",
+            "packet_id": "1000000",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000001",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000002",
+            "source_node_id": "0",
+            "destination_node_id": "2",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "0",
+            "packet_id": "1000003",
+            "source_node_id": "1",
+            "destination_node_id": "0",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000004",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000005",
+            "source_node_id": "0",
+            "destination_node_id": "1",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000006",
+            "source_node_id": "0",
+            "destination_node_id": "2",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          },
+          {
+            "cycle": "1",
+            "packet_id": "1000007",
+            "source_node_id": "1",
+            "destination_node_id": "0",
+            "flow_id": null,
+            "payload_hex": "434f4d4d"
+          }
+        ],
+        "count": "8"
+      },
+      "workload_sha256": "4878598813d3590bcd5f79d4e43fa58d1f4f453df8f26f8ed4dc4161f31c91d4",
+      "events_available": false,
+      "members": [
+        {
+          "member": "A",
+          "run_id": "run-3b23b684de2247e099ead6028a824e31",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [
+                {
+                  "destination_node_id": 1,
+                  "packets_per_cycle": 2,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 2,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 0,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 1
+                }
+              ],
+              "fusion_receiver_node_id": null,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel1Abstract",
+              "planning_cycle_duration_ns": 30000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 200,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "CommunicationOnly"
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_source_revision": 7,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 8,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 8
+          },
+          "definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-8c7c895fd465-r8",
+              "experiment_id": "experiment-73647bf54195-r7",
+              "definition_version": "8",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "2",
+              "rx_quality_mode": "ModeledBpskAwgn",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel1Abstract",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "ModeledBpskAwgn",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel1Abstract",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-3b23b684de2247e099ead6028a824e31",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "60000000000",
+              "simulation_duration_ns": "60000000000",
+              "final_snapshot_version": "2",
+              "cycle_count": "2",
+              "node_count": "3",
+              "transmission_count": "8",
+              "channel_signal_count": "16",
+              "channel_no_arrival_count": "0",
+              "reception_count": "16",
+              "local_delivery_count": "8"
+            },
+            "acceptance_report": null,
+            "fusion_results": [],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "0",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "820809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "820809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "820809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "841325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "841325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "841325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2476361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2476361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2476361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2544157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2544157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2544157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3297171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3297171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3297171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4952723178",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4952723178",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4952723178",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5020519415",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5020519415",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5020519415",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5084457040",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5084457040",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5084457040",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5773532983",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5773532983",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5773532983",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "5794048878",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "5794048878",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "5794048878",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7429084767",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7429084767",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7429084767",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7496881004",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7496881004",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7496881004",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7560818629",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7560818629",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7560818629",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "8249894572",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "8249894572",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "8249894572",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "8270410467",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "8270410467",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "8270410467",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30820809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30820809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30820809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32476361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32476361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32476361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32544157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32544157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32544157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "32608095451",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "32608095451",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "32608095451",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33297171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33297171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33297171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33317687289",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33317687289",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33317687289",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34952723178",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34952723178",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34952723178",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35020519415",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35020519415",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35020519415",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35084457040",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35084457040",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35084457040",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35773532983",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35773532983",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35773532983",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "35794048878",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "35794048878",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "35794048878",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37429084767",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37429084767",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37429084767",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37496881004",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37496881004",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37496881004",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37560818629",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37560818629",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37560818629",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "38249894572",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "38249894572",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "38249894572",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "38270410467",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "38270410467",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "38270410467",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "60000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "60000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "60000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [],
+              "waveform": []
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_version": "8",
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_version": "8",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "fdde283b1021c3c2638e976c42e4c1abf50b499615426b53b9101601cafaee84",
+              "physical_layer": "Channel1Abstract",
+              "workload": "CommunicationOnly"
+            }
+          },
+          "failure": null
+        },
+        {
+          "member": "B",
+          "run_id": "run-0929b38197694051b6843bca9f85fa0e",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [
+                {
+                  "destination_node_id": 1,
+                  "packets_per_cycle": 2,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 2,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 0
+                },
+                {
+                  "destination_node_id": 0,
+                  "packets_per_cycle": 1,
+                  "source_node_id": 1
+                }
+              ],
+              "fusion_receiver_node_id": null,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel2Waveform",
+              "planning_cycle_duration_ns": 30000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 200,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "CommunicationOnly"
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_source_revision": 7,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 8,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "c628f2224d3229d8327aece0ef87ed91efe89410dec50303d3e8a33a7c933acf",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 100000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 8
+          },
+          "definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-8c7c895fd465-r8",
+              "experiment_id": "experiment-73647bf54195-r7",
+              "definition_version": "8",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "2",
+              "rx_quality_mode": "None",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel2Waveform",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel2Waveform",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-0929b38197694051b6843bca9f85fa0e",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "60000000000",
+              "simulation_duration_ns": "60000000000",
+              "final_snapshot_version": "2",
+              "cycle_count": "2",
+              "node_count": "3",
+              "transmission_count": "8",
+              "channel_signal_count": "16",
+              "channel_no_arrival_count": "0",
+              "reception_count": "16",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "0",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "1354143138",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "1354143138",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "1354143138",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "1374659033",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "1374659033",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "1374659033",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3009694922",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3009694922",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3009694922",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3077491159",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3077491159",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3077491159",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4363838060",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4363838060",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4363838060",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6019389844",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6019389844",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6019389844",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6087186081",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6087186081",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6087186081",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6151123706",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6151123706",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6151123706",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7373532982",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7373532982",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7373532982",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "7394048877",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "7394048877",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "7394048877",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9029084766",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9029084766",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9029084766",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9096881003",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9096881003",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9096881003",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "9160818628",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "9160818628",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "9160818628",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "10383227904",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "10383227904",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "10383227904",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "10403743799",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "10403743799",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "10403743799",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "30067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "30067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "30067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "31354143138",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "31354143138",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "31354143138",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33009694922",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33009694922",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33009694922",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33077491159",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33077491159",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33077491159",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "33141428784",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "33141428784",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "33141428784",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34363838060",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34363838060",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34363838060",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "34384353955",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "34384353955",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "34384353955",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36019389844",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36019389844",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36019389844",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36087186081",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36087186081",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36087186081",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "36151123706",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "36151123706",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "36151123706",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37373532982",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37373532982",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37373532982",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "37394048877",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "37394048877",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "37394048877",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39029084766",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39029084766",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39029084766",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39096881003",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39096881003",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39096881003",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "39160818628",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "39160818628",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "39160818628",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "40383227904",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "40383227904",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "40383227904",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "40403743799",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "40403743799",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "40403743799",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "60000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "60000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "60000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [],
+              "waveform": [
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1006",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1006",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                },
+                {
+                  "transmission_id": "1007",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1007",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": false
+                }
+              ]
+            },
+            "experiment_id": "experiment-73647bf54195-r7",
+            "experiment_version": "8",
+            "scenario_id": "scenario-8c7c895fd465-r8",
+            "scenario_version": "8",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "f2935c5d0c0e1f1e4c36c707b5f4fe6a4e1c0873a4043c9438e31707b191c32f",
+              "physical_layer": "Channel2Waveform",
+              "workload": "CommunicationOnly"
+            }
+          },
+          "failure": null
+        }
+      ],
+      "state": "Completed",
+      "rerun_available": true
+    }
+  ],
+  "success": true
+}

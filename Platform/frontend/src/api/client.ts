@@ -187,6 +187,10 @@ export class ApiClient {
   listRunGroups = () => this.request("/run-groups", isArrayOf(runGroup));
   getRunGroup = (id: string) => this.request(`/run-groups/${encodeURIComponent(id)}`, runGroup);
   cancelPendingGroup = (id: string) => this.request(`/run-groups/${encodeURIComponent(id)}/cancel-pending`, runGroup, { method: "POST" });
+  repeatRunGroup = (id: string, key: string) => this.request(`/run-groups/${encodeURIComponent(id)}/rerun`, runGroup, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request_idempotency_key: key }),
+  });
+  retryGroupArchive = (id: string) => this.request(`/run-groups/${encodeURIComponent(id)}/retry-archive`, runGroup, { method: "POST" });
   createRunGroup = (draftId: string, revision: number, key: string) => this.request("/run-groups", runGroup, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ draft_id: draftId, expected_revision: String(revision), request_idempotency_key: key }),

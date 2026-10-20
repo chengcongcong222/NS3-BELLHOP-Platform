@@ -113,6 +113,7 @@ class RunGroups:
             factories, common, definitions, workload = await prepare()
             record = {"schema": "ns3-factory-run-group-v1", "group_id": f"group-{uuid.uuid4().hex}",
                 "request_key": request_key, "request_sha256": identity, "archived": False,
+                "parent_group_id": request_identity.get("rerun_group_id"),
                 "common_snapshot": common, "common_snapshot_sha256": digest(common),
                 "workload": workload, "workload_sha256": digest(workload),
                 "events_available": False, "members": []}
@@ -121,6 +122,7 @@ class RunGroups:
                 record["members"] = [{"member": label, "run_id": command.run_id,
                     "state": "Queued", "definition": definition,
                     "definition_sha256": command.authored_definition_sha256,
+                    "command": command.model_dump(mode="json", exclude={"run_id", "authored_definition_path"}),
                     "execution": command.execution.model_dump(mode="json"),
                     "result": None, "failure": None}
                     for label, command, definition in zip(("A", "B"), commands, definitions, strict=True)]
@@ -132,10 +134,19 @@ class RunGroups:
             task.add_done_callback(self.tasks.discard)
             return await self.view(record["group_id"])
 
+    async def rerun(self, group_id, request_key, prepare):
+        original = await self.view(group_id)
+        if original["state"] in {"Queued", "RunningA", "RunningB", "ArchiveFailed"}:
+            raise CatalogError("RunNotReady", "对照组尚未结束或归档未完成，不能重跑。")
+        async def frozen_prepare():
+            return await prepare(deepcopy(original))
+        return await self.create(request_key, {"rerun_group_id": group_id}, frozen_prepare)
+
     async def _archive_checked(self, group_id):
         try:
             await self._archive(group_id)
-        except (OSError, CatalogError) as error:
+            self.archive_errors.pop(group_id, None)
+        except (OSError, CatalogError):
             # Do not let a completed simulation masquerade as a durable result.
             # Existing on-disk members remain intact; restart treats unfinished
             # records as Interrupted. Do not expose filesystem paths to clients.
@@ -160,6 +171,19 @@ class RunGroups:
                         member["state"] = "Interrupted"
                 if snapshot.result_available:
                     member["result"] = (await self.catalog.get_result(run_id)).model_dump(mode="json")
+                    # Match the public result resource: the worker result alone
+                    # does not carry the frozen resource identities.
+                    member["result"].update({
+                        key: getattr(snapshot, key)
+                        for key in ("experiment_id", "experiment_version",
+                                    "scenario_id", "scenario_version",
+                                    "environment_asset_id", "environment_format_version")
+                    })
+                    member["result"]["provenance"] = {
+                        "definition_sha256": member["definition_sha256"],
+                        "physical_layer": member["execution"]["physical_layer"],
+                        "workload": member["definition"]["experiment"]["workload"],
+                    }
                 self.store.save(record)
 
     async def view(self, group_id):
@@ -175,7 +199,17 @@ class RunGroups:
         if group_id in self.archive_errors:
             record["state"] = "ArchiveFailed"
             record["archive_failure"] = self.archive_errors[group_id]
+        record["rerun_available"] = (
+            record["state"] not in {"Queued", "RunningA", "RunningB", "ArchiveFailed"}
+            and all(member.get("command") for member in record["members"])
+        )
         return record
+
+    async def retry_archive(self, group_id):
+        if group_id not in self.archive_errors:
+            raise CatalogError("RunNotReady", "此对照组没有待重试的归档错误。")
+        await self._archive_checked(group_id)
+        return await self.view(group_id)
 
     async def cancel_pending(self, group_id):
         async with self.lock:

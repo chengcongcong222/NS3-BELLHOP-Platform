@@ -135,6 +135,10 @@ class CreateRunGroupRequest(HttpModel):
     mode: Literal["Both"] = "Both"
 
 
+class RepeatRunGroupRequest(HttpModel):
+    request_idempotency_key: StableId
+
+
 class FailureResource(HttpModel):
     code: str
     message: str
@@ -864,6 +868,11 @@ def create_app(
                     payload.get("physical_layer") == "Channel3Recorded"):
                 raise CatalogError("InvalidRequest", "成对执行暂只接受几何场景 PlanningV1 普通通信；融合业务的共同观测冻结尚未实现。")
             payload["physical_layer"] = physical_override
+            if physical_override == "Channel1Abstract":
+                payload["waveform_modulation"] = "Bpsk"
+                payload["waveform_noise"] = "None"
+                payload["waveform_noise_psd_db_re_1upa2_per_hz"] = 0.0
+                payload.pop("osdm", None)
         planning = payload.get("execution_mode") == "PlanningV1"
         frozen_algorithm = await algorithms.freeze(payload)
         flow_scoped = frozen_algorithm is not None and frozen_algorithm["interface"] == "planning-mac-v2"
@@ -1143,6 +1152,41 @@ def create_app(
     @app.post("/run-groups/{group_id}/cancel-pending")
     async def cancel_group_pending(group_id: str):
         return await groups.cancel_pending(group_id)
+
+    @app.post("/run-groups/{group_id}/rerun", status_code=201)
+    async def repeat_run_group(group_id: str, body: RepeatRunGroupRequest):
+        async def prepare(original):
+            from .group_repeat import restore_member
+            from .paired_inputs import paired_inputs
+            from .run_groups import digest
+            commands = []
+            definitions = []
+            for member in original["members"]:
+                command, snapshot = restore_member(member, authoring_root / "run-definitions")
+                await validate_repeat(snapshot, command, full=True)
+                commands.append(command)
+                definitions.append(member["definition"])
+            common, workload = paired_inputs(definitions, commands)
+            if digest(workload) != original["workload_sha256"]:
+                raise CatalogError("RunDefinitionUnavailable", "业务生成合同已变化，不能声称按原配置重跑。")
+            original_common = {key: value for key, value in original["common_snapshot"].items()
+                               if key != "system_identity"}
+            if common != original_common:
+                raise CatalogError("RunDefinitionUnavailable", "共同冻结输入不一致，未启动新的运行。")
+            common["system_identity"] = system_info.model_dump(mode="json")
+            factories = tuple((lambda run_id, captured=command:
+                               captured.model_copy(update={"run_id": run_id}, deep=True))
+                              for command in commands)
+            return factories, common, definitions, workload
+        record = await groups.rerun(group_id, body.request_idempotency_key, prepare)
+        if not record["archived"]:
+            for member in record["members"]:
+                run_executions[member["run_id"]] = (await catalog.captured_command(member["run_id"])).execution
+        return record
+
+    @app.post("/run-groups/{group_id}/retry-archive")
+    async def retry_group_archive(group_id: str):
+        return await groups.retry_archive(group_id)
 
     @app.get("/recorded-channels")
     async def list_recorded_channels():

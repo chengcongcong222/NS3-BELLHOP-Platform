@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../api/client";
 import { ErrorState, LoadingState } from "../components/common";
 import { ResultAnalysis } from "./resultAnalysis";
+import { waveformSummary } from "../domain/resultAnalysis";
 
 const labels: Record<string, string> = { Queued: "排队中", Running: "运行中", RunningA: "正在运行 A", RunningB: "正在运行 B",
   Completed: "已完成", PartialFailed: "部分完成", Failed: "运行失败", Canceled: "已取消", Interrupted: "已中断", ArchiveFailed: "归档失败" };
@@ -23,10 +24,17 @@ export function RunGroupCatalogPage() {
 
 export function RunGroupPage() {
   const id = useParams().groupId ?? "";
+  const navigate = useNavigate();
+  const repeatKey = useRef<{ id: string; key: string } | null>(null);
   const [tab, setTab] = useState("Compare");
   const query = useQuery({ queryKey: ["run-group", id], queryFn: () => apiClient.getRunGroup(id),
     refetchInterval: q => q.state.data && ["Queued", "RunningA", "RunningB"].includes(q.state.data.state) ? 1000 : false });
   const cancel = useMutation({ mutationFn: () => apiClient.cancelPendingGroup(id), onSuccess: () => { void query.refetch(); } });
+  const repeat = useMutation({ mutationFn: () => {
+    if (repeatKey.current?.id !== id) repeatKey.current = { id, key: `repeat-${crypto.randomUUID()}` };
+    return apiClient.repeatRunGroup(id, repeatKey.current.key);
+  }, onSuccess: created => { repeatKey.current = null; navigate(`/run-groups/${created.group_id}`); } });
+  const archive = useMutation({ mutationFn: () => apiClient.retryGroupArchive(id), onSuccess: () => { void query.refetch(); } });
   if (query.error) return <ErrorState error={query.error} />;
   if (!query.data) return <LoadingState />;
   const group = query.data;
@@ -40,6 +48,9 @@ export function RunGroupPage() {
         {!group.archived && <Link to={`/runs/${m.run_id}`}>查看运行与回放</Link>}
         {group.archived && <p>历史结果已归档；事件回放未归档。</p>}</article>)}</div>
       {!group.archived && group.members[1].state === "Queued" && <button disabled={cancel.isPending} onClick={() => cancel.mutate()}>取消尚未开始的 B</button>}
+      {group.rerun_available && <button disabled={repeat.isPending} onClick={() => repeat.mutate()}>{repeat.isPending ? "正在校验原配置…" : "按原配置重跑 A+B"}</button>}
+      {group.archive_failure && !group.archived && <button disabled={archive.isPending} onClick={() => archive.mutate()}>重试保存归档</button>}
+      {(repeat.error || archive.error) && <ErrorState error={repeat.error || archive.error} />}
       {cancel.error && <ErrorState error={cancel.error} />}{group.archive_failure && <p role="alert">{group.archive_failure.message}</p>}
       <details><summary>冻结输入与结果导出</summary><p>共同输入：{group.common_snapshot_sha256}</p><p>业务清单：{group.workload_sha256}</p>
         <a href={apiClient.url(`/run-groups/${encodeURIComponent(id)}/export`)} download={`${id}.json`}>下载对照组归档</a></details>
@@ -49,6 +60,15 @@ export function RunGroupPage() {
     {tab === "Compare" ? <section className="panel"><h2>运行结果对照</h2><table><thead><tr><th>指标</th><th>A</th><th>B</th></tr></thead><tbody>
       {([["transmission_count", "实际发送次数"], ["local_delivery_count", "本节点成功交付次数"], ["cycle_count", "完成周期数"]] as const).map(([key, name]) =>
         <tr key={key}><th>{name}</th>{group.members.map(m => <td key={m.member}>{m.result?.projection[key] ?? "尚无结果"}</td>)}</tr>)}
-    </tbody></table></section> : selected?.result ? <ResultAnalysis result={selected.result} physicalLayer={tab === "A" ? "Channel1Abstract" : "Channel2Waveform"} eventStreamComplete={false} /> : <p>该成员尚无可用结果。请查看上方运行状态。</p>}
+      {(["实际误码数 / 比较比特数", "波形误码率 BER", "CRC 通过 / 失败帧数"] as const).map((name, index) =>
+        <tr key={name}><th>{name}</th>{group.members.map(m => {
+          if (m.member === "A") return <td key={m.member}>不适用：抽象接收模型</td>;
+          const summary = m.result ? waveformSummary(m.result) : null;
+          const value = !summary?.frames ? "尚无波形记录" : index === 0 ? `${summary.errors} / ${summary.bits}`
+            : index === 1 ? summary.ber === null ? "无可比较比特" : summary.ber === 0 ? "0" : summary.ber.toExponential(3)
+            : `${summary.crcPassed} / ${summary.crcFailed}`;
+          return <td key={m.member}>{value}</td>;
+        })}</tr>)}
+    </tbody></table><p>波形统计包含已记录接收帧；未形成比特判决的失败不会记作零误码。交付次数不等同于去重业务包数。</p></section> : selected?.result ? <ResultAnalysis result={selected.result} physicalLayer={tab === "A" ? "Channel1Abstract" : "Channel2Waveform"} eventStreamComplete={false} /> : <p>该成员尚无可用结果。请查看上方运行状态。</p>}
   </div>;
 }

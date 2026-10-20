@@ -12,13 +12,17 @@ def paired_inputs(definitions, commands):
         if (value.get("execution_mode") != "PlanningV1" or
                 experiment.get("workload") != "CommunicationOnly"):
             raise CatalogError("InvalidRequest", "A/B common packet freeze requires PlanningV1 CommunicationOnly.")
-        experiment.pop("physical_layer")
+        for key in ("physical_layer", "waveform_modulation", "waveform_noise",
+                    "waveform_noise_psd_db_re_1upa2_per_hz", "osdm"):
+            experiment.pop(key, None)
         common.append(value)
     left = commands[0].execution.model_dump(mode="json")
     right = commands[1].execution.model_dump(mode="json")
     for value in (left, right):
         value.pop("physical_layer")
         value.pop("rx_quality_mode")
+        for key in ("waveform_modulation", "waveform_noise", "waveform_noise_psd_db_re_1upa2_per_hz"):
+            value.pop(key)
     if common[0] != common[1] or left != right:
         raise CatalogError("DraftConflict", "A/B inputs changed during freeze; neither member started.")
     cycles = int(commands[0].execution.simulation_cycle_count)

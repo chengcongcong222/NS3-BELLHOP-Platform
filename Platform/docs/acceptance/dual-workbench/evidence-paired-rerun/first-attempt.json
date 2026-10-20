@@ -1,0 +1,8 @@
+{
+  "executed_by": "Chromium CDP automation",
+  "seeded_inputs_via": "ASGI authoring API; no seeded results",
+  "checks": [],
+  "exceptions": [],
+  "success": false,
+  "failure": "Error: Timed out: document.querySelector('[role=\"status\"]')?.textContent==='已完成'\nN3\nNS3-BELLHOP Platform\n水声网络仿真工作台\n当前模块\n工作台\n仿真服务已连接\nns-3 3.47\n仿真工作流\n⌂\n工作台\n≈\n环境建设\n⚙\n实验工作台\n▶\n运行与结果\n平台\n▤\n预置案例\ni\n系统信息\nA/B 对照实验\n已完成\n全部对照组\n\n同一场景与业务输入，共 8 个业务包；A、B 顺序独立执行。\n\nA 使用抽象接收模型；B 使用波形解调统计，二者误码率不能混称实测值。\n\nA · 快速网络实验\n\n已完成\n\n查看运行与回放\nB · 波形通信实验\n\n已完成\n\n查看运行与回放\n按原配置重跑 A+B\n冻结输入与结果导出\n对照\nA 结果\nB 结果\n运行结果对照\n指标\tA\tB\n实际发送次数\t8\t8\n本节点成功交付次数\t8\t6\n完成周期数\t2\t2\n系统就绪\n工作台\nns-3 3.47 · 系统就绪"
+}

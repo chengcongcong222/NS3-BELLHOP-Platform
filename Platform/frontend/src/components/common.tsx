@@ -20,7 +20,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const workspaceSection = location.pathname.startsWith("/workspace/environment") ? "/environments"
     : location.pathname.startsWith("/workspace/scenario") ? "/workspace/experiment"
     : location.pathname.startsWith("/workspace/experiment") ? "/workspace/experiment" : null;
-  const routeSection = location.pathname.startsWith("/results") ? "/runs"
+  const routeSection = location.pathname.startsWith("/results") || location.pathname.startsWith("/run-groups") ? "/runs"
     : location.pathname.startsWith("/experiments") ? "/workspace/experiment"
     : workspaceSection ?? (location.pathname === "/" ? "/" : `/${location.pathname.split("/")[1]}`);
   const active = links.find(([to]) => to === routeSection) ?? links[0];
