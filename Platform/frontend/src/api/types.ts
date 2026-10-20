@@ -164,8 +164,29 @@ export interface RunDefinitionContextDto {
   execution: Record<string, unknown>;
   limitations: string[];
   recorded_channel?: RecordedChannelConfig;
+  recorded_proxy?: RecordedProxyResolved;
 }
 
+export interface ProxyNode { node_id: string; can_transmit: boolean; can_receive: boolean }
+export interface ProxySample {
+  asset_id: string; version: 1; start_sample: string; modeled_reference_delay_ns: string; relative_amplitude: number;
+}
+export interface ProxyBindings {
+  schema: "ns3-factory-recorded-proxy-bindings-v1";
+  nodes: ProxyNode[]; allocation: "Explicit" | "GlobalSame" | "GlobalPool"; samples: ProxySample[];
+  overrides: { tx_id: string; rx_id: string; sample: ProxySample }[];
+  receiver_noise: { rx_id: string; mode: "None" | "ContinuousLibrary"; asset_id?: string; version?: 1 }[];
+  carrier_hz: number; baseband_rate_hz: number; occupied_bandwidth_hz: number; duration_ns: string;
+  transmitter_modulations?: { node_id: string; modulation: "Bpsk" | "Bfsk" | "Osdm" }[];
+}
+export interface RecordedProxyResolved {
+  nodes: ProxyNode[];
+  resolved_links: (ProxySample & RecordedChannelDto & { tx_id: string; rx_id: string; origin: string; evidence: string })[];
+  rx_noise: { rx_id: string; mode: string; manifest?: Record<string, unknown> }[];
+  transmitter_modulations?: { node_id: string; modulation: "Bpsk" | "Bfsk" | "Osdm" }[];
+  receiver_clock?: { baseband_rate_hz: number; passband_rate_hz: number; carrier_hz: number; oscillator: string };
+  assumptions: { real_joint_multitransmitter_measured: false; geometry_drives_channel: false; link_temporal_relation: string };
+}
 export interface RecordedChannelDto {
   manifest_sha256: string;
   manifest: {
@@ -266,7 +287,7 @@ export interface RunGroupDto {
   workload: { count: string };
   archive_failure?: { code: string; message: string };
   members: Array<{
-    member: "A" | "B";
+    member: "A" | "B" | "C";
     run_id: string;
     state: string;
     result: ResultDto | null;
@@ -446,6 +467,7 @@ export interface ReceptionTraceDto {
     receiver_node_id: DecimalString;
     disposition: "NotDecoded" | "Overheard" | "LocalDelivery" | "RelayEnqueue";
     waveform?: ReceptionWaveformDto | null;
+    mixture?: { signal_count: DecimalString; sample_count: DecimalString; mixture_power_relative: number; noise_power_relative: number };
     quality: {
       signal_to_noise_ratio_db: number;
       eb_n0_db: number;

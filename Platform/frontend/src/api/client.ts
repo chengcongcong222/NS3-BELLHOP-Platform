@@ -17,6 +17,8 @@ import type {
   TrajectoryAssetDto,
   RecordedChannelDto,
   RecordedNoiseDto,
+  ProxyBindings,
+  RecordedProxyResolved,
 } from "./types";
 import { acquireWithProgress, type AcquisitionProgress } from "./acquisition";
 import { isAlgorithmCatalog } from "../domain/algorithms";
@@ -87,8 +89,8 @@ const runGroup = (value: unknown): value is RunGroupDto =>
   isObject(value) && isString(value.group_id) && isString(value.state) && typeof value.archived === "boolean"
   && isString(value.common_snapshot_sha256) && isString(value.workload_sha256)
   && isObject(value.workload) && isString(value.workload.count)
-  && Array.isArray(value.members) && value.members.length === 2 && value.members.every(m =>
-    isObject(m) && ["A", "B"].includes(String(m.member)) && isString(m.run_id) && isString(m.state)
+  && Array.isArray(value.members) && (value.members.length === 2 || (value.members.length === 1 && value.members[0]?.member === "C")) && value.members.every(m =>
+    isObject(m) && ["A", "B", "C"].includes(String(m.member)) && isString(m.run_id) && isString(m.state)
     && (m.result === null || result(m.result)));
 const resultSummary = ((value: unknown): value is ResultSummaryDto =>
   isObject(value) &&
@@ -200,6 +202,10 @@ export class ApiClient {
     && typeof v.manifest.duration_s === "number" && typeof v.manifest.fc === "number"));
   recordedNoise = () => this.request("/recorded-noise", isArrayOf((v: unknown): v is RecordedNoiseDto =>
     isObject(v) && isObject(v.manifest) && isString(v.manifest.asset_id) && typeof v.manifest.alpha === "number"));
+  validateRecordedProxy = (body: ProxyBindings) => this.request("/authoring/recorded-proxy/validate",
+    (v: unknown): v is RecordedProxyResolved => isObject(v) && Array.isArray(v.nodes) &&
+      Array.isArray(v.resolved_links) && Array.isArray(v.rx_noise) && isObject(v.assumptions),
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   listTrajectories = () => this.request("/trajectories", isArrayOf(trajectory));
   translateTrajectory = (body: { source_asset_id: string; source_version: number; source_track_id: string; asset_id: string; name: string; x_m: number; y_m: number; z_m: number }) =>
     this.request("/authoring/trajectories/translate", trajectory, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

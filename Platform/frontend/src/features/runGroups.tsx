@@ -7,6 +7,7 @@ import { ResultAnalysis } from "./resultAnalysis";
 import { waveformSummary } from "../domain/resultAnalysis";
 
 const labels: Record<string, string> = { Queued: "排队中", Running: "运行中", RunningA: "正在运行 A", RunningB: "正在运行 B",
+  RunningC: "正在运行 C",
   Completed: "已完成", PartialFailed: "部分完成", Failed: "运行失败", Canceled: "已取消", Interrupted: "已中断", ArchiveFailed: "归档失败" };
 const label = (state: string) => labels[state] ?? state;
 
@@ -14,9 +15,9 @@ export function RunGroupCatalogPage() {
   const query = useQuery({ queryKey: ["run-groups"], queryFn: apiClient.listRunGroups, refetchInterval: 1000 });
   if (query.error) return <ErrorState error={query.error} />;
   if (!query.data) return <LoadingState />;
-  return <section className="panel"><h1>A/B 对照实验</h1><Link to="/runs">返回运行列表</Link>
+  return <section className="panel"><h1>A/B 对照与 C 代理实验归档</h1><Link to="/runs">返回运行列表</Link>
     {!query.data.length && <p>尚无对照实验。在几何声场工作台中选择“A+B 顺序对照”。</p>}
-    <table><thead><tr><th>对照组</th><th>状态</th><th>A / B</th></tr></thead><tbody>{query.data.map(group =>
+    <table><thead><tr><th>实验归档</th><th>状态</th><th>运行成员</th></tr></thead><tbody>{query.data.map(group =>
       <tr key={group.group_id}><td><Link to={`/run-groups/${group.group_id}`}>{group.group_id}</Link></td>
         <td>{label(group.state)}</td><td>{group.members.map(m => `${m.member}：${label(m.state)}`).join(" / ")}</td></tr>)}</tbody></table>
   </section>;
@@ -28,7 +29,7 @@ export function RunGroupPage() {
   const repeatKey = useRef<{ id: string; key: string } | null>(null);
   const [tab, setTab] = useState("Compare");
   const query = useQuery({ queryKey: ["run-group", id], queryFn: () => apiClient.getRunGroup(id),
-    refetchInterval: q => q.state.data && ["Queued", "RunningA", "RunningB"].includes(q.state.data.state) ? 1000 : false });
+    refetchInterval: q => q.state.data && ["Queued", "RunningA", "RunningB", "RunningC"].includes(q.state.data.state) ? 1000 : false });
   const cancel = useMutation({ mutationFn: () => apiClient.cancelPendingGroup(id), onSuccess: () => { void query.refetch(); } });
   const repeat = useMutation({ mutationFn: () => {
     if (repeatKey.current?.id !== id) repeatKey.current = { id, key: `repeat-${crypto.randomUUID()}` };
@@ -38,6 +39,24 @@ export function RunGroupPage() {
   if (query.error) return <ErrorState error={query.error} />;
   if (!query.data) return <LoadingState />;
   const group = query.data;
+  if (group.members.length === 1 && group.members[0].member === "C") {
+    const member = group.members[0];
+    return <div className="analysis-page"><header className="analysis-page-toolbar"><h1>实录样本代理网络归档</h1>
+      <span role="status">{label(group.state)}</span><Link to="/run-groups">全部实验归档</Link></header>
+      <section className="panel"><p>跨链路时间关系、噪声分配与建模时延均是冻结的仿真假设，不代表实测多发一收海试。</p>
+        <p>运行：{member.run_id} · 业务包：{group.workload.count}</p>
+        {!group.archived && <Link to={`/runs/${member.run_id}`}>查看运行与回放</Link>}
+        {group.archived && <p>结果与配置已归档；历史事件未归档，不提供虚假回放。</p>}
+        {member.failure && <p role="alert">{member.failure.message}</p>}
+        {group.rerun_available && <button disabled={repeat.isPending} onClick={() => repeat.mutate()}>按原配置重跑 C</button>}
+        {group.archive_failure && <button disabled={archive.isPending} onClick={() => archive.mutate()}>重试保存归档</button>}
+        {(repeat.error || archive.error) && <ErrorState error={repeat.error || archive.error} />}
+        <a href={apiClient.url(`/run-groups/${encodeURIComponent(id)}/export`)} download={`${id}.json`}>下载冻结配置与结果</a>
+      </section>
+      {member.result ? <ResultAnalysis result={member.result} physicalLayer="Channel3Recorded" eventStreamComplete={false} />
+        : <p>尚无正式结果；失败或未完成不记为零误码。</p>}
+    </div>;
+  }
   const selected = group.members.find(m => m.member === tab);
   return <div className="analysis-page"><header className="analysis-page-toolbar"><h1>A/B 对照实验</h1>
     <span role="status">{label(group.state)}</span><Link to="/run-groups">全部对照组</Link></header>

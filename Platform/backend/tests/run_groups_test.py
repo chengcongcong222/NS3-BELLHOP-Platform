@@ -109,6 +109,14 @@ def test_corrupt_archive_fails_closed(tmp_path):
     asyncio.run(check())
 
 
+def test_archive_size_budget_rejects_before_publication(tmp_path):
+    store = RunGroupStore(tmp_path)
+    with pytest.raises(CatalogError, match="32 MiB"):
+        store.save({"group_id": "group-too-large", "request_key": "too-large",
+                    "padding": "x" * (32 * 1024 * 1024)})
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_result_archive_failure_is_visible_not_false_completion(tmp_path, monkeypatch):
     async def check():
         gateway = SerialGateway()

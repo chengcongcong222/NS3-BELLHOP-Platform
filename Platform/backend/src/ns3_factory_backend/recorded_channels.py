@@ -99,6 +99,9 @@ def list_noise(root: Path):
 
 
 def settings_issues(payload):
+    if "recorded_proxy" in payload:
+        from .recorded_proxy import settings_issues as proxy_issues
+        return proxy_issues(payload)
     c = payload.get("recorded_channel")
     if payload.get("physical_layer") != "Channel3Recorded":
         return ["只有模式 C 可以携带录音信道设置"] if c is not None else []

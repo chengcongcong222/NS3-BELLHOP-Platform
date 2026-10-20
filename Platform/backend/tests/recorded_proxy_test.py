@@ -14,6 +14,25 @@ from ns3_factory_backend.catalog import CatalogError
 from ns3_factory_backend.recorded_proxy import ProxyBindings, resolve
 
 
+def test_physics_identity_excludes_layout_but_not_signal_settings(recording):
+    from types import SimpleNamespace
+    from ns3_factory_backend.recorded_proxy import physics_digest
+    resolved = resolve(recording, ProxyBindings.model_validate(config()))
+    definition = {
+        "nodes": resolved["nodes"], "recorded_proxy": resolved,
+        "experiment": {"name":"first", "waveform_modulation":"Osdm", "deterministic_seed":"23"},
+        "scenario_revision":1, "proxy_ui_layout":{"0":{"x":10,"y":20}},
+    }
+    execution = SimpleNamespace(model_dump=lambda **_: {"duration_ns":"1000000000"})
+    initial = physics_digest(definition, execution)
+    moved = copy.deepcopy(definition)
+    moved.update(scenario_revision=2, proxy_ui_layout={"0":{"x":200,"y":400}})
+    moved["experiment"]["name"] = "renamed"
+    assert physics_digest(moved, execution) == initial
+    moved["recorded_proxy"]["resolved_links"][0]["relative_amplitude"] = .5
+    assert physics_digest(moved, execution) != initial
+
+
 @pytest.fixture
 def recording(tmp_path):
     root = tmp_path/"recorded-channels"
@@ -62,6 +81,26 @@ def test_full_fanout_and_canonical_order(recording):
     spec["receiver_noise"].reverse()
     assert first == resolve(recording, ProxyBindings.model_validate(spec))
 
+def test_node_modems_are_explicit_capabilities_and_common_clock(recording):
+    spec = config()
+    spec["transmitter_modulations"] = [{"node_id":"0","modulation":"Bpsk"},{"node_id":"1","modulation":"Bfsk"}]
+    result = resolve(recording,ProxyBindings.model_validate(spec))
+    assert result["transmitter_modulations"] == spec["transmitter_modulations"]
+    spec["baseband_rate_hz"] = 999
+    with pytest.raises(CatalogError,match="100"):
+        resolve(recording,ProxyBindings.model_validate(spec))
+    spec["baseband_rate_hz"] = 1000
+    spec["transmitter_modulations"].append({"node_id":"0","modulation":"Osdm"})
+    with pytest.raises(CatalogError,match="不能重复"):
+        resolve(recording,ProxyBindings.model_validate(spec))
+
+def test_resource_load_budget_is_unique_tensor_not_per_link(recording):
+    spec = ProxyBindings.model_validate(config())
+    # One 3200-byte tensor, six links: retained + two loader copies = 9600.
+    resolve(recording,spec,resource_budget_bytes=9600)
+    with pytest.raises(CatalogError,match="资源载入预算"):
+        resolve(recording,spec,resource_budget_bytes=9599)
+
 
 def test_explicit_edges_do_not_infer_reverse_or_overhearing(recording):
     spec = config()
@@ -81,6 +120,19 @@ def test_override_does_not_rewrite_global_sample(recording):
     assert result["resolved_links"][0]["relative_amplitude"] == .5
     assert all(l["relative_amplitude"] == 1. for l in result["resolved_links"][1:])
     assert spec == before
+
+
+def test_pool_order_and_override_precedence_are_frozen(recording):
+    spec = config()
+    spec["allocation"] = "GlobalPool"
+    spec["samples"].append({**spec["samples"][0], "start_sample": "10"})
+    spec["overrides"] = [{"tx_id": "0", "rx_id": "2",
+                          "sample": {**spec["samples"][0], "start_sample": "20"}}]
+    result = resolve(recording, ProxyBindings.model_validate(spec))
+    assert [link["start_sample"] for link in result["resolved_links"]] == ["0", "20", "0", "10", "0", "10"]
+    assert result["resolved_links"][1]["origin"] == "EdgeOverride"
+    spec["nodes"].reverse()
+    assert resolve(recording, ProxyBindings.model_validate(spec)) == result
 
 
 @pytest.mark.parametrize("change", [

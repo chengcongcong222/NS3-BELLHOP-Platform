@@ -53,6 +53,7 @@ def main():
     p.add_argument("--reference", type=Path, required=True)
     p.add_argument("--probe", type=Path, required=True)
     p.add_argument("--blue", type=Path)
+    p.add_argument("--blue-elements", type=int, nargs="+", default=[0])
     args = p.parse_args()
     assert subprocess.check_output(["git", "-C", str(args.reference), "rev-parse", "HEAD"], text=True).strip() == REVISION
     spec = importlib.util.spec_from_file_location("official_replay", args.reference / "src/uwa_channels/replay.py")
@@ -77,18 +78,20 @@ def main():
         import h5py
         with args.blue.open("rb") as stream:
             assert hashlib.file_digest(stream, "md5").hexdigest() == "6776481ad636e40b1d6038fa37121fb7"
-        with h5py.File(args.blue) as f:
-            # Keep the complete tap axis and only the first physical sensor;
+        for element in args.blue_elements:
+          with h5py.File(args.blue) as f:
+            # Keep the complete tap axis and one selected physical sensor;
             # select enough early snapshots/phase for a short actual window.
-            values=f["h_hat"][:20,:1,:]
+            assert 0 <= element < f["h_hat"].shape[1]
+            values=f["h_hat"][:20,element:element+1,:]
             channel={"version":np.array(f["version"]), "params":{k:np.array(f["params"][k]) for k in ("fc","fs_delay","fs_time")},
                      "h_hat":{"real":values["real"],"imag":values["imag"]}}
             for key in ("phi_hat","theta_hat"):
-                if key in f: channel[key]=f[key][:20000,:1]
+                if key in f: channel[key]=f[key][:20000,element:element+1]
             if "f_resamp" in f: channel["f_resamp"]=np.array(f["f_resamp"])
             fc=float(channel["params"]["fc"][0,0]); fs=int(4*fc)
             t=np.arange(int(fs*.05))/fs
-            compare(args.probe,module.replay,channel,fs,np.cos(2*np.pi*fc*t)*np.sin(2*np.pi*200*t),100,"blue_1_element_0")
+            compare(args.probe,module.replay,channel,fs,np.cos(2*np.pi*fc*t)*np.sin(2*np.pi*200*t),100,f"blue_1_element_{element}")
     else:
         print("REAL_DATA_NOT_RUN (synthetic numerical comparisons only)")
 

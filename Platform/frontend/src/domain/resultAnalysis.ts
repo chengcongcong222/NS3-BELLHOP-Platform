@@ -84,7 +84,8 @@ export function resultEventStatistics(result: ResultDto, input: readonly RunEven
     if (trace.kind !== "Reception") continue;
     const payload = trace.payload;
     const tx = transmissions.get(payload.transmission_id);
-    const receivedSnr = waveformSignalToNoise(payload.waveform);
+    const receivedSnr = payload.mixture && BigInt(payload.mixture.signal_count) > 1n
+      ? null : waveformSignalToNoise(payload.waveform);
     if (typeof receivedSnr === "number") waveformSnr.push(receivedSnr);
     else if (receivedSnr === "no-noise") waveformNoNoise++;
     else if (receivedSnr === "no-signal") waveformNoSignal++;

@@ -1,4 +1,5 @@
 #pragma once
+#include "frozen_bearing_inputs.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -61,7 +62,7 @@ inline auto ValidatePlanningV2Document(const nlohmann::json& document,bool flow_
     keys(document, {"schema", "execution_mode", "scenario_id", "scenario_source_revision",
         "scenario_name", "spatial_domain", "experiment_id", "experiment_source_revision",
         "version", "environment", "fusion_center_node_id", "nodes", "trajectory_bindings",
-        "trajectory_assets", "experiment", "recorded_channel"}, "document keys");
+        "trajectory_assets", "experiment", "recorded_channel", "recorded_proxy", "bearing_inputs"}, "document keys");
     integer(document.at("version"), u64, "version");
     for(const auto field : {"scenario_source_revision", "experiment_source_revision"})
       if(document.contains(field)) integer(document.at(field), u64, field);
@@ -187,7 +188,7 @@ inline void NormalizePlanningV3Integers(nlohmann::json& value) {
       "deterministic_seed","slot_duration_ns","guard_interval_ns","safety_margin_ns"};
   if(value.is_array()) for(auto& item:value) NormalizePlanningV3Integers(item);
   if(value.is_object()) for(auto& item:value.items()) {
-    if(item.key()=="mac_algorithm") continue; // semver and XML values are already strings
+    if(item.key()=="mac_algorithm" || item.key()=="bearing_inputs") continue; // independently versioned string boundaries
     if(fields.contains(item.key()) && !item.value().is_null()) item.value()=planning_json::Unsigned(item.value());
     else NormalizePlanningV3Integers(item.value());
   }
@@ -204,10 +205,12 @@ inline auto LoadAuthoredRunDefinition(
     if(!input) return std::unexpected(Error{ErrorCode::kNotFound,
         "Authored run definition is unavailable"});
     auto document = json::parse(input);
-    const bool recorded_mode=document.at("schema")=="ns3-factory-authored-run-v4";
+    const bool proxy_mode=document.at("schema")=="ns3-factory-authored-run-v5";
+    const bool recorded_mode=proxy_mode || document.at("schema")=="ns3-factory-authored-run-v4";
     if(recorded_mode!=(request.physical_layer==PhysicalLayerImplementation::kChannel3Recorded)||
-       recorded_mode!=document.contains("recorded_channel"))
-      throw std::invalid_argument("Recorded mode requires matching v4 definition and command");
+       (recorded_mode && !proxy_mode)!=document.contains("recorded_channel") ||
+       proxy_mode!=document.contains("recorded_proxy"))
+      throw std::invalid_argument("Recorded mode requires matching v4/v5 definition and command");
     const bool flow_scoped=document.at("schema")=="ns3-factory-authored-run-v3";
     if(flow_scoped) {
       NormalizePlanningV3Integers(document);
@@ -381,9 +384,10 @@ inline auto LoadAuthoredRunDefinition(
     if(recorded_mode) {
       if(e.at("physical_layer")!="Channel3Recorded"||e.at("workload")!="CommunicationOnly"||
          (e.at("mac_mode")!="AdaptiveTdma"&&e.at("mac_mode")!="Tdma")||
-         e.at("routing_mode")!="Direct"||e.at("source_level_db")!=0||nodes.size()!=2||
+         e.at("routing_mode")!="Direct"||e.at("source_level_db")!=0||(!proxy_mode && nodes.size()!=2)||
          request.quality_mode!=application::RxQualityMode::kNone)
         throw std::invalid_argument("Recorded link experiment requires two endpoints, direct communication, relative unit amplitude and non-oracle TDMA");
+      if(!proxy_mode) {
       const auto& rc=document.at("recorded_channel");
       if(rc.at("manifest").at("asset_id")!=request.environment.asset_id||request.environment.asset_format_version!=1)
         throw std::invalid_argument("Recorded source identity mismatch");
@@ -395,6 +399,12 @@ inline auto LoadAuthoredRunDefinition(
            node.capability.can_receive!=(node.node_id.value()==receiver))
           throw std::invalid_argument("Recorded directed link does not cover physical node capabilities");
       }
+      } else if(!document.at("spatial_domain").is_null()) {
+        throw std::invalid_argument("Proxy logical layout must not carry a spatial acoustic domain");
+      }
+      if(proxy_mode) for(const auto& n:document.at("nodes"))
+        if(n.at("x_m")!=0 || n.at("y_m")!=0 || n.at("z_m")!=-1)
+          throw std::invalid_argument("Proxy layout must be separate from fixed adapter positions");
       for(const auto& a:document.at("trajectory_assets")) for(const auto& track:a.at("tracks")) {
         const auto& first=track.at("points").at(0);
         for(const auto& point:track.at("points")) for(const auto axis:{"x_m","y_m","z_m"})
@@ -402,12 +412,46 @@ inline auto LoadAuthoredRunDefinition(
       }
       const auto rate=static_cast<double>(experiment->phy().bit_rate_bits_per_second);
       const auto fs=osdm ? rate / *phy::internal::BitsPerOsdmSymbol(*osdm) : rate*100;
-      auto loaded=LoadRecordedRunChannel(path.parent_path().parent_path(),rc,fs);
+      auto loaded=proxy_mode
+        ? LoadRecordedProxyChannel(path.parent_path().parent_path(),document.at("recorded_proxy"),fs,nodes)
+        : LoadRecordedRunChannel(path.parent_path().parent_path(),document.at("recorded_channel"),fs);
       if(!loaded)return std::unexpected(loaded.error());
       recorded=std::move(*loaded);
     }
-    return internal::RunExecutionDefinition{
-        std::move(*scenario), std::move(*experiment), std::move(*bound), std::move(osdm),std::move(recorded)};
+    std::map<NodeId,phy::internal::ModulationScheme> modulations;
+    if(proxy_mode && document.at("recorded_proxy").contains("transmitter_modulations")) {
+      const auto& entries=document.at("recorded_proxy").at("transmitter_modulations");
+      if(!entries.is_array())throw std::invalid_argument("Proxy transmitter modulations must be an array");
+      for(const auto& entry:entries) {
+        if(entry.size()!=2 || !entry.contains("node_id") || !entry.contains("modulation"))
+          throw std::invalid_argument("Invalid proxy node modem fields");
+        const auto id=NodeId{planning_json::Unsigned(entry.at("node_id"))};
+        const auto found=std::find_if(nodes.begin(),nodes.end(),[&](const auto& n){return n.node_id==id && n.capability.can_transmit;});
+        if(found==nodes.end() || !osdm)
+          throw std::invalid_argument("Mixed transmitter preset requires capable sender and base OSDM clock");
+        const auto mode=entry.at("modulation").get<std::string>();
+        if(mode!="Bpsk" && mode!="Bfsk" && mode!="Osdm")
+          throw std::invalid_argument("Unknown proxy transmitter modulation");
+        const auto fs=static_cast<double>(experiment->phy().bit_rate_bits_per_second)/
+            *phy::internal::BitsPerOsdmSymbol(*osdm);
+        if((mode=="Bpsk"||mode=="Bfsk") && (fs/100!=std::floor(fs/100) || fs<100))
+          throw std::invalid_argument("Mixed modem nominal rate is not integral on common clock");
+        if(!modulations.emplace(id,mode=="Bpsk" ? phy::internal::ModulationScheme::kBpsk :
+            mode=="Bfsk" ? phy::internal::ModulationScheme::kBfsk : phy::internal::ModulationScheme::kOsdm).second)
+          throw std::invalid_argument("Duplicate proxy sender modem");
+      }
+    }
+    internal::RunExecutionDefinition result{
+        std::move(*scenario), std::move(*experiment), std::move(*bound), std::move(osdm),
+        std::move(recorded),std::move(modulations)};
+    if(document.contains("bearing_inputs")) {
+      auto inputs=BuildFrozenBearingInputs(result);
+      if(!inputs)return std::unexpected(inputs.error());
+      if(document.at("bearing_inputs")!=BearingInputJson(*inputs,*result.experiment.planning()->fusion_receiver_node_id))
+        throw std::invalid_argument("Frozen bearing bytes do not match immutable source/target/trajectory");
+      result.frozen_bearing_inputs=std::move(*inputs);
+    }
+    return result;
   } catch(const std::exception& error) {
     return std::unexpected(Error{ErrorCode::kInvalidArgument,
         std::string{"Invalid authored run definition: "} + error.what()});

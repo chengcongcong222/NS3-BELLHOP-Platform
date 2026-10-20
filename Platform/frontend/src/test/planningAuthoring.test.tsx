@@ -56,6 +56,9 @@ describe("PlanningV1 experiment authoring", () => {
     expect(screen.queryByText(/支持 3～6 个节点/)).toBeNull();
     await userEvent.selectOptions(screen.getByLabelText("业务负载"), "CommunicationOnly");
     await addFlow("0", "1", 1); await addFlow("1", "0", 2);
+    expect(screen.getByLabelText("执行方式").getAttribute("disabled")).toBeNull();
+    expect((screen.getByLabelText("执行方式") as HTMLSelectElement).value).toBe("Both");
+    await userEvent.selectOptions(screen.getByLabelText("执行方式"), "Single");
     await userEvent.click(screen.getByRole("button", { name: "保存并运行" }));
     await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url) === "/authoring/experiments/planning-experiment/runs")).toBe(true));
     expect(records.get("scenario")!.payload.nodes).toHaveLength(2);

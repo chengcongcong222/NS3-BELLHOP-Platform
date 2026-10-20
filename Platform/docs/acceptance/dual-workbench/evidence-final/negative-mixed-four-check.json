@@ -1,0 +1,7 @@
+{
+  "executed_by": "Chromium CDP automation; UI writes, read-only API verification",
+  "checks": [],
+  "exceptions": [],
+  "success": false,
+  "failure": "Error: Timeout document.body.innerText.includes('缺少') || document.body.innerText.includes('尚未')\nN3\nNS3-BELLHOP Platform\n水声网络仿真工作台\n当前模块\n实验工作台\n仿真服务已连接\nns-3 3.47\n仿真工作流\n⌂\n工作台\n≈\n环境建设\n⚙\n实验工作台\n▶\n运行与结果\n平台\n▤\n预置案例\ni\n系统信息\n几何声场网络\n位置驱动 · Bellhop\n实录信道通信\n实测 CIR · 逻辑链路\n信道资源 / 实验环境\nUWA 实录信道 · 单向链路\n打开实录链路配置\nBlue 1 · 第1阵元 · v1\n实录信道 · 显式链路映射 · 非地理坐标\n实录实验类型：代理网络\n\n切换会重新打开编辑器，请先保存当前输入。\n\n使用原单链路回放\n实验名称\n实录样本驱动 · 非同一海试的多发一收\n保存草稿\n保存并运行\n后端拒绝了请求\n请求未完成，请检查输入和资源绑定后重试；需要排查时可展开技术详情。\n技术详情\n逻辑节点与有向信道\n添加节点\n逻辑布局 · 非测量坐标\nN0\n发送\nN1\n发送\nN2\n接收\nN3\n发送\n\n拖动只改变布局，不改变传播。所有可接收方向都需绑定，包括旁听。\n\n检查并展开链路映射\n链路 N0 → N2\n向此节点发送业务\n\n关闭业务仍保留物理接收与干扰，不等于删除声学传播。\n\n单边信道覆盖\n继承全局配置\nBlue 1 · 第1阵元\n录音起点（样本）\n建模时延（s）\n相对幅度\n移除单边覆盖\n全局信道\n主资源\n请选择\nBlue 1 · 第1阵元\n分配方式\n全部链路使用同一 CIR\n按节点编号顺序循环分配样本池\n逐边显式指定\n默认建模时延（s）\n确认：跨链路共时、噪声分配及相对增益是仿真假设，不是实测网络关系。\n接收端噪声（每个节点只加一次）\nN2\n无噪声\n波形与运行\n调制方式\nOSDM\nBPSK\nBFSK\n\n实录 OSDM 标准配置 · v1\n\nOSDM 分块与同步\n标称速率（bit/s）\n占用带宽（Hz）\nMAC\n自适应 TDMA\n配置 TDMA（重叠研究）\n发送时隙（s）\n规划周期（s）\n周期数\n复现设置\n系统就绪\n实验工作台\nns-3 3.47 · 系统就绪"
+}

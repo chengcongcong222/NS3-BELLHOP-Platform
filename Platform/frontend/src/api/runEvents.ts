@@ -233,6 +233,10 @@ function isReception(payload: Record<string, unknown>): boolean {
     return false;
   }
   const w = payload.waveform;
+  const m = payload.mixture;
+  if (m !== undefined && (!isObject(m) || !isUnsigned(m.signal_count) || m.signal_count === "0" ||
+      !isUnsigned(m.sample_count) || m.sample_count === "0" || !isFiniteNumber(m.mixture_power_relative) ||
+      m.mixture_power_relative < 0 || !isFiniteNumber(m.noise_power_relative) || m.noise_power_relative < 0)) return false;
   if (w !== undefined && w !== null && (!isObject(w) || !isUnsigned(w.payload_bit_count) || w.payload_bit_count === "0" ||
       !isUnsigned(w.bit_error_count) || BigInt(w.bit_error_count) > BigInt(w.payload_bit_count) || typeof w.crc_ok !== "boolean" ||
       !validWaveformPower(w))) return false;

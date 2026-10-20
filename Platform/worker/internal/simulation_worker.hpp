@@ -43,6 +43,8 @@ struct RunExecutionDefinition final {
   std::shared_ptr<const contracts::INodeTrajectory> trajectories;
   std::optional<phy::internal::OsdmConfig> osdm;
   std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded;
+  std::map<contracts::NodeId,phy::internal::ModulationScheme> transmitter_modulations{};
+  std::vector<assembly::internal::GeneratedFeatureReport> frozen_bearing_inputs{};
 };
 
 struct WorkerExecutionSnapshot final {
@@ -218,6 +220,23 @@ class SimulationWorker final {
         return EmitFailure(request.run_id,WorkerFailureCategory::kComposition,
             {contracts::ErrorCode::kFailedPrecondition,"Recorded operator/noise binding is missing"},std::nullopt,output);
       waveform_options->phy.ideal_phase_synchronization=false;
+      if(!definitions->transmitter_modulations.empty()) {
+        for(const auto& node:definitions->scenario.nodes()) {
+          if(!node.capability.can_transmit)continue;
+          auto config=waveform_options->phy;
+          const auto found=definitions->transmitter_modulations.find(node.node_id);
+          if(found!=definitions->transmitter_modulations.end()) {
+            config.modulation.scheme=found->second;
+            if(found->second!=phy::internal::ModulationScheme::kOsdm) {
+              // Explicit common-clock preset: BPSK/BFSK retain the platform's
+              // 100 samples/symbol; their nominal rates are therefore fs/100.
+              config.modulation.symbol_rate_baud=config.modulation.sample_rate_hz/100;
+              config.equalization.mode=phy::internal::ChannelEqualizationMode::kDisabled;
+            }
+          }
+          waveform_options->node_modems.emplace(node.node_id,std::move(config));
+        }
+      }
     } else if(definitions->recorded) return EmitFailure(request.run_id,WorkerFailureCategory::kComposition,
         {contracts::ErrorCode::kFailedPrecondition,"Recorded source cannot be used as mode A/B"},std::nullopt,output);
     application::internal::RunExecutionExecutor executor = definitions->trajectories
@@ -229,6 +248,7 @@ class SimulationWorker final {
                     environments_.get(), std::move(*waveform_options)}
               : application::internal::RunExecutionExecutor{environments_.get()};
     executor.BindPlanningEvidence(planning_evidence_);
+    executor.BindFrozenBearingInputs(definitions->frozen_bearing_inputs);
     application::RunService service{
         scenarios, experiments, runs, executor, events};
     const auto reference = application::ExperimentReference{

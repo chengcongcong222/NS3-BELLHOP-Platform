@@ -101,6 +101,8 @@ class RunDefinitionContext(ResourceModel):
     limitations: tuple[str, ...] = ()
     actions: RunActions | None = None
     recorded_channel: dict | None = None
+    recorded_proxy: dict | None = None
+    physics_input_sha256: str | None = None
 
 
 def load_captured_definition(snapshot: RunSnapshot) -> dict:
@@ -112,8 +114,8 @@ def load_captured_definition(snapshot: RunSnapshot) -> dict:
         if hashlib.sha256(encoded).hexdigest() != snapshot.authored_definition_sha256:
             raise ValueError("definition checksum mismatch")
         definition = json.loads(encoded)
-        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
-                or (definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
+        if (definition["schema"] not in {"ns3-factory-authored-run-v1", "ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4", "ns3-factory-authored-run-v5"}
+                or (definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4", "ns3-factory-authored-run-v5"}
                     and definition.get("execution_mode") != "PlanningV1")
                 or definition["scenario_id"] != snapshot.scenario_id
                 or definition["experiment_id"] != snapshot.experiment_id
@@ -194,7 +196,7 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
     definition = load_captured_definition(snapshot)
     try:
         config = definition["experiment"]
-        planning = definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4"}
+        planning = definition["schema"] in {"ns3-factory-authored-run-v2", "ns3-factory-authored-run-v3", "ns3-factory-authored-run-v4", "ns3-factory-authored-run-v5"}
         # These fields occur in both the definition and the command. They must
         # agree; read endpoints must not repair or silently select either one.
         for key in ("physical_layer", "waveform_modulation", "waveform_noise",
@@ -255,9 +257,13 @@ def make_run_context(snapshot: RunSnapshot, execution: Execution | None,
                                             if config["fusion_receiver_node_id"] is not None else None),
             } if planning else {}),
         })
+        from .recorded_proxy import physics_digest
         return RunDefinitionContext(run_id=snapshot.run_id, source="AuthoredDefinition",
                                     definition_sha256=snapshot.authored_definition_sha256,
                                     scenario=scenario, experiment=experiment, execution=execution,
-                                    recorded_channel=definition.get("recorded_channel"))
+                                    recorded_channel=definition.get("recorded_channel"),
+                                    recorded_proxy=definition.get("recorded_proxy"),
+                                    physics_input_sha256=(physics_digest(definition,execution)
+                                        if "recorded_proxy" in definition else None))
     except (ValueError, KeyError, TypeError, IndexError, ValidationError) as error:
         raise CatalogError("RunDefinitionUnavailable", "本次运行的冻结配置不完整或不一致，不能由当前草稿补齐。") from error

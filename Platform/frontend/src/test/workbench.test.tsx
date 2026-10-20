@@ -175,6 +175,7 @@ describe("simulation workbench user journeys", () => {
     expect(payload.scenario_revision).toBe(2);
     // Changing configuration after the explicit save must be saved again before launch.
     await userEvent.selectOptions(screen.getByLabelText("调制方式"), "Bfsk");
+    await userEvent.selectOptions(screen.getByLabelText("执行方式"), "Single");
     await userEvent.click(await screen.findByRole("button", { name: "保存并运行" }));
     expect(await screen.findByText("场景初始几何 · 当前通信事件")).toBeTruthy();
     const update = fetchMock.mock.calls.find(call => call[1]?.method === "PUT" && String(call[0]).includes("/experiment/"));

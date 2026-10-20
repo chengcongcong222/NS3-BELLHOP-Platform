@@ -41,6 +41,7 @@
 #include "internal/structure_builder.hpp"
 #include "internal/world_state_store.hpp"
 #include "internal/waveform_phy.hpp"
+#include "internal/node_waveform_phy.hpp"
 #include "internal/planning_execution.hpp"
 
 namespace ns3_factory::application::internal {
@@ -64,6 +65,9 @@ class RecordingTraceSink final : public ITraceSink {
   void BindWaveformSource(const std::vector<phy::internal::WaveformReceptionSummary>& rows) noexcept {
     waveform_rows_ = &rows;
   }
+  void BindMixtureSource(const std::vector<phy::internal::RecordedMixtureSummary>& rows) noexcept {
+    mixture_rows_ = &rows;
+  }
 
   auto Emit(const TraceEvent& original) noexcept -> Status override {
     // Attach already observed waveform measurements to their own reception.
@@ -80,6 +84,20 @@ class RecordingTraceSink final : public ITraceSink {
               found->crc_ok, found->channel_output_power_upa2, found->noise_power_upa2, found->normalized_power};
           auto enriched = TraceEvent::Create(original.occurred_at(), payload);
           if(enriched) event = std::move(*enriched);
+        }
+      }
+    }
+    if(mixture_rows_) {
+      if(const auto* reception=std::get_if<ReceptionTrace>(&event.payload())) {
+        const auto found=std::find_if(mixture_rows_->rbegin(),mixture_rows_->rend(),[&](const auto& w){
+          return w.transmission_id==reception->transmission_id && w.receiver_node_id==reception->receiver_node_id;
+        });
+        if(found!=mixture_rows_->rend()) {
+          auto p=*reception;
+          p.mixture=TraceRecordedMixture{found->signal_count,found->sample_count,
+              found->mixture_power_relative,found->noise_power_relative};
+          auto enriched=TraceEvent::Create(original.occurred_at(),p);
+          if(enriched)event=std::move(*enriched);
         }
       }
     }
@@ -121,6 +139,7 @@ class RecordingTraceSink final : public ITraceSink {
  private:
   std::reference_wrapper<ITraceSink> downstream_;
   const std::vector<phy::internal::WaveformReceptionSummary>* waveform_rows_{nullptr};
+  const std::vector<phy::internal::RecordedMixtureSummary>* mixture_rows_{nullptr};
   const INodeTrajectory* trajectories_{nullptr};
   std::vector<NodeId> node_ids_;
   std::optional<SimTime> last_position_time_;
@@ -316,6 +335,7 @@ class DeterministicRxPhy final : public IRxPhy {
 struct WaveformExecutionOptions final {
   phy::internal::WaveformPhyConfig phy;
   phy::internal::IWaveformReceptionObserver* observer = nullptr;
+  std::map<contracts::NodeId,phy::internal::WaveformPhyConfig> node_modems{};
 };
 
 struct ScalarSamplingExecutionOptions final {
@@ -345,6 +365,9 @@ inline auto RecordedPropagationTail(const phy::internal::RecordedWaveformChannel
 
 class RunExecutionExecutor final : public IRunExecutor {
  public:
+  void BindFrozenBearingInputs(std::vector<assembly::internal::GeneratedFeatureReport> inputs) {
+    frozen_bearing_inputs_=std::move(inputs);
+  }
   void BindPlanningEvidence(contracts::IPlanningEvidenceSink* sink) noexcept { planning_evidence_=sink; }
   explicit RunExecutionExecutor(
       const environment::internal::EnvironmentAssetRepository& environments)
@@ -462,10 +485,16 @@ class RunExecutionExecutor final : public IRunExecutor {
     phy::internal::TransmissionWaveformStore waveform_store;
     std::optional<phy::internal::WaveformTxPhy> waveform_tx;
     std::optional<phy::internal::WaveformRxPhy> waveform_rx;
+    std::optional<phy::internal::NodeWaveformPhy> node_waveform;
     struct ResultObserver final : phy::internal::IWaveformReceptionObserver {
       phy::internal::IWaveformReceptionObserver* downstream = nullptr;
       std::vector<WaveformSummary> rows;
       std::vector<phy::internal::WaveformReceptionSummary> measurements;
+      std::vector<phy::internal::RecordedMixtureSummary> mixtures;
+      void ObserveMixture(const phy::internal::RecordedMixtureSummary& row) noexcept override {
+        if(downstream)downstream->ObserveMixture(row);
+        try { mixtures.push_back(row); } catch(...) {}
+      }
       void Observe(const phy::internal::WaveformReceptionSummary& row) noexcept override {
         if(downstream) downstream->Observe(row);
         try {
@@ -509,9 +538,16 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(!created_rx) return std::unexpected(created_rx.error());
       waveform_tx.emplace(std::move(*created_tx));
       waveform_rx.emplace(std::move(*created_rx));
+      if(!waveform_->node_modems.empty()) {
+        auto node_phy=phy::internal::NodeWaveformPhy::Create(
+            waveform_->node_modems,waveform_store,&result_observer,recorded_.get());
+        if(!node_phy)return std::unexpected(node_phy.error());
+        node_waveform.emplace(std::move(*node_phy));
+      }
     }
     RecordingTraceSink trace{event_sink};
     trace.BindWaveformSource(result_observer.measurements);
+    trace.BindMixtureSource(result_observer.mixtures);
     const bool bearing_fusion =
         experiment.fusion().workload != ApplicationWorkload::kCommunicationOnly;
     const auto receiver = planning_execution ? experiment.planning()->fusion_receiver_node_id
@@ -547,6 +583,10 @@ class RunExecutionExecutor final : public IRunExecutor {
             &trace);
       if(!created) return std::unexpected(created.error());
       feature_application.emplace(std::move(*created));
+      if(!frozen_bearing_inputs_.empty()) {
+        auto frozen=feature_application->BindFrozenInputs(frozen_bearing_inputs_);
+        if(!frozen)return std::unexpected(frozen.error());
+      }
     }
     std::optional<assembly::internal::CommunicationTrafficApplication> traffic_application;
     if(!bearing_fusion) {
@@ -627,7 +667,9 @@ class RunExecutionExecutor final : public IRunExecutor {
     const auto composition =
         waveform_
             ? assembly::internal::PhyExecutionComposition::Waveform(
-                  *waveform_tx, *channel, noise, *waveform_rx, waveform_store)
+                  node_waveform ? static_cast<const contracts::ITxPhy&>(*node_waveform) : *waveform_tx,
+                  *channel, noise,
+                  node_waveform ? static_cast<const contracts::IRxPhy&>(*node_waveform) : *waveform_rx, waveform_store)
             : scalar_sampling_
                   ? assembly::internal::PhyExecutionComposition::AbstractWithArtifacts(
                         *sampled_tx, *channel, noise, *sampled_rx,
@@ -657,12 +699,26 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(!bound_evidence) return std::unexpected(bound_evidence.error());
     }
     if(planning_execution) {
-      const auto airtime = waveform_
+      auto airtime = waveform_
           ? phy::internal::ComputeWaveformAirtime(workload_payload_bytes, waveform_->phy)
           : phy::internal::ComputePayloadAirtime(workload_payload_bytes +
                 (scalar_sampling_ ? phy::internal::kWaveformCrcBytes : 0U),
                 experiment.phy().bit_rate_bits_per_second);
       if(!airtime) return std::unexpected(airtime.error());
+      std::vector<NodeAirtime> airtimes;
+      for(const auto& n:scenario.nodes()) {
+        auto duration=*airtime;
+        if(waveform_ && !waveform_->node_modems.empty() && n.capability.can_transmit) {
+          const auto found=waveform_->node_modems.find(n.node_id);
+          if(found==waveform_->node_modems.end())
+            return std::unexpected(Error{ErrorCode::kInvalidArgument,"Missing sender modem airtime"});
+          auto exact=phy::internal::ComputeWaveformAirtime(workload_payload_bytes,found->second);
+          if(!exact)return std::unexpected(exact.error());
+          duration=*exact;
+          *airtime=std::max(*airtime,duration);
+        }
+        airtimes.push_back({n.node_id,n.capability.can_transmit ? duration : SimDuration::Zero()});
+      }
       const auto tail = recorded_ ? RecordedPropagationTail(*recorded_,*airtime)
                                   : MaximumAssetPropagationTail(*asset);
       if(!tail) return std::unexpected(tail.error());
@@ -671,10 +727,13 @@ class RunExecutionExecutor final : public IRunExecutor {
       if(!occupied || *occupied > experiment.planning()->cycle_duration)
         return std::unexpected(Error{ErrorCode::kFailedPrecondition,
             "Planning cycle cannot contain one encoded packet plus acoustic propagation tail and safety margin"});
-      std::vector<NodeAirtime> airtimes;
-      for(const auto& n : scenario.nodes()) airtimes.push_back({n.node_id,
-          n.capability.can_transmit ? *airtime : SimDuration::Zero()});
-      const auto bound_inputs = runtime.BindPlanningInputs(std::move(airtimes), *tail);
+      const auto quantum = recorded_ ? recorded_->EmissionQuantumNanoseconds()
+          : Result<std::int64_t>{1};
+      if(!quantum)return std::unexpected(quantum.error());
+      if(experiment.planning()->cycle_duration.nanoseconds()%*quantum)
+        return std::unexpected(Error{ErrorCode::kInvalidArgument,"Planning cycle is off recorded emission grid"});
+      const auto bound_inputs = runtime.BindPlanningInputs(std::move(airtimes), *tail,
+          recorded_ && recorded_->SupportsMixture(),SimDuration::FromNanoseconds(*quantum));
       if(!bound_inputs) return std::unexpected(bound_inputs.error());
     }
     const auto duration_ns = planning_execution ? experiment.planning()->cycle_duration.nanoseconds()
@@ -790,6 +849,7 @@ class RunExecutionExecutor final : public IRunExecutor {
       const environment::internal::EnvironmentAssetRepository>
       environments_;
   std::optional<WaveformExecutionOptions> waveform_;
+  std::vector<assembly::internal::GeneratedFeatureReport> frozen_bearing_inputs_;
   std::shared_ptr<const contracts::INodeTrajectory> trajectories_;
   std::shared_ptr<const phy::internal::RecordedWaveformChannel> recorded_;
   contracts::IPlanningEvidenceSink* planning_evidence_{};

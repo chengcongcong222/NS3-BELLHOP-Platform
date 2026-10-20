@@ -111,6 +111,9 @@ class RunGroups:
                     raise CatalogError("IdempotencyConflict", "Request key already belongs to different inputs.")
                 return await self.view(prior)
             factories, common, definitions, workload = await prepare()
+            labels = ("C",) if common.get("family") == "RecordedChannelCommunication" else ("A", "B")
+            if len(factories) != len(labels) or len(definitions) != len(labels):
+                raise CatalogError("InvalidRequest", "Run bundle member count does not match its family.")
             record = {"schema": "ns3-factory-run-group-v1", "group_id": f"group-{uuid.uuid4().hex}",
                 "request_key": request_key, "request_sha256": identity, "archived": False,
                 "parent_group_id": request_identity.get("rerun_group_id"),
@@ -125,7 +128,7 @@ class RunGroups:
                     "command": command.model_dump(mode="json", exclude={"run_id", "authored_definition_path"}),
                     "execution": command.execution.model_dump(mode="json"),
                     "result": None, "failure": None}
-                    for label, command, definition in zip(("A", "B"), commands, definitions, strict=True)]
+                    for label, command, definition in zip(labels, commands, definitions, strict=True)]
                 self.store.save(record)
 
             await self.catalog.create_batch(factories, before_start=persist)
@@ -136,7 +139,7 @@ class RunGroups:
 
     async def rerun(self, group_id, request_key, prepare):
         original = await self.view(group_id)
-        if original["state"] in {"Queued", "RunningA", "RunningB", "ArchiveFailed"}:
+        if original["state"] in {"Queued", "RunningA", "RunningB", "RunningC", "ArchiveFailed"}:
             raise CatalogError("RunNotReady", "对照组尚未结束或归档未完成，不能重跑。")
         async def frozen_prepare():
             return await prepare(deepcopy(original))
@@ -155,7 +158,7 @@ class RunGroups:
             }
 
     async def _archive(self, group_id):
-        for index in range(2):
+        for index in range(len(self.store.get(group_id)["members"])):
             record = self.store.get(group_id)
             run_id = record["members"][index]["run_id"]
             snapshot = await self.catalog.wait_terminal(run_id)
@@ -183,7 +186,13 @@ class RunGroups:
                         "definition_sha256": member["definition_sha256"],
                         "physical_layer": member["execution"]["physical_layer"],
                         "workload": member["definition"]["experiment"]["workload"],
+                        **({"recorded_proxy": member["definition"]["recorded_proxy"]}
+                           if "recorded_proxy" in member["definition"] else {}),
                     }
+                    if "recorded_proxy" in member["definition"]:
+                        from .recorded_proxy import reception_evidence
+                        member["result"]["provenance"]["proxy_receptions"] = await reception_evidence(
+                            self.catalog, run_id)
                 self.store.save(record)
 
     async def view(self, group_id):
@@ -200,7 +209,7 @@ class RunGroups:
             record["state"] = "ArchiveFailed"
             record["archive_failure"] = self.archive_errors[group_id]
         record["rerun_available"] = (
-            record["state"] not in {"Queued", "RunningA", "RunningB", "ArchiveFailed"}
+            record["state"] not in {"Queued", "RunningA", "RunningB", "RunningC", "ArchiveFailed"}
             and all(member.get("command") for member in record["members"])
         )
         return record
@@ -216,6 +225,8 @@ class RunGroups:
             record = self.store.get(group_id)
             if record["archived"]:
                 raise CatalogError("RunNotPending", "Archived groups cannot be canceled.")
+            if len(record["members"]) != 2:
+                raise CatalogError("RunNotPending", "This archive has no pending comparison member.")
             member = record["members"][1]
             await self.catalog.cancel_pending(member["run_id"])
             member["state"] = "Canceled"

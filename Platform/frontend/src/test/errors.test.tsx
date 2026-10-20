@@ -35,6 +35,13 @@ it("offers Chinese recovery guidance and keeps API diagnostics collapsed by defa
   expect(alert.querySelector("span")!.textContent).not.toContain("Scenario");
 });
 
+it("shows actionable proxy binding errors without requiring technical details", () => {
+  render(<ErrorState error={new ApiFailure("ApiFailure","RecordedProxyInvalid",
+    "缺少物理接收链路 N1 → N2，包含旁听链路也须绑定；未推断反向信道。")} />);
+  expect(screen.getByRole("alert").querySelector("span")!.textContent).toContain("缺少物理接收链路 N1 → N2");
+  expect(screen.getByRole("alert").querySelector("details")!.open).toBe(false);
+});
+
 it("preserves actionable local validation but never exposes raw English as the default instruction", () => {
   const view = render(<ErrorState error={new Error("保护时间必须非负且小于一个时隙。")} />);
   expect(screen.getByText("保护时间必须非负且小于一个时隙。")).toBeTruthy();

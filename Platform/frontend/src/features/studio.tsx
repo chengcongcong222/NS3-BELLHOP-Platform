@@ -12,6 +12,7 @@ import { SceneDepthProfile } from "../components/SceneDepthProfile";
 import { UuvNodeGlyph, type UuvNodeTone } from "../components/UuvNodeGlyph";
 import { ResultAnalysis } from "./resultAnalysis";
 import { RecordedLinkScene, RecordedSource } from "./recordedExperiment";
+import { ProxyNetworkCanvas } from "./recordedProxy";
 import { definitionRunScene, mergePositionSamples, observedRunScene, type RunScene } from "../domain/runScene";
 import { physicalModeLabel } from "../productLanguage";
 import { formatNanoseconds } from "../domain/format";
@@ -239,7 +240,7 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
       <aside className="studio-node-rail runtime-experiment-panel" aria-label="实验与节点">
         <div className="runtime-experiment-heading"><span>本次实验</span><Status value={run.data.lifecycle} /></div>
         <h1>{experiment?.name ?? "历史运行回放"}</h1>
-        <p className="runtime-mode">{mode === "unknown" ? "物理模式未记录" : physicalModeLabel(mode === "C" ? "Channel3Recorded" : mode === "B" ? "Channel2Waveform" : "Channel1Abstract")}</p>
+        <p className="runtime-mode">{context.data?.recorded_proxy ? "模式 C · 实录样本代理网络" : mode === "unknown" ? "物理模式未记录" : physicalModeLabel(mode === "C" ? "Channel3Recorded" : mode === "B" ? "Channel2Waveform" : "Channel1Abstract")}</p>
         <div className="runtime-time-summary"><div><small>当前展示仿真时间</small><strong title={row ? formatNanoseconds(row.at) : undefined}>{row ? secondsLabel(row.at) : "等待事件"}</strong></div><div><small>已展示周期</small><strong>{counts.cycles}{experiment ? <small> / {experiment.simulation_cycle_count}</small> : null}</strong></div></div>
         {progress !== null && <progress className="runtime-cycle-progress" aria-label="已展示周期进度" max={100} value={progress} />}
         <RunActions runId={runId} lifecycle={run.data.lifecycle} />
@@ -262,15 +263,28 @@ function StudioRunSession({ runId, livePresentation }: { runId: string; livePres
         <div className="studio-legend"><span><i className="legend-tx" />发送</span><span><i className="legend-arrival" />到达</span><span><i className="legend-success" />成功</span><span><i className="legend-failure" />失败</span></div>
         {context.data?.recorded_channel && <RecordedSource source={context.data.recorded_channel} />}
       </aside>
-      <article className="studio-surface">{context.data?.recorded_channel ? <RecordedLinkScene config={context.data.recorded_channel}
+      <article className="studio-surface">{context.data?.recorded_proxy ? <section>
+        <h2>实录样本代理网络</h2><p>跨链路共时、噪声分配与时延均为显式仿真假设，非实测多发一收海试。</p>
+        <ProxyNetworkCanvas nodes={context.data.recorded_proxy.nodes} edges={context.data.recorded_proxy.resolved_links}
+          selected={communication?.target.type === "Unicast" ? `${communication.sender}:${communication.target.node_id}` : undefined} />
+        <details><summary>已冻结的信道映射</summary><table><thead><tr><th>方向</th><th>信道</th><th>建模时延</th></tr></thead><tbody>
+          {context.data.recorded_proxy.resolved_links.map(l => <tr key={`${l.tx_id}:${l.rx_id}`}><td>N{l.tx_id} → N{l.rx_id}</td>
+            <td>{l.manifest.name} · v{l.version}</td><td>{Number(l.modeled_reference_delay_ns)/1e9} s</td></tr>)}
+        </tbody></table></details>
+      </section> : context.data?.recorded_channel ? <RecordedLinkScene config={context.data.recorded_channel}
         phase={row && shownSequences.has(row.event.sequence) ? row.kind : undefined}
         failed={row?.event.trace.kind === "Reception" && row.event.trace.payload.disposition === "NotDecoded"} />
         : mode === "C" ? <p role="alert">录音来源未载入，暂不显示链路。不会替换为几何场景。</p> : <StudioCanvas scenario={scene} samples={samples} row={row} events={prefix} shown={shownEvents} selected={selected} select={select} environmentInputs={environmentInputs.data} />}</article>
       <aside className="studio-inspector link-inspector runtime-observation-panel" aria-label="通信观察与统计">
         <section className="runtime-view-toolbar"><div><strong>通信观察</strong><select aria-label="通信观测层" value={observationLayer} onChange={(event) => changeObservationLayer(event.target.value as "protocol" | "physical")}><option value="protocol">协议目标链路（默认）</option><option value="physical">完整物理信道（含旁听）</option></select></div><details><summary>显示范围与数据说明</summary><p>{observationLayer === "protocol" ? "只突出当前跳目标及其解码结果；真实旁听事件未删除，可切换完整物理信道查看。" : `当前显示共享声学信道全部候选接收：旁听 ${physicalCounts.overheard}，未解码 ${physicalCounts.notDecoded}。`}</p><p>信道计算不是到达事件；“实际到达”来自信号经过传播时延后的正式事件。</p></details></section>
         <section className="research-panel runtime-metrics-panel" aria-label="运行统计面板"><div className="runtime-stat-heading"><strong>当前进度统计</strong><button type="button" disabled={!result.data} onClick={() => setResultOpen(true)}>查看结果</button></div>
-        <section className="live-metric-strip" aria-label="当前展示进度统计"><span><small>{mode === "C" ? "本次样本功率比（非标定）" : "最近接收信噪比 SNR"}</small><b>{quality.snr}</b></span><span><small>{(mode === "B" || mode === "C") ? "实际误码率 BER" : mode === "A" ? "理论误码率 BER" : "误码率 BER"}</small><b>{quality.ber}</b></span><span><small>节点发送速率</small><b>{experiment?.phy.bit_rate_bits_per_second ?? "—"}<small> bit/s</small></b></span><span><small>累计发送</small><b>{counts.transmissions}</b></span><span><small>目标链路交付</small><b>{counts.localDeliveries}</b></span><span><small>解码失败</small><b>{counts.notDecoded}</b></span><span><small>{mode === "C" ? "建模传播时延" : "最近传播时延"}</small><b>{lastDelay === undefined ? "—" : `${lastDelay.toFixed(3)} s`}</b></span><span><small>{mode === "C" ? "CRC 通过" : "融合轮次"}</small><b>{mode === "C" ? quality.crcPass : visible.filter((event) => event.trace.kind === "Fusion").length}</b></span><span><small>{mode === "C" ? "已比较比特" : "本轮有效观测"}</small><b>{mode === "C" ? quality.bits : visible.flatMap((event) => event.trace.kind === "Fusion" ? [event.trace.payload.observation_count] : []).at(-1) ?? "—"}</b></span></section>
+        <section className="live-metric-strip" aria-label="当前展示进度统计"><span><small>{mode === "C" ? "本次样本功率比（非标定）" : "最近接收信噪比 SNR"}</small><b>{quality.snr}</b></span><span><small>{(mode === "B" || mode === "C") ? "实际误码率 BER" : mode === "A" ? "理论误码率 BER" : "误码率 BER"}</small><b>{quality.ber}</b></span><span><small>节点发送速率</small><b>{context.data?.recorded_proxy?.transmitter_modulations?.length ? "逐节点配置" : <>{experiment?.phy.bit_rate_bits_per_second ?? "—"}<small> bit/s</small></>}</b></span><span><small>累计发送</small><b>{counts.transmissions}</b></span><span><small>目标链路交付</small><b>{counts.localDeliveries}</b></span><span><small>解码失败</small><b>{counts.notDecoded}</b></span><span><small>{mode === "C" ? "建模传播时延" : "最近传播时延"}</small><b>{lastDelay === undefined ? "—" : `${lastDelay.toFixed(3)} s`}</b></span><span><small>{mode === "C" ? "CRC 通过" : "融合轮次"}</small><b>{mode === "C" ? quality.crcPass : visible.filter((event) => event.trace.kind === "Fusion").length}</b></span><span><small>{mode === "C" ? "已比较比特" : "本轮有效观测"}</small><b>{mode === "C" ? quality.bits : visible.flatMap((event) => event.trace.kind === "Fusion" ? [event.trace.payload.observation_count] : []).at(-1) ?? "—"}</b></span></section>
         <p className="quality-basis">{quality.basis}{mode === "A" ? "（不代表逐比特实测）" : ""}</p>
+        {row?.event.trace.kind === "Reception" && row.event.trace.payload.mixture && <p className="quality-basis">
+          本次接收：{row.event.trace.payload.mixture.signal_count} 路信号 · {row.event.trace.payload.mixture.sample_count} 个混合采样点。
+          {BigInt(row.event.trace.payload.mixture.signal_count) > 1n ? " 已执行波形叠加；合成功率不作为期望信号 SNR。" : " 单信号接收。"}
+          {!row.event.trace.payload.waveform && " 未形成比特判决，BER 不可用。"}
+        </p>}
         <details className="quality-coverage"><summary>统计范围 · {quality.evaluated}/{quality.receptions} 次已处理目标接收有质量记录</summary><p>仅统计当前观看进度；尚未到达、无到达路径和缺失的质量记录不计为零误码。节点发送速率是配置速率，不是网络有效吞吐量。</p>{(mode === "B" || mode === "C") && <p>错误比特 {quality.errors} / 已比较比特 {quality.bits}；校验通过 {quality.crcPass} / 失败 {quality.crcFail}。这是已有样本统计，不代表未观测链路。</p>}</details>
         </section>
         {communication && <section className="communication-progress" aria-label="当前发送的接收进度"><strong>N{communication.sender} → {communication.target.type === "Unicast" ? `N${communication.target.node_id}` : "广播"}</strong><div className="communication-progress-scroll"><table><thead><tr><th>接收节点</th><th>到达时间</th><th>接收结果</th></tr></thead><tbody>{communication.receivers.map(receiver => <tr key={receiver.node}><th>N{receiver.node}</th><td>{receiver.arrivedAt ? secondsLabel(receiver.arrivedAt) : "未显示"}</td><td>{receiver.outcome ?? "已到达 · 未显示接收结果"}{receiver.completedAt && <small>{secondsLabel(receiver.completedAt)}</small>}</td></tr>)}</tbody></table>{!communication.receivers.length && <p>当前进度及筛选下尚无接收记录。</p>}</div></section>}

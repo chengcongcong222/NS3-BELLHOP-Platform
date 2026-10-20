@@ -1,0 +1,5 @@
+{"case": "time_varying", "samples": 3392, "relative_l2": 2.0141397412101853e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "phase", "samples": 3392, "relative_l2": 1.9941657408780892e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "delay_drift", "samples": 3392, "relative_l2": 1.9958110065734153e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "phi_precedence", "samples": 3392, "relative_l2": 1.9958110065734153e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "resampling", "samples": 3396, "relative_l2": 1.9641969655987997e-13, "repeat_exact": true, "out_of_coverage_rejected": true}

@@ -1,4 +1,10 @@
-# P0-DUAL-WORKBENCH implementation checkpoint
+# P0-DUAL-WORKBENCH implementation history and final closure
+
+**Current closure (2026-10-20):** the historical BLOCKED checkpoints below are
+preserved as historical evidence. The final implementation and acceptance are
+described in the final-closure section and the accompanying workflow/numerical
+audits. Do not treat an earlier checkpoint's missing integration as the current
+implementation, or its tests as evidence that the work was complete then.
 
 Date: 2026-10-20. Base: `ec311c1906789082982eb89b7e5b8bb14ff243e1`.
 Branch: `feature/dual-workbench`. This is **incomplete implementation**, not
@@ -167,3 +173,48 @@ fan-out links are configuration errors, not invented NoArrival outcomes.
 
 Overall acceptance: **P0_DUAL_WORKBENCH_BLOCKED** (integration and required
 evidence incomplete; not a negative verdict on physical feasibility).
+
+## Final integration and closure
+
+The previous paragraph is the checkpoint verdict, superseded by this closure.
+
+- Actual v5 authoring → immutable directed bindings → real Worker → passband
+  mixture → once-per-receiver continuous noise → real decoding/CRC → durable
+  C group/result/repeat is connected. No mock provider is used in the Blue runs.
+- The logical editor supports node capability, directed physical fan-out,
+  global pool/same CIR, edge override, explicit noise, mixed modem preset,
+  validated save/reopen/copy, and layout-only physics invariance.
+- A/B COMM plus BearingFusion share exact source ledgers. The production
+  bearing encoder computes and verifies bytes offline and again at runtime
+  enqueue. Tampering refuses admission rather than silently replacing inputs.
+- Proxy results retain per-reception evidence with Tx/Rx filtering, bit-count
+  weighted BER, CRC, missing-decision semantics and complete source identity.
+- Real browser tests include old C1, family switching, geometry edit/invalid
+  coverage recovery, queue independence, injected B process failure, restart
+  archive/export, overlapping/non-overlapping C and mixed modulation.
+- Fixed stale validation tables, hidden missing-binding errors/HTTP 500,
+  layout-only unnecessary scene revision changes, reopened editor dirty state
+  and ambiguous proxy mode labels. New geometry defaults to A+B; old draft
+  single-run behavior remains explicit.
+
+Source anchors: `backend/recorded_proxy.py`, `paired_inputs.py`, `run_groups.py`,
+`worker/adapter/{recorded_run_channel,authored_run_definition,frozen_bearing_inputs}.hpp`,
+`phy/internal/{recorded_proxy_waveform_channel,node_waveform_phy}.hpp`,
+`frontend/src/features/{recordedProxy,ProxyResultEvidence,runGroups,studio}.tsx`.
+Paths under backend mean `Platform/backend/src/ns3_factory_backend/`.
+
+Evidence:
+
+- [User and runtime gates](user_workflow_validation.md): U01–U25 / R01–R12,
+  including the exact scope of optional algorithm-package tests.
+- [Scientific gates](scientific_numerical_audit.md): P01–P18, actual Blue and
+  separately labelled synthetic numerical fixtures.
+- [Compatibility and budgets](contract_and_compatibility.md).
+- [Known limits](known_issues.md), [tested identity](freeze_record.md).
+- `regression.log`, original JSON and screenshots are retained, including
+  explicitly separated negative/retry records.
+
+Final delivery state: **P0_DUAL_WORKBENCH_READY**, within the documented proxy
+and modem scope. This is readiness of the tested independent branch, not main
+deployment or proof of synchronous real multiple-transmitter measurements.
+No main merge, 4182/8012 switch, or algorithm activation was performed.

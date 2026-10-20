@@ -52,6 +52,7 @@ export function qualityAt(events: readonly RunEventDto[], waveformMode: boolean 
       if (w.crc_ok) crcPass++; else crcFail++;
       const receivedSnr = waveformSignalToNoise(w);
       snr = receivedSnr === "no-noise" ? "未加噪声" : receivedSnr === "no-signal" ? "无信号功率" : receivedSnr === null ? "—" : `${compactNumber(receivedSnr, 1)} dB`;
+      if (trace.payload.mixture && BigInt(trace.payload.mixture.signal_count) > 1n) snr = "多信号混合";
     } else if (waveformMode === false) {
       ber = "—";
       if (!q || q.source !== "Modeled") continue;

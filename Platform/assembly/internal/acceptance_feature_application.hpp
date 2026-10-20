@@ -116,6 +116,14 @@ class AcceptanceFeatureApplication final
     return std::span<const GeneratedFeatureReport>{generated_reports_};
   }
 
+  auto BindFrozenInputs(std::vector<GeneratedFeatureReport> inputs) -> contracts::Status {
+    if(!generated_reports_.empty() || frozen_inputs_ || inputs.empty() || !config_.cycle_start_inputs)
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Frozen bearing inputs require an unused cycle-start application"});
+    frozen_inputs_=std::move(inputs);
+    return {};
+  }
+
   [[nodiscard]] auto fusion_results() const noexcept
       -> std::span<const FusionResult> {
     return fusion_result_store_.results();
@@ -173,6 +181,7 @@ class AcceptanceFeatureApplication final
   std::vector<SensorSequence> sensor_sequences_;
   std::vector<GeneratedCycleInput> generated_cycle_inputs_;
   std::vector<GeneratedFeatureReport> generated_reports_;
+  std::optional<std::vector<GeneratedFeatureReport>> frozen_inputs_;
   FusionResultStore fusion_result_store_;
   contracts::ITraceSink* trace_sink_{nullptr};
 };
@@ -299,6 +308,13 @@ inline auto AcceptanceFeatureApplication::OnInputReady(
   const auto bytes = EncodeDetectionFeatureReportV1(*report);
   if(!bytes) return std::unexpected(bytes.error());
   const auto packet_id = contracts::PacketId{next_packet_id_};
+  if(frozen_inputs_) {
+    const auto index=generated_reports_.size();
+    const GeneratedFeatureReport actual{cycle_id,node_id,packet_id,now,*report};
+    if(index>=frozen_inputs_->size() || (*frozen_inputs_)[index]!=actual)
+      return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
+          "Generated bearing input differs from frozen common observation"});
+  }
   auto payload = std::vector<std::byte>{bytes->begin(), bytes->end()};
   const auto queued = queue_store_.get().Enqueue(
       node_id,

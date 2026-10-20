@@ -1,0 +1,32 @@
+
+> ns3-bellhop-platform-frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /home/ccc/work/NS3_Factory/dual-workbench/Platform/frontend
+
+
+ Test Files  35 passed (35)
+      Tests  289 passed (289)
+   Start at  14:24:57
+   Duration  12.95s (transform 8.07s, setup 4.71s, import 15.21s, tests 71.71s, environment 39.94s)
+
+
+> ns3-bellhop-platform-frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 131 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:   0.30 kB
+dist/assets/index-DdZiwA_V.css  180.42 kB │ gzip:  33.72 kB
+dist/assets/index-6rzasgab.js   597.38 kB │ gzip: 183.94 kB
+
+✓ built in 281ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

@@ -168,6 +168,7 @@ it("saves scene then experiment and freezes the exact scene revision before a re
   expect(records.get("scenario")?.payload.trajectory_bindings).toEqual([0, 1, 2].map(node_id => ({ node_id: String(node_id), asset_id: "chosen-track", version: 3, track_id: "N0", placement_mode: "RelativeToNodeStart" })));
   expect((records.get("scenario")?.payload.nodes as typeof scenario.nodes)[0].initial_position.x_meters).toBe(0);
   await userEvent.selectOptions(screen.getByLabelText("物理层实现"), "Channel2Waveform");
+  await userEvent.selectOptions(screen.getByLabelText("执行方式"), "Single");
   await userEvent.click(screen.getByRole("button", { name: "保存并运行" }));
   await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url) === "/authoring/experiments/experiment-exact/runs")).toBe(true));
   expect(records.get("experiment")?.payload.scenario_revision).toBe(2);

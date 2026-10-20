@@ -432,6 +432,9 @@ auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> 
         {"crc_ok", v.waveform->crc_ok},
         {v.waveform->normalized_power ? "signal_power_relative" : "signal_power_upa2", v.waveform->signal_power_upa2},
         {v.waveform->normalized_power ? "noise_power_relative" : "noise_power_upa2", v.waveform->noise_power_upa2}};
+      if(v.mixture)payload["mixture"]={{"signal_count",Decimal(v.mixture->signal_count)},
+        {"sample_count",Decimal(v.mixture->sample_count)},{"mixture_power_relative",v.mixture->mixture_power_relative},
+        {"noise_power_relative",v.mixture->noise_power_relative}};
     } else if constexpr(std::is_same_v<T, contracts::SignalArrivalTrace>) {
       kind = "SignalArrival";
       payload = {{"transmission_id", Decimal(v.transmission_id.value())},
@@ -457,7 +460,19 @@ auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> 
 }
 
 [[nodiscard]] auto DecodeTrace(const Json& value) -> contracts::Result<contracts::TraceEvent> {
-  auto k=RequireKeys(value,{"occurred_at_ns","kind","payload"},"trace");auto at=ReadInt<std::int64_t>(value,"occurred_at_ns");if(!k||!at||!value.at("kind").is_string())return std::unexpected(ProtocolError("trace header is invalid"));const auto kind=value.at("kind").get<std::string_view>();const auto&p=value.at("payload");std::optional<contracts::TracePayload> payload;
+  auto k=RequireKeys(value,{"occurred_at_ns","kind","payload"},"trace");auto at=ReadInt<std::int64_t>(value,"occurred_at_ns");if(!k||!at||!value.at("kind").is_string())return std::unexpected(ProtocolError("trace header is invalid"));const auto kind=value.at("kind").get<std::string_view>();auto p=value.at("payload");std::optional<contracts::TracePayload> payload;
+  std::optional<contracts::TraceRecordedMixture> mixture;
+  if(kind=="Reception" && p.contains("mixture")) {
+    const auto& m=p.at("mixture");
+    auto keys=RequireKeys(m,{"signal_count","sample_count","mixture_power_relative","noise_power_relative"},"mixture");
+    auto signals=ReadInt<std::uint64_t>(m,"signal_count"),samples=ReadInt<std::uint64_t>(m,"sample_count");
+    auto power=ParseFiniteDouble(m.at("mixture_power_relative"),"mixture power"),
+      noise=ParseFiniteDouble(m.at("noise_power_relative"),"noise power");
+    if(!keys||!signals||!samples||!*signals||!*samples||!power||!noise||*power<0||*noise<0)
+      return std::unexpected(ProtocolError("Invalid recorded mixture evidence"));
+    mixture=contracts::TraceRecordedMixture{*signals,*samples,*power,*noise};
+    p.erase("mixture");
+  }
   if(kind=="CycleCommit"){auto pk=RequireKeys(p,{"cycle_id","base_snapshot_version","committed_snapshot_version","committed_at_ns"},"cycle trace");auto a=ReadInt<std::uint64_t>(p,"cycle_id"); auto b=ReadInt<std::uint64_t>(p,"base_snapshot_version"); auto c=ReadInt<std::uint64_t>(p,"committed_snapshot_version"); auto d=ReadInt<std::int64_t>(p,"committed_at_ns");if(!pk||!a||!b||!c||!d)return std::unexpected(ProtocolError("cycle trace is invalid"));payload=contracts::CycleCommitTrace{contracts::PlanningCycleId{*a},contracts::SnapshotVersion{*b},contracts::SnapshotVersion{*c},contracts::SimTime::FromNanoseconds(*d)};
   }else if(kind=="Transmission"){auto pk=RequireKeys(p,{"transmission_id","packet_id","sender_node_id","target","started_at_ns","ended_at_ns"},"transmission trace");auto a=ReadInt<std::uint64_t>(p,"transmission_id"); auto b=ReadInt<std::uint64_t>(p,"packet_id"); auto c=ReadInt<std::uint64_t>(p,"sender_node_id"); auto s=ReadInt<std::int64_t>(p,"started_at_ns"); auto e=ReadInt<std::int64_t>(p,"ended_at_ns");if(!pk||!a||!b||!c||!s||!e)return std::unexpected(ProtocolError("transmission trace is invalid"));const auto&t=p.at("target");std::optional<contracts::TraceTransmissionTarget> target;if(t.is_object()&&t.value("type","")=="Broadcast"&&t.size()==1)target=contracts::TraceBroadcastTransmissionTarget{};else{auto tk=RequireKeys(t,{"type","node_id"},"target");auto id=ReadInt<std::uint64_t>(t,"node_id");if(!tk||!id||t.at("type")!="Unicast")return std::unexpected(ProtocolError("target is invalid"));target=contracts::TraceUnicastTransmissionTarget{contracts::NodeId{*id}};}payload=contracts::TransmissionTrace{contracts::TransmissionId{*a},contracts::PacketId{*b},contracts::NodeId{*c},*target,contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*e)};
   }else if(kind=="ChannelOutcome") {
@@ -497,7 +512,7 @@ auto ReadInt(const Json& object, const char* key) -> contracts::Result<Integer> 
       if(!bits||!errors||!signal||!noise||!w.at("crc_ok").is_boolean()) return std::unexpected(ProtocolError("invalid waveform summary"));
       waveform=contracts::TraceWaveformSummary{*bits,*errors,w.at("crc_ok").get<bool>(),*signal,*noise,normalized};
     }
-    payload=contracts::ReceptionTrace{contracts::ReceptionId{*a},contracts::TransmissionId{*b},contracts::PacketId{*c},contracts::NodeId{*d},disposition,quality,waveform};
+    payload=contracts::ReceptionTrace{contracts::ReceptionId{*a},contracts::TransmissionId{*b},contracts::PacketId{*c},contracts::NodeId{*d},disposition,quality,waveform,mixture};
   }else if(kind=="SignalArrival"){auto pk=RequireKeys(p,{"transmission_id","receiver_node_id"},"signal arrival trace");auto a=ReadInt<std::uint64_t>(p,"transmission_id");auto b=ReadInt<std::uint64_t>(p,"receiver_node_id");if(!pk||!a||!b)return std::unexpected(ProtocolError("signal arrival trace is invalid"));payload=contracts::SignalArrivalTrace{contracts::TransmissionId{*a},contracts::NodeId{*b}};
   }else if(kind=="NodePosition"){auto pk=RequireKeys(p,{"node_id","x_meters","y_meters","z_meters"},"node position trace");auto a=ReadInt<std::uint64_t>(p,"node_id");auto x=ParseFiniteDouble(p.at("x_meters"),"x_meters");auto y=ParseFiniteDouble(p.at("y_meters"),"y_meters");auto z=ParseFiniteDouble(p.at("z_meters"),"z_meters");if(!pk||!a||!x||!y||!z)return std::unexpected(ProtocolError("node position trace is invalid"));payload=contracts::NodePositionTrace{contracts::NodeId{*a},*x,*y,*z};
   }else if(kind=="Fusion"){auto pk=RequireKeys(p,{"fusion_sequence","fusion_center_node_id","started_at_ns","completed_at_ns","observation_count","estimated_target_x_meters","estimated_target_y_meters"},"fusion trace");auto a=ReadInt<std::uint64_t>(p,"fusion_sequence");auto b=ReadInt<std::uint64_t>(p,"fusion_center_node_id");auto s=ReadInt<std::int64_t>(p,"started_at_ns");auto c=ReadInt<std::int64_t>(p,"completed_at_ns");auto n=ReadInt<std::uint64_t>(p,"observation_count");auto x=ParseFiniteDouble(p.at("estimated_target_x_meters"),"estimated_target_x_meters");auto y=ParseFiniteDouble(p.at("estimated_target_y_meters"),"estimated_target_y_meters");if(!pk||!a||!b||!s||!c||!n||!x||!y)return std::unexpected(ProtocolError("fusion trace is invalid"));payload=contracts::FusionTrace{*a,contracts::NodeId{*b},contracts::SimTime::FromNanoseconds(*s),contracts::SimTime::FromNanoseconds(*c),*n,*x,*y};

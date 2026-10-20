@@ -4,7 +4,7 @@ import { apiClient } from "../api/client";
 import { queries } from "../api/queries";
 import { ErrorState } from "../components/common";
 import { ExperimentAuthoringPage } from "./authoring";
-import { RecordedExperimentPage } from "./recordedExperiment";
+import { RecordedWorkbench } from "./recordedProxy";
 import { ExperimentEditorContext, type ResourceKind } from "./experimentEditorContext";
 import "./unifiedExperimentEditor.css";
 
@@ -72,7 +72,7 @@ export function UnifiedExperimentEditor({ initialKind, draftId, scenarioId }: {
           {recordings.data?.map(r => <option key={r.manifest.asset_id} value={`Recorded:${r.manifest.asset_id}`}>{r.manifest.name} · v{r.manifest.version}</option>)}
         </optgroup>}
       </select></label>
-      <small>{kind === "Recorded" ? "单链路实录回放 · 非地理坐标" : "节点几何与轨迹参与声场查询"}</small>
+      <small>{kind === "Recorded" ? "实录信道 · 显式链路映射 · 非地理坐标" : "节点几何与轨迹参与声场查询"}</small>
     </div>
     {(environments.error || recordings.error) && <details><summary>资源目录读取异常</summary><ErrorState error={environments.error || recordings.error} /></details>}
     {pending && <div className="scene-switch-backdrop"><section role="alertdialog" aria-modal="true" aria-labelledby="resource-switch-title" className="scene-switch-dialog">
@@ -89,7 +89,7 @@ export function UnifiedExperimentEditor({ initialKind, draftId, scenarioId }: {
         registerSave: save => { saves.current[source] = save; },
         reportResource: id => setBindings(v => v[source] === id ? v : { ...v, [source]: id }),
         reportState: (dirty, busy) => setStates(v => v[source]?.dirty === dirty && v[source]?.busy === busy ? v : { ...v, [source]: { dirty, busy } }) }}>
-        {source === "Bellhop" ? <ExperimentAuthoringPage /> : <RecordedExperimentPage />}
+        {source === "Bellhop" ? <ExperimentAuthoringPage /> : <RecordedWorkbench />}
       </ExperimentEditorContext.Provider>
     </div>)}
   </div>;

@@ -232,6 +232,7 @@ class ApiErrorEnvelope(HttpModel):
 
 _ERROR_STATUS = {
     "RecordedChannelInvalid": status.HTTP_400_BAD_REQUEST,
+    "RecordedProxyInvalid": status.HTTP_400_BAD_REQUEST,
     "RecordedChannelUnavailable": status.HTTP_409_CONFLICT,
     "RecordedNoiseUnavailable": status.HTTP_409_CONFLICT,
     "NotFound": status.HTTP_404_NOT_FOUND,
@@ -301,6 +302,8 @@ def _run_resource(snapshot: RunSnapshot) -> RunResource:
                 "deterministic_seed": definition["experiment"]["deterministic_seed"],
                 **({"recorded_channel": definition["recorded_channel"]}
                    if "recorded_channel" in definition else {}),
+                **({"recorded_proxy": definition["recorded_proxy"]}
+                   if "recorded_proxy" in definition else {}),
                 **({"modem": {"modulation": definition["experiment"].get("waveform_modulation"),
                               "osdm": definition["experiment"].get("osdm")}}
                    if definition["experiment"]["physical_layer"] != "Channel1Abstract" else {}),
@@ -865,9 +868,9 @@ def create_app(
         payload = dict(draft.payload)
         if physical_override is not None:
             if (payload.get("execution_mode") != "PlanningV1" or
-                    payload.get("workload") != "CommunicationOnly" or
+                    payload.get("workload") not in {"CommunicationOnly", "BearingFusion"} or
                     payload.get("physical_layer") == "Channel3Recorded"):
-                raise CatalogError("InvalidRequest", "成对执行暂只接受几何场景 PlanningV1 普通通信；融合业务的共同观测冻结尚未实现。")
+                raise CatalogError("InvalidRequest", "成对执行只接受几何场景 PlanningV1 通信或方位观测业务。")
             payload["physical_layer"] = physical_override
             if physical_override == "Channel1Abstract":
                 payload["waveform_modulation"] = "Bpsk"
@@ -964,11 +967,16 @@ def create_app(
         from .scenario_trajectories import compile_bindings
         bindings, assets = compile_bindings(nodes, bindings, trajectories)
         recorded_config = None
+        proxy_mode = recorded_mode and "recorded_proxy" in payload
         if recorded_mode:
-            from .recorded_channels import freeze
+            if proxy_mode:
+                from .recorded_proxy import freeze
+            else:
+                from .recorded_channels import freeze
             recorded_config = await run_in_threadpool(freeze, authoring_root / "recorded-channels",
                 payload, scenario_payload, nodes, assets)
-            environment_checksum = recorded_config["manifest_sha256"]
+            environment_checksum = (hashlib.sha256(json.dumps(recorded_config, sort_keys=True,
+                separators=(",", ":")).encode()).hexdigest() if proxy_mode else recorded_config["manifest_sha256"])
         fusion_center = scenario_payload.get("fusion_center_node_id")
         if fusion_center is None and not planning:
             raise CatalogError("InvalidReference", "旧版执行场景必须保留融合中心；无中心通信请明确使用 PlanningV1 和业务流。")
@@ -996,7 +1004,7 @@ def create_app(
         experiment_publication = authoring.publish_draft("experiment", draft.draft_id)
         definition_version = max(draft.revision, scenario_draft.revision)
         definition = {
-            "schema": "ns3-factory-authored-run-v4" if recorded_mode else "ns3-factory-authored-run-v3" if flow_scoped else "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
+            "schema": "ns3-factory-authored-run-v5" if proxy_mode else "ns3-factory-authored-run-v4" if recorded_mode else "ns3-factory-authored-run-v3" if flow_scoped else "ns3-factory-authored-run-v2" if planning else "ns3-factory-authored-run-v1",
             "scenario_id": scenario_publication["published_id"],
             "scenario_source_revision": scenario_draft.revision,
             "scenario_name": scenario_draft.name,
@@ -1054,7 +1062,7 @@ def create_app(
         if modulation == "Osdm":
             definition["experiment"]["osdm"] = dict(payload["osdm"])
         if recorded_config is not None:
-            definition["recorded_channel"] = recorded_config
+            definition["recorded_proxy" if proxy_mode else "recorded_channel"] = recorded_config
         if planning:
             from .planning_authoring import freeze_planning_configuration
             definition["execution_mode"] = "PlanningV1"
@@ -1117,11 +1125,30 @@ def create_app(
               status_code=status.HTTP_201_CREATED)
     async def create_authoring_experiment_run(draft_id: str, if_match: str | None = Header(default=None)) -> RunResource:
         command, manifest_inputs = await prepare_authoring_experiment_run(draft_id, if_match)
-        snapshot = await catalog.create(command)
+        snapshot = await create_single_with_archive(command)
         run_executions[snapshot.run_id] = (await catalog.captured_command(snapshot.run_id)).execution
         if manifest_inputs is not None:
             run_manifests[snapshot.run_id] = make_manifest(snapshot.run_id, system_info, *manifest_inputs)
         return _run_resource(snapshot)
+
+    async def create_single_with_archive(factory):
+        captured = factory("archive-preflight")
+        if captured.authored_definition_path:
+            definition = json.loads(Path(captured.authored_definition_path).read_bytes())
+            if definition.get("schema") == "ns3-factory-authored-run-v5":
+                from .paired_inputs import communication_workload
+                from .recorded_proxy import physics_digest
+                async def prepare():
+                    return (factory,), {
+                        "family": "RecordedChannelCommunication", "definition": definition,
+                        "execution": captured.execution.model_dump(mode="json"),
+                        "physics_input_sha256": physics_digest(definition,captured.execution),
+                        "system_identity": system_info.model_dump(mode="json"),
+                    }, (definition,), communication_workload(definition, captured)
+                import uuid
+                record = await groups.create(f"proxy-{uuid.uuid4().hex}", {}, prepare)
+                return await catalog.get(record["members"][0]["run_id"])
+        return await catalog.create(factory)
 
     @app.post("/run-groups", status_code=status.HTTP_201_CREATED)
     async def create_run_group(body: CreateRunGroupRequest):
@@ -1131,6 +1158,10 @@ def create_app(
             b, _ = await prepare_authoring_experiment_run(body.draft_id, body.expected_revision, "Channel2Waveform")
             commands = (a("capture-a"), b("capture-b"))
             definitions = tuple(json.loads(Path(c.authored_definition_path).read_bytes()) for c in commands)
+            if definitions[0]["experiment"]["workload"] == "BearingFusion":
+                from .paired_inputs import freeze_bearing_pair
+                (a,b), definitions = await freeze_bearing_pair(settings.worker_executable,definitions,commands)
+                commands = (a("capture-a"),b("capture-b"))
             common, workload = paired_inputs(definitions, commands)
             common["system_identity"] = system_info.model_dump(mode="json")
             return (a, b), common, definitions, workload
@@ -1167,7 +1198,17 @@ def create_app(
                 await validate_repeat(snapshot, command, full=True)
                 commands.append(command)
                 definitions.append(member["definition"])
-            common, workload = paired_inputs(definitions, commands)
+            if original["common_snapshot"].get("family") == "RecordedChannelCommunication":
+                from .paired_inputs import communication_workload
+                from .recorded_proxy import physics_digest
+                if len(commands) != 1 or definitions[0].get("schema") != "ns3-factory-authored-run-v5":
+                    raise CatalogError("RunDefinitionUnavailable", "代理网络归档成员不一致。")
+                common = {"family": "RecordedChannelCommunication", "definition": definitions[0],
+                          "execution": commands[0].execution.model_dump(mode="json"),
+                          "physics_input_sha256": physics_digest(definitions[0],commands[0].execution)}
+                workload = communication_workload(definitions[0], commands[0])
+            else:
+                common, workload = paired_inputs(definitions, commands)
             if digest(workload) != original["workload_sha256"]:
                 raise CatalogError("RunDefinitionUnavailable", "业务生成合同已变化，不能声称按原配置重跑。")
             original_common = {key: value for key, value in original["common_snapshot"].items()
@@ -1389,7 +1430,7 @@ def create_app(
             run_executions[new_run_id] = repeated.execution.model_copy(deep=True)
             return repeated
 
-        created = await catalog.create(command)
+        created = await create_single_with_archive(command)
         manifest = run_manifests.get(run_id)
         if manifest is not None:
             run_manifests[created.run_id] = manifest.model_copy(update={"run_id": created.run_id}, deep=True)
@@ -1409,6 +1450,10 @@ def create_app(
     async def get_results(run_id: str) -> RunResultResource:
         result: RunResult = await catalog.get_result(run_id)
         snapshot = await catalog.get(run_id)
+        provenance = _run_resource(snapshot).provenance
+        if provenance and "recorded_proxy" in provenance:
+            from .recorded_proxy import reception_evidence
+            provenance["proxy_receptions"] = await reception_evidence(catalog, run_id)
         return RunResultResource(
             run_id=result.run_id,
             experiment_id=snapshot.experiment_id,
@@ -1422,7 +1467,7 @@ def create_app(
             fusion_results=result.fusion_results,
             nodes=result.nodes,
             visualization=result.visualization,
-            provenance=_run_resource(snapshot).provenance,
+            provenance=provenance,
         )
 
     async def evidence_for(run_id: str) -> AcceptanceEvidenceBundle:

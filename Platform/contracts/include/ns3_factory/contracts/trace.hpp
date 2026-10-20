@@ -134,6 +134,14 @@ struct TraceWaveformSummary final {
   constexpr auto operator==(const TraceWaveformSummary&) const noexcept -> bool = default;
 };
 
+struct TraceRecordedMixture final {
+  std::uint64_t signal_count;
+  std::uint64_t sample_count;
+  double mixture_power_relative;
+  double noise_power_relative;
+  constexpr auto operator==(const TraceRecordedMixture&) const noexcept -> bool = default;
+};
+
 struct ReceptionTrace final {
   ReceptionId reception_id;
   TransmissionId transmission_id;
@@ -142,6 +150,7 @@ struct ReceptionTrace final {
   TraceReceptionDisposition disposition;
   std::optional<TraceRxQualitySummary> quality;
   std::optional<TraceWaveformSummary> waveform{};
+  std::optional<TraceRecordedMixture> mixture{};
 
   constexpr auto operator==(const ReceptionTrace&) const noexcept
       -> bool = default;
@@ -284,6 +293,12 @@ inline auto TraceEvent::Create(SimTime occurred_at,
         return std::unexpected(Error{ErrorCode::kInvalidArgument,
                                     "ReceptionTrace waveform summary is invalid"});
       }
+    }
+    if(reception->mixture) {
+      const auto& m=*reception->mixture;
+      if(!m.signal_count || !m.sample_count || !std::isfinite(m.mixture_power_relative) ||
+         !std::isfinite(m.noise_power_relative) || m.mixture_power_relative<0 || m.noise_power_relative<0)
+        return std::unexpected(Error{ErrorCode::kInvalidArgument,"Invalid recorded mixture trace"});
     }
     if(reception->quality) {
       const auto& quality = *reception->quality;

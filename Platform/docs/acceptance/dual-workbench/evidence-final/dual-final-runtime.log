@@ -1,0 +1,8 @@
+...............................                                          [100%]
+=============================== warnings summary ===============================
+Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+31 passed, 1 warning in 72.91s (0:01:12)

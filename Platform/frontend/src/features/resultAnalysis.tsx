@@ -8,7 +8,8 @@ import type { ExperimentDto, ResultDto, RunEventDto } from "../api/types";
 import { ErrorState, LoadingState } from "../components/common";
 import { formatNanoseconds } from "../domain/format";
 import { acceptanceReference, matchingRunExperiment, physicalMode, resultEventStatistics, sampleSummary, targetBerReference, waveformSummary, type BerEvidenceSource } from "../domain/resultAnalysis";
-import type { RecordedChannelConfig } from "../api/types";
+import type { RecordedChannelConfig, RecordedProxyResolved } from "../api/types";
+import { ProxyResultEvidence, type ProxyReceptionEvidence } from "./ProxyResultEvidence";
 import { RecordedSource } from "./recordedExperiment";
 import { cumulativeTrends, type TrendPoint } from "../domain/runAnalytics";
 import "./resultAnalysis.css";
@@ -101,20 +102,23 @@ export function ResultAnalysis({ result, events = [], experiment: experimentInpu
   const modeled = stats.events.flatMap(event => event.trace.kind === "Reception" && event.trace.payload.quality?.source === "Modeled" ? [{ timeNs: event.trace.occurred_at_ns, value: event.trace.payload.quality.bit_error_rate }] : []);
   const sections = [["overview", "运行概览"], ["network", "网络性能"], ["acoustic", mode === "C" ? "录音依据" : "水声链路"], ...((mode === "B" || mode === "C") ? [["waveform", "波形通信"]] : []), ["fusion", "探测与融合"], ["reference", "参考要求"]];
   return <article className="result-analysis-paper">
-    <header className="analysis-heading"><h2>{experiment?.name ?? "本次仿真结果"}</h2><div className="analysis-mode">{mode === "A" ? "模式 A · 快速抽象仿真" : mode === "C" ? "模式 C · 实测信道回放" : mode === "B" ? "模式 B · 波形级仿真" : "物理模式未随结果提供"}</div></header>
+    <header className="analysis-heading"><h2>{experiment?.name ?? "本次仿真结果"}</h2><div className="analysis-mode">{mode === "A" ? "模式 A · 快速抽象仿真" : mode === "C" ? result.provenance?.recorded_proxy ? "模式 C · 实录样本代理网络" : "模式 C · 实测信道回放" : mode === "B" ? "模式 B · 波形级仿真" : "物理模式未随结果提供"}</div></header>
     <nav className="analysis-nav" aria-label="结果分区">{sections.map(([id, title]) => <a key={id} href={`#analysis-${id}`}>{title}</a>)}</nav>
     <section id="analysis-overview" className="analysis-section"><h3><span aria-hidden="true">01</span>运行概览</h3><div className="analysis-summary">
       <div><small>仿真时长</small><strong title={formatNanoseconds(p.simulation_duration_ns)}>{seconds(p.simulation_duration_ns)}</strong></div><div><small>参与节点</small><strong>{p.node_count}<em> 个</em></strong></div><div><small>发送次数</small><strong>{p.transmission_count}<em> 次</em></strong></div><div><small>数据送达</small><strong>{p.local_delivery_count}<em> 次</em></strong></div>
     </div><p className="analysis-note">汇总覆盖完整运行。{stats.complete ? "图表所需记录已载入。" : `图表目前载入 ${stats.events.length} 条事件，尚未载入的记录不当作零。`}下方解释每个数字的含义，详细记录可按需展开。</p></section>
     {mode === "C" && <section id="analysis-acoustic" className="analysis-section"><h3>录音资源与实验假设</h3>
-      {result.provenance?.recorded_channel ? <RecordedSource source={result.provenance.recorded_channel as RecordedChannelConfig} /> : <p>此记录没有完整录音来源清单。</p>}
+      {result.provenance?.recorded_proxy
+        ? <ProxyResultEvidence source={result.provenance.recorded_proxy as RecordedProxyResolved}
+            receptions={result.provenance.proxy_receptions as ProxyReceptionEvidence[] | undefined} />
+        : result.provenance?.recorded_channel ? <RecordedSource source={result.provenance.recorded_channel as RecordedChannelConfig} /> : <p>此记录没有完整录音来源清单。</p>}
       <p>下方误码与 CRC 来自本次波形回放解码，不是数据采集时的原始通信结果。录音为归一化信道估计，不提供绝对传播损失或声压级。</p>
       <SampleTable rows={[["本次接收样本信号 / 噪声功率比（非标定）", "dB", stats.waveformSnr]]} />
       <p>{stats.waveformNoNoise} 次未额外加噪声。脉冲噪声的样本功率比不解释为理论 SNR。</p>
     </section>}
     <div className="analysis-layout">
       <section id="analysis-network" className="analysis-section"><h3><span aria-hidden="true">02</span>网络性能</h3><div className="analysis-two-column"><ExplainedValues rows={[
-        { label: "节点发送速率", value: experiment?.phy.bit_rate_bits_per_second ?? "配置快照未提供", unit: experiment ? "bit/s" : undefined, explanation: "本次运行冻结的实验配置：节点发送时每秒传出的数据位数，不是整场实验的有效吞吐量。" },
+        { label: "节点发送速率", value: (result.provenance?.recorded_proxy as RecordedProxyResolved | undefined)?.transmitter_modulations?.length ? "逐节点配置，见录音依据" : experiment?.phy.bit_rate_bits_per_second ?? "配置快照未提供", unit: experiment && !(result.provenance?.recorded_proxy as RecordedProxyResolved | undefined)?.transmitter_modulations?.length ? "bit/s" : undefined, explanation: "本次运行冻结的实验配置：节点发送时每秒传出的数据位数，不是整场实验的有效吞吐量。" },
         { label: "发出了多少次？", value: p.transmission_count, unit: "次", explanation: "所有节点实际发出的次数。一次广播也只记一次；它不是新建业务消息的数量。" },
         { label: "有多少次数据真正送达？", value: p.local_delivery_count, unit: "次", explanation: "接收的数据交给了目标节点的业务程序。不含旁听或等待中继转发；同一数据再次送达仍可能再计一次。" },
       ]} /><ObservedChart title="发送次数随时间增加" unit="次" points={trends.transmissions} step /></div>

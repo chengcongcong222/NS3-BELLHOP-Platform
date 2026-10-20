@@ -1,0 +1,229 @@
+{
+  "executed_by": "Chromium CDP; real UI and Worker",
+  "checks": [
+    {
+      "action": "family switch cancel / retain / save",
+      "input_retained": true
+    },
+    {
+      "action": "C1 v4 save / reopen / modify / actual run",
+      "draft_id": "experiment-5abba828c8f8",
+      "run_id": "run-4b2a49ddb8f14a17a7619dc6c87d9b41",
+      "context": {
+        "run_id": "run-4b2a49ddb8f14a17a7619dc6c87d9b41",
+        "source": "AuthoredDefinition",
+        "definition_sha256": "839491c775530b19fa190e656279f3e0d8e319859beb81724e1d1d06f7426c45",
+        "scenario": {
+          "scenario_id": "scenario-8b0c20ab9af7-r3",
+          "version": "3",
+          "name": "旧单链路页面验证 1792475970019 已修改 · 录音链路",
+          "nodes": [
+            {
+              "node_id": "0",
+              "can_transmit": true,
+              "can_receive": false,
+              "duplex_mode": "HalfDuplex",
+              "initial_position": {
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              "initial_velocity": {
+                "x_meters_per_second": 0,
+                "y_meters_per_second": 0,
+                "z_meters_per_second": 0
+              }
+            },
+            {
+              "node_id": "1",
+              "can_transmit": false,
+              "can_receive": true,
+              "duplex_mode": "HalfDuplex",
+              "initial_position": {
+                "x_meters": 1,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              "initial_velocity": {
+                "x_meters_per_second": 0,
+                "y_meters_per_second": 0,
+                "z_meters_per_second": 0
+              }
+            }
+          ],
+          "environment": {
+            "environment_asset_id": "uwa-blue-1-element-0",
+            "asset_format_version": "1"
+          },
+          "mobility": {
+            "model": "TrajectoryDriven"
+          },
+          "fusion_center_node_id": null,
+          "trajectory_bindings": [
+            {
+              "node_id": "0",
+              "asset_id": "recorded-layout-d10732ec-9801-42f5-a03f-b047fd51d752",
+              "version": "1",
+              "track_id": "TX"
+            },
+            {
+              "node_id": "1",
+              "asset_id": "recorded-layout-d10732ec-9801-42f5-a03f-b047fd51d752",
+              "version": "1",
+              "track_id": "RX"
+            }
+          ],
+          "spatial_domain": null
+        },
+        "experiment": {
+          "experiment_id": "experiment-5abba828c8f8-r3",
+          "version": "3",
+          "name": "旧单链路页面验证 1792475970019 已修改",
+          "scenario": {
+            "scenario_id": "scenario-8b0c20ab9af7-r3",
+            "version": "3"
+          },
+          "routing": {
+            "mode": "Direct"
+          },
+          "mac": {
+            "mode": "AdaptiveTdma",
+            "slot_duration_ns": null,
+            "guard_interval_ns": null
+          },
+          "phy": {
+            "bit_rate_bits_per_second": "6000",
+            "center_frequency_hz": 13000,
+            "occupied_bandwidth_hz": 5000,
+            "source_level_db_re_1upa_at_1m": 0,
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "rx_quality_mode": "None",
+            "physical_layer": "Channel3Recorded",
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+            "osdm": {
+              "block_length": 256,
+              "constellation": "Qpsk",
+              "cyclic_prefix": 128,
+              "maximum_sync_search": 256,
+              "minimum_sync_correlation": 0.05,
+              "vector_length": 16
+            }
+          },
+          "fusion": {
+            "workload": "CommunicationOnly",
+            "acceptance_profile": null,
+            "minimum_bearing_points": "5",
+            "maximum_fusion_period_ns": "180000000000",
+            "maximum_ber": 0.0001
+          },
+          "network_update_interval_cycles": "1",
+          "simulation_cycle_count": "1",
+          "deterministic_seed": "23",
+          "execution_mode": "PlanningV1",
+          "planning_cycle_duration_ns": "16384000000",
+          "adaptive_tdma": {
+            "safety_margin_ns": "100000000"
+          },
+          "mac_algorithm": null,
+          "flows": [
+            {
+              "flow_id": null,
+              "source_node_id": "0",
+              "destination_node_id": "1",
+              "packets_per_cycle": 1
+            }
+          ],
+          "fusion_receiver_node_id": null
+        },
+        "execution": {
+          "simulation_cycle_count": "1",
+          "rx_quality_mode": "None",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23",
+          "physical_layer": "Channel3Recorded",
+          "waveform_modulation": "Osdm",
+          "waveform_noise": "None",
+          "waveform_noise_psd_db_re_1upa2_per_hz": 0
+        },
+        "limitations": [],
+        "actions": {
+          "run_id": "run-4b2a49ddb8f14a17a7619dc6c87d9b41",
+          "experiment_name": "旧单链路页面验证 1792475970019 已修改",
+          "scenario_name": "旧单链路页面验证 1792475970019 已修改 · 录音链路",
+          "environment_asset_id": "uwa-blue-1-element-0",
+          "edit": {
+            "available": true,
+            "experiment_draft_id": "experiment-5abba828c8f8",
+            "captured_revision": 3,
+            "current_revision": 3,
+            "scenario_draft_id": "scenario-8b0c20ab9af7",
+            "captured_scenario_revision": 3,
+            "current_scenario_revision": 3,
+            "reason": null
+          },
+          "rerun": {
+            "available": true,
+            "reason": null
+          },
+          "timing": null
+        },
+        "recorded_channel": {
+          "manifest": {
+            "asset_id": "uwa-blue-1-element-0",
+            "axis_kind": "ReceiverElement",
+            "citation": "https://doi.org/10.5281/zenodo.21287414",
+            "delay_taps": 320,
+            "duration_s": 52.26496,
+            "element": 0,
+            "fc": 13000,
+            "files": {
+              "channel.f64le": {
+                "bytes": 13071360,
+                "fnv1a64": "48b48beee6d2c7c7",
+                "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+              },
+              "phase.f64le": {
+                "bytes": 4084800,
+                "fnv1a64": "6f8c1f0488d4dfa3",
+                "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+              }
+            },
+            "fs_delay": 9765.625,
+            "fs_time": 48.828125,
+            "gain_reference": "Normalized",
+            "geometry": "Unspecified",
+            "license": "CC-BY-4.0",
+            "name": "Blue 1 · 第1阵元",
+            "original_axis_count": 12,
+            "phase_count": 510600,
+            "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+            "resample_down": 1,
+            "resample_up": 1,
+            "schema": "ns3-factory-recorded-channel-v1",
+            "snapshots": 2553,
+            "source_name": "uwa-blue_1.mat",
+            "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+            "tracking": "phi_hat",
+            "usable_bandwidth_hz": 5000,
+            "version": 1
+          },
+          "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+          "modeled_reference_delay_ns": "2048000000",
+          "noise": {
+            "mode": "None"
+          },
+          "receiver_node_id": "1",
+          "relative_amplitude": 1,
+          "start_sample": "0",
+          "transmitter_node_id": "0"
+        },
+        "recorded_proxy": null,
+        "physics_input_sha256": null
+      }
+    }
+  ],
+  "exceptions": [],
+  "success": true
+}

@@ -174,9 +174,12 @@ class ScenarioRuntime final {
   // already loaded field; runtime/planners do not query either here.
   [[nodiscard]] auto BindPlanningInputs(
       std::vector<contracts::NodeAirtime> airtimes,
-      contracts::SimDuration maximum_propagation_tail) -> contracts::Status {
+      contracts::SimDuration maximum_propagation_tail,
+      bool allow_receiver_overlap = false,
+      contracts::SimDuration emission_quantum = contracts::SimDuration::FromNanoseconds(1)) -> contracts::Status {
     if(state_ != ScenarioRuntimeState::kReady || planning_airtimes_ ||
-       maximum_propagation_tail < contracts::SimDuration::Zero()) {
+       maximum_propagation_tail < contracts::SimDuration::Zero() ||
+       emission_quantum <= contracts::SimDuration::Zero()) {
       return std::unexpected(contracts::Error{contracts::ErrorCode::kFailedPrecondition,
           "Planning inputs require a ready run, a single binding and a non-negative tail"});
     }
@@ -197,6 +200,8 @@ class ScenarioRuntime final {
     }
     planning_airtimes_ = std::move(airtimes);
     maximum_propagation_tail_ = maximum_propagation_tail;
+    allow_receiver_overlap_ = allow_receiver_overlap;
+    emission_quantum_ = emission_quantum;
     return {};
   }
 
@@ -287,6 +292,8 @@ class ScenarioRuntime final {
   MacScheduleUpdatePolicy mac_update_policy_;
   std::optional<std::vector<contracts::NodeAirtime>> planning_airtimes_;
   contracts::SimDuration maximum_propagation_tail_{contracts::SimDuration::Zero()};
+  bool allow_receiver_overlap_{false};
+  contracts::SimDuration emission_quantum_{contracts::SimDuration::FromNanoseconds(1)};
   phy::internal::IPhysicalArtifactLifecycle*
       physical_artifact_lifecycle_{nullptr};
   ScenarioRuntimeState state_{ScenarioRuntimeState::kReady};
@@ -384,7 +391,8 @@ inline auto ScenarioRuntime::RunOneCycle(
       demands.push_back({airtime.node_id, *queued, *ready, airtime.maximum_packet_airtime});
     }
     auto input = contracts::PlanningInput::Create(cycle_id, snapshot.version(),
-        snapshot.committed_at(), std::move(demands), maximum_propagation_tail_);
+        snapshot.committed_at(), std::move(demands), maximum_propagation_tail_, allow_receiver_overlap_,
+        emission_quantum_);
     if(!input) return std::unexpected(input.error());
     planning_input = std::move(*input);
     const auto valid_input = contracts::ValidatePlanningInput(

@@ -122,9 +122,17 @@ auto ValidatorsAndOverflow() -> bool {
       {{NodeId{0}, At(0)}, {NodeId{1}, At(4)}});
   const auto overlaps = ProtocolCyclePlan::Create(*routes, *timing, *overlapping_mac);
   CHECK(overlaps && !ValidatePlanningPlan(*overlaps, *input, *world, *structure));
+  const auto mixed_input = PlanningInput::Create(input->cycle_id(), input->base_snapshot_version(),
+      input->observed_at(), {input->demands().begin(),input->demands().end()},
+      input->maximum_propagation_tail(), true);
+  CHECK(mixed_input && ValidatePlanningPlan(*overlaps,*mixed_input,*world,*structure));
+  const auto same_sender = ProtocolCyclePlan::Create(*routes,*timing,
+      *MacPlan::Create(*timing,{{NodeId{0},At(0)},{NodeId{0},At(1)}}));
+  CHECK(same_sender && !ValidatePlanningPlan(*same_sender,*mixed_input,*world,*structure));
   const auto crossing_mac = MacPlan::Create(*timing, {{NodeId{0}, At(5)}});
   const auto crosses = ProtocolCyclePlan::Create(*routes, *timing, *crossing_mac);
   CHECK(crosses && !ValidatePlanningPlan(*crosses, *input, *world, *structure));
+  CHECK(!ValidatePlanningPlan(*crosses,*mixed_input,*world,*structure));
   const auto unbound = ProtocolCyclePlan::Create(*timing, {{NodeId{0}, At(0)}});
   CHECK(unbound && !ValidatePlanningPlan(*unbound, *input, *world, *structure));
   for(const auto destination : {NodeId{3}, NodeId{9}}) {

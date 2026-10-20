@@ -1,0 +1,504 @@
+Actual output; different test scopes are not summed as independent experiments.
+
+=== dual-release-on.log ===
+Internal ctest changing into directory: /tmp/dual-workbench-build-on
+Test project /tmp/dual-workbench-build-on
+        Start 110: platform_backend_python_test
+        Start 113: platform_protocolctl_test
+  1/126 Test #113: platform_protocolctl_test .........................................   Passed   11.57 sec
+        Start  97: platform_application_channel2_strong_noise_test
+  2/126 Test  #97: platform_application_channel2_strong_noise_test ...................   Passed    4.99 sec
+        Start  90: platform_application_channel2_osdm_wenz_test
+  3/126 Test #110: platform_backend_python_test ......................................   Passed   19.68 sec
+        Start  89: platform_application_channel2_osdm_awgn_test
+  4/126 Test  #90: platform_application_channel2_osdm_wenz_test ......................   Passed    5.16 sec
+        Start  88: platform_application_channel2_osdm_none_test
+  5/126 Test  #89: platform_application_channel2_osdm_awgn_test ......................   Passed    5.10 sec
+        Start  87: platform_application_channel12_comparison_experiment_smoke_test
+  6/126 Test  #88: platform_application_channel2_osdm_none_test ......................   Passed    5.08 sec
+        Start  49: platform_phy_recorded_proxy_receiver_test
+  7/126 Test  #87: platform_application_channel12_comparison_experiment_smoke_test ...   Passed    5.06 sec
+        Start 102: platform_application_channel12_comparison_baseline_test
+  8/126 Test  #49: platform_phy_recorded_proxy_receiver_test .........................   Passed    3.84 sec
+        Start  96: platform_application_channel2_bfsk_wenz_test
+  9/126 Test  #96: platform_application_channel2_bfsk_wenz_test ......................   Passed    1.17 sec
+        Start  93: platform_application_channel2_bpsk_wenz_test
+ 10/126 Test #102: platform_application_channel12_comparison_baseline_test ...........   Passed    2.60 sec
+        Start  95: platform_application_channel2_bfsk_awgn_test
+ 11/126 Test  #93: platform_application_channel2_bpsk_wenz_test ......................   Passed    1.13 sec
+        Start  92: platform_application_channel2_bpsk_awgn_test
+ 12/126 Test  #95: platform_application_channel2_bfsk_awgn_test ......................   Passed    1.05 sec
+        Start  94: platform_application_channel2_bfsk_none_test
+ 13/126 Test  #92: platform_application_channel2_bpsk_awgn_test ......................   Passed    1.00 sec
+        Start  91: platform_application_channel2_bpsk_none_test
+ 14/126 Test  #94: platform_application_channel2_bfsk_none_test ......................   Passed    0.91 sec
+        Start 109: platform_backend_dependency_lock_test
+ 15/126 Test #109: platform_backend_dependency_lock_test .............................   Passed    0.35 sec
+        Start  83: platform_channel2_review_alternate
+ 16/126 Test  #91: platform_application_channel2_bpsk_none_test ......................   Passed    0.87 sec
+        Start  85: platform_channel2_review_degraded
+ 17/126 Test  #83: platform_channel2_review_alternate ................................   Passed    0.27 sec
+        Start  82: platform_channel2_review_normal
+ 18/126 Test  #85: platform_channel2_review_degraded .................................   Passed    0.27 sec
+        Start 108: platform_simulation_worker_boundary_test
+ 19/126 Test #108: platform_simulation_worker_boundary_test ..........................   Passed    0.12 sec
+        Start 111: platform_release_contract_test
+ 20/126 Test  #82: platform_channel2_review_normal ...................................   Passed    0.29 sec
+        Start  71: platform_assembly_channel2_feature_link_test
+ 21/126 Test #111: platform_release_contract_test ....................................   Passed    0.10 sec
+        Start  53: platform_phy_waveform_phy_test
+ 22/126 Test  #53: platform_phy_waveform_phy_test ....................................   Passed    0.09 sec
+        Start  43: platform_algorithm_xml_catalog_test
+ 23/126 Test  #71: platform_assembly_channel2_feature_link_test ......................   Passed    0.11 sec
+        Start  60: platform_environment_reference_asset_test
+ 24/126 Test  #60: platform_environment_reference_asset_test .........................   Passed    0.04 sec
+        Start 103: platform_application_acceptance_run_service_test
+ 25/126 Test  #43: platform_algorithm_xml_catalog_test ...............................   Passed    0.06 sec
+        Start 112: platform_acceptance_documentation_test
+ 26/126 Test #112: platform_acceptance_documentation_test ............................   Passed    0.03 sec
+        Start  84: platform_channel2_review_missing
+ 27/126 Test #103: platform_application_acceptance_run_service_test ..................   Passed    0.03 sec
+        Start  61: platform_environment_reference_source_test
+ 28/126 Test  #61: platform_environment_reference_source_test ........................   Passed    0.03 sec
+        Start  81: platform_channel2_review_single-degraded
+ 29/126 Test  #84: platform_channel2_review_missing ..................................   Passed    0.03 sec
+        Start  80: platform_channel2_review_single
+ 30/126 Test  #81: platform_channel2_review_single-degraded ..........................   Passed    0.02 sec
+        Start  19: platform_ns3_trajectory_geometry_test
+ 31/126 Test  #80: platform_channel2_review_single ...................................   Passed    0.03 sec
+        Start  86: platform_channel2_review_abstract
+ 32/126 Test  #19: platform_ns3_trajectory_geometry_test .............................   Passed    0.02 sec
+        Start  18: platform_trajectory_geometry_test
+ 33/126 Test  #86: platform_channel2_review_abstract .................................   Passed    0.02 sec
+        Start 115: platform_json_dependency_isolation_test
+ 34/126 Test #115: platform_json_dependency_isolation_test ...........................   Passed    0.02 sec
+        Start 107: platform_worker_authored_planning_validation_test
+ 35/126 Test  #18: platform_trajectory_geometry_test .................................   Passed    0.02 sec
+        Start 126: platform_ns3_acceptance_fusion_integration_test
+ 36/126 Test #126: platform_ns3_acceptance_fusion_integration_test ...................   Passed    0.01 sec
+        Start 104: platform_planning_context_json_test
+ 37/126 Test #107: platform_worker_authored_planning_validation_test .................   Passed    0.02 sec
+        Start  51: platform_phy_recorded_waveform_channel_test
+ 38/126 Test #104: platform_planning_context_json_test ...............................   Passed    0.01 sec
+        Start 125: platform_ns3_acceptance_scenario_integration_test
+ 39/126 Test  #51: platform_phy_recorded_waveform_channel_test .......................   Passed    0.01 sec
+        Start  67: platform_environment_asset_package_test
+ 40/126 Test  #67: platform_environment_asset_package_test ...........................   Passed    0.01 sec
+        Start  78: platform_assembly_scenario_runtime_test
+ 41/126 Test #125: platform_ns3_acceptance_scenario_integration_test .................   Passed    0.01 sec
+        Start  70: platform_assembly_flow_runtime_test
+ 42/126 Test  #78: platform_assembly_scenario_runtime_test ...........................   Passed    0.01 sec
+        Start  52: platform_phy_recorded_replay_test
+ 43/126 Test  #70: platform_assembly_flow_runtime_test ...............................   Passed    0.01 sec
+        Start  76: platform_assembly_adaptive_runtime_test
+ 44/126 Test  #52: platform_phy_recorded_replay_test .................................   Passed    0.01 sec
+        Start 124: platform_ns3_bellhop_import_scenario_runtime_integration_test
+ 45/126 Test  #76: platform_assembly_adaptive_runtime_test ...........................   Passed    0.00 sec
+        Start 120: platform_ns3_multi_cycle_multihop_integration_test
+ 46/126 Test #124: platform_ns3_bellhop_import_scenario_runtime_integration_test .....   Passed    0.00 sec
+        Start  69: platform_adapters_external_cir_channel_provider_test
+ 47/126 Test #120: platform_ns3_multi_cycle_multihop_integration_test ................   Passed    0.00 sec
+        Start 119: platform_ns3_relay_enqueue_integration_test
+ 48/126 Test #119: platform_ns3_relay_enqueue_integration_test .......................   Passed    0.00 sec
+        Start 100: platform_application_paired_packet_comparison_test
+ 49/126 Test #100: platform_application_paired_packet_comparison_test ................   Passed    0.00 sec
+        Start 121: platform_ns3_scenario_runtime_multihop_integration_test
+ 50/126 Test #121: platform_ns3_scenario_runtime_multihop_integration_test ...........   Passed    0.00 sec
+        Start 122: platform_ns3_scenario_runtime_m5_tx_integration_test
+ 51/126 Test  #69: platform_adapters_external_cir_channel_provider_test ..............   Passed    0.01 sec
+        Start 106: platform_worker_json_codec_test
+ 52/126 Test #122: platform_ns3_scenario_runtime_m5_tx_integration_test ..............   Passed    0.00 sec
+        Start 118: platform_ns3_plan_bound_tx_runtime_integration_test
+ 53/126 Test #106: platform_worker_json_codec_test ...................................   Passed    0.00 sec
+        Start 123: platform_ns3_scenario_runtime_acoustic_field_integration_test
+ 54/126 Test #118: platform_ns3_plan_bound_tx_runtime_integration_test ...............   Passed    0.00 sec
+        Start  68: platform_environment_asset_repository_test
+ 55/126 Test #123: platform_ns3_scenario_runtime_acoustic_field_integration_test .....   Passed    0.00 sec
+        Start 116: platform_ns3_signal_lifecycle_integration_test
+ 56/126 Test  #68: platform_environment_asset_repository_test ........................   Passed    0.00 sec
+        Start 117: platform_ns3_plan_driven_cycle_integration_test
+ 57/126 Test #116: platform_ns3_signal_lifecycle_integration_test ....................   Passed    0.00 sec
+        Start  42: platform_flow_planning_test
+ 58/126 Test #117: platform_ns3_plan_driven_cycle_integration_test ...................   Passed    0.00 sec
+        Start  21: platform_ns3_event_dispatcher_test
+ 59/126 Test  #42: platform_flow_planning_test .......................................   Passed    0.00 sec
+        Start  22: platform_ns3_event_dispatcher_batch_test
+ 60/126 Test  #21: platform_ns3_event_dispatcher_test ................................   Passed    0.00 sec
+        Start 105: platform_worker_json_dependency_test
+ 61/126 Test  #22: platform_ns3_event_dispatcher_batch_test ..........................   Passed    0.00 sec
+        Start  20: platform_ns3_kernel_smoke_test
+ 62/126 Test #105: platform_worker_json_dependency_test ..............................   Passed    0.00 sec
+        Start  26: platform_runtime_transmission_session_test
+ 63/126 Test  #20: platform_ns3_kernel_smoke_test ....................................   Passed    0.00 sec
+        Start  23: platform_ns3_plan_installer_test
+ 64/126 Test  #26: platform_runtime_transmission_session_test ........................   Passed    0.00 sec
+        Start  56: platform_phy_waveform_pipeline_test
+ 65/126 Test  #23: platform_ns3_plan_installer_test ..................................   Passed    0.00 sec
+        Start  38: platform_structure_role_assignment_policy_test
+ 66/126 Test  #56: platform_phy_waveform_pipeline_test ...............................   Passed    0.00 sec
+        Start  29: platform_runtime_tx_preparation_test
+ 67/126 Test  #38: platform_structure_role_assignment_policy_test ....................   Passed    0.00 sec
+        Start   3: platform_contracts_errors_test
+ 68/126 Test  #29: platform_runtime_tx_preparation_test ..............................   Passed    0.00 sec
+        Start  36: platform_runtime_cycle_reception_wiring_test
+ 69/126 Test   #3: platform_contracts_errors_test ....................................   Passed    0.00 sec
+        Start  79: platform_planning_context_assembler_test
+ 70/126 Test  #36: platform_runtime_cycle_reception_wiring_test ......................   Passed    0.00 sec
+        Start  27: platform_runtime_receiver_processing_test
+ 71/126 Test  #79: platform_planning_context_assembler_test ..........................   Passed    0.00 sec
+        Start  37: platform_structure_connectivity_builder_test
+ 72/126 Test  #27: platform_runtime_receiver_processing_test .........................   Passed    0.00 sec
+        Start  77: platform_assembly_ns3_gateway_multirun_test
+ 73/126 Test  #37: platform_structure_connectivity_builder_test ......................   Passed    0.00 sec
+        Start  62: platform_environment_acoustic_field_asset_test
+ 74/126 Test  #62: platform_environment_acoustic_field_asset_test ....................   Passed    0.00 sec
+        Start  39: platform_structure_logical_topology_policy_test
+ 75/126 Test  #77: platform_assembly_ns3_gateway_multirun_test .......................   Passed    0.00 sec
+        Start  40: platform_structure_builder_test
+ 76/126 Test  #39: platform_structure_logical_topology_policy_test ...................   Passed    0.00 sec
+        Start 101: platform_application_run_event_journal_test
+ 77/126 Test  #40: platform_structure_builder_test ...................................   Passed    0.00 sec
+        Start   8: platform_contracts_receiver_window_test
+ 78/126 Test #101: platform_application_run_event_journal_test .......................   Passed    0.00 sec
+        Start  46: platform_planning_shortest_path_to_sink_routing_planner_test
+ 79/126 Test   #8: platform_contracts_receiver_window_test ...........................   Passed    0.00 sec
+        Start  17: platform_trajectory_uuv_5dof_test
+ 80/126 Test  #46: platform_planning_shortest_path_to_sink_routing_planner_test ......   Passed    0.00 sec
+        Start   5: platform_contracts_communication_test
+ 81/126 Test  #17: platform_trajectory_uuv_5dof_test .................................   Passed    0.00 sec
+        Start  48: platform_planning_composite_protocol_cycle_planner_test
+ 82/126 Test   #5: platform_contracts_communication_test .............................   Passed    0.00 sec
+        Start  44: platform_planning_adaptive_planning_test
+ 83/126 Test  #48: platform_planning_composite_protocol_cycle_planner_test ...........   Passed    0.00 sec
+        Start  31: platform_runtime_plan_bound_tx_runtime_test
+ 84/126 Test  #44: platform_planning_adaptive_planning_test ..........................   Passed    0.00 sec
+        Start  47: platform_planning_configured_tdma_mac_planner_test
+ 85/126 Test  #31: platform_runtime_plan_bound_tx_runtime_test .......................   Passed    0.00 sec
+        Start  33: platform_runtime_reception_disposition_service_test
+ 86/126 Test  #47: platform_planning_configured_tdma_mac_planner_test ................   Passed    0.00 sec
+        Start  12: platform_contracts_structure_test
+ 87/126 Test  #33: platform_runtime_reception_disposition_service_test ...............   Passed    0.00 sec
+        Start  64: platform_environment_bellhop_ascii_arrival_parser_test
+ 88/126 Test  #12: platform_contracts_structure_test .................................   Passed    0.00 sec
+        Start  10: platform_contracts_rx_quality_test
+ 89/126 Test  #64: platform_environment_bellhop_ascii_arrival_parser_test ............   Passed    0.00 sec
+        Start  14: platform_contracts_routing_test
+ 90/126 Test  #10: platform_contracts_rx_quality_test ................................   Passed    0.00 sec
+        Start   9: platform_contracts_rx_phy_test
+ 91/126 Test  #14: platform_contracts_routing_test ...................................   Passed    0.00 sec
+        Start  41: platform_channel_aware_example_test
+ 92/126 Test   #9: platform_contracts_rx_phy_test ....................................   Passed    0.00 sec
+        Start  54: platform_phy_channel2_integration_baseline_test
+ 93/126 Test  #41: platform_channel_aware_example_test ...............................   Passed    0.00 sec
+        Start  11: platform_contracts_protocol_cycle_plan_test
+ 94/126 Test  #54: platform_phy_channel2_integration_baseline_test ...................   Passed    0.00 sec
+        Start  16: platform_trajectory_asset_test
+ 95/126 Test  #11: platform_contracts_protocol_cycle_plan_test .......................   Passed    0.00 sec
+        Start  74: platform_assembly_applied_mac_schedule_test
+ 96/126 Test  #16: platform_trajectory_asset_test ....................................   Passed    0.00 sec
+        Start   7: platform_contracts_recorded_channel_test
+ 97/126 Test  #74: platform_assembly_applied_mac_schedule_test .......................   Passed    0.00 sec
+        Start  25: platform_runtime_world_state_commit_test
+ 98/126 Test   #7: platform_contracts_recorded_channel_test ..........................   Passed    0.00 sec
+        Start  63: platform_environment_acoustic_field_channel_provider_test
+ 99/126 Test  #25: platform_runtime_world_state_commit_test ..........................   Passed    0.00 sec
+        Start  98: platform_application_domain_test
+100/126 Test  #63: platform_environment_acoustic_field_channel_provider_test .........   Passed    0.00 sec
+        Start  13: platform_contracts_link_feasibility_test
+101/126 Test  #98: platform_application_domain_test ..................................   Passed    0.00 sec
+        Start   1: platform_contracts_time_test
+102/126 Test  #13: platform_contracts_link_feasibility_test ..........................   Passed    0.00 sec
+        Start  15: platform_contracts_trace_test
+103/126 Test   #1: platform_contracts_time_test ......................................   Passed    0.00 sec
+        Start  99: platform_application_target_packet_metrics_test
+104/126 Test  #15: platform_contracts_trace_test .....................................   Passed    0.00 sec
+        Start  66: platform_environment_bellhop_raw_arrival_normalizer_test
+105/126 Test  #99: platform_application_target_packet_metrics_test ...................   Passed    0.00 sec
+        Start  72: platform_assembly_acceptance_run_report_test
+106/126 Test  #66: platform_environment_bellhop_raw_arrival_normalizer_test ..........   Passed    0.00 sec
+        Start  59: platform_phy_sampled_scalar_phy_test
+107/126 Test  #72: platform_assembly_acceptance_run_report_test ......................   Passed    0.00 sec
+        Start  24: platform_runtime_cycle_working_state_test
+108/126 Test  #59: platform_phy_sampled_scalar_phy_test ..............................   Passed    0.00 sec
+        Start  50: platform_phy_receiver_sample_mixer_test
+109/126 Test  #24: platform_runtime_cycle_working_state_test .........................   Passed    0.00 sec
+        Start   6: platform_contracts_phy_channel_test
+110/126 Test  #50: platform_phy_receiver_sample_mixer_test ...........................   Passed    0.00 sec
+        Start   2: platform_contracts_identity_test
+111/126 Test   #6: platform_contracts_phy_channel_test ...............................   Passed    0.00 sec
+        Start   4: platform_contracts_committed_state_test
+112/126 Test   #2: platform_contracts_identity_test ..................................   Passed    0.00 sec
+        Start  28: platform_runtime_packet_queue_store_test
+113/126 Test   #4: platform_contracts_committed_state_test ...........................   Passed    0.00 sec
+        Start  45: platform_planning_direct_to_sink_routing_planner_test
+114/126 Test  #28: platform_runtime_packet_queue_store_test ..........................   Passed    0.00 sec
+        Start  75: platform_assembly_acceptance_scenario_config_test
+115/126 Test  #45: platform_planning_direct_to_sink_routing_planner_test .............   Passed    0.00 sec
+        Start  73: platform_assembly_acceptance_feature_test
+116/126 Test  #75: platform_assembly_acceptance_scenario_config_test .................   Passed    0.00 sec
+        Start  34: platform_runtime_application_delivery_store_test
+117/126 Test  #73: platform_assembly_acceptance_feature_test .........................   Passed    0.00 sec
+        Start  32: platform_runtime_transmission_record_store_test
+118/126 Test  #34: platform_runtime_application_delivery_store_test ..................   Passed    0.00 sec
+        Start  35: platform_runtime_reception_disposition_applier_test
+119/126 Test  #32: platform_runtime_transmission_record_store_test ...................   Passed    0.00 sec
+        Start  30: platform_runtime_candidate_receiver_resolver_test
+120/126 Test  #35: platform_runtime_reception_disposition_applier_test ...............   Passed    0.00 sec
+        Start  55: platform_phy_scalar_ber_rx_phy_test
+121/126 Test  #30: platform_runtime_candidate_receiver_resolver_test .................   Passed    0.00 sec
+        Start 114: platform_build_smoke_test
+122/126 Test  #55: platform_phy_scalar_ber_rx_phy_test ...............................   Passed    0.00 sec
+        Start  58: platform_phy_rate_based_tx_phy_test
+123/126 Test #114: platform_build_smoke_test .........................................   Passed    0.00 sec
+        Start  65: platform_environment_bellhop_raw_arrival_bundle_test
+124/126 Test  #58: platform_phy_rate_based_tx_phy_test ...............................   Passed    0.00 sec
+        Start  57: platform_phy_configured_tx_phy_test
+125/126 Test  #65: platform_environment_bellhop_raw_arrival_bundle_test ..............   Passed    0.00 sec
+126/126 Test  #57: platform_phy_configured_tx_phy_test ...............................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 126
+
+Total Test time (real) =  35.75 sec
+
+=== dual-release-off.log ===
+Internal ctest changing into directory: /tmp/dual-workbench-build-off
+Test project /tmp/dual-workbench-build-off
+      Start 82: platform_protocolctl_test
+      Start 79: platform_backend_python_test
+ 1/84 Test #82: platform_protocolctl_test ......................................   Passed    7.18 sec
+      Start 44: platform_phy_recorded_proxy_receiver_test
+ 2/84 Test #79: platform_backend_python_test ...................................   Passed    9.30 sec
+      Start 78: platform_backend_dependency_lock_test
+ 3/84 Test #78: platform_backend_dependency_lock_test ..........................   Passed    0.28 sec
+      Start 38: platform_algorithm_xml_catalog_test
+ 4/84 Test #38: platform_algorithm_xml_catalog_test ............................   Passed    0.07 sec
+      Start 65: platform_assembly_channel2_feature_link_test
+ 5/84 Test #65: platform_assembly_channel2_feature_link_test ...................   Passed    0.10 sec
+      Start 80: platform_release_contract_test
+ 6/84 Test #80: platform_release_contract_test .................................   Passed    0.09 sec
+      Start 48: platform_phy_waveform_phy_test
+ 7/84 Test #48: platform_phy_waveform_phy_test .................................   Passed    0.09 sec
+      Start 55: platform_environment_reference_asset_test
+ 8/84 Test #55: platform_environment_reference_asset_test ......................   Passed    0.05 sec
+      Start 56: platform_environment_reference_source_test
+ 9/84 Test #56: platform_environment_reference_source_test .....................   Passed    0.03 sec
+      Start 81: platform_acceptance_documentation_test
+10/84 Test #81: platform_acceptance_documentation_test .........................   Passed    0.03 sec
+      Start 18: platform_trajectory_geometry_test
+11/84 Test #18: platform_trajectory_geometry_test ..............................   Passed    0.02 sec
+      Start 84: platform_json_dependency_isolation_test
+12/84 Test #84: platform_json_dependency_isolation_test ........................   Passed    0.02 sec
+      Start 75: platform_planning_context_json_test
+13/84 Test #75: platform_planning_context_json_test ............................   Passed    0.01 sec
+      Start 62: platform_environment_asset_package_test
+14/84 Test #62: platform_environment_asset_package_test ........................   Passed    0.01 sec
+      Start 46: platform_phy_recorded_waveform_channel_test
+15/84 Test #46: platform_phy_recorded_waveform_channel_test ....................   Passed    0.01 sec
+      Start 47: platform_phy_recorded_replay_test
+16/84 Test #47: platform_phy_recorded_replay_test ..............................   Passed    0.01 sec
+      Start 77: platform_worker_json_codec_test
+17/84 Test #77: platform_worker_json_codec_test ................................   Passed    0.00 sec
+      Start 63: platform_environment_asset_repository_test
+18/84 Test #63: platform_environment_asset_repository_test .....................   Passed    0.00 sec
+      Start 64: platform_adapters_external_cir_channel_provider_test
+19/84 Test #64: platform_adapters_external_cir_channel_provider_test ...........   Passed    0.00 sec
+      Start 73: platform_application_paired_packet_comparison_test
+20/84 Test #73: platform_application_paired_packet_comparison_test .............   Passed    0.00 sec
+      Start 37: platform_flow_planning_test
+21/84 Test #37: platform_flow_planning_test ....................................   Passed    0.00 sec
+      Start 21: platform_runtime_transmission_session_test
+22/84 Test #21: platform_runtime_transmission_session_test .....................   Passed    0.00 sec
+      Start 39: platform_planning_adaptive_planning_test
+23/84 Test #39: platform_planning_adaptive_planning_test .......................   Passed    0.00 sec
+      Start 28: platform_runtime_reception_disposition_service_test
+24/84 Test #28: platform_runtime_reception_disposition_service_test ............   Passed    0.00 sec
+      Start 45: platform_phy_receiver_sample_mixer_test
+25/84 Test #45: platform_phy_receiver_sample_mixer_test ........................   Passed    0.00 sec
+      Start 51: platform_phy_waveform_pipeline_test
+26/84 Test #51: platform_phy_waveform_pipeline_test ............................   Passed    0.00 sec
+      Start 70: platform_planning_context_assembler_test
+27/84 Test #70: platform_planning_context_assembler_test .......................   Passed    0.00 sec
+      Start 26: platform_runtime_plan_bound_tx_runtime_test
+28/84 Test #26: platform_runtime_plan_bound_tx_runtime_test ....................   Passed    0.00 sec
+      Start 31: platform_runtime_cycle_reception_wiring_test
+29/84 Test #31: platform_runtime_cycle_reception_wiring_test ...................   Passed    0.00 sec
+      Start 22: platform_runtime_receiver_processing_test
+30/84 Test #22: platform_runtime_receiver_processing_test ......................   Passed    0.00 sec
+      Start 76: platform_worker_json_dependency_test
+31/84 Test #76: platform_worker_json_dependency_test ...........................   Passed    0.00 sec
+      Start 35: platform_structure_builder_test
+32/84 Test #35: platform_structure_builder_test ................................   Passed    0.00 sec
+      Start 71: platform_application_domain_test
+33/84 Test #71: platform_application_domain_test ...............................   Passed    0.00 sec
+      Start 74: platform_application_run_event_journal_test
+34/84 Test #74: platform_application_run_event_journal_test ....................   Passed    0.00 sec
+      Start 25: platform_runtime_candidate_receiver_resolver_test
+35/84 Test #25: platform_runtime_candidate_receiver_resolver_test ..............   Passed    0.00 sec
+      Start 41: platform_planning_shortest_path_to_sink_routing_planner_test
+36/84 Test #41: platform_planning_shortest_path_to_sink_routing_planner_test ...   Passed    0.00 sec
+      Start 23: platform_runtime_packet_queue_store_test
+37/84 Test #23: platform_runtime_packet_queue_store_test .......................   Passed    0.00 sec
+      Start 59: platform_environment_bellhop_ascii_arrival_parser_test
+38/84 Test #59: platform_environment_bellhop_ascii_arrival_parser_test .........   Passed    0.00 sec
+      Start 36: platform_channel_aware_example_test
+39/84 Test #36: platform_channel_aware_example_test ............................   Passed    0.00 sec
+      Start 54: platform_phy_sampled_scalar_phy_test
+40/84 Test #54: platform_phy_sampled_scalar_phy_test ...........................   Passed    0.00 sec
+      Start 17: platform_trajectory_uuv_5dof_test
+41/84 Test #17: platform_trajectory_uuv_5dof_test ..............................   Passed    0.00 sec
+      Start 49: platform_phy_channel2_integration_baseline_test
+42/84 Test #49: platform_phy_channel2_integration_baseline_test ................   Passed    0.00 sec
+      Start 20: platform_runtime_world_state_commit_test
+43/84 Test #20: platform_runtime_world_state_commit_test .......................   Passed    0.00 sec
+      Start 30: platform_runtime_reception_disposition_applier_test
+44/84 Test #30: platform_runtime_reception_disposition_applier_test ............   Passed    0.00 sec
+      Start 72: platform_application_target_packet_metrics_test
+45/84 Test #72: platform_application_target_packet_metrics_test ................   Passed    0.00 sec
+      Start 19: platform_runtime_cycle_working_state_test
+46/84 Test #19: platform_runtime_cycle_working_state_test ......................   Passed    0.00 sec
+      Start 57: platform_environment_acoustic_field_asset_test
+47/84 Test #57: platform_environment_acoustic_field_asset_test .................   Passed    0.00 sec
+      Start 14: platform_contracts_routing_test
+48/84 Test #14: platform_contracts_routing_test ................................   Passed    0.00 sec
+      Start 58: platform_environment_acoustic_field_channel_provider_test
+49/84 Test #58: platform_environment_acoustic_field_channel_provider_test ......   Passed    0.00 sec
+      Start 13: platform_contracts_link_feasibility_test
+50/84 Test #13: platform_contracts_link_feasibility_test .......................   Passed    0.00 sec
+      Start 16: platform_trajectory_asset_test
+51/84 Test #16: platform_trajectory_asset_test .................................   Passed    0.00 sec
+      Start 53: platform_phy_rate_based_tx_phy_test
+52/84 Test #53: platform_phy_rate_based_tx_phy_test ............................   Passed    0.00 sec
+      Start  3: platform_contracts_errors_test
+53/84 Test  #3: platform_contracts_errors_test .................................   Passed    0.00 sec
+      Start 66: platform_assembly_acceptance_run_report_test
+54/84 Test #66: platform_assembly_acceptance_run_report_test ...................   Passed    0.00 sec
+      Start 60: platform_environment_bellhop_raw_arrival_bundle_test
+55/84 Test #60: platform_environment_bellhop_raw_arrival_bundle_test ...........   Passed    0.00 sec
+      Start 12: platform_contracts_structure_test
+56/84 Test #12: platform_contracts_structure_test ..............................   Passed    0.00 sec
+      Start 42: platform_planning_configured_tdma_mac_planner_test
+57/84 Test #42: platform_planning_configured_tdma_mac_planner_test .............   Passed    0.00 sec
+      Start 11: platform_contracts_protocol_cycle_plan_test
+58/84 Test #11: platform_contracts_protocol_cycle_plan_test ....................   Passed    0.00 sec
+      Start 67: platform_assembly_acceptance_feature_test
+59/84 Test #67: platform_assembly_acceptance_feature_test ......................   Passed    0.00 sec
+      Start  5: platform_contracts_communication_test
+60/84 Test  #5: platform_contracts_communication_test ..........................   Passed    0.00 sec
+      Start 43: platform_planning_composite_protocol_cycle_planner_test
+61/84 Test #43: platform_planning_composite_protocol_cycle_planner_test ........   Passed    0.00 sec
+      Start 68: platform_assembly_applied_mac_schedule_test
+62/84 Test #68: platform_assembly_applied_mac_schedule_test ....................   Passed    0.00 sec
+      Start 24: platform_runtime_tx_preparation_test
+63/84 Test #24: platform_runtime_tx_preparation_test ...........................   Passed    0.00 sec
+      Start  4: platform_contracts_committed_state_test
+64/84 Test  #4: platform_contracts_committed_state_test ........................   Passed    0.00 sec
+      Start 61: platform_environment_bellhop_raw_arrival_normalizer_test
+65/84 Test #61: platform_environment_bellhop_raw_arrival_normalizer_test .......   Passed    0.00 sec
+      Start 33: platform_structure_role_assignment_policy_test
+66/84 Test #33: platform_structure_role_assignment_policy_test .................   Passed    0.00 sec
+      Start 34: platform_structure_logical_topology_policy_test
+67/84 Test #34: platform_structure_logical_topology_policy_test ................   Passed    0.00 sec
+      Start 32: platform_structure_connectivity_builder_test
+68/84 Test #32: platform_structure_connectivity_builder_test ...................   Passed    0.00 sec
+      Start 27: platform_runtime_transmission_record_store_test
+69/84 Test #27: platform_runtime_transmission_record_store_test ................   Passed    0.00 sec
+      Start 40: platform_planning_direct_to_sink_routing_planner_test
+70/84 Test #40: platform_planning_direct_to_sink_routing_planner_test ..........   Passed    0.00 sec
+      Start  7: platform_contracts_recorded_channel_test
+71/84 Test  #7: platform_contracts_recorded_channel_test .......................   Passed    0.00 sec
+      Start 69: platform_assembly_acceptance_scenario_config_test
+72/84 Test #69: platform_assembly_acceptance_scenario_config_test ..............   Passed    0.00 sec
+      Start  9: platform_contracts_rx_phy_test
+73/84 Test  #9: platform_contracts_rx_phy_test .................................   Passed    0.00 sec
+      Start 50: platform_phy_scalar_ber_rx_phy_test
+74/84 Test #50: platform_phy_scalar_ber_rx_phy_test ............................   Passed    0.00 sec
+      Start 10: platform_contracts_rx_quality_test
+75/84 Test #10: platform_contracts_rx_quality_test .............................   Passed    0.00 sec
+      Start  6: platform_contracts_phy_channel_test
+76/84 Test  #6: platform_contracts_phy_channel_test ............................   Passed    0.00 sec
+      Start 29: platform_runtime_application_delivery_store_test
+77/84 Test #29: platform_runtime_application_delivery_store_test ...............   Passed    0.00 sec
+      Start 52: platform_phy_configured_tx_phy_test
+78/84 Test #52: platform_phy_configured_tx_phy_test ............................   Passed    0.00 sec
+      Start  8: platform_contracts_receiver_window_test
+79/84 Test  #8: platform_contracts_receiver_window_test ........................   Passed    0.00 sec
+      Start 15: platform_contracts_trace_test
+80/84 Test #15: platform_contracts_trace_test ..................................   Passed    0.00 sec
+      Start  2: platform_contracts_identity_test
+81/84 Test  #2: platform_contracts_identity_test ...............................   Passed    0.00 sec
+      Start 83: platform_build_smoke_test
+82/84 Test #83: platform_build_smoke_test ......................................   Passed    0.00 sec
+      Start  1: platform_contracts_time_test
+83/84 Test  #1: platform_contracts_time_test ...................................   Passed    0.00 sec
+84/84 Test #44: platform_phy_recorded_proxy_receiver_test ......................   Passed    3.78 sec
+
+100% tests passed, 0 tests failed out of 84
+
+Total Test time (real) =  10.96 sec
+
+=== dual-final-runtime.log ===
+...............................                                          [100%]
+=============================== warnings summary ===============================
+Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+31 passed, 1 warning in 72.91s (0:01:12)
+
+=== dual-final-ui-release.log ===
+
+> ns3-bellhop-platform-frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /home/ccc/work/NS3_Factory/dual-workbench/Platform/frontend
+
+
+ Test Files  35 passed (35)
+      Tests  289 passed (289)
+   Start at  14:24:57
+   Duration  12.95s (transform 8.07s, setup 4.71s, import 15.21s, tests 71.71s, environment 39.94s)
+
+
+> ns3-bellhop-platform-frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 131 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:   0.30 kB
+dist/assets/index-DdZiwA_V.css  180.42 kB │ gzip:  33.72 kB
+dist/assets/index-6rzasgab.js   597.38 kB │ gzip: 183.94 kB
+
+✓ built in 281ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+=== dual-legacy-trace-retry.log ===
+...                                                                      [100%]
+=============================== warnings summary ===============================
+Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 1 warning in 1.33s
+
+=== dual-official-replay-final.log ===
+{"case": "time_varying", "samples": 3392, "relative_l2": 2.0141397412101853e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "phase", "samples": 3392, "relative_l2": 1.9941657408780892e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "delay_drift", "samples": 3392, "relative_l2": 1.9958110065734153e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "phi_precedence", "samples": 3392, "relative_l2": 1.9958110065734153e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "resampling", "samples": 3396, "relative_l2": 1.9641969655987997e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "blue_1_element_0", "samples": 4308, "relative_l2": 2.498432583387894e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+{"case": "blue_1_element_1", "samples": 4308, "relative_l2": 2.534409957992947e-13, "repeat_exact": true, "out_of_coverage_rejected": true}
+
+=== dual-official-noise.log ===
+alpha=2.0: deterministic continuous noise and array covariance mapping passed
+alpha=1.7: deterministic continuous noise and array covariance mapping passed

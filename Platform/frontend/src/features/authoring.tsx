@@ -818,8 +818,10 @@ export function ExperimentAuthoringPage() {
   const loadedExperiment = useRef("");
   const [savedSignature, setSavedSignature] = useState("");
   const [physicalLayer, setPhysicalLayer] = useState<"Channel1Abstract" | "Channel2Waveform">("Channel1Abstract");
-  const [pairedRun, setPairedRun] = useState(false);
-  useEffect(() => { if (value.workload !== "CommunicationOnly" || !planning) setPairedRun(false); }, [value.workload, planning]);
+  // New geometric experiments default to paired comparison; opening an existing
+  // draft must not silently change its single-run action.
+  const [pairedRun, setPairedRun] = useState(!requestedDraftId);
+  useEffect(() => { if (!planning) setPairedRun(false); }, [planning]);
   const [waveformModulation, setWaveformModulation] = useState<"Bpsk" | "Bfsk" | "Osdm">("Bpsk");
   const [osdm, setOsdm] = useState<OsdmConfig | null>(null);
   const [waveformNoise, setWaveformNoise] = useState<"None" | "Awgn">("None");
@@ -1198,7 +1200,7 @@ export function ExperimentAuthoringPage() {
       <label>实验名称<input value={value.name} onChange={e => set("name", e.target.value)} disabled={save.isPending || run.isPending} /></label>
       <span role="status">{server ? signature === savedSignature ? `已保存${savedIssues.length ? " · 尚有待完善项" : ""}` : "有未保存修改" : "尚未保存"}</span>
       <button type="button" onClick={() => save.mutate()} disabled={save.isPending || run.isPending}>保存实验草稿</button>
-      {planning && value.workload === "CommunicationOnly" && <label>执行方式<select value={pairedRun ? "Both" : "Single"} onChange={e => setPairedRun(e.target.value === "Both")} disabled={run.isPending || save.isPending}><option value="Single">仅运行当前模式</option><option value="Both">A+B 顺序对照</option></select></label>}
+      {planning && <label>执行方式<select value={pairedRun ? "Both" : "Single"} onChange={e => setPairedRun(e.target.value === "Both")} disabled={run.isPending || save.isPending}><option value="Single">仅运行当前模式</option><option value="Both">A+B 顺序对照</option></select></label>}
       <button type="button" className="primary-button" onClick={() => run.mutate()} disabled={run.isPending || save.isPending}>{run.isPending ? "正在保存并启动…" : "保存并运行"}</button>
     </div>
     {(save.error || run.error) && <ErrorState error={save.error || run.error} />}

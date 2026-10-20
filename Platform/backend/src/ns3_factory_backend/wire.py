@@ -11,6 +11,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     model_validator,
+    model_serializer,
 )
 
 
@@ -287,6 +288,13 @@ class RelativeReceptionWaveform(WireModel):
         return self
 
 
+class RecordedMixture(WireModel):
+    signal_count: PositiveUIntDecimal
+    sample_count: PositiveUIntDecimal
+    mixture_power_relative: FiniteFloat = Field(ge=0)
+    noise_power_relative: FiniteFloat = Field(ge=0)
+
+
 class ReceptionPayload(WireModel):
     reception_id: UIntDecimal
     transmission_id: UIntDecimal
@@ -297,6 +305,14 @@ class ReceptionPayload(WireModel):
     ]
     quality: QualitySummary | None
     waveform: ReceptionWaveform | RelativeReceptionWaveform | None = None
+    mixture: RecordedMixture | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_compatible(self, handler):
+        value = handler(self)
+        if self.mixture is None:
+            value.pop("mixture", None)
+        return value
 
 
 class SignalArrivalPayload(WireModel):

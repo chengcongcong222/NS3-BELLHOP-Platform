@@ -54,7 +54,13 @@ class AdaptiveTdmaMacPlanner final : public IMacPlanner {
       const auto width = CheckedAdd(*physical, policy_.safety_margin());
       if(!width) return std::unexpected(Error{ErrorCode::kOverflow,
           "Adaptive TDMA slot width overflows"});
-      active.push_back({row.node_id, count, *width});
+      // Scheduling on an explicit device clock is not rounding channel samples.
+      // Keep the default 1 ns grid identical to the historical planner.
+      const auto quantum=input.emission_quantum().nanoseconds();
+      const auto remainder=width->nanoseconds()%quantum;
+      const auto aligned=CheckedAdd(*width,SimDuration::FromNanoseconds(remainder ? quantum-remainder : 0));
+      if(!aligned)return std::unexpected(Error{ErrorCode::kOverflow,"Aligned TDMA slot width overflows"});
+      active.push_back({row.node_id, count, *aligned});
     }
     std::vector<TxOpportunity> opportunities;
     auto slot_start = timing->starts_at();

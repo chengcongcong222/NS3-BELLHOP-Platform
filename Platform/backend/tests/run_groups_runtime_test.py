@@ -1,8 +1,10 @@
 """Actual ns-3 workers, not a browser acceptance test or a mocked decoder."""
 import asyncio
+import hashlib
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 import httpx
@@ -21,8 +23,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.parametrize("modulation", ["Bpsk", "Bfsk", "Osdm"])
-def test_paired_workers_and_durable_results(tmp_path, modulation):
+@pytest.mark.parametrize("modulation,bearing", [("Bpsk",False),("Bfsk",False),("Osdm",False),("Osdm",True)])
+def test_paired_workers_and_durable_results(tmp_path, modulation, bearing):
     async def check():
         repository = tmp_path / "repository"
         repository.mkdir()
@@ -44,20 +46,54 @@ def test_paired_workers_and_durable_results(tmp_path, modulation):
             experiment = await _experiment(client, {**_payload(scene["draft_id"]),
                 "physical_layer": "Channel2Waveform", "planning_cycle_duration_ns": "120000000000",
                 "waveform_modulation": modulation, "waveform_noise": "None",
+                **({"workload":"BearingFusion","flows":[],"fusion_receiver_node_id":"2",
+                    "simulation_cycle_count":"3","target_x_m":300.,"target_y_m":150.} if bearing else {}),
                 **({"osdm": {"block_length": 256, "vector_length": 16, "cyclic_prefix": 64,
                     "constellation": "Qpsk", "minimum_sync_correlation": 0.05,
                     "maximum_sync_search": 128}} if modulation == "Osdm" else {})})
+            submitted_at = time.monotonic()
             response = await client.post("/run-groups", json={"draft_id": experiment["draft_id"],
                 "expected_revision": "1", "request_idempotency_key": "runtime-pair"})
             assert response.status_code == 201, response.text
             group_id = response.json()["group_id"]
+            b_observed_start_seconds = None
             for _ in range(1500):
                 group = (await client.get(f"/run-groups/{group_id}")).json()
+                if b_observed_start_seconds is None and group["members"][1]["state"] != "Queued":
+                    b_observed_start_seconds = time.monotonic() - submitted_at
                 if group["state"] not in {"Queued", "RunningA", "RunningB"}:
                     break
                 await asyncio.sleep(0.02)
             assert group["state"] == "Completed", group
+            if os.environ.get("PLATFORM_PAIR_EVIDENCE_DIR"):
+                output = Path(os.environ["PLATFORM_PAIR_EVIDENCE_DIR"])
+                output.mkdir(parents=True, exist_ok=True)
+                (output/f"{modulation}-bearing{bearing}.json").write_text(json.dumps({
+                    "group_id": group_id, "b_queue_wait_observed_upper_bound_seconds": b_observed_start_seconds,
+                    "queue_measurement": "elapsed since submission to first 20ms poll seeing B no longer Queued; includes admission",
+                    "group_wall_seconds":time.monotonic()-submitted_at,
+                    "common_snapshot_sha256":group["common_snapshot_sha256"],
+                    "workload_sha256":group["workload_sha256"],
+                },indent=2))
             expected = {p["packet_id"]: p for p in group["workload"]["packets"]}
+            if bearing:
+                assert group["workload"]["generator"] == "DetectionFeatureReportV1/cycle-start-v1"
+                assert len(expected) == 6
+                assert all(len(bytes.fromhex(p["payload_hex"])) == 15 for p in expected.values())
+                assert group["members"][0]["definition"]["bearing_inputs"] == group["members"][1]["definition"]["bearing_inputs"]
+                assert group["workload"] == group["members"][0]["definition"]["bearing_inputs"]
+                damaged = json.loads(json.dumps(group["members"][0]["definition"]))
+                damaged["bearing_inputs"]["packets"][0]["payload_hex"] = "00"*15
+                content = json.dumps(damaged,sort_keys=True,separators=(",",":")).encode()
+                checksum = hashlib.sha256(content).hexdigest()
+                path = tmp_path/"workspace/run-definitions"/f"{checksum}.json"
+                path.write_bytes(content)
+                command = {**group["members"][0]["command"],"run_id":"negative-bearing-ledger",
+                    "authored_definition_path":str(path),"authored_definition_sha256":checksum}
+                negative = subprocess.run([settings.worker_executable,"--freeze-bearing-inputs"],
+                    input=json.dumps(command)+"\n",capture_output=True,text=True,timeout=10)
+                assert negative.returncode and not negative.stdout
+                assert "Frozen bearing bytes" in negative.stderr
             for member in group["members"]:
                 result_resource = (await client.get(f'/runs/{member["run_id"]}/results')).json()
                 for field in ("experiment_id", "experiment_version", "scenario_id",

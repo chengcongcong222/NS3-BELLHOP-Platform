@@ -1,0 +1,2285 @@
+Start testing: Oct 20 14:21 CST
+----------------------------------------------------------
+113/126 Testing: platform_protocolctl_test
+113/126 Test: platform_protocolctl_test
+Command: "/usr/bin/python3" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/tools/test_protocolctl.py"
+Directory: /tmp/dual-workbench-build-on/algorithms
+"platform_protocolctl_test" start time: Oct 20 14:21 CST
+Output:
+----------------------------------------------------------
+............
+----------------------------------------------------------------------
+Ran 12 tests in 11.357s
+
+OK
+<end of output>
+Test time =  11.57 sec
+----------------------------------------------------------
+Test Passed.
+"platform_protocolctl_test" end time: Oct 20 14:21 CST
+"platform_protocolctl_test" time elapsed: 00:00:11
+----------------------------------------------------------
+
+97/126 Testing: platform_application_channel2_strong_noise_test
+97/126 Test: platform_application_channel2_strong_noise_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "osdm" "--noise" "awgn" "--psd-db" "120" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_strong_noise_test" start time: Oct 20 14:21 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=osdm noise=awgn seed=42 equalization=training-sequence-mmse fs=6000 carrier=25000 rate=6000 slot_seconds=6
+osdm_base_constellation=QPSK K=1024 M=16 N=64 CP=640 training=CAZAC framed_samples=3328
+noise_psd_db_re_1upa2_per_hz=120
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,58,0.48333333,0,332150.32,5.9377997e+15
+1000,30,14,120,73,0.60833333,0,221844.53,5.8299909e+15
+1000,20,23,120,61,0.50833333,0,161821.51,5.9826182e+15
+1001,99,9,120,57,0.475,0,357024.34,5.9470981e+15
+1001,30,14,120,59,0.49166667,0,190627.87,5.9370794e+15
+1001,10,23,120,66,0.55,0,180762.11,5.9007575e+15
+1002,99,11,120,60,0.5,0,255594.08,6.0725683e+15
+1002,10,10,120,67,0.55833333,0,146747.82,6.0752977e+15
+1002,20,15,120,56,0.46666667,0,192764.84,5.944328e+15
+1003,99,9,120,56,0.46666667,0,332287.37,5.9267961e+15
+1003,30,11,120,70,0.58333333,0,179743.31,5.9366799e+15
+1003,20,23,120,59,0.49166667,0,161669.11,6.1563218e+15
+1004,99,9,120,69,0.575,0,356735.73,6.0496436e+15
+1004,30,14,120,69,0.575,0,190964.94,5.987477e+15
+1004,10,23,120,55,0.45833333,0,181468.96,6.0137381e+15
+1005,99,11,120,61,0.50833333,0,254471.35,5.8973476e+15
+1005,10,10,120,58,0.48333333,0,146758.28,5.9782901e+15
+1005,20,15,120,61,0.50833333,0,192093.16,6.0579407e+15
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=0 fusion_results=0
+all_receptions_payload_BER=0.5162037 CRC_frame_error_ratio=1 (includes overheard receptions)
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   4.99 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_strong_noise_test" end time: Oct 20 14:21 CST
+"platform_application_channel2_strong_noise_test" time elapsed: 00:00:04
+----------------------------------------------------------
+
+110/126 Testing: platform_backend_python_test
+110/126 Test: platform_backend_python_test
+Command: "/tmp/dual-workbench-build-on/backend/venv/bin/python" "-m" "pytest" "-q" "-o" "cache_dir=/tmp/dual-workbench-build-on/backend/pytest-cache" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests"
+Directory: /tmp/dual-workbench-build-on/backend
+"platform_backend_python_test" start time: Oct 20 14:21 CST
+Output:
+----------------------------------------------------------
+.s.................s..................s................................. [ 18%]
+............s...............................sss.......s................. [ 36%]
+........................................................................ [ 54%]
+.............sssssssss.................................................. [ 72%]
+........................................................................ [ 91%]
+...................................                                      [100%]
+=============================== warnings summary ===============================
+../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/acoustic_plots_test.py:18: requires real Bellhop
+SKIPPED [1] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/acoustic_plots_test.py:194: optional offline Bellhop executable is not installed
+SKIPPED [1] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/algorithm_v2_e2e_test.py:17: explicit ALG02 gate requires an installed v2 package and ns-3 authority adapters
+SKIPPED [1] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/environment_inputs_test.py:140: requires explicit real offline Bellhop executable
+SKIPPED [3] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/legacy_trace_identity_test.py:16: requires historical frozen definitions/resources and actual worker
+SKIPPED [1] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/ocean_acquisition_test.py:115: could not import 'netCDF4': No module named 'netCDF4'
+SKIPPED [2] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/recorded_channel_e2e_test.py:17: requires real worker and imported recording
+SKIPPED [7] ../../../home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/recorded_proxy_e2e_test.py:38: requires imported recording and actual ns-3 Worker
+378 passed, 17 skipped, 1 warning in 18.27s
+<end of output>
+Test time =  19.68 sec
+----------------------------------------------------------
+Test Passed.
+"platform_backend_python_test" end time: Oct 20 14:22 CST
+"platform_backend_python_test" time elapsed: 00:00:19
+----------------------------------------------------------
+
+90/126 Testing: platform_application_channel2_osdm_wenz_test
+90/126 Test: platform_application_channel2_osdm_wenz_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "osdm" "--noise" "wenz" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_osdm_wenz_test" start time: Oct 20 14:21 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=osdm noise=wenz seed=42 equalization=training-sequence-mmse fs=6000 carrier=25000 rate=6000 slot_seconds=6
+osdm_base_constellation=QPSK K=1024 M=16 N=64 CP=640 training=CAZAC framed_samples=3328
+wind_mps=0 shipping=0.5
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,46,0.38333333,0,332150.32,1027092.5
+1000,30,14,120,44,0.36666667,0,221844.53,1002185.1
+1000,20,23,120,44,0.36666667,0,161821.51,1023981.9
+1001,99,9,120,60,0.5,0,357024.34,1025658.3
+1001,30,14,120,43,0.35833333,0,190627.87,1020989.5
+1001,10,23,120,53,0.44166667,0,180762.11,1019205.2
+1002,99,11,120,44,0.36666667,0,255594.08,1040097.4
+1002,10,10,120,56,0.46666667,0,146747.82,1045620.8
+1002,20,15,120,42,0.35,0,192764.84,1025796.4
+1003,99,9,120,43,0.35833333,0,332287.37,1030477.3
+1003,30,11,120,51,0.425,0,179743.31,1006020.8
+1003,20,23,120,42,0.35,0,161669.11,1066899.4
+1004,99,9,120,55,0.45833333,0,356735.73,1068169.9
+1004,30,14,120,46,0.38333333,0,190964.94,1026466.7
+1004,10,23,120,53,0.44166667,0,181468.96,1034811.9
+1005,99,11,120,47,0.39166667,0,254471.35,1025140.8
+1005,10,10,120,48,0.4,0,146758.28,1024821
+1005,20,15,120,63,0.525,0,192093.16,1059492.4
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=0 fusion_results=0
+all_receptions_payload_BER=0.40740741 CRC_frame_error_ratio=1 (includes overheard receptions)
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   5.16 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_osdm_wenz_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_osdm_wenz_test" time elapsed: 00:00:05
+----------------------------------------------------------
+
+89/126 Testing: platform_application_channel2_osdm_awgn_test
+89/126 Test: platform_application_channel2_osdm_awgn_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "osdm" "--noise" "awgn" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_osdm_awgn_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=osdm noise=awgn seed=42 equalization=training-sequence-mmse fs=6000 carrier=25000 rate=6000 slot_seconds=6
+osdm_base_constellation=QPSK K=1024 M=16 N=64 CP=640 training=CAZAC framed_samples=3328
+noise_psd_db_re_1upa2_per_hz=0
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,332150.32,5937.7997
+1000,30,14,120,0,0,1,221844.53,5829.9909
+1000,20,23,120,0,0,1,161821.51,5982.6182
+1001,99,9,120,0,0,1,357024.34,5947.0981
+1001,30,14,120,0,0,1,190627.87,5937.0794
+1001,10,23,120,1,0.0083333333,0,180762.11,5900.7575
+1002,99,11,120,2,0.016666667,0,255594.08,6072.5683
+1002,10,10,120,1,0.0083333333,0,146747.82,6075.2977
+1002,20,15,120,0,0,1,192764.84,5944.328
+1003,99,9,120,0,0,1,332287.37,5926.7961
+1003,30,11,120,0,0,1,179743.31,5936.6799
+1003,20,23,120,0,0,1,161669.11,6156.3218
+1004,99,9,120,0,0,1,356735.73,6049.6436
+1004,30,14,120,0,0,1,190964.94,5987.477
+1004,10,23,120,1,0.0083333333,0,181468.96,6013.7381
+1005,99,11,120,0,0,1,254471.35,5897.3476
+1005,10,10,120,2,0.016666667,0,146758.28,5978.2901
+1005,20,15,120,0,0,1,192093.16,6057.9407
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=5 fusion_results=1
+all_receptions_payload_BER=0.0032407407 CRC_frame_error_ratio=0.27777778 (includes overheard receptions)
+recovered_feature_fusion: observations=5 target_x=199.74201 target_y=149.87888
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   5.10 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_osdm_awgn_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_osdm_awgn_test" time elapsed: 00:00:05
+----------------------------------------------------------
+
+88/126 Testing: platform_application_channel2_osdm_none_test
+88/126 Test: platform_application_channel2_osdm_none_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "osdm" "--noise" "none" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_osdm_none_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=osdm noise=none seed=42 equalization=training-sequence-mmse fs=6000 carrier=25000 rate=6000 slot_seconds=6
+osdm_base_constellation=QPSK K=1024 M=16 N=64 CP=640 training=CAZAC framed_samples=3328
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,332150.32,0
+1000,30,14,120,0,0,1,221844.53,0
+1000,20,23,120,0,0,1,161821.51,0
+1001,99,9,120,0,0,1,357024.34,0
+1001,30,14,120,0,0,1,190627.87,0
+1001,10,23,120,0,0,1,180762.11,0
+1002,99,11,120,0,0,1,255594.08,0
+1002,10,10,120,0,0,1,146747.82,0
+1002,20,15,120,0,0,1,192764.84,0
+1003,99,9,120,0,0,1,332287.37,0
+1003,30,11,120,0,0,1,179743.31,0
+1003,20,23,120,0,0,1,161669.11,0
+1004,99,9,120,0,0,1,356735.73,0
+1004,30,14,120,0,0,1,190964.94,0
+1004,10,23,120,0,0,1,181468.96,0
+1005,99,11,120,0,0,1,254471.35,0
+1005,10,10,120,0,0,1,146758.28,0
+1005,20,15,120,0,0,1,192093.16,0
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0 CRC_frame_error_ratio=0 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   5.08 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_osdm_none_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_osdm_none_test" time elapsed: 00:00:05
+----------------------------------------------------------
+
+87/126 Testing: platform_application_channel12_comparison_experiment_smoke_test
+87/126 Test: platform_application_channel12_comparison_experiment_smoke_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel12_comparison_experiment" "--repetitions" "2" "--cycles" "2" "--bootstrap" "100"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel12_comparison_experiment_smoke_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 1/2 paired scalar-vs-OSDM-AWGN comparison (experiment only)
+source=Bellhop-derived reference .arr; NOT field-measured
+channel2_equalization=ideal-known-channel-frequency-domain-mmse
+repetitions=2 cycles_per_run=2 first_seed=42 bootstrap_resamples=100
+noise_psd_db_re_1upa2_per_hz=0 scalar_in_band_noise_db_re_1upa2=36.02059991 occupied_bandwidth_hz=4000
+Channel 1 sampled scalar: attempts=12 no_arrival=0 packet_errors=0 observed_payload_bits=1440 payload_bit_errors=0 BER=0 PER=0
+Channel 2 waveform: attempts=12 no_arrival=0 packet_errors=3 observed_payload_bits=1440 payload_bit_errors=4 BER=0.002777777778 PER=0.25
+difference(Channel2-Channel1): BER=0.002777777778 paired_bootstrap_95%=[0.002777777778,0.002777777778] PER=0.25 paired_bootstrap_95%=[0.1666666667,0.3333333333]
+Interpretation: negative difference favors Channel 2; intervals describe seed variability in this fixed scene, not all sea states.
+<end of output>
+Test time =   5.06 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel12_comparison_experiment_smoke_test" end time: Oct 20 14:22 CST
+"platform_application_channel12_comparison_experiment_smoke_test" time elapsed: 00:00:05
+----------------------------------------------------------
+
+49/126 Testing: platform_phy_recorded_proxy_receiver_test
+49/126 Test: platform_phy_recorded_proxy_receiver_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_recorded_proxy_receiver_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_recorded_proxy_receiver_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+Proxy passband mixture: legacy equality, cancellation, partial overlap, real decoder, single noise passed
+<end of output>
+Test time =   3.84 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_recorded_proxy_receiver_test" end time: Oct 20 14:22 CST
+"platform_phy_recorded_proxy_receiver_test" time elapsed: 00:00:03
+----------------------------------------------------------
+
+96/126 Testing: platform_application_channel2_bfsk_wenz_test
+96/126 Test: platform_application_channel2_bfsk_wenz_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bfsk" "--noise" "wenz" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bfsk_wenz_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bfsk noise=wenz seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+wind_mps=0 shipping=0.5
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,5,0.041666667,0,476592.17,1026837.4
+1000,30,14,120,0,0,1,546084.45,1032414.2
+1000,20,23,120,33,0.275,0,142694.99,1033393
+1001,99,9,120,0,0,1,693735.75,1042312.1
+1001,30,14,120,20,0.16666667,0,139575.3,1037361.6
+1001,10,23,120,0,0,1,474078.13,1046037.2
+1002,99,11,120,4,0.033333333,0,360425.6,1040563.6
+1002,10,10,120,8,0.066666667,0,189936.95,1040949.9
+1002,20,15,120,0,0,1,390419.87,1029964.8
+1003,99,9,120,6,0.05,0,490266.68,1038691.4
+1003,30,11,120,0,0,1,279362.56,1026667.6
+1003,20,23,120,33,0.275,0,149976.52,1047817.4
+1004,99,9,120,0,0,1,679583.75,1029519.3
+1004,30,14,120,20,0.16666667,0,159517.58,1028566.8
+1004,10,23,120,0,0,1,482899.53,1028346.1
+1005,99,11,120,3,0.025,0,331810.67,1034370.3
+1005,10,10,120,4,0.033333333,0,204139.8,1023897.1
+1005,20,15,120,0,0,1,388906.95,1046645.9
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=2 fusion_results=0
+all_receptions_payload_BER=0.062962963 CRC_frame_error_ratio=0.55555556 (includes overheard receptions)
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   1.17 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bfsk_wenz_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bfsk_wenz_test" time elapsed: 00:00:01
+----------------------------------------------------------
+
+102/126 Testing: platform_application_channel12_comparison_baseline_test
+102/126 Test: platform_application_channel12_comparison_baseline_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel12_comparison_baseline_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel12_comparison_baseline_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   2.60 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel12_comparison_baseline_test" end time: Oct 20 14:22 CST
+"platform_application_channel12_comparison_baseline_test" time elapsed: 00:00:02
+----------------------------------------------------------
+
+93/126 Testing: platform_application_channel2_bpsk_wenz_test
+93/126 Test: platform_application_channel2_bpsk_wenz_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bpsk" "--noise" "wenz" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bpsk_wenz_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bpsk noise=wenz seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+wind_mps=0 shipping=0.5
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,838264.55,1026837.4
+1000,30,14,120,0,0,1,548929.51,1032414.2
+1000,20,23,120,0,0,1,541452.47,1033393
+1001,99,9,120,0,0,1,685611.57,1042312.1
+1001,30,14,120,0,0,1,421869.24,1037361.6
+1001,10,23,120,0,0,1,291560.29,1046037.2
+1002,99,11,120,0,0,1,495014.5,1040563.6
+1002,10,10,120,4,0.033333333,0,516714.95,1040949.9
+1002,20,15,120,0,0,1,432356.32,1029964.8
+1003,99,9,120,0,0,1,821453.84,1038691.4
+1003,30,11,120,0,0,1,302178.73,1026667.6
+1003,20,23,120,0,0,1,530454.84,1047817.4
+1004,99,9,120,0,0,1,672965.12,1029519.3
+1004,30,14,120,0,0,1,390170.41,1028566.8
+1004,10,23,120,0,0,1,315030.35,1028346.1
+1005,99,11,120,0,0,1,491466.32,1034370.3
+1005,10,10,120,4,0.033333333,0,501856.55,1023897.1
+1005,20,15,120,0,0,1,429068.14,1046645.9
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0.0037037037 CRC_frame_error_ratio=0.11111111 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   1.13 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bpsk_wenz_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bpsk_wenz_test" time elapsed: 00:00:01
+----------------------------------------------------------
+
+95/126 Testing: platform_application_channel2_bfsk_awgn_test
+95/126 Test: platform_application_channel2_bfsk_awgn_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bfsk" "--noise" "awgn" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bfsk_awgn_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bfsk noise=awgn seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+noise_psd_db_re_1upa2_per_hz=0
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,476592.17,5945.3015
+1000,30,14,120,0,0,1,546084.45,5980.0354
+1000,20,23,120,0,0,1,142694.99,6010.7928
+1001,99,9,120,0,0,1,693735.75,6025.0737
+1001,30,14,120,0,0,1,139575.3,6038.2353
+1001,10,23,120,0,0,1,474078.13,6074.601
+1002,99,11,120,0,0,1,360425.6,6073.0209
+1002,10,10,120,0,0,1,189936.95,6039.2993
+1002,20,15,120,0,0,1,390419.87,5991.4481
+1003,99,9,120,0,0,1,490266.68,5989.2026
+1003,30,11,120,0,0,1,279362.56,5969.7743
+1003,20,23,120,0,0,1,149976.52,6075.3275
+1004,99,9,120,0,0,1,679583.75,5988.3988
+1004,30,14,120,0,0,1,159517.58,5954.2765
+1004,10,23,120,0,0,1,482899.53,5964.0888
+1005,99,11,120,0,0,1,331810.67,6024.0677
+1005,10,10,120,0,0,1,204139.8,5906.7575
+1005,20,15,120,0,0,1,388906.95,6064.6737
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0 CRC_frame_error_ratio=0 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   1.05 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bfsk_awgn_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bfsk_awgn_test" time elapsed: 00:00:01
+----------------------------------------------------------
+
+92/126 Testing: platform_application_channel2_bpsk_awgn_test
+92/126 Test: platform_application_channel2_bpsk_awgn_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bpsk" "--noise" "awgn" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bpsk_awgn_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bpsk noise=awgn seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+noise_psd_db_re_1upa2_per_hz=0
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,838264.55,5945.3015
+1000,30,14,120,0,0,1,548929.51,5980.0354
+1000,20,23,120,0,0,1,541452.47,6010.7928
+1001,99,9,120,0,0,1,685611.57,6025.0737
+1001,30,14,120,0,0,1,421869.24,6038.2353
+1001,10,23,120,0,0,1,291560.29,6074.601
+1002,99,11,120,0,0,1,495014.5,6073.0209
+1002,10,10,120,0,0,1,516714.95,6039.2993
+1002,20,15,120,0,0,1,432356.32,5991.4481
+1003,99,9,120,0,0,1,821453.84,5989.2026
+1003,30,11,120,0,0,1,302178.73,5969.7743
+1003,20,23,120,0,0,1,530454.84,6075.3275
+1004,99,9,120,0,0,1,672965.12,5988.3988
+1004,30,14,120,0,0,1,390170.41,5954.2765
+1004,10,23,120,0,0,1,315030.35,5964.0888
+1005,99,11,120,0,0,1,491466.32,6024.0677
+1005,10,10,120,0,0,1,501856.55,5906.7575
+1005,20,15,120,0,0,1,429068.14,6064.6737
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0 CRC_frame_error_ratio=0 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   1.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bpsk_awgn_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bpsk_awgn_test" time elapsed: 00:00:01
+----------------------------------------------------------
+
+94/126 Testing: platform_application_channel2_bfsk_none_test
+94/126 Test: platform_application_channel2_bfsk_none_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bfsk" "--noise" "none" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bfsk_none_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bfsk noise=none seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,476592.17,0
+1000,30,14,120,0,0,1,546084.45,0
+1000,20,23,120,0,0,1,142694.99,0
+1001,99,9,120,0,0,1,693735.75,0
+1001,30,14,120,0,0,1,139575.3,0
+1001,10,23,120,0,0,1,474078.13,0
+1002,99,11,120,0,0,1,360425.6,0
+1002,10,10,120,0,0,1,189936.95,0
+1002,20,15,120,0,0,1,390419.87,0
+1003,99,9,120,0,0,1,490266.68,0
+1003,30,11,120,0,0,1,279362.56,0
+1003,20,23,120,0,0,1,149976.52,0
+1004,99,9,120,0,0,1,679583.75,0
+1004,30,14,120,0,0,1,159517.58,0
+1004,10,23,120,0,0,1,482899.53,0
+1005,99,11,120,0,0,1,331810.67,0
+1005,10,10,120,0,0,1,204139.8,0
+1005,20,15,120,0,0,1,388906.95,0
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0 CRC_frame_error_ratio=0 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   0.91 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bfsk_none_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bfsk_none_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+109/126 Testing: platform_backend_dependency_lock_test
+109/126 Test: platform_backend_dependency_lock_test
+Command: "/tmp/dual-workbench-build-on/backend/venv/bin/python" "-m" "pytest" "-q" "-o" "cache_dir=/tmp/dual-workbench-build-on/backend/pytest-cache-lock" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/tests/dependency_lock_test.py"
+Directory: /tmp/dual-workbench-build-on/backend
+"platform_backend_dependency_lock_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+...                                                                      [100%]
+3 passed in 0.03s
+<end of output>
+Test time =   0.35 sec
+----------------------------------------------------------
+Test Passed.
+"platform_backend_dependency_lock_test" end time: Oct 20 14:22 CST
+"platform_backend_dependency_lock_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+91/126 Testing: platform_application_channel2_bpsk_none_test
+91/126 Test: platform_application_channel2_bpsk_none_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_feature_demo" "--modulation" "bpsk" "--noise" "none" "--verify"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_channel2_bpsk_none_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2: feature -> 15 payload bytes -> 120 bits (+32 CRC bits) -> modulation -> Bellhop H(X) -> + receiver noise -> demodulation -> CRC -> recovered payload -> feature fusion
+asset="/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1/bellhop/reference_shallow_water_v1.arr"
+channel_source=Bellhop-derived .arr; reference environment, NOT field measurement
+modulation=bpsk noise=none seed=42 equalization=ideal-frequency-domain-mmse fs=6000 carrier=25000 rate=60 slot_seconds=6
+tx,rx,paths,payload_bits,bit_errors,BER,CRC_OK,HX_power_upa2,noise_power_upa2
+1000,99,9,120,0,0,1,838264.55,0
+1000,30,14,120,0,0,1,548929.51,0
+1000,20,23,120,0,0,1,541452.47,0
+1001,99,9,120,0,0,1,685611.57,0
+1001,30,14,120,0,0,1,421869.24,0
+1001,10,23,120,0,0,1,291560.29,0
+1002,99,11,120,0,0,1,495014.5,0
+1002,10,10,120,0,0,1,516714.95,0
+1002,20,15,120,0,0,1,432356.32,0
+1003,99,9,120,0,0,1,821453.84,0
+1003,30,11,120,0,0,1,302178.73,0
+1003,20,23,120,0,0,1,530454.84,0
+1004,99,9,120,0,0,1,672965.12,0
+1004,30,14,120,0,0,1,390170.41,0
+1004,10,23,120,0,0,1,315030.35,0
+1005,99,11,120,0,0,1,491466.32,0
+1005,10,10,120,0,0,1,501856.55,0
+1005,20,15,120,0,0,1,429068.14,0
+transmissions=6 reception_attempts=18 no_arrival=0 delivered_features=6 fusion_results=1
+all_receptions_payload_BER=0 CRC_frame_error_ratio=0 (includes overheard receptions)
+recovered_feature_fusion: observations=6 target_x=199.64416 target_y=149.89252
+Waveform BER above is counted against TX truth AFTER decoding; legacy scalar BER report is intentionally not evaluated.
+<end of output>
+Test time =   0.87 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_channel2_bpsk_none_test" end time: Oct 20 14:22 CST
+"platform_application_channel2_bpsk_none_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+83/126 Testing: platform_channel2_review_alternate
+83/126 Test: platform_channel2_review_alternate
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "alternate"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_alternate" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+fusion_mode=alternate run_ok=1 tx_calls=6 rx_calls=18 deliveries=6 accepted_observations=6 fusion_results=1
+sink_bits=720 sink_errors=0 sink_BER=0 sink_crc_ok=6
+fused_target=-200.027863569,300.073945239
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_alternate" end time: Oct 20 14:22 CST
+"platform_channel2_review_alternate" time elapsed: 00:00:00
+----------------------------------------------------------
+
+85/126 Testing: platform_channel2_review_degraded
+85/126 Test: platform_channel2_review_degraded
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "degraded"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_degraded" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+fusion_mode=degraded run_ok=1 tx_calls=6 rx_calls=18 deliveries=0 accepted_observations=0 fusion_results=0
+sink_bits=720 sink_errors=370 sink_BER=0.513888888889 sink_crc_ok=0
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_degraded" end time: Oct 20 14:22 CST
+"platform_channel2_review_degraded" time elapsed: 00:00:00
+----------------------------------------------------------
+
+108/126 Testing: platform_simulation_worker_boundary_test
+108/126 Test: platform_simulation_worker_boundary_test
+Command: "/tmp/dual-workbench-build-on/worker/platform_simulation_worker_boundary_test"
+Directory: /tmp/dual-workbench-build-on/worker
+"platform_simulation_worker_boundary_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+platform_sim_worker execution/bridge failure: Environment asset missing: Asset package directory does not exist
+platform_sim_worker execution failure: Environment asset missing: Asset package directory does not exist
+platform_sim_worker protocol failure: unsupported worker mode
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"platform_simulation_worker_boundary_test" end time: Oct 20 14:22 CST
+"platform_simulation_worker_boundary_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+82/126 Testing: platform_channel2_review_normal
+82/126 Test: platform_channel2_review_normal
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "normal"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_normal" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+fusion_mode=normal run_ok=1 tx_calls=6 rx_calls=18 deliveries=6 accepted_observations=6 fusion_results=1
+sink_bits=720 sink_errors=0 sink_BER=0 sink_crc_ok=6
+fused_target=199.963525065,150.058720033
+<end of output>
+Test time =   0.29 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_normal" end time: Oct 20 14:22 CST
+"platform_channel2_review_normal" time elapsed: 00:00:00
+----------------------------------------------------------
+
+111/126 Testing: platform_release_contract_test
+111/126 Test: platform_release_contract_test
+Command: "/usr/bin/python3" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/release/tests/release_contract_test.py" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/release"
+Directory: /tmp/dual-workbench-build-on/release
+"platform_release_contract_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+RELEASE_PREFLIGHT_UNSUPPORTED_PLATFORM: requires Linux x86_64, got Darwin x86_64
+RELEASE_PREFLIGHT_UNSUPPORTED_PLATFORM: requires Linux x86_64, got Linux aarch64
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"platform_release_contract_test" end time: Oct 20 14:22 CST
+"platform_release_contract_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+53/126 Testing: platform_phy_waveform_phy_test
+53/126 Test: platform_phy_waveform_phy_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_waveform_phy_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_waveform_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Waveform providers, truth isolation and post-channel noise passed
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_waveform_phy_test" end time: Oct 20 14:22 CST
+"platform_phy_waveform_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+71/126 Testing: platform_assembly_channel2_feature_link_test
+71/126 Test: platform_assembly_channel2_feature_link_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_channel2_feature_link_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_channel2_feature_link_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Feature fields round-trip through real Bellhop paths; X shared
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_channel2_feature_link_test" end time: Oct 20 14:22 CST
+"platform_assembly_channel2_feature_link_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+60/126 Testing: platform_environment_reference_asset_test
+60/126 Test: platform_environment_reference_asset_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_reference_asset_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_reference_asset_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+range_m=100 tl_db=38.3132 delay_ns=73590875 path_count=10
+range_m=800 tl_db=51.9755 delay_ns=523228765 path_count=8
+range_m=1000 tl_db=52.5742 delay_ns=653415382 path_count=9
+range_m=2500 tl_db=60.7414 delay_ns=1636379360 path_count=18
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_reference_asset_test" end time: Oct 20 14:22 CST
+"platform_environment_reference_asset_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+43/126 Testing: platform_algorithm_xml_catalog_test
+43/126 Test: platform_algorithm_xml_catalog_test
+Command: "/usr/bin/python3" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/algorithms/test_compile_catalog.py"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_algorithm_xml_catalog_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.011s
+
+OK
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"platform_algorithm_xml_catalog_test" end time: Oct 20 14:22 CST
+"platform_algorithm_xml_catalog_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+112/126 Testing: platform_acceptance_documentation_test
+112/126 Test: platform_acceptance_documentation_test
+Command: "/usr/bin/python3" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/docs/acceptance/tests/acceptance_documentation_test.py" "/home/ccc/work/NS3_Factory/dual-workbench/Platform"
+Directory: /tmp/dual-workbench-build-on/release
+"platform_acceptance_documentation_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"platform_acceptance_documentation_test" end time: Oct 20 14:22 CST
+"platform_acceptance_documentation_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+103/126 Testing: platform_application_acceptance_run_service_test
+103/126 Test: platform_application_acceptance_run_service_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_acceptance_run_service_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_acceptance_run_service_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_acceptance_run_service_test" end time: Oct 20 14:22 CST
+"platform_application_acceptance_run_service_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+61/126 Testing: platform_environment_reference_source_test
+61/126 Test: platform_environment_reference_source_test
+Command: "/usr/bin/python3" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/tests/reference_environment_source_test.py" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/environment/assets/reference_shallow_water_v1"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_reference_source_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_reference_source_test" end time: Oct 20 14:22 CST
+"platform_environment_reference_source_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+84/126 Testing: platform_channel2_review_missing
+84/126 Test: platform_channel2_review_missing
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "missing"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_missing" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+fusion_mode=missing run_ok=0 tx_calls=1 rx_calls=1 deliveries=0 accepted_observations=0 fusion_results=0
+sink_bits=120 sink_errors=0 sink_BER=0 sink_crc_ok=1
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_missing" end time: Oct 20 14:22 CST
+"platform_channel2_review_missing" time elapsed: 00:00:00
+----------------------------------------------------------
+
+81/126 Testing: platform_channel2_review_single-degraded
+81/126 Test: platform_channel2_review_single-degraded
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "single-degraded"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_single-degraded" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+N1_to_N2 modulation=BPSK fs=6000 carrier=25000 symbol_rate=60 AWGN_PSD=120 seed=42
+D=a53c
+X_samples=4800 paths=9 first_arrival_ns=653760135 max_excess_ns=39286673
+path excess_ns=0 gain=0.000810161233 phase=0
+path excess_ns=340522 gain=0.000801598246 phase=3.14159265359
+path excess_ns=6222367 gain=0.00112390448 phase=2.23013735193
+path excess_ns=7269740 gain=0.00104582473 phase=5.26123451957
+path excess_ns=21766186 gain=0.00098611787 phase=4.32619280349
+path excess_ns=24324358 gain=0.000976144802 phase=7.22549851871
+path excess_ns=36042929 gain=0.000129588007 phase=3.14159265359
+path excess_ns=36043346 gain=1.08777995e-05 phase=3.14159265359
+path excess_ns=39286673 gain=8.02543873e-05 phase=6.28318530718
+Y_samples=5036 bit_errors=8 compared_bits=16 BER=0.5 CRC=0 deliveries=0
+D_hat=absent
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_single-degraded" end time: Oct 20 14:22 CST
+"platform_channel2_review_single-degraded" time elapsed: 00:00:00
+----------------------------------------------------------
+
+80/126 Testing: platform_channel2_review_single
+80/126 Test: platform_channel2_review_single
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "single"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_single" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+N1_to_N2 modulation=BPSK fs=6000 carrier=25000 symbol_rate=60 AWGN_PSD=0 seed=42
+D=a53c
+X_samples=4800 paths=9 first_arrival_ns=653760135 max_excess_ns=39286673
+path excess_ns=0 gain=0.000810161233 phase=0
+path excess_ns=340522 gain=0.000801598246 phase=3.14159265359
+path excess_ns=6222367 gain=0.00112390448 phase=2.23013735193
+path excess_ns=7269740 gain=0.00104582473 phase=5.26123451957
+path excess_ns=21766186 gain=0.00098611787 phase=4.32619280349
+path excess_ns=24324358 gain=0.000976144802 phase=7.22549851871
+path excess_ns=36042929 gain=0.000129588007 phase=3.14159265359
+path excess_ns=36043346 gain=1.08777995e-05 phase=3.14159265359
+path excess_ns=39286673 gain=8.02543873e-05 phase=6.28318530718
+Y_samples=5036 bit_errors=0 compared_bits=16 BER=0 CRC=1 deliveries=1
+D_hat=a53c
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_single" end time: Oct 20 14:22 CST
+"platform_channel2_review_single" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/126 Testing: platform_ns3_trajectory_geometry_test
+19/126 Test: platform_ns3_trajectory_geometry_test
+Command: "/tmp/dual-workbench-build-on/trajectory/platform_ns3_trajectory_geometry_test"
+Directory: /tmp/dual-workbench-build-on/trajectory
+"platform_ns3_trajectory_geometry_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Acceptance4Node key times preserved; imported turning track drives Bellhop and committed geometry PASS
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_trajectory_geometry_test" end time: Oct 20 14:22 CST
+"platform_ns3_trajectory_geometry_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+86/126 Testing: platform_channel2_review_abstract
+86/126 Test: platform_channel2_review_abstract
+Command: "/tmp/dual-workbench-build-on/application/platform_application_channel2_acceptance_review" "abstract"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_channel2_review_abstract" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+fusion_mode=abstract run_ok=1 tx_calls=6 rx_calls=0 deliveries=6 accepted_observations=6 fusion_results=1
+fused_target=199.963525065,150.058720033
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel2_review_abstract" end time: Oct 20 14:22 CST
+"platform_channel2_review_abstract" time elapsed: 00:00:00
+----------------------------------------------------------
+
+115/126 Testing: platform_json_dependency_isolation_test
+115/126 Test: platform_json_dependency_isolation_test
+Command: "/usr/bin/cmake" "-DPLATFORM_SOURCE_DIR=/home/ccc/work/NS3_Factory/dual-workbench/Platform" "-P" "/home/ccc/work/NS3_Factory/dual-workbench/Platform/tests/cmake/json_dependency_isolation.cmake"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_json_dependency_isolation_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_json_dependency_isolation_test" end time: Oct 20 14:22 CST
+"platform_json_dependency_isolation_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/126 Testing: platform_trajectory_geometry_test
+18/126 Test: platform_trajectory_geometry_test
+Command: "/tmp/dual-workbench-build-on/trajectory/platform_trajectory_geometry_test"
+Directory: /tmp/dual-workbench-build-on/trajectory
+"platform_trajectory_geometry_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Acceptance4Node key times preserved; imported turning track drives Bellhop and committed geometry PASS
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_trajectory_geometry_test" end time: Oct 20 14:22 CST
+"platform_trajectory_geometry_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+126/126 Testing: platform_ns3_acceptance_fusion_integration_test
+126/126 Test: platform_ns3_acceptance_fusion_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_acceptance_fusion_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_acceptance_fusion_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_acceptance_fusion_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_acceptance_fusion_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+107/126 Testing: platform_worker_authored_planning_validation_test
+107/126 Test: platform_worker_authored_planning_validation_test
+Command: "/tmp/dual-workbench-build-on/worker/platform_worker_authored_planning_validation_test"
+Directory: /tmp/dual-workbench-build-on/worker
+"platform_worker_authored_planning_validation_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+V3 package loader gate requires explicit v2 package build
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"platform_worker_authored_planning_validation_test" end time: Oct 20 14:22 CST
+"platform_worker_authored_planning_validation_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+104/126 Testing: platform_planning_context_json_test
+104/126 Test: platform_planning_context_json_test
+Command: "/tmp/dual-workbench-build-on/worker/platform_planning_context_json_test"
+Directory: /tmp/dual-workbench-build-on/worker
+"platform_planning_context_json_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+CONTEXT_JSON_AND_SAME_CPP_REPLAY_OK
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_context_json_test" end time: Oct 20 14:22 CST
+"platform_planning_context_json_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+51/126 Testing: platform_phy_recorded_waveform_channel_test
+51/126 Test: platform_phy_recorded_waveform_channel_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_recorded_waveform_channel_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_recorded_waveform_channel_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Recorded bridge deterministic, directed coverage and full envelope passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_recorded_waveform_channel_test" end time: Oct 20 14:22 CST
+"platform_phy_recorded_waveform_channel_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+67/126 Testing: platform_environment_asset_package_test
+67/126 Test: platform_environment_asset_package_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_asset_package_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_asset_package_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_asset_package_test" end time: Oct 20 14:22 CST
+"platform_environment_asset_package_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+125/126 Testing: platform_ns3_acceptance_scenario_integration_test
+125/126 Test: platform_ns3_acceptance_scenario_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_acceptance_scenario_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_acceptance_scenario_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_acceptance_scenario_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_acceptance_scenario_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+78/126 Testing: platform_assembly_scenario_runtime_test
+78/126 Test: platform_assembly_scenario_runtime_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_scenario_runtime_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_scenario_runtime_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_scenario_runtime_test" end time: Oct 20 14:22 CST
+"platform_assembly_scenario_runtime_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+70/126 Testing: platform_assembly_flow_runtime_test
+70/126 Test: platform_assembly_flow_runtime_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_flow_runtime_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_flow_runtime_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+FLOW_RELAY_AND_TRACE_INDEPENDENT_FEEDBACK_OK
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_flow_runtime_test" end time: Oct 20 14:22 CST
+"platform_assembly_flow_runtime_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/126 Testing: platform_phy_recorded_replay_test
+52/126 Test: platform_phy_recorded_replay_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_recorded_replay_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_recorded_replay_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Recorded replay repeatability, finite values and strict coverage passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_recorded_replay_test" end time: Oct 20 14:22 CST
+"platform_phy_recorded_replay_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+76/126 Testing: platform_assembly_adaptive_runtime_test
+76/126 Test: platform_assembly_adaptive_runtime_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_adaptive_runtime_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_adaptive_runtime_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_adaptive_runtime_test" end time: Oct 20 14:22 CST
+"platform_assembly_adaptive_runtime_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+124/126 Testing: platform_ns3_bellhop_import_scenario_runtime_integration_test
+124/126 Test: platform_ns3_bellhop_import_scenario_runtime_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_bellhop_import_scenario_runtime_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_bellhop_import_scenario_runtime_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_bellhop_import_scenario_runtime_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_bellhop_import_scenario_runtime_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+120/126 Testing: platform_ns3_multi_cycle_multihop_integration_test
+120/126 Test: platform_ns3_multi_cycle_multihop_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_multi_cycle_multihop_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_multi_cycle_multihop_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_multi_cycle_multihop_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_multi_cycle_multihop_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+119/126 Testing: platform_ns3_relay_enqueue_integration_test
+119/126 Test: platform_ns3_relay_enqueue_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_relay_enqueue_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_relay_enqueue_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_relay_enqueue_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_relay_enqueue_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+100/126 Testing: platform_application_paired_packet_comparison_test
+100/126 Test: platform_application_paired_packet_comparison_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_paired_packet_comparison_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_paired_packet_comparison_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_paired_packet_comparison_test" end time: Oct 20 14:22 CST
+"platform_application_paired_packet_comparison_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+121/126 Testing: platform_ns3_scenario_runtime_multihop_integration_test
+121/126 Test: platform_ns3_scenario_runtime_multihop_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_scenario_runtime_multihop_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_scenario_runtime_multihop_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_scenario_runtime_multihop_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_scenario_runtime_multihop_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+69/126 Testing: platform_adapters_external_cir_channel_provider_test
+69/126 Test: platform_adapters_external_cir_channel_provider_test
+Command: "/tmp/dual-workbench-build-on/adapters/platform_adapters_external_cir_channel_provider_test"
+Directory: /tmp/dual-workbench-build-on/adapters
+"platform_adapters_external_cir_channel_provider_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"platform_adapters_external_cir_channel_provider_test" end time: Oct 20 14:22 CST
+"platform_adapters_external_cir_channel_provider_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+122/126 Testing: platform_ns3_scenario_runtime_m5_tx_integration_test
+122/126 Test: platform_ns3_scenario_runtime_m5_tx_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_scenario_runtime_m5_tx_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_scenario_runtime_m5_tx_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_scenario_runtime_m5_tx_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_scenario_runtime_m5_tx_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+106/126 Testing: platform_worker_json_codec_test
+106/126 Test: platform_worker_json_codec_test
+Command: "/tmp/dual-workbench-build-on/worker/platform_worker_json_codec_test"
+Directory: /tmp/dual-workbench-build-on/worker
+"platform_worker_json_codec_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_worker_json_codec_test" end time: Oct 20 14:22 CST
+"platform_worker_json_codec_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+118/126 Testing: platform_ns3_plan_bound_tx_runtime_integration_test
+118/126 Test: platform_ns3_plan_bound_tx_runtime_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_plan_bound_tx_runtime_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_plan_bound_tx_runtime_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_plan_bound_tx_runtime_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_plan_bound_tx_runtime_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+123/126 Testing: platform_ns3_scenario_runtime_acoustic_field_integration_test
+123/126 Test: platform_ns3_scenario_runtime_acoustic_field_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_scenario_runtime_acoustic_field_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_scenario_runtime_acoustic_field_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_scenario_runtime_acoustic_field_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_scenario_runtime_acoustic_field_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+68/126 Testing: platform_environment_asset_repository_test
+68/126 Test: platform_environment_asset_repository_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_asset_repository_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_asset_repository_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_asset_repository_test" end time: Oct 20 14:22 CST
+"platform_environment_asset_repository_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+116/126 Testing: platform_ns3_signal_lifecycle_integration_test
+116/126 Test: platform_ns3_signal_lifecycle_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_signal_lifecycle_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_signal_lifecycle_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_signal_lifecycle_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_signal_lifecycle_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+117/126 Testing: platform_ns3_plan_driven_cycle_integration_test
+117/126 Test: platform_ns3_plan_driven_cycle_integration_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_ns3_plan_driven_cycle_integration_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_ns3_plan_driven_cycle_integration_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_plan_driven_cycle_integration_test" end time: Oct 20 14:22 CST
+"platform_ns3_plan_driven_cycle_integration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/126 Testing: platform_flow_planning_test
+42/126 Test: platform_flow_planning_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_flow_planning_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_flow_planning_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+FLOW_CONTEXT_AND_SELECTION_OK
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_flow_planning_test" end time: Oct 20 14:22 CST
+"platform_flow_planning_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/126 Testing: platform_ns3_event_dispatcher_test
+21/126 Test: platform_ns3_event_dispatcher_test
+Command: "/tmp/dual-workbench-build-on/kernel/platform_ns3_event_dispatcher_test"
+Directory: /tmp/dual-workbench-build-on/kernel
+"platform_ns3_event_dispatcher_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_event_dispatcher_test" end time: Oct 20 14:22 CST
+"platform_ns3_event_dispatcher_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/126 Testing: platform_ns3_event_dispatcher_batch_test
+22/126 Test: platform_ns3_event_dispatcher_batch_test
+Command: "/tmp/dual-workbench-build-on/kernel/platform_ns3_event_dispatcher_batch_test"
+Directory: /tmp/dual-workbench-build-on/kernel
+"platform_ns3_event_dispatcher_batch_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_event_dispatcher_batch_test" end time: Oct 20 14:22 CST
+"platform_ns3_event_dispatcher_batch_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+105/126 Testing: platform_worker_json_dependency_test
+105/126 Test: platform_worker_json_dependency_test
+Command: "/tmp/dual-workbench-build-on/worker/platform_worker_json_dependency_test"
+Directory: /tmp/dual-workbench-build-on/worker
+"platform_worker_json_dependency_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_worker_json_dependency_test" end time: Oct 20 14:22 CST
+"platform_worker_json_dependency_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/126 Testing: platform_ns3_kernel_smoke_test
+20/126 Test: platform_ns3_kernel_smoke_test
+Command: "/tmp/dual-workbench-build-on/kernel/platform_ns3_kernel_smoke_test"
+Directory: /tmp/dual-workbench-build-on/kernel
+"platform_ns3_kernel_smoke_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_kernel_smoke_test" end time: Oct 20 14:22 CST
+"platform_ns3_kernel_smoke_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/126 Testing: platform_runtime_transmission_session_test
+26/126 Test: platform_runtime_transmission_session_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_transmission_session_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_transmission_session_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_transmission_session_test" end time: Oct 20 14:22 CST
+"platform_runtime_transmission_session_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/126 Testing: platform_ns3_plan_installer_test
+23/126 Test: platform_ns3_plan_installer_test
+Command: "/tmp/dual-workbench-build-on/kernel/platform_ns3_plan_installer_test"
+Directory: /tmp/dual-workbench-build-on/kernel
+"platform_ns3_plan_installer_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_ns3_plan_installer_test" end time: Oct 20 14:22 CST
+"platform_ns3_plan_installer_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+56/126 Testing: platform_phy_waveform_pipeline_test
+56/126 Test: platform_phy_waveform_pipeline_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_waveform_pipeline_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_waveform_pipeline_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+waveform PHY pipeline tests passed
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_waveform_pipeline_test" end time: Oct 20 14:22 CST
+"platform_phy_waveform_pipeline_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/126 Testing: platform_structure_role_assignment_policy_test
+38/126 Test: platform_structure_role_assignment_policy_test
+Command: "/tmp/dual-workbench-build-on/structure/platform_structure_role_assignment_policy_test"
+Directory: /tmp/dual-workbench-build-on/structure
+"platform_structure_role_assignment_policy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_structure_role_assignment_policy_test" end time: Oct 20 14:22 CST
+"platform_structure_role_assignment_policy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/126 Testing: platform_runtime_tx_preparation_test
+29/126 Test: platform_runtime_tx_preparation_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_tx_preparation_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_tx_preparation_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_tx_preparation_test" end time: Oct 20 14:22 CST
+"platform_runtime_tx_preparation_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/126 Testing: platform_contracts_errors_test
+3/126 Test: platform_contracts_errors_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_errors_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_errors_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_errors_test" end time: Oct 20 14:22 CST
+"platform_contracts_errors_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/126 Testing: platform_runtime_cycle_reception_wiring_test
+36/126 Test: platform_runtime_cycle_reception_wiring_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_cycle_reception_wiring_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_cycle_reception_wiring_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_cycle_reception_wiring_test" end time: Oct 20 14:22 CST
+"platform_runtime_cycle_reception_wiring_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+79/126 Testing: platform_planning_context_assembler_test
+79/126 Test: platform_planning_context_assembler_test
+Command: "/tmp/dual-workbench-build-on/application/platform_planning_context_assembler_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_planning_context_assembler_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+ENVIRONMENT_GEOMETRY_SHARED_SAMPLER_AND_NO_SIDE_EFFECTS_OK
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_context_assembler_test" end time: Oct 20 14:22 CST
+"platform_planning_context_assembler_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/126 Testing: platform_runtime_receiver_processing_test
+27/126 Test: platform_runtime_receiver_processing_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_receiver_processing_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_receiver_processing_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_receiver_processing_test" end time: Oct 20 14:22 CST
+"platform_runtime_receiver_processing_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/126 Testing: platform_structure_connectivity_builder_test
+37/126 Test: platform_structure_connectivity_builder_test
+Command: "/tmp/dual-workbench-build-on/structure/platform_structure_connectivity_builder_test"
+Directory: /tmp/dual-workbench-build-on/structure
+"platform_structure_connectivity_builder_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_structure_connectivity_builder_test" end time: Oct 20 14:22 CST
+"platform_structure_connectivity_builder_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+62/126 Testing: platform_environment_acoustic_field_asset_test
+62/126 Test: platform_environment_acoustic_field_asset_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_acoustic_field_asset_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_acoustic_field_asset_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_acoustic_field_asset_test" end time: Oct 20 14:22 CST
+"platform_environment_acoustic_field_asset_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+77/126 Testing: platform_assembly_ns3_gateway_multirun_test
+77/126 Test: platform_assembly_ns3_gateway_multirun_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_ns3_gateway_multirun_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_ns3_gateway_multirun_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_ns3_gateway_multirun_test" end time: Oct 20 14:22 CST
+"platform_assembly_ns3_gateway_multirun_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/126 Testing: platform_structure_logical_topology_policy_test
+39/126 Test: platform_structure_logical_topology_policy_test
+Command: "/tmp/dual-workbench-build-on/structure/platform_structure_logical_topology_policy_test"
+Directory: /tmp/dual-workbench-build-on/structure
+"platform_structure_logical_topology_policy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_structure_logical_topology_policy_test" end time: Oct 20 14:22 CST
+"platform_structure_logical_topology_policy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/126 Testing: platform_structure_builder_test
+40/126 Test: platform_structure_builder_test
+Command: "/tmp/dual-workbench-build-on/structure/platform_structure_builder_test"
+Directory: /tmp/dual-workbench-build-on/structure
+"platform_structure_builder_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_structure_builder_test" end time: Oct 20 14:22 CST
+"platform_structure_builder_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+101/126 Testing: platform_application_run_event_journal_test
+101/126 Test: platform_application_run_event_journal_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_run_event_journal_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_run_event_journal_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_run_event_journal_test" end time: Oct 20 14:22 CST
+"platform_application_run_event_journal_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/126 Testing: platform_contracts_receiver_window_test
+8/126 Test: platform_contracts_receiver_window_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_receiver_window_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_receiver_window_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_receiver_window_test" end time: Oct 20 14:22 CST
+"platform_contracts_receiver_window_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+46/126 Testing: platform_planning_shortest_path_to_sink_routing_planner_test
+46/126 Test: platform_planning_shortest_path_to_sink_routing_planner_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_planning_shortest_path_to_sink_routing_planner_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_planning_shortest_path_to_sink_routing_planner_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_shortest_path_to_sink_routing_planner_test" end time: Oct 20 14:22 CST
+"platform_planning_shortest_path_to_sink_routing_planner_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/126 Testing: platform_trajectory_uuv_5dof_test
+17/126 Test: platform_trajectory_uuv_5dof_test
+Command: "/tmp/dual-workbench-build-on/trajectory/platform_trajectory_uuv_5dof_test"
+Directory: /tmp/dual-workbench-build-on/trajectory
+"platform_trajectory_uuv_5dof_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+UUV 5DOF plant, controller, RK4 and coordinate conversion PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_trajectory_uuv_5dof_test" end time: Oct 20 14:22 CST
+"platform_trajectory_uuv_5dof_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/126 Testing: platform_contracts_communication_test
+5/126 Test: platform_contracts_communication_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_communication_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_communication_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_communication_test" end time: Oct 20 14:22 CST
+"platform_contracts_communication_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+48/126 Testing: platform_planning_composite_protocol_cycle_planner_test
+48/126 Test: platform_planning_composite_protocol_cycle_planner_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_planning_composite_protocol_cycle_planner_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_planning_composite_protocol_cycle_planner_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_composite_protocol_cycle_planner_test" end time: Oct 20 14:22 CST
+"platform_planning_composite_protocol_cycle_planner_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+44/126 Testing: platform_planning_adaptive_planning_test
+44/126 Test: platform_planning_adaptive_planning_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_planning_adaptive_planning_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_planning_adaptive_planning_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_adaptive_planning_test" end time: Oct 20 14:22 CST
+"platform_planning_adaptive_planning_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/126 Testing: platform_runtime_plan_bound_tx_runtime_test
+31/126 Test: platform_runtime_plan_bound_tx_runtime_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_plan_bound_tx_runtime_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_plan_bound_tx_runtime_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_plan_bound_tx_runtime_test" end time: Oct 20 14:22 CST
+"platform_runtime_plan_bound_tx_runtime_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+47/126 Testing: platform_planning_configured_tdma_mac_planner_test
+47/126 Test: platform_planning_configured_tdma_mac_planner_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_planning_configured_tdma_mac_planner_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_planning_configured_tdma_mac_planner_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_configured_tdma_mac_planner_test" end time: Oct 20 14:22 CST
+"platform_planning_configured_tdma_mac_planner_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/126 Testing: platform_runtime_reception_disposition_service_test
+33/126 Test: platform_runtime_reception_disposition_service_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_reception_disposition_service_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_reception_disposition_service_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_reception_disposition_service_test" end time: Oct 20 14:22 CST
+"platform_runtime_reception_disposition_service_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/126 Testing: platform_contracts_structure_test
+12/126 Test: platform_contracts_structure_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_structure_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_structure_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_structure_test" end time: Oct 20 14:22 CST
+"platform_contracts_structure_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+64/126 Testing: platform_environment_bellhop_ascii_arrival_parser_test
+64/126 Test: platform_environment_bellhop_ascii_arrival_parser_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_bellhop_ascii_arrival_parser_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_bellhop_ascii_arrival_parser_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_bellhop_ascii_arrival_parser_test" end time: Oct 20 14:22 CST
+"platform_environment_bellhop_ascii_arrival_parser_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/126 Testing: platform_contracts_rx_quality_test
+10/126 Test: platform_contracts_rx_quality_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_rx_quality_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_rx_quality_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_rx_quality_test" end time: Oct 20 14:22 CST
+"platform_contracts_rx_quality_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/126 Testing: platform_contracts_routing_test
+14/126 Test: platform_contracts_routing_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_routing_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_routing_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_routing_test" end time: Oct 20 14:22 CST
+"platform_contracts_routing_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/126 Testing: platform_contracts_rx_phy_test
+9/126 Test: platform_contracts_rx_phy_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_rx_phy_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_rx_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_rx_phy_test" end time: Oct 20 14:22 CST
+"platform_contracts_rx_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/126 Testing: platform_channel_aware_example_test
+41/126 Test: platform_channel_aware_example_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_channel_aware_example_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_channel_aware_example_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+CHANNEL_WEIGHT_CHANGES_FLOW_ORDER_OK
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_channel_aware_example_test" end time: Oct 20 14:22 CST
+"platform_channel_aware_example_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/126 Testing: platform_phy_channel2_integration_baseline_test
+54/126 Test: platform_phy_channel2_integration_baseline_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_channel2_integration_baseline_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_channel2_integration_baseline_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+Channel 2 integration baseline tests passed
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_channel2_integration_baseline_test" end time: Oct 20 14:22 CST
+"platform_phy_channel2_integration_baseline_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/126 Testing: platform_contracts_protocol_cycle_plan_test
+11/126 Test: platform_contracts_protocol_cycle_plan_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_protocol_cycle_plan_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_protocol_cycle_plan_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_protocol_cycle_plan_test" end time: Oct 20 14:22 CST
+"platform_contracts_protocol_cycle_plan_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/126 Testing: platform_trajectory_asset_test
+16/126 Test: platform_trajectory_asset_test
+Command: "/tmp/dual-workbench-build-on/trajectory/platform_trajectory_asset_test"
+Directory: /tmp/dual-workbench-build-on/trajectory
+"platform_trajectory_asset_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+trajectory asset, interpolation, fixed/shared tracks, validation, CSV and determinism PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_trajectory_asset_test" end time: Oct 20 14:22 CST
+"platform_trajectory_asset_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+74/126 Testing: platform_assembly_applied_mac_schedule_test
+74/126 Test: platform_assembly_applied_mac_schedule_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_applied_mac_schedule_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_applied_mac_schedule_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_applied_mac_schedule_test" end time: Oct 20 14:22 CST
+"platform_assembly_applied_mac_schedule_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/126 Testing: platform_contracts_recorded_channel_test
+7/126 Test: platform_contracts_recorded_channel_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_recorded_channel_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_recorded_channel_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_recorded_channel_test" end time: Oct 20 14:22 CST
+"platform_contracts_recorded_channel_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/126 Testing: platform_runtime_world_state_commit_test
+25/126 Test: platform_runtime_world_state_commit_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_world_state_commit_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_world_state_commit_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_world_state_commit_test" end time: Oct 20 14:22 CST
+"platform_runtime_world_state_commit_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+63/126 Testing: platform_environment_acoustic_field_channel_provider_test
+63/126 Test: platform_environment_acoustic_field_channel_provider_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_acoustic_field_channel_provider_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_acoustic_field_channel_provider_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_acoustic_field_channel_provider_test" end time: Oct 20 14:22 CST
+"platform_environment_acoustic_field_channel_provider_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+98/126 Testing: platform_application_domain_test
+98/126 Test: platform_application_domain_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_domain_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_domain_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_domain_test" end time: Oct 20 14:22 CST
+"platform_application_domain_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/126 Testing: platform_contracts_link_feasibility_test
+13/126 Test: platform_contracts_link_feasibility_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_link_feasibility_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_link_feasibility_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_link_feasibility_test" end time: Oct 20 14:22 CST
+"platform_contracts_link_feasibility_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+1/126 Testing: platform_contracts_time_test
+1/126 Test: platform_contracts_time_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_time_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_time_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_time_test" end time: Oct 20 14:22 CST
+"platform_contracts_time_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/126 Testing: platform_contracts_trace_test
+15/126 Test: platform_contracts_trace_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_trace_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_trace_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_trace_test" end time: Oct 20 14:22 CST
+"platform_contracts_trace_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+99/126 Testing: platform_application_target_packet_metrics_test
+99/126 Test: platform_application_target_packet_metrics_test
+Command: "/tmp/dual-workbench-build-on/application/platform_application_target_packet_metrics_test"
+Directory: /tmp/dual-workbench-build-on/application
+"platform_application_target_packet_metrics_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_application_target_packet_metrics_test" end time: Oct 20 14:22 CST
+"platform_application_target_packet_metrics_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+66/126 Testing: platform_environment_bellhop_raw_arrival_normalizer_test
+66/126 Test: platform_environment_bellhop_raw_arrival_normalizer_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_bellhop_raw_arrival_normalizer_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_bellhop_raw_arrival_normalizer_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_bellhop_raw_arrival_normalizer_test" end time: Oct 20 14:22 CST
+"platform_environment_bellhop_raw_arrival_normalizer_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+72/126 Testing: platform_assembly_acceptance_run_report_test
+72/126 Test: platform_assembly_acceptance_run_report_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_acceptance_run_report_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_acceptance_run_report_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_acceptance_run_report_test" end time: Oct 20 14:22 CST
+"platform_assembly_acceptance_run_report_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+59/126 Testing: platform_phy_sampled_scalar_phy_test
+59/126 Test: platform_phy_sampled_scalar_phy_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_sampled_scalar_phy_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_sampled_scalar_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_sampled_scalar_phy_test" end time: Oct 20 14:22 CST
+"platform_phy_sampled_scalar_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/126 Testing: platform_runtime_cycle_working_state_test
+24/126 Test: platform_runtime_cycle_working_state_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_cycle_working_state_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_cycle_working_state_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_cycle_working_state_test" end time: Oct 20 14:22 CST
+"platform_runtime_cycle_working_state_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+50/126 Testing: platform_phy_receiver_sample_mixer_test
+50/126 Test: platform_phy_receiver_sample_mixer_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_receiver_sample_mixer_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_receiver_sample_mixer_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_receiver_sample_mixer_test" end time: Oct 20 14:22 CST
+"platform_phy_receiver_sample_mixer_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/126 Testing: platform_contracts_phy_channel_test
+6/126 Test: platform_contracts_phy_channel_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_phy_channel_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_phy_channel_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_phy_channel_test" end time: Oct 20 14:22 CST
+"platform_contracts_phy_channel_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/126 Testing: platform_contracts_identity_test
+2/126 Test: platform_contracts_identity_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_identity_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_identity_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_identity_test" end time: Oct 20 14:22 CST
+"platform_contracts_identity_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/126 Testing: platform_contracts_committed_state_test
+4/126 Test: platform_contracts_committed_state_test
+Command: "/tmp/dual-workbench-build-on/contracts/platform_contracts_committed_state_test"
+Directory: /tmp/dual-workbench-build-on/contracts
+"platform_contracts_committed_state_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_contracts_committed_state_test" end time: Oct 20 14:22 CST
+"platform_contracts_committed_state_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/126 Testing: platform_runtime_packet_queue_store_test
+28/126 Test: platform_runtime_packet_queue_store_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_packet_queue_store_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_packet_queue_store_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_packet_queue_store_test" end time: Oct 20 14:22 CST
+"platform_runtime_packet_queue_store_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/126 Testing: platform_planning_direct_to_sink_routing_planner_test
+45/126 Test: platform_planning_direct_to_sink_routing_planner_test
+Command: "/tmp/dual-workbench-build-on/planning/platform_planning_direct_to_sink_routing_planner_test"
+Directory: /tmp/dual-workbench-build-on/planning
+"platform_planning_direct_to_sink_routing_planner_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_planning_direct_to_sink_routing_planner_test" end time: Oct 20 14:22 CST
+"platform_planning_direct_to_sink_routing_planner_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+75/126 Testing: platform_assembly_acceptance_scenario_config_test
+75/126 Test: platform_assembly_acceptance_scenario_config_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_acceptance_scenario_config_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_acceptance_scenario_config_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_acceptance_scenario_config_test" end time: Oct 20 14:22 CST
+"platform_assembly_acceptance_scenario_config_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+73/126 Testing: platform_assembly_acceptance_feature_test
+73/126 Test: platform_assembly_acceptance_feature_test
+Command: "/tmp/dual-workbench-build-on/assembly/platform_assembly_acceptance_feature_test"
+Directory: /tmp/dual-workbench-build-on/assembly
+"platform_assembly_acceptance_feature_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_assembly_acceptance_feature_test" end time: Oct 20 14:22 CST
+"platform_assembly_acceptance_feature_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/126 Testing: platform_runtime_application_delivery_store_test
+34/126 Test: platform_runtime_application_delivery_store_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_application_delivery_store_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_application_delivery_store_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_application_delivery_store_test" end time: Oct 20 14:22 CST
+"platform_runtime_application_delivery_store_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/126 Testing: platform_runtime_transmission_record_store_test
+32/126 Test: platform_runtime_transmission_record_store_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_transmission_record_store_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_transmission_record_store_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_transmission_record_store_test" end time: Oct 20 14:22 CST
+"platform_runtime_transmission_record_store_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/126 Testing: platform_runtime_reception_disposition_applier_test
+35/126 Test: platform_runtime_reception_disposition_applier_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_reception_disposition_applier_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_reception_disposition_applier_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_reception_disposition_applier_test" end time: Oct 20 14:22 CST
+"platform_runtime_reception_disposition_applier_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/126 Testing: platform_runtime_candidate_receiver_resolver_test
+30/126 Test: platform_runtime_candidate_receiver_resolver_test
+Command: "/tmp/dual-workbench-build-on/runtime/platform_runtime_candidate_receiver_resolver_test"
+Directory: /tmp/dual-workbench-build-on/runtime
+"platform_runtime_candidate_receiver_resolver_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_runtime_candidate_receiver_resolver_test" end time: Oct 20 14:22 CST
+"platform_runtime_candidate_receiver_resolver_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+55/126 Testing: platform_phy_scalar_ber_rx_phy_test
+55/126 Test: platform_phy_scalar_ber_rx_phy_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_scalar_ber_rx_phy_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_scalar_ber_rx_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_scalar_ber_rx_phy_test" end time: Oct 20 14:22 CST
+"platform_phy_scalar_ber_rx_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+114/126 Testing: platform_build_smoke_test
+114/126 Test: platform_build_smoke_test
+Command: "/tmp/dual-workbench-build-on/tests/platform_build_smoke_test"
+Directory: /tmp/dual-workbench-build-on/tests
+"platform_build_smoke_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_build_smoke_test" end time: Oct 20 14:22 CST
+"platform_build_smoke_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+58/126 Testing: platform_phy_rate_based_tx_phy_test
+58/126 Test: platform_phy_rate_based_tx_phy_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_rate_based_tx_phy_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_rate_based_tx_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_rate_based_tx_phy_test" end time: Oct 20 14:22 CST
+"platform_phy_rate_based_tx_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+65/126 Testing: platform_environment_bellhop_raw_arrival_bundle_test
+65/126 Test: platform_environment_bellhop_raw_arrival_bundle_test
+Command: "/tmp/dual-workbench-build-on/environment/platform_environment_bellhop_raw_arrival_bundle_test"
+Directory: /tmp/dual-workbench-build-on/environment
+"platform_environment_bellhop_raw_arrival_bundle_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_environment_bellhop_raw_arrival_bundle_test" end time: Oct 20 14:22 CST
+"platform_environment_bellhop_raw_arrival_bundle_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+57/126 Testing: platform_phy_configured_tx_phy_test
+57/126 Test: platform_phy_configured_tx_phy_test
+Command: "/tmp/dual-workbench-build-on/phy/platform_phy_configured_tx_phy_test"
+Directory: /tmp/dual-workbench-build-on/phy
+"platform_phy_configured_tx_phy_test" start time: Oct 20 14:22 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform_phy_configured_tx_phy_test" end time: Oct 20 14:22 CST
+"platform_phy_configured_tx_phy_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 20 14:22 CST

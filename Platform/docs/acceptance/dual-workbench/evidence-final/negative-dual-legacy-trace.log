@@ -1,0 +1,35 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+___________________ test_historical_a_b_c_trace_identity[0] ____________________
+Platform/backend/tests/legacy_trace_identity_test.py:58: in test_historical_a_b_c_trace_identity
+    assert hashlib.sha256(encoded).hexdigest() == baseline["event_sha256"]
+E   AssertionError: assert 'be216983667a...5f8fd51fe34c9' == 'd1ee667cf56b...86734be1e5a2f'
+E     
+E     - d1ee667cf56b6c482402e5a164c5c0c3b086551d79288b1d40286734be1e5a2f
+E     + be216983667ae3767f6a7e84e0e32843194b6e39fb34d0380d75f8fd51fe34c9
+___________________ test_historical_a_b_c_trace_identity[2] ____________________
+Platform/backend/tests/legacy_trace_identity_test.py:58: in test_historical_a_b_c_trace_identity
+    assert hashlib.sha256(encoded).hexdigest() == baseline["event_sha256"]
+E   AssertionError: assert '57157bce6b45...5b503564e7f21' == '1afc833a94a5...6b2028252df5c'
+E     
+E     - 1afc833a94a5577d0af3a95362267fcf39f686008ad2fd51a9c6b2028252df5c
+E     + 57157bce6b4583b58e37e10503f07e0b75d962016f86bf95f9f5b503564e7f21
+___________________ test_historical_a_b_c_trace_identity[3] ____________________
+Platform/backend/tests/legacy_trace_identity_test.py:51: in test_historical_a_b_c_trace_identity
+    assert completed.returncode == 0,completed.stdout+completed.stderr
+E   AssertionError: {"category":"Protocol","error":{"code":"InvalidArgument","message":"unknown or missing schema_version"},"run":null,"run_id":null,"schema_version":1,"type":"WorkerFailed"}
+E     platform_sim_worker protocol failure: unknown or missing schema_version
+E     
+E   assert 2 == 0
+E    +  where 2 = CompletedProcess(args=['/tmp/dual-workbench-build-on/worker/platform_sim_worker', '/tmp/pytest-of-ccc/pytest-65/test_h...rsion":1,"type":"WorkerFailed"}\n', stderr='platform_sim_worker protocol failure: unknown or missing schema_version\n').returncode
+=============================== warnings summary ===============================
+Platform/backend/src/ns3_factory_backend/__init__.py:3
+  /home/ccc/work/NS3_Factory/dual-workbench/Platform/backend/src/ns3_factory_backend/__init__.py:3: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    from .api import BackendSettings, create_app
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED Platform/backend/tests/legacy_trace_identity_test.py::test_historical_a_b_c_trace_identity[0]
+FAILED Platform/backend/tests/legacy_trace_identity_test.py::test_historical_a_b_c_trace_identity[2]
+FAILED Platform/backend/tests/legacy_trace_identity_test.py::test_historical_a_b_c_trace_identity[3]
+3 failed, 1 warning in 1.14s

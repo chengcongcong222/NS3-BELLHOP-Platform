@@ -101,7 +101,7 @@ export function ErrorState({ error }: { error: unknown }) {
   }[failure?.kind ?? "ApiFailure"];
   // API diagnostics may contain implementation names and paths. Keep them
   // available for support without making them the user's primary instruction.
-  const localValidation = !failure && message && /[\u3400-\u9fff]/.test(message) ? message : null;
+  const localValidation = (!failure || failure.code === "RecordedProxyInvalid") && message && /[\u3400-\u9fff]/.test(message) ? message : null;
   return (
     <div className="state-panel error" role="alert">
       <strong>{title}</strong>

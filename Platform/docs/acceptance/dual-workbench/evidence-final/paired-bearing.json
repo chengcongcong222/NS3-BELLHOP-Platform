@@ -1,0 +1,4356 @@
+{
+  "executed_by": "Chromium CDP automation",
+  "seeded_inputs_via": "ASGI authoring API; no seeded results",
+  "checks": [
+    {
+      "action": "browser save-and-run A+B",
+      "group_id": "group-be15029de8b9433a936f0b0e418cb6b4"
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1600,
+      "height": 1000,
+      "scroll": 1600
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1440,
+      "height": 900,
+      "scroll": 1440
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1366,
+      "height": 768,
+      "scroll": 1351
+    },
+    {
+      "action": "comparison viewport",
+      "width": 1024,
+      "height": 768,
+      "scroll": 1009
+    },
+    {
+      "action": "comparison viewport",
+      "width": 800,
+      "height": 900,
+      "scroll": 800
+    },
+    {
+      "action": "browser frozen group rerun",
+      "group_id": "group-8e4a7d9644c749fb8fb737d21cc8bb9f"
+    }
+  ],
+  "exceptions": [],
+  "groups": [
+    {
+      "schema": "ns3-factory-run-group-v1",
+      "group_id": "group-be15029de8b9433a936f0b0e418cb6b4",
+      "request_key": "pair-9e058661-8c6c-4747-b8a6-118b70bfe2f0",
+      "request_sha256": "b8821b54cba6fbc5e7fc2f5e6632e1c8c830e9ec462a59511ef48fd11028b0ca",
+      "archived": false,
+      "parent_group_id": null,
+      "common_snapshot": {
+        "definition": {
+          "environment": {
+            "asset_id": "reference-shallow-water-v1",
+            "checksum": "fb64e543f9042c52",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": {
+              "safety_margin_ns": 0
+            },
+            "bit_rate_bps": 60,
+            "center_frequency_hz": 25000,
+            "deterministic_seed": 23,
+            "flows": [],
+            "fusion_receiver_node_id": 2,
+            "mac_mode": "AdaptiveTdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "Explicit planning",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "planning_cycle_duration_ns": 120000000000,
+            "routing_mode": "Direct",
+            "source_level_db": 190,
+            "target_x_m": 300,
+            "target_y_m": 150,
+            "workload": "BearingFusion"
+          },
+          "experiment_id": "experiment-37515e95297e-r2",
+          "experiment_source_revision": 2,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 100,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 200,
+              "y_m": 0,
+              "z_m": -20
+            }
+          ],
+          "scenario_id": "scenario-5bfb4e653180-r3",
+          "scenario_name": "浏览器三节点对照",
+          "scenario_source_revision": 3,
+          "schema": "ns3-factory-authored-run-v2",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "planning-tracks",
+              "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 3,
+          "bearing_inputs": {
+            "count": "6",
+            "generator": "DetectionFeatureReportV1/cycle-start-v1",
+            "packets": [
+              {
+                "cycle": "0",
+                "destination_node_id": "2",
+                "packet_id": "1000000",
+                "payload_hex": "1101000000000000000000610a6400",
+                "sample_time_ns": "0",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "0",
+                "destination_node_id": "2",
+                "packet_id": "1000001",
+                "payload_hex": "1101000000000064000000670e6400",
+                "sample_time_ns": "0",
+                "source_node_id": "1"
+              },
+              {
+                "cycle": "1",
+                "destination_node_id": "2",
+                "packet_id": "1000002",
+                "payload_hex": "110200c0d4010000000000610a6400",
+                "sample_time_ns": "120000000000",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "1",
+                "destination_node_id": "2",
+                "packet_id": "1000003",
+                "payload_hex": "110200c0d4010064000000670e6400",
+                "sample_time_ns": "120000000000",
+                "source_node_id": "1"
+              },
+              {
+                "cycle": "2",
+                "destination_node_id": "2",
+                "packet_id": "1000004",
+                "payload_hex": "11030080a9030000000000610a6400",
+                "sample_time_ns": "240000000000",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "2",
+                "destination_node_id": "2",
+                "packet_id": "1000005",
+                "payload_hex": "11030080a9030064000000670e6400",
+                "sample_time_ns": "240000000000",
+                "source_node_id": "1"
+              }
+            ]
+          }
+        },
+        "execution": {
+          "simulation_cycle_count": "3",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23"
+        },
+        "system_identity": {
+          "schema_version": 1,
+          "platform_name": "NS3-BELLHOP Platform",
+          "platform_version": "0.1.0",
+          "product_baseline": "P0-S5-05",
+          "release_id": "P0-S5-05",
+          "build_target": "linux-x86_64",
+          "reference_environment_asset_id": "reference-shallow-water-v1",
+          "reference_environment_checksum": "fb64e543f9042c52",
+          "build": {
+            "source_revision": "c4585c8-uncommitted-test",
+            "configuration": "ns3-on",
+            "cxx_standard": "23"
+          },
+          "simulation": {
+            "engine": "ns-3",
+            "version": "3.47",
+            "time_authority": "ns3::Simulator",
+            "scheduler_authority": "ns3::Simulator",
+            "scheduling_gateway": "M1 / Ns3KernelGateway"
+          },
+          "interfaces": {
+            "api_schema_version": "1",
+            "worker_wire_schema_version": "1",
+            "acceptance_evidence_schema_version": "1",
+            "frontend_release": "p0-s5-05"
+          },
+          "runtime_mode": "single-active-run-process-local-catalog"
+        }
+      },
+      "common_snapshot_sha256": "e124a953d23a1f48b96e3250bf3713f69ce464bf876675767b3f2997a383f3d6",
+      "workload": {
+        "count": "6",
+        "generator": "DetectionFeatureReportV1/cycle-start-v1",
+        "packets": [
+          {
+            "cycle": "0",
+            "destination_node_id": "2",
+            "packet_id": "1000000",
+            "payload_hex": "1101000000000000000000610a6400",
+            "sample_time_ns": "0",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "0",
+            "destination_node_id": "2",
+            "packet_id": "1000001",
+            "payload_hex": "1101000000000064000000670e6400",
+            "sample_time_ns": "0",
+            "source_node_id": "1"
+          },
+          {
+            "cycle": "1",
+            "destination_node_id": "2",
+            "packet_id": "1000002",
+            "payload_hex": "110200c0d4010000000000610a6400",
+            "sample_time_ns": "120000000000",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "1",
+            "destination_node_id": "2",
+            "packet_id": "1000003",
+            "payload_hex": "110200c0d4010064000000670e6400",
+            "sample_time_ns": "120000000000",
+            "source_node_id": "1"
+          },
+          {
+            "cycle": "2",
+            "destination_node_id": "2",
+            "packet_id": "1000004",
+            "payload_hex": "11030080a9030000000000610a6400",
+            "sample_time_ns": "240000000000",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "2",
+            "destination_node_id": "2",
+            "packet_id": "1000005",
+            "payload_hex": "11030080a9030064000000670e6400",
+            "sample_time_ns": "240000000000",
+            "source_node_id": "1"
+          }
+        ]
+      },
+      "workload_sha256": "02f3c0c39b040b0cc9b4f6937e7f090b81380dc5fd78aaee6f04ad6721c594e4",
+      "events_available": false,
+      "members": [
+        {
+          "member": "A",
+          "run_id": "run-8636fc75a9e842a68d73f9639a746cf0",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [],
+              "fusion_receiver_node_id": 2,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel1Abstract",
+              "planning_cycle_duration_ns": 120000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 300,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "BearingFusion"
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_source_revision": 2,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 3,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 3,
+            "bearing_inputs": {
+              "count": "6",
+              "generator": "DetectionFeatureReportV1/cycle-start-v1",
+              "packets": [
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000000",
+                  "payload_hex": "1101000000000000000000610a6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000001",
+                  "payload_hex": "1101000000000064000000670e6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000002",
+                  "payload_hex": "110200c0d4010000000000610a6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000003",
+                  "payload_hex": "110200c0d4010064000000670e6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000004",
+                  "payload_hex": "11030080a9030000000000610a6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000005",
+                  "payload_hex": "11030080a9030064000000670e6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "1"
+                }
+              ]
+            }
+          },
+          "definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-5bfb4e653180-r3",
+              "experiment_id": "experiment-37515e95297e-r2",
+              "definition_version": "3",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "3",
+              "rx_quality_mode": "ModeledBpskAwgn",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel1Abstract",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805"
+          },
+          "execution": {
+            "simulation_cycle_count": "3",
+            "rx_quality_mode": "ModeledBpskAwgn",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel1Abstract",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-8636fc75a9e842a68d73f9639a746cf0",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "360000000000",
+              "simulation_duration_ns": "360000000000",
+              "final_snapshot_version": "3",
+              "cycle_count": "3",
+              "node_count": "3",
+              "transmission_count": "6",
+              "channel_signal_count": "12",
+              "channel_no_arrival_count": "0",
+              "reception_count": "12",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [
+              {
+                "fusion_sequence": "1",
+                "started_at_ns": "0",
+                "completed_at_ns": "360000000000",
+                "fusion_period_ns": "360000000000",
+                "observation_count": "6",
+                "estimated_target_x_meters": 300.12738604650826,
+                "estimated_target_y_meters": 150.0960981465196
+              }
+            ],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": true
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "6",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2307992366",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2307992366",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2307992366",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "122287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "122287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "122287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "123943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "123943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "123943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "124010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "124010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "124010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "124074762117",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "124074762117",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "124074762117",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "126230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "126230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "126230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "126251020621",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "126251020621",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "126251020621",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "242287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "242287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "242287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "242307992366",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "242307992366",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "242307992366",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "243943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "243943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "243943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "244010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "244010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "244010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "246230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "246230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "246230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "360000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "360000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "360000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "3"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "3"
+                }
+              ],
+              "waveform": []
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_version": "3",
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_version": "3",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805",
+              "physical_layer": "Channel1Abstract",
+              "workload": "BearingFusion"
+            }
+          },
+          "failure": null
+        },
+        {
+          "member": "B",
+          "run_id": "run-5db53b709ff04b24ba28f5feffc95975",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [],
+              "fusion_receiver_node_id": 2,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "osdm": {
+                "block_length": 256,
+                "constellation": "Qpsk",
+                "cyclic_prefix": 64,
+                "maximum_sync_search": 128,
+                "minimum_sync_correlation": 0.05,
+                "vector_length": 16
+              },
+              "physical_layer": "Channel2Waveform",
+              "planning_cycle_duration_ns": 120000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 300,
+              "target_y_m": 150,
+              "waveform_modulation": "Osdm",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "BearingFusion"
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_source_revision": 2,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 3,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 3,
+            "bearing_inputs": {
+              "count": "6",
+              "generator": "DetectionFeatureReportV1/cycle-start-v1",
+              "packets": [
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000000",
+                  "payload_hex": "1101000000000000000000610a6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000001",
+                  "payload_hex": "1101000000000064000000670e6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000002",
+                  "payload_hex": "110200c0d4010000000000610a6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000003",
+                  "payload_hex": "110200c0d4010064000000670e6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000004",
+                  "payload_hex": "11030080a9030000000000610a6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000005",
+                  "payload_hex": "11030080a9030064000000670e6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "1"
+                }
+              ]
+            }
+          },
+          "definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-5bfb4e653180-r3",
+              "experiment_id": "experiment-37515e95297e-r2",
+              "definition_version": "3",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "3",
+              "rx_quality_mode": "None",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel2Waveform",
+              "waveform_modulation": "Osdm",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b"
+          },
+          "execution": {
+            "simulation_cycle_count": "3",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel2Waveform",
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-5db53b709ff04b24ba28f5feffc95975",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "360000000000",
+              "simulation_duration_ns": "360000000000",
+              "final_snapshot_version": "3",
+              "cycle_count": "3",
+              "node_count": "3",
+              "transmission_count": "6",
+              "channel_signal_count": "12",
+              "channel_no_arrival_count": "0",
+              "reception_count": "12",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [
+              {
+                "fusion_sequence": "1",
+                "started_at_ns": "0",
+                "completed_at_ns": "360000000000",
+                "fusion_period_ns": "360000000000",
+                "observation_count": "6",
+                "estimated_target_x_meters": 300.12738604650826,
+                "estimated_target_y_meters": 150.0960981465196
+              }
+            ],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": true
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "6",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "21620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "21620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "21620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "21641325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "21641325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "21641325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "23276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "23276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "23276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "23344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "23344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "23344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "44897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "44897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "44897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "141620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "141620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "141620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143408095451",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143408095451",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143408095451",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "164897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "164897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "164897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "164917687289",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "164917687289",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "164917687289",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "261620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "261620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "261620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "261641325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "261641325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "261641325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "263276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "263276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "263276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "263344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "263344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "263344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "284897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "284897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "284897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "360000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "360000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "360000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "3"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "3"
+                }
+              ],
+              "waveform": [
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                }
+              ]
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_version": "3",
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_version": "3",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b",
+              "physical_layer": "Channel2Waveform",
+              "workload": "BearingFusion"
+            }
+          },
+          "failure": null
+        }
+      ],
+      "state": "Completed",
+      "rerun_available": true
+    },
+    {
+      "schema": "ns3-factory-run-group-v1",
+      "group_id": "group-8e4a7d9644c749fb8fb737d21cc8bb9f",
+      "request_key": "repeat-1f2dd16f-efe5-48ff-bc25-365fafaa5326",
+      "request_sha256": "0112c986cc86f6e0793fc65c1365b069d3f7a882e1ae23623fa69988ccefb608",
+      "archived": false,
+      "parent_group_id": "group-be15029de8b9433a936f0b0e418cb6b4",
+      "common_snapshot": {
+        "definition": {
+          "environment": {
+            "asset_id": "reference-shallow-water-v1",
+            "checksum": "fb64e543f9042c52",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": {
+              "safety_margin_ns": 0
+            },
+            "bit_rate_bps": 60,
+            "center_frequency_hz": 25000,
+            "deterministic_seed": 23,
+            "flows": [],
+            "fusion_receiver_node_id": 2,
+            "mac_mode": "AdaptiveTdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "Explicit planning",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "planning_cycle_duration_ns": 120000000000,
+            "routing_mode": "Direct",
+            "source_level_db": 190,
+            "target_x_m": 300,
+            "target_y_m": 150,
+            "workload": "BearingFusion"
+          },
+          "experiment_id": "experiment-37515e95297e-r2",
+          "experiment_source_revision": 2,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 100,
+              "y_m": 0,
+              "z_m": -20
+            },
+            {
+              "can_receive": true,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 200,
+              "y_m": 0,
+              "z_m": -20
+            }
+          ],
+          "scenario_id": "scenario-5bfb4e653180-r3",
+          "scenario_name": "浏览器三节点对照",
+          "scenario_source_revision": 3,
+          "schema": "ns3-factory-authored-run-v2",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "planning-tracks",
+              "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 100,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    },
+                    {
+                      "time_ns": 1000000000000,
+                      "x_m": 200,
+                      "y_m": 0,
+                      "z_m": -20
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "planning-tracks",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 3,
+          "bearing_inputs": {
+            "count": "6",
+            "generator": "DetectionFeatureReportV1/cycle-start-v1",
+            "packets": [
+              {
+                "cycle": "0",
+                "destination_node_id": "2",
+                "packet_id": "1000000",
+                "payload_hex": "1101000000000000000000610a6400",
+                "sample_time_ns": "0",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "0",
+                "destination_node_id": "2",
+                "packet_id": "1000001",
+                "payload_hex": "1101000000000064000000670e6400",
+                "sample_time_ns": "0",
+                "source_node_id": "1"
+              },
+              {
+                "cycle": "1",
+                "destination_node_id": "2",
+                "packet_id": "1000002",
+                "payload_hex": "110200c0d4010000000000610a6400",
+                "sample_time_ns": "120000000000",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "1",
+                "destination_node_id": "2",
+                "packet_id": "1000003",
+                "payload_hex": "110200c0d4010064000000670e6400",
+                "sample_time_ns": "120000000000",
+                "source_node_id": "1"
+              },
+              {
+                "cycle": "2",
+                "destination_node_id": "2",
+                "packet_id": "1000004",
+                "payload_hex": "11030080a9030000000000610a6400",
+                "sample_time_ns": "240000000000",
+                "source_node_id": "0"
+              },
+              {
+                "cycle": "2",
+                "destination_node_id": "2",
+                "packet_id": "1000005",
+                "payload_hex": "11030080a9030064000000670e6400",
+                "sample_time_ns": "240000000000",
+                "source_node_id": "1"
+              }
+            ]
+          }
+        },
+        "execution": {
+          "simulation_cycle_count": "3",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23"
+        },
+        "system_identity": {
+          "schema_version": 1,
+          "platform_name": "NS3-BELLHOP Platform",
+          "platform_version": "0.1.0",
+          "product_baseline": "P0-S5-05",
+          "release_id": "P0-S5-05",
+          "build_target": "linux-x86_64",
+          "reference_environment_asset_id": "reference-shallow-water-v1",
+          "reference_environment_checksum": "fb64e543f9042c52",
+          "build": {
+            "source_revision": "c4585c8-uncommitted-test",
+            "configuration": "ns3-on",
+            "cxx_standard": "23"
+          },
+          "simulation": {
+            "engine": "ns-3",
+            "version": "3.47",
+            "time_authority": "ns3::Simulator",
+            "scheduler_authority": "ns3::Simulator",
+            "scheduling_gateway": "M1 / Ns3KernelGateway"
+          },
+          "interfaces": {
+            "api_schema_version": "1",
+            "worker_wire_schema_version": "1",
+            "acceptance_evidence_schema_version": "1",
+            "frontend_release": "p0-s5-05"
+          },
+          "runtime_mode": "single-active-run-process-local-catalog"
+        }
+      },
+      "common_snapshot_sha256": "e124a953d23a1f48b96e3250bf3713f69ce464bf876675767b3f2997a383f3d6",
+      "workload": {
+        "count": "6",
+        "generator": "DetectionFeatureReportV1/cycle-start-v1",
+        "packets": [
+          {
+            "cycle": "0",
+            "destination_node_id": "2",
+            "packet_id": "1000000",
+            "payload_hex": "1101000000000000000000610a6400",
+            "sample_time_ns": "0",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "0",
+            "destination_node_id": "2",
+            "packet_id": "1000001",
+            "payload_hex": "1101000000000064000000670e6400",
+            "sample_time_ns": "0",
+            "source_node_id": "1"
+          },
+          {
+            "cycle": "1",
+            "destination_node_id": "2",
+            "packet_id": "1000002",
+            "payload_hex": "110200c0d4010000000000610a6400",
+            "sample_time_ns": "120000000000",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "1",
+            "destination_node_id": "2",
+            "packet_id": "1000003",
+            "payload_hex": "110200c0d4010064000000670e6400",
+            "sample_time_ns": "120000000000",
+            "source_node_id": "1"
+          },
+          {
+            "cycle": "2",
+            "destination_node_id": "2",
+            "packet_id": "1000004",
+            "payload_hex": "11030080a9030000000000610a6400",
+            "sample_time_ns": "240000000000",
+            "source_node_id": "0"
+          },
+          {
+            "cycle": "2",
+            "destination_node_id": "2",
+            "packet_id": "1000005",
+            "payload_hex": "11030080a9030064000000670e6400",
+            "sample_time_ns": "240000000000",
+            "source_node_id": "1"
+          }
+        ]
+      },
+      "workload_sha256": "02f3c0c39b040b0cc9b4f6937e7f090b81380dc5fd78aaee6f04ad6721c594e4",
+      "events_available": false,
+      "members": [
+        {
+          "member": "A",
+          "run_id": "run-275c91b99aa3402c844fc451d53506aa",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [],
+              "fusion_receiver_node_id": 2,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "physical_layer": "Channel1Abstract",
+              "planning_cycle_duration_ns": 120000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 300,
+              "target_y_m": 150,
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "BearingFusion"
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_source_revision": 2,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 3,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 3,
+            "bearing_inputs": {
+              "count": "6",
+              "generator": "DetectionFeatureReportV1/cycle-start-v1",
+              "packets": [
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000000",
+                  "payload_hex": "1101000000000000000000610a6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000001",
+                  "payload_hex": "1101000000000064000000670e6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000002",
+                  "payload_hex": "110200c0d4010000000000610a6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000003",
+                  "payload_hex": "110200c0d4010064000000670e6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000004",
+                  "payload_hex": "11030080a9030000000000610a6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000005",
+                  "payload_hex": "11030080a9030064000000670e6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "1"
+                }
+              ]
+            }
+          },
+          "definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-5bfb4e653180-r3",
+              "experiment_id": "experiment-37515e95297e-r2",
+              "definition_version": "3",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "3",
+              "rx_quality_mode": "ModeledBpskAwgn",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel1Abstract",
+              "waveform_modulation": "Bpsk",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805"
+          },
+          "execution": {
+            "simulation_cycle_count": "3",
+            "rx_quality_mode": "ModeledBpskAwgn",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel1Abstract",
+            "waveform_modulation": "Bpsk",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-275c91b99aa3402c844fc451d53506aa",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "360000000000",
+              "simulation_duration_ns": "360000000000",
+              "final_snapshot_version": "3",
+              "cycle_count": "3",
+              "node_count": "3",
+              "transmission_count": "6",
+              "channel_signal_count": "12",
+              "channel_no_arrival_count": "0",
+              "reception_count": "12",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [
+              {
+                "fusion_sequence": "1",
+                "started_at_ns": "0",
+                "completed_at_ns": "360000000000",
+                "fusion_period_ns": "360000000000",
+                "observation_count": "6",
+                "estimated_target_x_meters": 300.12738604650826,
+                "estimated_target_y_meters": 150.0960981465196
+              }
+            ],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": true
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "6",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "2307992366",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "2307992366",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "2307992366",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "3943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "3943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "3943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "4010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "4010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "4010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "6230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "6230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "6230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "122287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "122287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "122287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "123943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "123943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "123943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "124010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "124010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "124010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "124074762117",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "124074762117",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "124074762117",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "126230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "126230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "126230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "126251020621",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "126251020621",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "126251020621",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "242287476471",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "242287476471",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "242287476471",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "242307992366",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "242307992366",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "242307992366",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "243943028255",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "243943028255",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "243943028255",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "244010824492",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "244010824492",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "244010824492",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "246230504726",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "246230504726",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "246230504726",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "360000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "360000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "360000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "3"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "3"
+                }
+              ],
+              "waveform": []
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_version": "3",
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_version": "3",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "39189339757fa36fccdd78112f4020dac377d595f2b6e95a86b78b050b3cf805",
+              "physical_layer": "Channel1Abstract",
+              "workload": "BearingFusion"
+            }
+          },
+          "failure": null
+        },
+        {
+          "member": "B",
+          "run_id": "run-c5b14afb86ff4bae887b2ef27b9770fb",
+          "state": "Completed",
+          "definition": {
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "checksum": "fb64e543f9042c52",
+              "format_version": 1
+            },
+            "execution_mode": "PlanningV1",
+            "experiment": {
+              "adaptive_tdma": {
+                "safety_margin_ns": 0
+              },
+              "bit_rate_bps": 60,
+              "center_frequency_hz": 25000,
+              "deterministic_seed": 23,
+              "flows": [],
+              "fusion_receiver_node_id": 2,
+              "mac_mode": "AdaptiveTdma",
+              "maximum_ber": 0.0001,
+              "maximum_fusion_period_ns": 180000000000,
+              "minimum_bearing_points": 5,
+              "name": "Explicit planning",
+              "network_update_interval_cycles": 1,
+              "occupied_bandwidth_hz": 4000,
+              "osdm": {
+                "block_length": 256,
+                "constellation": "Qpsk",
+                "cyclic_prefix": 64,
+                "maximum_sync_search": 128,
+                "minimum_sync_correlation": 0.05,
+                "vector_length": 16
+              },
+              "physical_layer": "Channel2Waveform",
+              "planning_cycle_duration_ns": 120000000000,
+              "routing_mode": "Direct",
+              "source_level_db": 190,
+              "target_x_m": 300,
+              "target_y_m": 150,
+              "waveform_modulation": "Osdm",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+              "workload": "BearingFusion"
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_source_revision": 2,
+            "fusion_center_node_id": null,
+            "nodes": [
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 0,
+                "x_m": 0,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 1,
+                "x_m": 100,
+                "y_m": 0,
+                "z_m": -20
+              },
+              {
+                "can_receive": true,
+                "can_transmit": true,
+                "duplex_mode": "HalfDuplex",
+                "node_id": 2,
+                "x_m": 200,
+                "y_m": 0,
+                "z_m": -20
+              }
+            ],
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_name": "浏览器三节点对照",
+            "scenario_source_revision": 3,
+            "schema": "ns3-factory-authored-run-v2",
+            "spatial_domain": null,
+            "trajectory_assets": [
+              {
+                "asset_id": "planning-tracks",
+                "checksum_sha256": "8f35a1d0578547f5ce5a3c936d602055ad5cb5432a30a96ebb23a42d3fd7e3d1",
+                "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+                "tracks": [
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 0,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N0"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 100,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N1"
+                  },
+                  {
+                    "points": [
+                      {
+                        "time_ns": 0,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      },
+                      {
+                        "time_ns": 1000000000000,
+                        "x_m": 200,
+                        "y_m": 0,
+                        "z_m": -20
+                      }
+                    ],
+                    "track_id": "N2"
+                  }
+                ],
+                "version": 1
+              }
+            ],
+            "trajectory_bindings": [
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 0,
+                "track_id": "N0",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 1,
+                "track_id": "N1",
+                "version": 1
+              },
+              {
+                "asset_id": "planning-tracks",
+                "node_id": 2,
+                "track_id": "N2",
+                "version": 1
+              }
+            ],
+            "version": 3,
+            "bearing_inputs": {
+              "count": "6",
+              "generator": "DetectionFeatureReportV1/cycle-start-v1",
+              "packets": [
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000000",
+                  "payload_hex": "1101000000000000000000610a6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "0",
+                  "destination_node_id": "2",
+                  "packet_id": "1000001",
+                  "payload_hex": "1101000000000064000000670e6400",
+                  "sample_time_ns": "0",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000002",
+                  "payload_hex": "110200c0d4010000000000610a6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "1",
+                  "destination_node_id": "2",
+                  "packet_id": "1000003",
+                  "payload_hex": "110200c0d4010064000000670e6400",
+                  "sample_time_ns": "120000000000",
+                  "source_node_id": "1"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000004",
+                  "payload_hex": "11030080a9030000000000610a6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "0"
+                },
+                {
+                  "cycle": "2",
+                  "destination_node_id": "2",
+                  "packet_id": "1000005",
+                  "payload_hex": "11030080a9030064000000670e6400",
+                  "sample_time_ns": "240000000000",
+                  "source_node_id": "1"
+                }
+              ]
+            }
+          },
+          "definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b",
+          "command": {
+            "schema_version": 1,
+            "type": "StartRunCommand",
+            "preset": {
+              "scenario_id": "scenario-5bfb4e653180-r3",
+              "experiment_id": "experiment-37515e95297e-r2",
+              "definition_version": "3",
+              "acceptance_profile": "Acceptance4Node"
+            },
+            "environment": {
+              "asset_id": "reference-shallow-water-v1",
+              "asset_format_version": "1"
+            },
+            "execution": {
+              "simulation_cycle_count": "3",
+              "rx_quality_mode": "None",
+              "equivalent_noise_power_db_re_1upa2": 45,
+              "deterministic_seed": "23",
+              "physical_layer": "Channel2Waveform",
+              "waveform_modulation": "Osdm",
+              "waveform_noise": "None",
+              "waveform_noise_psd_db_re_1upa2_per_hz": 0
+            },
+            "authored_definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b"
+          },
+          "execution": {
+            "simulation_cycle_count": "3",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel2Waveform",
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "result": {
+            "run_id": "run-c5b14afb86ff4bae887b2ef27b9770fb",
+            "projection": {
+              "simulation_started_at_ns": "0",
+              "simulation_ended_at_ns": "360000000000",
+              "simulation_duration_ns": "360000000000",
+              "final_snapshot_version": "3",
+              "cycle_count": "3",
+              "node_count": "3",
+              "transmission_count": "6",
+              "channel_signal_count": "12",
+              "channel_no_arrival_count": "0",
+              "reception_count": "12",
+              "local_delivery_count": "6"
+            },
+            "acceptance_report": null,
+            "fusion_results": [
+              {
+                "fusion_sequence": "1",
+                "started_at_ns": "0",
+                "completed_at_ns": "360000000000",
+                "fusion_period_ns": "360000000000",
+                "observation_count": "6",
+                "estimated_target_x_meters": 300.12738604650826,
+                "estimated_target_y_meters": 150.0960981465196
+              }
+            ],
+            "nodes": [
+              {
+                "node_id": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "1",
+                "x_meters": 100,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": false
+              },
+              {
+                "node_id": "2",
+                "x_meters": 200,
+                "y_meters": 0,
+                "z_meters": -20,
+                "is_fusion_center": true
+              }
+            ],
+            "visualization": {
+              "positions_complete": true,
+              "generated_feature_count": "6",
+              "positions": [
+                {
+                  "node_id": "0",
+                  "at_ns": "0",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "0",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "0",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "67796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "67796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "67796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "21620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "21620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "21620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "21641325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "21641325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "21641325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "23276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "23276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "23276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "23344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "23344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "23344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "44897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "44897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "44897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "120067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "120067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "120067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "141620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "141620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "141620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "143408095451",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "143408095451",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "143408095451",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "164897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "164897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "164897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "164917687289",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "164917687289",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "164917687289",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240067796237",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240067796237",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240067796237",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "240131733862",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "240131733862",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "240131733862",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "261620809805",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "261620809805",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "261620809805",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "261641325700",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "261641325700",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "261641325700",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "263276361589",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "263276361589",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "263276361589",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "263344157826",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "263344157826",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "263344157826",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "284897171394",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "284897171394",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "284897171394",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "0",
+                  "at_ns": "360000000000",
+                  "x_meters": 0,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "1",
+                  "at_ns": "360000000000",
+                  "x_meters": 100,
+                  "y_meters": 0,
+                  "z_meters": -20
+                },
+                {
+                  "node_id": "2",
+                  "at_ns": "360000000000",
+                  "x_meters": 200,
+                  "y_meters": 0,
+                  "z_meters": -20
+                }
+              ],
+              "fusion_sources": [
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "0",
+                  "observation_sequence": "3"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "1"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "2"
+                },
+                {
+                  "fusion_sequence": "1",
+                  "node_id": "1",
+                  "observation_sequence": "3"
+                }
+              ],
+              "waveform": [
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1000",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1001",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1002",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1003",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "1",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1004",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "0",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                },
+                {
+                  "transmission_id": "1005",
+                  "receiver_node_id": "2",
+                  "payload_bit_count": "120",
+                  "bit_error_count": "0",
+                  "crc_ok": true
+                }
+              ]
+            },
+            "experiment_id": "experiment-37515e95297e-r2",
+            "experiment_version": "3",
+            "scenario_id": "scenario-5bfb4e653180-r3",
+            "scenario_version": "3",
+            "environment_asset_id": "reference-shallow-water-v1",
+            "environment_format_version": "1",
+            "provenance": {
+              "definition_sha256": "ff72c4c20b439656f0cb23a1044d17450ed00035540248cc2fc3953a0519143b",
+              "physical_layer": "Channel2Waveform",
+              "workload": "BearingFusion"
+            }
+          },
+          "failure": null
+        }
+      ],
+      "state": "Completed",
+      "rerun_available": true
+    }
+  ],
+  "success": true
+}

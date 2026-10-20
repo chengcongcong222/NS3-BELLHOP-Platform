@@ -128,6 +128,27 @@ auto RunWireWorker(const std::filesystem::path& repository_root) -> int {
 }  // namespace
 
 auto main(int argc, char** argv) -> int {
+  if(argc==2 && std::string_view{argv[1]}=="--freeze-bearing-inputs") {
+    // Offline source computation: no environment query, Run admission or ns-3
+    // scheduler is created. Reuses the exact production report encoder.
+    try {
+      auto line=ReadBoundedCommandLine();
+      if(!line)return ProtocolFailure(line.error().message);
+      auto c=worker::codec::DecodeStartRunCommand(*line);
+      if(!c || !c->authored_definition_path)return ProtocolFailure("Missing authored command for bearing freeze");
+      worker::internal::RunExecutionRequest request{
+        c->run_id,c->scenario_id,c->experiment_id,c->definition_version,c->environment,c->profile,
+        c->simulation_cycle_count,c->quality_mode,c->equivalent_noise_power_db_re_1upa2,
+        c->deterministic_seed,c->physical_layer,c->waveform_modulation,c->waveform_noise,
+        c->waveform_noise_psd_db_re_1upa2_per_hz};
+      auto definition=worker::adapter::LoadAuthoredRunDefinition(*c->authored_definition_path,request);
+      if(!definition)return ProtocolFailure(definition.error().message);
+      auto inputs=worker::adapter::BuildFrozenBearingInputs(*definition);
+      if(!inputs)return ProtocolFailure(inputs.error().message);
+      std::cout<<worker::adapter::BearingInputJson(*inputs,*definition->experiment.planning()->fusion_receiver_node_id).dump()<<'\n';
+      return 0;
+    } catch(const std::exception& error) { return ProtocolFailure(error.what()); }
+  }
   if(argc==3 && std::string_view{argv[1]}=="--replay-planning-context") {
     try {
       const auto path=std::filesystem::path{argv[2]};

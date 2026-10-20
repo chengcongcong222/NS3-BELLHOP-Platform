@@ -166,6 +166,7 @@ class RecordedWaveformChannel : public contracts::IChannelFieldProvider,
     return Counts{library,*count};
   }
   auto links() const noexcept -> std::span<const RecordedLink> { return links_; }
+  virtual auto EmissionQuantumNanoseconds() const -> Result<std::int64_t> { return 1; }
  private:
   explicit RecordedWaveformChannel(std::vector<RecordedLink> links):links_(std::move(links)){}
   std::vector<RecordedLink> links_;

@@ -18,10 +18,9 @@ class RecordedProxyWaveformChannel final : public RecordedWaveformChannel {
     auto channel = RecordedWaveformChannel::Create(std::move(links));
     if(!channel) return std::unexpected(channel.error());
     for(const auto& a : channel->links()) {
-      if(a.channel->delay_rate_hz != std::floor(a.channel->delay_rate_hz) ||
-         a.channel->delay_rate_hz > 1'000'000'000)
+      if(!RecordingSampleIndex(0,a.channel->delay_rate_hz))
         return std::unexpected(Error{ErrorCode::kInvalidArgument,
-            "Proxy recording clock must be an integer sample rate"});
+            "Proxy recording clock has no supported exact rational representation"});
       for(const auto& b : channel->links()) {
         if(a.receiver != b.receiver) continue;
         if(a.baseband_rate_hz != b.baseband_rate_hz ||
@@ -43,7 +42,7 @@ class RecordedProxyWaveformChannel final : public RecordedWaveformChannel {
     for(const auto& l : links()) {
       if(l.transmitter == query.sender_node_id() && l.receiver == query.receiver_node_id()) {
         if(!SampleIndex(query.emitted_at().nanoseconds(), l.passband_rate_hz) ||
-           !SampleIndex(query.emitted_at().nanoseconds(), static_cast<std::size_t>(l.channel->delay_rate_hz)))
+           !RecordingSampleIndex(query.emitted_at().nanoseconds(), l.channel->delay_rate_hz))
           return std::unexpected(Error{ErrorCode::kInvalidArgument,
               "Proxy emission is not on both receiver and recording sample grids"});
       }
@@ -52,6 +51,23 @@ class RecordedProxyWaveformChannel final : public RecordedWaveformChannel {
   }
 
   auto SupportsMixture() const noexcept -> bool override { return true; }
+  auto EmissionQuantumNanoseconds() const -> Result<std::int64_t> override {
+    std::uint64_t quantum=1;
+    auto merge=[&](std::uint64_t next)->bool {
+      const auto factor=next/std::gcd(quantum,next);
+      if(quantum>static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())/factor)return false;
+      quantum*=factor;
+      return true;
+    };
+    for(const auto& l:links()) {
+      const auto numerator=static_cast<std::uint64_t>(l.channel->delay_rate_hz*1'000'000);
+      if(!merge(1'000'000'000/std::gcd(std::uint64_t{1'000'000'000},std::uint64_t{l.passband_rate_hz})) ||
+         !merge(1'000'000'000'000'000ULL/std::gcd(1'000'000'000'000'000ULL,
+                                               static_cast<unsigned long long>(numerator))))
+        return std::unexpected(Error{ErrorCode::kOverflow,"Combined recording clock exceeds simulation time"});
+    }
+    return static_cast<std::int64_t>(quantum);
+  }
   auto Process(const WaveformBuffer& input, const contracts::TxEmission& emission,
                const contracts::RecordedChannelResponse& response) const
       -> Result<RecordedWaveforms> override {
@@ -82,8 +98,8 @@ class RecordedProxyWaveformChannel final : public RecordedWaveformChannel {
     for(std::size_t k=0; k<ordered.size(); ++k) {
       const auto& i = ordered[k];
       const auto& l = links()[i.response->operator_key()];
-      auto recording_offset=SampleIndex(i.emission->started_at().nanoseconds(),
-          static_cast<std::size_t>(l.channel->delay_rate_hz));
+      auto recording_offset=RecordingSampleIndex(i.emission->started_at().nanoseconds(),
+          l.channel->delay_rate_hz);
       if(!recording_offset) return std::unexpected(recording_offset.error());
       if(static_cast<std::uint64_t>(*recording_offset) >
           std::numeric_limits<std::uint64_t>::max()-l.start_sample ||
@@ -163,6 +179,24 @@ class RecordedProxyWaveformChannel final : public RecordedWaveformChannel {
     const auto quotient = static_cast<std::uint64_t>(ns)/denominator;
     if(quotient > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())/numerator)
       return std::unexpected(Error{ErrorCode::kOverflow,"Proxy sample offset overflow"});
+    return static_cast<std::int64_t>(quotient*numerator);
+  }
+  // UWA Blue's 9765.625 Hz is rational, not an integer clock. Preserve it
+  // exactly; this is integer indexing, NOT a fractional-delay approximation.
+  static auto RecordingSampleIndex(std::int64_t ns,double rate)->Result<std::int64_t> {
+    constexpr std::uint64_t scale=1'000'000;
+    const auto scaled=rate*scale;
+    if(!std::isfinite(scaled)||scaled<=0||scaled>1e15||scaled!=std::floor(scaled)||ns<0)
+      return std::unexpected(Error{ErrorCode::kInvalidArgument,"Unsupported rational recording clock"});
+    const auto numerator0=static_cast<std::uint64_t>(scaled);
+    const auto divisor=std::gcd(numerator0,1'000'000'000ULL*scale);
+    const std::uint64_t denominator=1'000'000'000ULL*scale/divisor;
+    const std::uint64_t numerator=numerator0/divisor;
+    if(static_cast<std::uint64_t>(ns)%denominator)
+      return std::unexpected(Error{ErrorCode::kInvalidArgument,"Emission is off recording sample grid"});
+    const auto quotient=static_cast<std::uint64_t>(ns)/denominator;
+    if(quotient>static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())/numerator)
+      return std::unexpected(Error{ErrorCode::kOverflow,"Recording sample offset overflow"});
     return static_cast<std::int64_t>(quotient*numerator);
   }
   explicit RecordedProxyWaveformChannel(RecordedWaveformChannel channel): RecordedWaveformChannel(std::move(channel)) {}

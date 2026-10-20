@@ -1,0 +1,3830 @@
+{
+  "executed_by": "Chromium CDP automation; UI writes, read-only API verification",
+  "checks": [
+    {
+      "action": "verified Blue pool with explicit per-edge override",
+      "pool_size": 2
+    },
+    {
+      "action": "create/override/save via UI",
+      "draft_id": "experiment-af5f81f195af"
+    },
+    {
+      "action": "editor initial render",
+      "wall_ms": 208.324611,
+      "navigation": {
+        "dom_content_loaded_ms": 130,
+        "js_heap_bytes": 61279686
+      }
+    },
+    {
+      "action": "saved editor reopen/viewport",
+      "width": 1600,
+      "scroll": 1600,
+      "height": 1000
+    },
+    {
+      "action": "saved editor reopen/viewport",
+      "width": 1440,
+      "scroll": 1440,
+      "height": 900
+    },
+    {
+      "action": "saved editor reopen/viewport",
+      "width": 1366,
+      "scroll": 1366,
+      "height": 768
+    },
+    {
+      "action": "saved editor reopen/viewport",
+      "width": 1024,
+      "scroll": 1024,
+      "height": 768
+    },
+    {
+      "action": "saved editor reopen/viewport",
+      "width": 800,
+      "scroll": 800,
+      "height": 900
+    },
+    {
+      "action": "browser start / non-overlapping actual reception",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "mixed": 0
+    },
+    {
+      "action": "archive UI / frozen repeat C",
+      "group_id": "group-ab5fa037099c454386b7dc0a46c8a109",
+      "repeated_group_id": "group-c7744b56744442eba23a730b0460b26c"
+    },
+    {
+      "action": "copy saved proxy experiment via UI",
+      "source": "experiment-af5f81f195af",
+      "copy": "experiment-f9b877153a8c",
+      "identical_payload": true
+    }
+  ],
+  "exceptions": [],
+  "run": {
+    "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+    "experiment_id": "experiment-af5f81f195af-r2",
+    "experiment_version": "2",
+    "scenario_id": "scenario-cad5d31d4727-r1",
+    "scenario_version": "2",
+    "environment_asset_id": "uwa-blue-1-element-0",
+    "environment_format_version": "1",
+    "lifecycle": "Completed",
+    "simulation_started_at_ns": "0",
+    "simulation_ended_at_ns": "32768000000",
+    "final_snapshot_version": "2",
+    "event_stream_complete": true,
+    "failure": null,
+    "provenance": {
+      "definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa",
+      "experiment": {
+        "id": "experiment-af5f81f195af-r2",
+        "version": 2
+      },
+      "scenario": {
+        "id": "scenario-cad5d31d4727-r1",
+        "version": 2
+      },
+      "environment": {
+        "asset_id": "uwa-blue-1-element-0",
+        "checksum": "dcbae2aab576dcf8044c1cc6751a179cb41d0e474dec775c24b8ca185e4f8e68",
+        "format_version": 1
+      },
+      "physical_layer": "Channel3Recorded",
+      "deterministic_seed": 23,
+      "recorded_proxy": {
+        "assumptions": {
+          "geometry_drives_channel": false,
+          "link_temporal_relation": "SyntheticOffsets",
+          "noise_spatial_relation": "SyntheticAssignment",
+          "real_joint_multitransmitter_measured": false
+        },
+        "nodes": [
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "node_id": "0"
+          },
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "node_id": "1"
+          },
+          {
+            "can_receive": true,
+            "can_transmit": false,
+            "node_id": "2"
+          }
+        ],
+        "receiver_clock": {
+          "baseband_rate_hz": 3000,
+          "carrier_hz": 13000,
+          "emission_quantum_ns": "64000000",
+          "oscillator": "PacketResetTxDesiredArrivalRx",
+          "passband_rate_hz": 52000
+        },
+        "resolved_links": [
+          {
+            "asset_id": "uwa-blue-1-element-0",
+            "evidence": "ProxySampledLink",
+            "manifest": {
+              "asset_id": "uwa-blue-1-element-0",
+              "axis_kind": "ReceiverElement",
+              "citation": "https://doi.org/10.5281/zenodo.21287414",
+              "delay_taps": 320,
+              "duration_s": 52.26496,
+              "element": 0,
+              "fc": 13000,
+              "files": {
+                "channel.f64le": {
+                  "bytes": 13071360,
+                  "fnv1a64": "48b48beee6d2c7c7",
+                  "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                },
+                "phase.f64le": {
+                  "bytes": 4084800,
+                  "fnv1a64": "6f8c1f0488d4dfa3",
+                  "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                }
+              },
+              "fs_delay": 9765.625,
+              "fs_time": 48.828125,
+              "gain_reference": "Normalized",
+              "geometry": "Unspecified",
+              "license": "CC-BY-4.0",
+              "name": "Blue 1 · 第1阵元",
+              "original_axis_count": 12,
+              "phase_count": 510600,
+              "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+              "resample_down": 1,
+              "resample_up": 1,
+              "schema": "ns3-factory-recorded-channel-v1",
+              "snapshots": 2553,
+              "source_name": "uwa-blue_1.mat",
+              "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+              "tracking": "phi_hat",
+              "usable_bandwidth_hz": 5000,
+              "version": 1
+            },
+            "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+            "modeled_reference_delay_ns": "2048000000",
+            "origin": "EdgeOverride",
+            "relative_amplitude": 1,
+            "rx_id": "2",
+            "start_sample": "0",
+            "tx_id": "0",
+            "version": 1
+          },
+          {
+            "asset_id": "uwa-blue-1-element-1",
+            "evidence": "ProxySampledLink",
+            "manifest": {
+              "asset_id": "uwa-blue-1-element-1",
+              "axis_kind": "ReceiverElement",
+              "citation": "https://doi.org/10.5281/zenodo.21287414",
+              "delay_taps": 320,
+              "duration_s": 52.26496,
+              "element": 1,
+              "fc": 13000,
+              "files": {
+                "channel.f64le": {
+                  "bytes": 13071360,
+                  "fnv1a64": "aa787bb90e602ea6",
+                  "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                },
+                "phase.f64le": {
+                  "bytes": 4084800,
+                  "fnv1a64": "29a0e82051e9d903",
+                  "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                }
+              },
+              "fs_delay": 9765.625,
+              "fs_time": 48.828125,
+              "gain_reference": "Normalized",
+              "geometry": "Unspecified",
+              "license": "CC-BY-4.0",
+              "name": "Blue 1 · 第2阵元",
+              "original_axis_count": 12,
+              "phase_count": 510600,
+              "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+              "resample_down": 1,
+              "resample_up": 1,
+              "schema": "ns3-factory-recorded-channel-v1",
+              "snapshots": 2553,
+              "source_name": "uwa-blue_1.mat",
+              "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+              "tracking": "phi_hat",
+              "usable_bandwidth_hz": 5000,
+              "version": 1
+            },
+            "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+            "modeled_reference_delay_ns": "2048000000",
+            "origin": "GlobalPool",
+            "relative_amplitude": 1,
+            "rx_id": "2",
+            "start_sample": "0",
+            "tx_id": "1",
+            "version": 1
+          }
+        ],
+        "rx_noise": [
+          {
+            "mode": "None",
+            "rx_id": "2"
+          }
+        ],
+        "schema": "ns3-factory-resolved-proxy-bindings-v1",
+        "transmitter_modulations": []
+      },
+      "modem": {
+        "modulation": "Osdm",
+        "osdm": {
+          "block_length": 256,
+          "constellation": "Qpsk",
+          "cyclic_prefix": 128,
+          "maximum_sync_search": 256,
+          "minimum_sync_correlation": 0.05,
+          "vector_length": 16
+        }
+      },
+      "trajectory_bindings": [
+        {
+          "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+          "node_id": 0,
+          "track_id": "N0",
+          "version": 1
+        },
+        {
+          "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+          "node_id": 1,
+          "track_id": "N1",
+          "version": 1
+        },
+        {
+          "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+          "node_id": 2,
+          "track_id": "N2",
+          "version": 1
+        }
+      ],
+      "trajectory_assets": [
+        {
+          "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+          "version": 1,
+          "checksum_sha256": "36f76aaff244bac417d6e37bb2b3bfd2ef75a186fa754005919cf1b5bd83d85f"
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "1",
+      "trace": {
+        "occurred_at_ns": "0",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "2",
+      "trace": {
+        "occurred_at_ns": "0",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "3",
+      "trace": {
+        "occurred_at_ns": "0",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "4",
+      "trace": {
+        "occurred_at_ns": "0",
+        "kind": "Transmission",
+        "payload": {
+          "transmission_id": "1000",
+          "packet_id": "1000000",
+          "sender_node_id": "0",
+          "target": {
+            "type": "Unicast",
+            "node_id": "2"
+          },
+          "started_at_ns": "0",
+          "ended_at_ns": "256000000"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "5",
+      "trace": {
+        "occurred_at_ns": "0",
+        "kind": "ChannelOutcome",
+        "payload": {
+          "transmission_id": "1000",
+          "receiver_node_id": "2",
+          "outcome": {
+            "type": "Recorded",
+            "reference_delay_ns": "2048000000",
+            "receive_duration_ns": "289000000",
+            "gain_reference": "Normalized",
+            "delay_reference": "Modeled"
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "6",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "7",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "8",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "9",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "SignalArrival",
+        "payload": {
+          "transmission_id": "1000",
+          "receiver_node_id": "2"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "10",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "Transmission",
+        "payload": {
+          "transmission_id": "1001",
+          "packet_id": "1000001",
+          "sender_node_id": "1",
+          "target": {
+            "type": "Unicast",
+            "node_id": "2"
+          },
+          "started_at_ns": "2048000000",
+          "ended_at_ns": "2304000000"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "11",
+      "trace": {
+        "occurred_at_ns": "2048000000",
+        "kind": "ChannelOutcome",
+        "payload": {
+          "transmission_id": "1001",
+          "receiver_node_id": "2",
+          "outcome": {
+            "type": "Recorded",
+            "reference_delay_ns": "2048000000",
+            "receive_duration_ns": "289000000",
+            "gain_reference": "Normalized",
+            "delay_reference": "Modeled"
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "12",
+      "trace": {
+        "occurred_at_ns": "2337000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "13",
+      "trace": {
+        "occurred_at_ns": "2337000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "14",
+      "trace": {
+        "occurred_at_ns": "2337000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "15",
+      "trace": {
+        "occurred_at_ns": "2337000000",
+        "kind": "Reception",
+        "payload": {
+          "reception_id": "2000",
+          "transmission_id": "1000",
+          "packet_id": "1000000",
+          "receiver_node_id": "2",
+          "disposition": "NotDecoded",
+          "quality": null,
+          "waveform": {
+            "payload_bit_count": "32",
+            "bit_error_count": "11",
+            "crc_ok": false,
+            "signal_power_relative": 0.6555940884265348,
+            "noise_power_relative": 0
+          },
+          "mixture": {
+            "signal_count": "1",
+            "sample_count": "867",
+            "mixture_power_relative": 0.6555940884265348,
+            "noise_power_relative": 0
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "16",
+      "trace": {
+        "occurred_at_ns": "4096000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "17",
+      "trace": {
+        "occurred_at_ns": "4096000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "18",
+      "trace": {
+        "occurred_at_ns": "4096000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "19",
+      "trace": {
+        "occurred_at_ns": "4096000000",
+        "kind": "SignalArrival",
+        "payload": {
+          "transmission_id": "1001",
+          "receiver_node_id": "2"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "20",
+      "trace": {
+        "occurred_at_ns": "4385000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "21",
+      "trace": {
+        "occurred_at_ns": "4385000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "22",
+      "trace": {
+        "occurred_at_ns": "4385000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "23",
+      "trace": {
+        "occurred_at_ns": "4385000000",
+        "kind": "Reception",
+        "payload": {
+          "reception_id": "2001",
+          "transmission_id": "1001",
+          "packet_id": "1000001",
+          "receiver_node_id": "2",
+          "disposition": "NotDecoded",
+          "quality": null,
+          "waveform": {
+            "payload_bit_count": "32",
+            "bit_error_count": "22",
+            "crc_ok": false,
+            "signal_power_relative": 0.6127082926926383,
+            "noise_power_relative": 0
+          },
+          "mixture": {
+            "signal_count": "1",
+            "sample_count": "867",
+            "mixture_power_relative": 0.6127082926926383,
+            "noise_power_relative": 0
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "24",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "25",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "26",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "27",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "CycleCommit",
+        "payload": {
+          "cycle_id": "0",
+          "base_snapshot_version": "0",
+          "committed_snapshot_version": "1",
+          "committed_at_ns": "16384000000"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "28",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "Transmission",
+        "payload": {
+          "transmission_id": "1002",
+          "packet_id": "1000002",
+          "sender_node_id": "0",
+          "target": {
+            "type": "Unicast",
+            "node_id": "2"
+          },
+          "started_at_ns": "16384000000",
+          "ended_at_ns": "16640000000"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "29",
+      "trace": {
+        "occurred_at_ns": "16384000000",
+        "kind": "ChannelOutcome",
+        "payload": {
+          "transmission_id": "1002",
+          "receiver_node_id": "2",
+          "outcome": {
+            "type": "Recorded",
+            "reference_delay_ns": "2048000000",
+            "receive_duration_ns": "289000000",
+            "gain_reference": "Normalized",
+            "delay_reference": "Modeled"
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "30",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "31",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "32",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "33",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "SignalArrival",
+        "payload": {
+          "transmission_id": "1002",
+          "receiver_node_id": "2"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "34",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "Transmission",
+        "payload": {
+          "transmission_id": "1003",
+          "packet_id": "1000003",
+          "sender_node_id": "1",
+          "target": {
+            "type": "Unicast",
+            "node_id": "2"
+          },
+          "started_at_ns": "18432000000",
+          "ended_at_ns": "18688000000"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "35",
+      "trace": {
+        "occurred_at_ns": "18432000000",
+        "kind": "ChannelOutcome",
+        "payload": {
+          "transmission_id": "1003",
+          "receiver_node_id": "2",
+          "outcome": {
+            "type": "Recorded",
+            "reference_delay_ns": "2048000000",
+            "receive_duration_ns": "289000000",
+            "gain_reference": "Normalized",
+            "delay_reference": "Modeled"
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "36",
+      "trace": {
+        "occurred_at_ns": "18721000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "37",
+      "trace": {
+        "occurred_at_ns": "18721000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "38",
+      "trace": {
+        "occurred_at_ns": "18721000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "39",
+      "trace": {
+        "occurred_at_ns": "18721000000",
+        "kind": "Reception",
+        "payload": {
+          "reception_id": "2002",
+          "transmission_id": "1002",
+          "packet_id": "1000002",
+          "receiver_node_id": "2",
+          "disposition": "NotDecoded",
+          "quality": null,
+          "waveform": {
+            "payload_bit_count": "32",
+            "bit_error_count": "1",
+            "crc_ok": false,
+            "signal_power_relative": 0.5891820183377509,
+            "noise_power_relative": 0
+          },
+          "mixture": {
+            "signal_count": "1",
+            "sample_count": "867",
+            "mixture_power_relative": 0.5891820183377509,
+            "noise_power_relative": 0
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "40",
+      "trace": {
+        "occurred_at_ns": "20480000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "41",
+      "trace": {
+        "occurred_at_ns": "20480000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "42",
+      "trace": {
+        "occurred_at_ns": "20480000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "43",
+      "trace": {
+        "occurred_at_ns": "20480000000",
+        "kind": "SignalArrival",
+        "payload": {
+          "transmission_id": "1003",
+          "receiver_node_id": "2"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "44",
+      "trace": {
+        "occurred_at_ns": "20769000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "45",
+      "trace": {
+        "occurred_at_ns": "20769000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "46",
+      "trace": {
+        "occurred_at_ns": "20769000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "47",
+      "trace": {
+        "occurred_at_ns": "20769000000",
+        "kind": "Reception",
+        "payload": {
+          "reception_id": "2003",
+          "transmission_id": "1003",
+          "packet_id": "1000003",
+          "receiver_node_id": "2",
+          "disposition": "LocalDelivery",
+          "quality": null,
+          "waveform": {
+            "payload_bit_count": "32",
+            "bit_error_count": "0",
+            "crc_ok": true,
+            "signal_power_relative": 0.6446358771983761,
+            "noise_power_relative": 0
+          },
+          "mixture": {
+            "signal_count": "1",
+            "sample_count": "867",
+            "mixture_power_relative": 0.6446358771983761,
+            "noise_power_relative": 0
+          }
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "48",
+      "trace": {
+        "occurred_at_ns": "32768000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "0",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "49",
+      "trace": {
+        "occurred_at_ns": "32768000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "1",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "50",
+      "trace": {
+        "occurred_at_ns": "32768000000",
+        "kind": "NodePosition",
+        "payload": {
+          "node_id": "2",
+          "x_meters": 0,
+          "y_meters": 0,
+          "z_meters": -1
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "type": "WorkerRunEvent",
+      "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+      "sequence": "51",
+      "trace": {
+        "occurred_at_ns": "32768000000",
+        "kind": "CycleCommit",
+        "payload": {
+          "cycle_id": "1",
+          "base_snapshot_version": "1",
+          "committed_snapshot_version": "2",
+          "committed_at_ns": "32768000000"
+        }
+      }
+    }
+  ],
+  "group": {
+    "schema": "ns3-factory-run-group-v1",
+    "group_id": "group-ab5fa037099c454386b7dc0a46c8a109",
+    "request_key": "proxy-1c41a99e34c243ef829805512b6cf757",
+    "request_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "archived": false,
+    "parent_group_id": null,
+    "common_snapshot": {
+      "family": "RecordedChannelCommunication",
+      "definition": {
+        "environment": {
+          "asset_id": "uwa-blue-1-element-0",
+          "checksum": "dcbae2aab576dcf8044c1cc6751a179cb41d0e474dec775c24b8ca185e4f8e68",
+          "format_version": 1
+        },
+        "execution_mode": "PlanningV1",
+        "experiment": {
+          "adaptive_tdma": null,
+          "bit_rate_bps": 6000,
+          "center_frequency_hz": 13000,
+          "deterministic_seed": 23,
+          "flows": [
+            {
+              "destination_node_id": 2,
+              "packets_per_cycle": 1,
+              "source_node_id": 0
+            },
+            {
+              "destination_node_id": 2,
+              "packets_per_cycle": 1,
+              "source_node_id": 1
+            }
+          ],
+          "fusion_receiver_node_id": null,
+          "guard_interval_ns": 0,
+          "mac_mode": "Tdma",
+          "maximum_ber": 0.0001,
+          "maximum_fusion_period_ns": 180000000000,
+          "minimum_bearing_points": 5,
+          "name": "浏览器代理网络验收 1792476762802",
+          "network_update_interval_cycles": 1,
+          "occupied_bandwidth_hz": 4000,
+          "osdm": {
+            "block_length": 256,
+            "constellation": "Qpsk",
+            "cyclic_prefix": 128,
+            "maximum_sync_search": 256,
+            "minimum_sync_correlation": 0.05,
+            "vector_length": 16
+          },
+          "physical_layer": "Channel3Recorded",
+          "planning_cycle_duration_ns": 16384000000,
+          "routing_mode": "Direct",
+          "slot_duration_ns": 2048000000,
+          "source_level_db": 0,
+          "target_x_m": 200,
+          "target_y_m": 150,
+          "waveform_modulation": "Osdm",
+          "waveform_noise": "None",
+          "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+          "workload": "CommunicationOnly"
+        },
+        "experiment_id": "experiment-af5f81f195af-r2",
+        "experiment_source_revision": 2,
+        "fusion_center_node_id": null,
+        "nodes": [
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 0,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          },
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 1,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          },
+          {
+            "can_receive": true,
+            "can_transmit": false,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 2,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          }
+        ],
+        "recorded_proxy": {
+          "assumptions": {
+            "geometry_drives_channel": false,
+            "link_temporal_relation": "SyntheticOffsets",
+            "noise_spatial_relation": "SyntheticAssignment",
+            "real_joint_multitransmitter_measured": false
+          },
+          "nodes": [
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "node_id": "0"
+            },
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "node_id": "1"
+            },
+            {
+              "can_receive": true,
+              "can_transmit": false,
+              "node_id": "2"
+            }
+          ],
+          "receiver_clock": {
+            "baseband_rate_hz": 3000,
+            "carrier_hz": 13000,
+            "emission_quantum_ns": "64000000",
+            "oscillator": "PacketResetTxDesiredArrivalRx",
+            "passband_rate_hz": 52000
+          },
+          "resolved_links": [
+            {
+              "asset_id": "uwa-blue-1-element-0",
+              "evidence": "ProxySampledLink",
+              "manifest": {
+                "asset_id": "uwa-blue-1-element-0",
+                "axis_kind": "ReceiverElement",
+                "citation": "https://doi.org/10.5281/zenodo.21287414",
+                "delay_taps": 320,
+                "duration_s": 52.26496,
+                "element": 0,
+                "fc": 13000,
+                "files": {
+                  "channel.f64le": {
+                    "bytes": 13071360,
+                    "fnv1a64": "48b48beee6d2c7c7",
+                    "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                  },
+                  "phase.f64le": {
+                    "bytes": 4084800,
+                    "fnv1a64": "6f8c1f0488d4dfa3",
+                    "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                  }
+                },
+                "fs_delay": 9765.625,
+                "fs_time": 48.828125,
+                "gain_reference": "Normalized",
+                "geometry": "Unspecified",
+                "license": "CC-BY-4.0",
+                "name": "Blue 1 · 第1阵元",
+                "original_axis_count": 12,
+                "phase_count": 510600,
+                "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                "resample_down": 1,
+                "resample_up": 1,
+                "schema": "ns3-factory-recorded-channel-v1",
+                "snapshots": 2553,
+                "source_name": "uwa-blue_1.mat",
+                "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                "tracking": "phi_hat",
+                "usable_bandwidth_hz": 5000,
+                "version": 1
+              },
+              "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+              "modeled_reference_delay_ns": "2048000000",
+              "origin": "EdgeOverride",
+              "relative_amplitude": 1,
+              "rx_id": "2",
+              "start_sample": "0",
+              "tx_id": "0",
+              "version": 1
+            },
+            {
+              "asset_id": "uwa-blue-1-element-1",
+              "evidence": "ProxySampledLink",
+              "manifest": {
+                "asset_id": "uwa-blue-1-element-1",
+                "axis_kind": "ReceiverElement",
+                "citation": "https://doi.org/10.5281/zenodo.21287414",
+                "delay_taps": 320,
+                "duration_s": 52.26496,
+                "element": 1,
+                "fc": 13000,
+                "files": {
+                  "channel.f64le": {
+                    "bytes": 13071360,
+                    "fnv1a64": "aa787bb90e602ea6",
+                    "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                  },
+                  "phase.f64le": {
+                    "bytes": 4084800,
+                    "fnv1a64": "29a0e82051e9d903",
+                    "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                  }
+                },
+                "fs_delay": 9765.625,
+                "fs_time": 48.828125,
+                "gain_reference": "Normalized",
+                "geometry": "Unspecified",
+                "license": "CC-BY-4.0",
+                "name": "Blue 1 · 第2阵元",
+                "original_axis_count": 12,
+                "phase_count": 510600,
+                "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                "resample_down": 1,
+                "resample_up": 1,
+                "schema": "ns3-factory-recorded-channel-v1",
+                "snapshots": 2553,
+                "source_name": "uwa-blue_1.mat",
+                "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                "tracking": "phi_hat",
+                "usable_bandwidth_hz": 5000,
+                "version": 1
+              },
+              "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+              "modeled_reference_delay_ns": "2048000000",
+              "origin": "GlobalPool",
+              "relative_amplitude": 1,
+              "rx_id": "2",
+              "start_sample": "0",
+              "tx_id": "1",
+              "version": 1
+            }
+          ],
+          "rx_noise": [
+            {
+              "mode": "None",
+              "rx_id": "2"
+            }
+          ],
+          "schema": "ns3-factory-resolved-proxy-bindings-v1",
+          "transmitter_modulations": []
+        },
+        "scenario_id": "scenario-cad5d31d4727-r1",
+        "scenario_name": "浏览器代理网络验收 1792476762802 · 逻辑网络",
+        "scenario_source_revision": 1,
+        "schema": "ns3-factory-authored-run-v5",
+        "spatial_domain": null,
+        "trajectory_assets": [
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "checksum_sha256": "36f76aaff244bac417d6e37bb2b3bfd2ef75a186fa754005919cf1b5bd83d85f",
+            "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+            "tracks": [
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N0"
+              },
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N1"
+              },
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N2"
+              }
+            ],
+            "version": 1
+          }
+        ],
+        "trajectory_bindings": [
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "version": 2
+      },
+      "execution": {
+        "simulation_cycle_count": "2",
+        "rx_quality_mode": "None",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "deterministic_seed": "23",
+        "physical_layer": "Channel3Recorded",
+        "waveform_modulation": "Osdm",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0
+      },
+      "physics_input_sha256": "b7699012f402e65a813829137042c6166203ed66ca9e0d8dfb5bc5f949f60808",
+      "system_identity": {
+        "schema_version": 1,
+        "platform_name": "NS3-BELLHOP Platform",
+        "platform_version": "0.1.0",
+        "product_baseline": "P0-S5-05",
+        "release_id": "P0-S5-05",
+        "build_target": "linux-x86_64",
+        "reference_environment_asset_id": "reference-shallow-water-v1",
+        "reference_environment_checksum": "fb64e543f9042c52",
+        "build": {
+          "source_revision": "c4585c8-uncommitted-test",
+          "configuration": "ns3-on",
+          "cxx_standard": "23"
+        },
+        "simulation": {
+          "engine": "ns-3",
+          "version": "3.47",
+          "time_authority": "ns3::Simulator",
+          "scheduler_authority": "ns3::Simulator",
+          "scheduling_gateway": "M1 / Ns3KernelGateway"
+        },
+        "interfaces": {
+          "api_schema_version": "1",
+          "worker_wire_schema_version": "1",
+          "acceptance_evidence_schema_version": "1",
+          "frontend_release": "p0-s5-05"
+        },
+        "runtime_mode": "single-active-run-process-local-catalog"
+      }
+    },
+    "common_snapshot_sha256": "b103cc17da138adfea064864b6973e718bfae58b95fc4ee05dd7981c00a3338e",
+    "workload": {
+      "generator": "CommunicationTrafficApplication/COMM-cycle-start-v1",
+      "packets": [
+        {
+          "cycle": "0",
+          "packet_id": "1000000",
+          "source_node_id": "0",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "0",
+          "packet_id": "1000001",
+          "source_node_id": "1",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "1",
+          "packet_id": "1000002",
+          "source_node_id": "0",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "1",
+          "packet_id": "1000003",
+          "source_node_id": "1",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        }
+      ],
+      "count": "4"
+    },
+    "workload_sha256": "872c4d372cffc005b935130bb12baef1d3c110867ad8aa7196233730990e5251",
+    "events_available": false,
+    "members": [
+      {
+        "member": "C",
+        "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+        "state": "Completed",
+        "definition": {
+          "environment": {
+            "asset_id": "uwa-blue-1-element-0",
+            "checksum": "dcbae2aab576dcf8044c1cc6751a179cb41d0e474dec775c24b8ca185e4f8e68",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": null,
+            "bit_rate_bps": 6000,
+            "center_frequency_hz": 13000,
+            "deterministic_seed": 23,
+            "flows": [
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 1
+              }
+            ],
+            "fusion_receiver_node_id": null,
+            "guard_interval_ns": 0,
+            "mac_mode": "Tdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "浏览器代理网络验收 1792476762802",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "osdm": {
+              "block_length": 256,
+              "constellation": "Qpsk",
+              "cyclic_prefix": 128,
+              "maximum_sync_search": 256,
+              "minimum_sync_correlation": 0.05,
+              "vector_length": 16
+            },
+            "physical_layer": "Channel3Recorded",
+            "planning_cycle_duration_ns": 16384000000,
+            "routing_mode": "Direct",
+            "slot_duration_ns": 2048000000,
+            "source_level_db": 0,
+            "target_x_m": 200,
+            "target_y_m": 150,
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+            "workload": "CommunicationOnly"
+          },
+          "experiment_id": "experiment-af5f81f195af-r2",
+          "experiment_source_revision": 2,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            },
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            },
+            {
+              "can_receive": true,
+              "can_transmit": false,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            }
+          ],
+          "recorded_proxy": {
+            "assumptions": {
+              "geometry_drives_channel": false,
+              "link_temporal_relation": "SyntheticOffsets",
+              "noise_spatial_relation": "SyntheticAssignment",
+              "real_joint_multitransmitter_measured": false
+            },
+            "nodes": [
+              {
+                "can_receive": false,
+                "can_transmit": true,
+                "node_id": "0"
+              },
+              {
+                "can_receive": false,
+                "can_transmit": true,
+                "node_id": "1"
+              },
+              {
+                "can_receive": true,
+                "can_transmit": false,
+                "node_id": "2"
+              }
+            ],
+            "receiver_clock": {
+              "baseband_rate_hz": 3000,
+              "carrier_hz": 13000,
+              "emission_quantum_ns": "64000000",
+              "oscillator": "PacketResetTxDesiredArrivalRx",
+              "passband_rate_hz": 52000
+            },
+            "resolved_links": [
+              {
+                "asset_id": "uwa-blue-1-element-0",
+                "evidence": "ProxySampledLink",
+                "manifest": {
+                  "asset_id": "uwa-blue-1-element-0",
+                  "axis_kind": "ReceiverElement",
+                  "citation": "https://doi.org/10.5281/zenodo.21287414",
+                  "delay_taps": 320,
+                  "duration_s": 52.26496,
+                  "element": 0,
+                  "fc": 13000,
+                  "files": {
+                    "channel.f64le": {
+                      "bytes": 13071360,
+                      "fnv1a64": "48b48beee6d2c7c7",
+                      "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                    },
+                    "phase.f64le": {
+                      "bytes": 4084800,
+                      "fnv1a64": "6f8c1f0488d4dfa3",
+                      "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                    }
+                  },
+                  "fs_delay": 9765.625,
+                  "fs_time": 48.828125,
+                  "gain_reference": "Normalized",
+                  "geometry": "Unspecified",
+                  "license": "CC-BY-4.0",
+                  "name": "Blue 1 · 第1阵元",
+                  "original_axis_count": 12,
+                  "phase_count": 510600,
+                  "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                  "resample_down": 1,
+                  "resample_up": 1,
+                  "schema": "ns3-factory-recorded-channel-v1",
+                  "snapshots": 2553,
+                  "source_name": "uwa-blue_1.mat",
+                  "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                  "tracking": "phi_hat",
+                  "usable_bandwidth_hz": 5000,
+                  "version": 1
+                },
+                "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+                "modeled_reference_delay_ns": "2048000000",
+                "origin": "EdgeOverride",
+                "relative_amplitude": 1,
+                "rx_id": "2",
+                "start_sample": "0",
+                "tx_id": "0",
+                "version": 1
+              },
+              {
+                "asset_id": "uwa-blue-1-element-1",
+                "evidence": "ProxySampledLink",
+                "manifest": {
+                  "asset_id": "uwa-blue-1-element-1",
+                  "axis_kind": "ReceiverElement",
+                  "citation": "https://doi.org/10.5281/zenodo.21287414",
+                  "delay_taps": 320,
+                  "duration_s": 52.26496,
+                  "element": 1,
+                  "fc": 13000,
+                  "files": {
+                    "channel.f64le": {
+                      "bytes": 13071360,
+                      "fnv1a64": "aa787bb90e602ea6",
+                      "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                    },
+                    "phase.f64le": {
+                      "bytes": 4084800,
+                      "fnv1a64": "29a0e82051e9d903",
+                      "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                    }
+                  },
+                  "fs_delay": 9765.625,
+                  "fs_time": 48.828125,
+                  "gain_reference": "Normalized",
+                  "geometry": "Unspecified",
+                  "license": "CC-BY-4.0",
+                  "name": "Blue 1 · 第2阵元",
+                  "original_axis_count": 12,
+                  "phase_count": 510600,
+                  "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                  "resample_down": 1,
+                  "resample_up": 1,
+                  "schema": "ns3-factory-recorded-channel-v1",
+                  "snapshots": 2553,
+                  "source_name": "uwa-blue_1.mat",
+                  "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                  "tracking": "phi_hat",
+                  "usable_bandwidth_hz": 5000,
+                  "version": 1
+                },
+                "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+                "modeled_reference_delay_ns": "2048000000",
+                "origin": "GlobalPool",
+                "relative_amplitude": 1,
+                "rx_id": "2",
+                "start_sample": "0",
+                "tx_id": "1",
+                "version": 1
+              }
+            ],
+            "rx_noise": [
+              {
+                "mode": "None",
+                "rx_id": "2"
+              }
+            ],
+            "schema": "ns3-factory-resolved-proxy-bindings-v1",
+            "transmitter_modulations": []
+          },
+          "scenario_id": "scenario-cad5d31d4727-r1",
+          "scenario_name": "浏览器代理网络验收 1792476762802 · 逻辑网络",
+          "scenario_source_revision": 1,
+          "schema": "ns3-factory-authored-run-v5",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "checksum_sha256": "36f76aaff244bac417d6e37bb2b3bfd2ef75a186fa754005919cf1b5bd83d85f",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 2
+        },
+        "definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa",
+        "command": {
+          "schema_version": 1,
+          "type": "StartRunCommand",
+          "preset": {
+            "scenario_id": "scenario-cad5d31d4727-r1",
+            "experiment_id": "experiment-af5f81f195af-r2",
+            "definition_version": "2",
+            "acceptance_profile": "Acceptance4Node"
+          },
+          "environment": {
+            "asset_id": "uwa-blue-1-element-0",
+            "asset_format_version": "1"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel3Recorded",
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "authored_definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa"
+        },
+        "execution": {
+          "simulation_cycle_count": "2",
+          "rx_quality_mode": "None",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23",
+          "physical_layer": "Channel3Recorded",
+          "waveform_modulation": "Osdm",
+          "waveform_noise": "None",
+          "waveform_noise_psd_db_re_1upa2_per_hz": 0
+        },
+        "result": {
+          "run_id": "run-85a43adc60a84f42a5222afb5f21538f",
+          "projection": {
+            "simulation_started_at_ns": "0",
+            "simulation_ended_at_ns": "32768000000",
+            "simulation_duration_ns": "32768000000",
+            "final_snapshot_version": "2",
+            "cycle_count": "2",
+            "node_count": "3",
+            "transmission_count": "4",
+            "channel_signal_count": "4",
+            "channel_no_arrival_count": "0",
+            "reception_count": "4",
+            "local_delivery_count": "1"
+          },
+          "acceptance_report": null,
+          "fusion_results": [],
+          "nodes": [
+            {
+              "node_id": "0",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            },
+            {
+              "node_id": "1",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            },
+            {
+              "node_id": "2",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            }
+          ],
+          "visualization": {
+            "positions_complete": true,
+            "generated_feature_count": "0",
+            "positions": [
+              {
+                "node_id": "0",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              }
+            ],
+            "fusion_sources": [],
+            "waveform": [
+              {
+                "transmission_id": "1000",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "11",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1001",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "22",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1002",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "1",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1003",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "0",
+                "crc_ok": true
+              }
+            ]
+          },
+          "experiment_id": "experiment-af5f81f195af-r2",
+          "experiment_version": "2",
+          "scenario_id": "scenario-cad5d31d4727-r1",
+          "scenario_version": "2",
+          "environment_asset_id": "uwa-blue-1-element-0",
+          "environment_format_version": "1",
+          "provenance": {
+            "definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa",
+            "physical_layer": "Channel3Recorded",
+            "workload": "CommunicationOnly",
+            "recorded_proxy": {
+              "assumptions": {
+                "geometry_drives_channel": false,
+                "link_temporal_relation": "SyntheticOffsets",
+                "noise_spatial_relation": "SyntheticAssignment",
+                "real_joint_multitransmitter_measured": false
+              },
+              "nodes": [
+                {
+                  "can_receive": false,
+                  "can_transmit": true,
+                  "node_id": "0"
+                },
+                {
+                  "can_receive": false,
+                  "can_transmit": true,
+                  "node_id": "1"
+                },
+                {
+                  "can_receive": true,
+                  "can_transmit": false,
+                  "node_id": "2"
+                }
+              ],
+              "receiver_clock": {
+                "baseband_rate_hz": 3000,
+                "carrier_hz": 13000,
+                "emission_quantum_ns": "64000000",
+                "oscillator": "PacketResetTxDesiredArrivalRx",
+                "passband_rate_hz": 52000
+              },
+              "resolved_links": [
+                {
+                  "asset_id": "uwa-blue-1-element-0",
+                  "evidence": "ProxySampledLink",
+                  "manifest": {
+                    "asset_id": "uwa-blue-1-element-0",
+                    "axis_kind": "ReceiverElement",
+                    "citation": "https://doi.org/10.5281/zenodo.21287414",
+                    "delay_taps": 320,
+                    "duration_s": 52.26496,
+                    "element": 0,
+                    "fc": 13000,
+                    "files": {
+                      "channel.f64le": {
+                        "bytes": 13071360,
+                        "fnv1a64": "48b48beee6d2c7c7",
+                        "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                      },
+                      "phase.f64le": {
+                        "bytes": 4084800,
+                        "fnv1a64": "6f8c1f0488d4dfa3",
+                        "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                      }
+                    },
+                    "fs_delay": 9765.625,
+                    "fs_time": 48.828125,
+                    "gain_reference": "Normalized",
+                    "geometry": "Unspecified",
+                    "license": "CC-BY-4.0",
+                    "name": "Blue 1 · 第1阵元",
+                    "original_axis_count": 12,
+                    "phase_count": 510600,
+                    "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                    "resample_down": 1,
+                    "resample_up": 1,
+                    "schema": "ns3-factory-recorded-channel-v1",
+                    "snapshots": 2553,
+                    "source_name": "uwa-blue_1.mat",
+                    "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                    "tracking": "phi_hat",
+                    "usable_bandwidth_hz": 5000,
+                    "version": 1
+                  },
+                  "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+                  "modeled_reference_delay_ns": "2048000000",
+                  "origin": "EdgeOverride",
+                  "relative_amplitude": 1,
+                  "rx_id": "2",
+                  "start_sample": "0",
+                  "tx_id": "0",
+                  "version": 1
+                },
+                {
+                  "asset_id": "uwa-blue-1-element-1",
+                  "evidence": "ProxySampledLink",
+                  "manifest": {
+                    "asset_id": "uwa-blue-1-element-1",
+                    "axis_kind": "ReceiverElement",
+                    "citation": "https://doi.org/10.5281/zenodo.21287414",
+                    "delay_taps": 320,
+                    "duration_s": 52.26496,
+                    "element": 1,
+                    "fc": 13000,
+                    "files": {
+                      "channel.f64le": {
+                        "bytes": 13071360,
+                        "fnv1a64": "aa787bb90e602ea6",
+                        "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                      },
+                      "phase.f64le": {
+                        "bytes": 4084800,
+                        "fnv1a64": "29a0e82051e9d903",
+                        "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                      }
+                    },
+                    "fs_delay": 9765.625,
+                    "fs_time": 48.828125,
+                    "gain_reference": "Normalized",
+                    "geometry": "Unspecified",
+                    "license": "CC-BY-4.0",
+                    "name": "Blue 1 · 第2阵元",
+                    "original_axis_count": 12,
+                    "phase_count": 510600,
+                    "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                    "resample_down": 1,
+                    "resample_up": 1,
+                    "schema": "ns3-factory-recorded-channel-v1",
+                    "snapshots": 2553,
+                    "source_name": "uwa-blue_1.mat",
+                    "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                    "tracking": "phi_hat",
+                    "usable_bandwidth_hz": 5000,
+                    "version": 1
+                  },
+                  "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+                  "modeled_reference_delay_ns": "2048000000",
+                  "origin": "GlobalPool",
+                  "relative_amplitude": 1,
+                  "rx_id": "2",
+                  "start_sample": "0",
+                  "tx_id": "1",
+                  "version": 1
+                }
+              ],
+              "rx_noise": [
+                {
+                  "mode": "None",
+                  "rx_id": "2"
+                }
+              ],
+              "schema": "ns3-factory-resolved-proxy-bindings-v1",
+              "transmitter_modulations": []
+            },
+            "proxy_receptions": [
+              {
+                "transmission_id": "1000",
+                "receiver_node_id": "2",
+                "at_ns": "2337000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6555940884265348,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "11",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.6555940884265348,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "0"
+              },
+              {
+                "transmission_id": "1001",
+                "receiver_node_id": "2",
+                "at_ns": "4385000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6127082926926383,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "22",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.6127082926926383,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "1"
+              },
+              {
+                "transmission_id": "1002",
+                "receiver_node_id": "2",
+                "at_ns": "18721000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.5891820183377509,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "1",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.5891820183377509,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "0"
+              },
+              {
+                "transmission_id": "1003",
+                "receiver_node_id": "2",
+                "at_ns": "20769000000",
+                "disposition": "LocalDelivery",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6446358771983761,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true,
+                  "signal_power_relative": 0.6446358771983761,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "1"
+              }
+            ]
+          }
+        },
+        "failure": null
+      }
+    ],
+    "state": "Completed",
+    "rerun_available": true
+  },
+  "repeated_group": {
+    "schema": "ns3-factory-run-group-v1",
+    "group_id": "group-c7744b56744442eba23a730b0460b26c",
+    "request_key": "repeat-60e0a992-c432-44c3-9330-cce623f96a46",
+    "request_sha256": "e4b3847fbf168a4e819bdf726288d0a6ffba6e601aa1680baefc5cb3796f447f",
+    "archived": false,
+    "parent_group_id": "group-ab5fa037099c454386b7dc0a46c8a109",
+    "common_snapshot": {
+      "family": "RecordedChannelCommunication",
+      "definition": {
+        "environment": {
+          "asset_id": "uwa-blue-1-element-0",
+          "checksum": "dcbae2aab576dcf8044c1cc6751a179cb41d0e474dec775c24b8ca185e4f8e68",
+          "format_version": 1
+        },
+        "execution_mode": "PlanningV1",
+        "experiment": {
+          "adaptive_tdma": null,
+          "bit_rate_bps": 6000,
+          "center_frequency_hz": 13000,
+          "deterministic_seed": 23,
+          "flows": [
+            {
+              "destination_node_id": 2,
+              "packets_per_cycle": 1,
+              "source_node_id": 0
+            },
+            {
+              "destination_node_id": 2,
+              "packets_per_cycle": 1,
+              "source_node_id": 1
+            }
+          ],
+          "fusion_receiver_node_id": null,
+          "guard_interval_ns": 0,
+          "mac_mode": "Tdma",
+          "maximum_ber": 0.0001,
+          "maximum_fusion_period_ns": 180000000000,
+          "minimum_bearing_points": 5,
+          "name": "浏览器代理网络验收 1792476762802",
+          "network_update_interval_cycles": 1,
+          "occupied_bandwidth_hz": 4000,
+          "osdm": {
+            "block_length": 256,
+            "constellation": "Qpsk",
+            "cyclic_prefix": 128,
+            "maximum_sync_search": 256,
+            "minimum_sync_correlation": 0.05,
+            "vector_length": 16
+          },
+          "physical_layer": "Channel3Recorded",
+          "planning_cycle_duration_ns": 16384000000,
+          "routing_mode": "Direct",
+          "slot_duration_ns": 2048000000,
+          "source_level_db": 0,
+          "target_x_m": 200,
+          "target_y_m": 150,
+          "waveform_modulation": "Osdm",
+          "waveform_noise": "None",
+          "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+          "workload": "CommunicationOnly"
+        },
+        "experiment_id": "experiment-af5f81f195af-r2",
+        "experiment_source_revision": 2,
+        "fusion_center_node_id": null,
+        "nodes": [
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 0,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          },
+          {
+            "can_receive": false,
+            "can_transmit": true,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 1,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          },
+          {
+            "can_receive": true,
+            "can_transmit": false,
+            "duplex_mode": "HalfDuplex",
+            "node_id": 2,
+            "x_m": 0,
+            "y_m": 0,
+            "z_m": -1
+          }
+        ],
+        "recorded_proxy": {
+          "assumptions": {
+            "geometry_drives_channel": false,
+            "link_temporal_relation": "SyntheticOffsets",
+            "noise_spatial_relation": "SyntheticAssignment",
+            "real_joint_multitransmitter_measured": false
+          },
+          "nodes": [
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "node_id": "0"
+            },
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "node_id": "1"
+            },
+            {
+              "can_receive": true,
+              "can_transmit": false,
+              "node_id": "2"
+            }
+          ],
+          "receiver_clock": {
+            "baseband_rate_hz": 3000,
+            "carrier_hz": 13000,
+            "emission_quantum_ns": "64000000",
+            "oscillator": "PacketResetTxDesiredArrivalRx",
+            "passband_rate_hz": 52000
+          },
+          "resolved_links": [
+            {
+              "asset_id": "uwa-blue-1-element-0",
+              "evidence": "ProxySampledLink",
+              "manifest": {
+                "asset_id": "uwa-blue-1-element-0",
+                "axis_kind": "ReceiverElement",
+                "citation": "https://doi.org/10.5281/zenodo.21287414",
+                "delay_taps": 320,
+                "duration_s": 52.26496,
+                "element": 0,
+                "fc": 13000,
+                "files": {
+                  "channel.f64le": {
+                    "bytes": 13071360,
+                    "fnv1a64": "48b48beee6d2c7c7",
+                    "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                  },
+                  "phase.f64le": {
+                    "bytes": 4084800,
+                    "fnv1a64": "6f8c1f0488d4dfa3",
+                    "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                  }
+                },
+                "fs_delay": 9765.625,
+                "fs_time": 48.828125,
+                "gain_reference": "Normalized",
+                "geometry": "Unspecified",
+                "license": "CC-BY-4.0",
+                "name": "Blue 1 · 第1阵元",
+                "original_axis_count": 12,
+                "phase_count": 510600,
+                "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                "resample_down": 1,
+                "resample_up": 1,
+                "schema": "ns3-factory-recorded-channel-v1",
+                "snapshots": 2553,
+                "source_name": "uwa-blue_1.mat",
+                "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                "tracking": "phi_hat",
+                "usable_bandwidth_hz": 5000,
+                "version": 1
+              },
+              "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+              "modeled_reference_delay_ns": "2048000000",
+              "origin": "EdgeOverride",
+              "relative_amplitude": 1,
+              "rx_id": "2",
+              "start_sample": "0",
+              "tx_id": "0",
+              "version": 1
+            },
+            {
+              "asset_id": "uwa-blue-1-element-1",
+              "evidence": "ProxySampledLink",
+              "manifest": {
+                "asset_id": "uwa-blue-1-element-1",
+                "axis_kind": "ReceiverElement",
+                "citation": "https://doi.org/10.5281/zenodo.21287414",
+                "delay_taps": 320,
+                "duration_s": 52.26496,
+                "element": 1,
+                "fc": 13000,
+                "files": {
+                  "channel.f64le": {
+                    "bytes": 13071360,
+                    "fnv1a64": "aa787bb90e602ea6",
+                    "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                  },
+                  "phase.f64le": {
+                    "bytes": 4084800,
+                    "fnv1a64": "29a0e82051e9d903",
+                    "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                  }
+                },
+                "fs_delay": 9765.625,
+                "fs_time": 48.828125,
+                "gain_reference": "Normalized",
+                "geometry": "Unspecified",
+                "license": "CC-BY-4.0",
+                "name": "Blue 1 · 第2阵元",
+                "original_axis_count": 12,
+                "phase_count": 510600,
+                "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                "resample_down": 1,
+                "resample_up": 1,
+                "schema": "ns3-factory-recorded-channel-v1",
+                "snapshots": 2553,
+                "source_name": "uwa-blue_1.mat",
+                "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                "tracking": "phi_hat",
+                "usable_bandwidth_hz": 5000,
+                "version": 1
+              },
+              "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+              "modeled_reference_delay_ns": "2048000000",
+              "origin": "GlobalPool",
+              "relative_amplitude": 1,
+              "rx_id": "2",
+              "start_sample": "0",
+              "tx_id": "1",
+              "version": 1
+            }
+          ],
+          "rx_noise": [
+            {
+              "mode": "None",
+              "rx_id": "2"
+            }
+          ],
+          "schema": "ns3-factory-resolved-proxy-bindings-v1",
+          "transmitter_modulations": []
+        },
+        "scenario_id": "scenario-cad5d31d4727-r1",
+        "scenario_name": "浏览器代理网络验收 1792476762802 · 逻辑网络",
+        "scenario_source_revision": 1,
+        "schema": "ns3-factory-authored-run-v5",
+        "spatial_domain": null,
+        "trajectory_assets": [
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "checksum_sha256": "36f76aaff244bac417d6e37bb2b3bfd2ef75a186fa754005919cf1b5bd83d85f",
+            "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+            "tracks": [
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N0"
+              },
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N1"
+              },
+              {
+                "points": [
+                  {
+                    "time_ns": 0,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  },
+                  {
+                    "time_ns": 86400000000000,
+                    "x_m": 0,
+                    "y_m": 0,
+                    "z_m": -1
+                  }
+                ],
+                "track_id": "N2"
+              }
+            ],
+            "version": 1
+          }
+        ],
+        "trajectory_bindings": [
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 0,
+            "track_id": "N0",
+            "version": 1
+          },
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 1,
+            "track_id": "N1",
+            "version": 1
+          },
+          {
+            "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+            "node_id": 2,
+            "track_id": "N2",
+            "version": 1
+          }
+        ],
+        "version": 2
+      },
+      "execution": {
+        "simulation_cycle_count": "2",
+        "rx_quality_mode": "None",
+        "equivalent_noise_power_db_re_1upa2": 45,
+        "deterministic_seed": "23",
+        "physical_layer": "Channel3Recorded",
+        "waveform_modulation": "Osdm",
+        "waveform_noise": "None",
+        "waveform_noise_psd_db_re_1upa2_per_hz": 0
+      },
+      "physics_input_sha256": "b7699012f402e65a813829137042c6166203ed66ca9e0d8dfb5bc5f949f60808",
+      "system_identity": {
+        "schema_version": 1,
+        "platform_name": "NS3-BELLHOP Platform",
+        "platform_version": "0.1.0",
+        "product_baseline": "P0-S5-05",
+        "release_id": "P0-S5-05",
+        "build_target": "linux-x86_64",
+        "reference_environment_asset_id": "reference-shallow-water-v1",
+        "reference_environment_checksum": "fb64e543f9042c52",
+        "build": {
+          "source_revision": "c4585c8-uncommitted-test",
+          "configuration": "ns3-on",
+          "cxx_standard": "23"
+        },
+        "simulation": {
+          "engine": "ns-3",
+          "version": "3.47",
+          "time_authority": "ns3::Simulator",
+          "scheduler_authority": "ns3::Simulator",
+          "scheduling_gateway": "M1 / Ns3KernelGateway"
+        },
+        "interfaces": {
+          "api_schema_version": "1",
+          "worker_wire_schema_version": "1",
+          "acceptance_evidence_schema_version": "1",
+          "frontend_release": "p0-s5-05"
+        },
+        "runtime_mode": "single-active-run-process-local-catalog"
+      }
+    },
+    "common_snapshot_sha256": "b103cc17da138adfea064864b6973e718bfae58b95fc4ee05dd7981c00a3338e",
+    "workload": {
+      "generator": "CommunicationTrafficApplication/COMM-cycle-start-v1",
+      "packets": [
+        {
+          "cycle": "0",
+          "packet_id": "1000000",
+          "source_node_id": "0",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "0",
+          "packet_id": "1000001",
+          "source_node_id": "1",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "1",
+          "packet_id": "1000002",
+          "source_node_id": "0",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        },
+        {
+          "cycle": "1",
+          "packet_id": "1000003",
+          "source_node_id": "1",
+          "destination_node_id": "2",
+          "flow_id": null,
+          "payload_hex": "434f4d4d"
+        }
+      ],
+      "count": "4"
+    },
+    "workload_sha256": "872c4d372cffc005b935130bb12baef1d3c110867ad8aa7196233730990e5251",
+    "events_available": false,
+    "members": [
+      {
+        "member": "C",
+        "run_id": "run-60dd8e674dae4e3bb9c49003146d7db7",
+        "state": "Completed",
+        "definition": {
+          "environment": {
+            "asset_id": "uwa-blue-1-element-0",
+            "checksum": "dcbae2aab576dcf8044c1cc6751a179cb41d0e474dec775c24b8ca185e4f8e68",
+            "format_version": 1
+          },
+          "execution_mode": "PlanningV1",
+          "experiment": {
+            "adaptive_tdma": null,
+            "bit_rate_bps": 6000,
+            "center_frequency_hz": 13000,
+            "deterministic_seed": 23,
+            "flows": [
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 0
+              },
+              {
+                "destination_node_id": 2,
+                "packets_per_cycle": 1,
+                "source_node_id": 1
+              }
+            ],
+            "fusion_receiver_node_id": null,
+            "guard_interval_ns": 0,
+            "mac_mode": "Tdma",
+            "maximum_ber": 0.0001,
+            "maximum_fusion_period_ns": 180000000000,
+            "minimum_bearing_points": 5,
+            "name": "浏览器代理网络验收 1792476762802",
+            "network_update_interval_cycles": 1,
+            "occupied_bandwidth_hz": 4000,
+            "osdm": {
+              "block_length": 256,
+              "constellation": "Qpsk",
+              "cyclic_prefix": 128,
+              "maximum_sync_search": 256,
+              "minimum_sync_correlation": 0.05,
+              "vector_length": 16
+            },
+            "physical_layer": "Channel3Recorded",
+            "planning_cycle_duration_ns": 16384000000,
+            "routing_mode": "Direct",
+            "slot_duration_ns": 2048000000,
+            "source_level_db": 0,
+            "target_x_m": 200,
+            "target_y_m": 150,
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0,
+            "workload": "CommunicationOnly"
+          },
+          "experiment_id": "experiment-af5f81f195af-r2",
+          "experiment_source_revision": 2,
+          "fusion_center_node_id": null,
+          "nodes": [
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 0,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            },
+            {
+              "can_receive": false,
+              "can_transmit": true,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 1,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            },
+            {
+              "can_receive": true,
+              "can_transmit": false,
+              "duplex_mode": "HalfDuplex",
+              "node_id": 2,
+              "x_m": 0,
+              "y_m": 0,
+              "z_m": -1
+            }
+          ],
+          "recorded_proxy": {
+            "assumptions": {
+              "geometry_drives_channel": false,
+              "link_temporal_relation": "SyntheticOffsets",
+              "noise_spatial_relation": "SyntheticAssignment",
+              "real_joint_multitransmitter_measured": false
+            },
+            "nodes": [
+              {
+                "can_receive": false,
+                "can_transmit": true,
+                "node_id": "0"
+              },
+              {
+                "can_receive": false,
+                "can_transmit": true,
+                "node_id": "1"
+              },
+              {
+                "can_receive": true,
+                "can_transmit": false,
+                "node_id": "2"
+              }
+            ],
+            "receiver_clock": {
+              "baseband_rate_hz": 3000,
+              "carrier_hz": 13000,
+              "emission_quantum_ns": "64000000",
+              "oscillator": "PacketResetTxDesiredArrivalRx",
+              "passband_rate_hz": 52000
+            },
+            "resolved_links": [
+              {
+                "asset_id": "uwa-blue-1-element-0",
+                "evidence": "ProxySampledLink",
+                "manifest": {
+                  "asset_id": "uwa-blue-1-element-0",
+                  "axis_kind": "ReceiverElement",
+                  "citation": "https://doi.org/10.5281/zenodo.21287414",
+                  "delay_taps": 320,
+                  "duration_s": 52.26496,
+                  "element": 0,
+                  "fc": 13000,
+                  "files": {
+                    "channel.f64le": {
+                      "bytes": 13071360,
+                      "fnv1a64": "48b48beee6d2c7c7",
+                      "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                    },
+                    "phase.f64le": {
+                      "bytes": 4084800,
+                      "fnv1a64": "6f8c1f0488d4dfa3",
+                      "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                    }
+                  },
+                  "fs_delay": 9765.625,
+                  "fs_time": 48.828125,
+                  "gain_reference": "Normalized",
+                  "geometry": "Unspecified",
+                  "license": "CC-BY-4.0",
+                  "name": "Blue 1 · 第1阵元",
+                  "original_axis_count": 12,
+                  "phase_count": 510600,
+                  "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                  "resample_down": 1,
+                  "resample_up": 1,
+                  "schema": "ns3-factory-recorded-channel-v1",
+                  "snapshots": 2553,
+                  "source_name": "uwa-blue_1.mat",
+                  "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                  "tracking": "phi_hat",
+                  "usable_bandwidth_hz": 5000,
+                  "version": 1
+                },
+                "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+                "modeled_reference_delay_ns": "2048000000",
+                "origin": "EdgeOverride",
+                "relative_amplitude": 1,
+                "rx_id": "2",
+                "start_sample": "0",
+                "tx_id": "0",
+                "version": 1
+              },
+              {
+                "asset_id": "uwa-blue-1-element-1",
+                "evidence": "ProxySampledLink",
+                "manifest": {
+                  "asset_id": "uwa-blue-1-element-1",
+                  "axis_kind": "ReceiverElement",
+                  "citation": "https://doi.org/10.5281/zenodo.21287414",
+                  "delay_taps": 320,
+                  "duration_s": 52.26496,
+                  "element": 1,
+                  "fc": 13000,
+                  "files": {
+                    "channel.f64le": {
+                      "bytes": 13071360,
+                      "fnv1a64": "aa787bb90e602ea6",
+                      "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                    },
+                    "phase.f64le": {
+                      "bytes": 4084800,
+                      "fnv1a64": "29a0e82051e9d903",
+                      "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                    }
+                  },
+                  "fs_delay": 9765.625,
+                  "fs_time": 48.828125,
+                  "gain_reference": "Normalized",
+                  "geometry": "Unspecified",
+                  "license": "CC-BY-4.0",
+                  "name": "Blue 1 · 第2阵元",
+                  "original_axis_count": 12,
+                  "phase_count": 510600,
+                  "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                  "resample_down": 1,
+                  "resample_up": 1,
+                  "schema": "ns3-factory-recorded-channel-v1",
+                  "snapshots": 2553,
+                  "source_name": "uwa-blue_1.mat",
+                  "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                  "tracking": "phi_hat",
+                  "usable_bandwidth_hz": 5000,
+                  "version": 1
+                },
+                "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+                "modeled_reference_delay_ns": "2048000000",
+                "origin": "GlobalPool",
+                "relative_amplitude": 1,
+                "rx_id": "2",
+                "start_sample": "0",
+                "tx_id": "1",
+                "version": 1
+              }
+            ],
+            "rx_noise": [
+              {
+                "mode": "None",
+                "rx_id": "2"
+              }
+            ],
+            "schema": "ns3-factory-resolved-proxy-bindings-v1",
+            "transmitter_modulations": []
+          },
+          "scenario_id": "scenario-cad5d31d4727-r1",
+          "scenario_name": "浏览器代理网络验收 1792476762802 · 逻辑网络",
+          "scenario_source_revision": 1,
+          "schema": "ns3-factory-authored-run-v5",
+          "spatial_domain": null,
+          "trajectory_assets": [
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "checksum_sha256": "36f76aaff244bac417d6e37bb2b3bfd2ef75a186fa754005919cf1b5bd83d85f",
+              "source": "external-csv-v1; units=s,m; frame=LocalCartesianMetersZUp",
+              "tracks": [
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N0"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N1"
+                },
+                {
+                  "points": [
+                    {
+                      "time_ns": 0,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    },
+                    {
+                      "time_ns": 86400000000000,
+                      "x_m": 0,
+                      "y_m": 0,
+                      "z_m": -1
+                    }
+                  ],
+                  "track_id": "N2"
+                }
+              ],
+              "version": 1
+            }
+          ],
+          "trajectory_bindings": [
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 0,
+              "track_id": "N0",
+              "version": 1
+            },
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 1,
+              "track_id": "N1",
+              "version": 1
+            },
+            {
+              "asset_id": "proxy-layout-2cd3463b-5bb3-4444-bfbf-be393157fa4b",
+              "node_id": 2,
+              "track_id": "N2",
+              "version": 1
+            }
+          ],
+          "version": 2
+        },
+        "definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa",
+        "command": {
+          "schema_version": 1,
+          "type": "StartRunCommand",
+          "preset": {
+            "scenario_id": "scenario-cad5d31d4727-r1",
+            "experiment_id": "experiment-af5f81f195af-r2",
+            "definition_version": "2",
+            "acceptance_profile": "Acceptance4Node"
+          },
+          "environment": {
+            "asset_id": "uwa-blue-1-element-0",
+            "asset_format_version": "1"
+          },
+          "execution": {
+            "simulation_cycle_count": "2",
+            "rx_quality_mode": "None",
+            "equivalent_noise_power_db_re_1upa2": 45,
+            "deterministic_seed": "23",
+            "physical_layer": "Channel3Recorded",
+            "waveform_modulation": "Osdm",
+            "waveform_noise": "None",
+            "waveform_noise_psd_db_re_1upa2_per_hz": 0
+          },
+          "authored_definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa"
+        },
+        "execution": {
+          "simulation_cycle_count": "2",
+          "rx_quality_mode": "None",
+          "equivalent_noise_power_db_re_1upa2": 45,
+          "deterministic_seed": "23",
+          "physical_layer": "Channel3Recorded",
+          "waveform_modulation": "Osdm",
+          "waveform_noise": "None",
+          "waveform_noise_psd_db_re_1upa2_per_hz": 0
+        },
+        "result": {
+          "run_id": "run-60dd8e674dae4e3bb9c49003146d7db7",
+          "projection": {
+            "simulation_started_at_ns": "0",
+            "simulation_ended_at_ns": "32768000000",
+            "simulation_duration_ns": "32768000000",
+            "final_snapshot_version": "2",
+            "cycle_count": "2",
+            "node_count": "3",
+            "transmission_count": "4",
+            "channel_signal_count": "4",
+            "channel_no_arrival_count": "0",
+            "reception_count": "4",
+            "local_delivery_count": "1"
+          },
+          "acceptance_report": null,
+          "fusion_results": [],
+          "nodes": [
+            {
+              "node_id": "0",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            },
+            {
+              "node_id": "1",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            },
+            {
+              "node_id": "2",
+              "x_meters": 0,
+              "y_meters": 0,
+              "z_meters": -1,
+              "is_fusion_center": false
+            }
+          ],
+          "visualization": {
+            "positions_complete": true,
+            "generated_feature_count": "0",
+            "positions": [
+              {
+                "node_id": "0",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "0",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "2048000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "2337000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "4096000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "4385000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "16384000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "18432000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "18721000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "20480000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "20769000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "0",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "1",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              },
+              {
+                "node_id": "2",
+                "at_ns": "32768000000",
+                "x_meters": 0,
+                "y_meters": 0,
+                "z_meters": -1
+              }
+            ],
+            "fusion_sources": [],
+            "waveform": [
+              {
+                "transmission_id": "1000",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "11",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1001",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "22",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1002",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "1",
+                "crc_ok": false
+              },
+              {
+                "transmission_id": "1003",
+                "receiver_node_id": "2",
+                "payload_bit_count": "32",
+                "bit_error_count": "0",
+                "crc_ok": true
+              }
+            ]
+          },
+          "experiment_id": "experiment-af5f81f195af-r2",
+          "experiment_version": "2",
+          "scenario_id": "scenario-cad5d31d4727-r1",
+          "scenario_version": "2",
+          "environment_asset_id": "uwa-blue-1-element-0",
+          "environment_format_version": "1",
+          "provenance": {
+            "definition_sha256": "67abf7554575ef08a8c459334d1b7938dfe38189cf3ad1cf7fcf03145f660baa",
+            "physical_layer": "Channel3Recorded",
+            "workload": "CommunicationOnly",
+            "recorded_proxy": {
+              "assumptions": {
+                "geometry_drives_channel": false,
+                "link_temporal_relation": "SyntheticOffsets",
+                "noise_spatial_relation": "SyntheticAssignment",
+                "real_joint_multitransmitter_measured": false
+              },
+              "nodes": [
+                {
+                  "can_receive": false,
+                  "can_transmit": true,
+                  "node_id": "0"
+                },
+                {
+                  "can_receive": false,
+                  "can_transmit": true,
+                  "node_id": "1"
+                },
+                {
+                  "can_receive": true,
+                  "can_transmit": false,
+                  "node_id": "2"
+                }
+              ],
+              "receiver_clock": {
+                "baseband_rate_hz": 3000,
+                "carrier_hz": 13000,
+                "emission_quantum_ns": "64000000",
+                "oscillator": "PacketResetTxDesiredArrivalRx",
+                "passband_rate_hz": 52000
+              },
+              "resolved_links": [
+                {
+                  "asset_id": "uwa-blue-1-element-0",
+                  "evidence": "ProxySampledLink",
+                  "manifest": {
+                    "asset_id": "uwa-blue-1-element-0",
+                    "axis_kind": "ReceiverElement",
+                    "citation": "https://doi.org/10.5281/zenodo.21287414",
+                    "delay_taps": 320,
+                    "duration_s": 52.26496,
+                    "element": 0,
+                    "fc": 13000,
+                    "files": {
+                      "channel.f64le": {
+                        "bytes": 13071360,
+                        "fnv1a64": "48b48beee6d2c7c7",
+                        "sha256": "f3a37673323856a89b06da7d1b4ff1ad1f3615471792b050ada25288fe8add49"
+                      },
+                      "phase.f64le": {
+                        "bytes": 4084800,
+                        "fnv1a64": "6f8c1f0488d4dfa3",
+                        "sha256": "212212788e8ae5102d0ed42efe48eadd2446880f826d65be64f8ebbe10641dc9"
+                      }
+                    },
+                    "fs_delay": 9765.625,
+                    "fs_time": 48.828125,
+                    "gain_reference": "Normalized",
+                    "geometry": "Unspecified",
+                    "license": "CC-BY-4.0",
+                    "name": "Blue 1 · 第1阵元",
+                    "original_axis_count": 12,
+                    "phase_count": 510600,
+                    "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                    "resample_down": 1,
+                    "resample_up": 1,
+                    "schema": "ns3-factory-recorded-channel-v1",
+                    "snapshots": 2553,
+                    "source_name": "uwa-blue_1.mat",
+                    "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                    "tracking": "phi_hat",
+                    "usable_bandwidth_hz": 5000,
+                    "version": 1
+                  },
+                  "manifest_sha256": "ec7543d5152e46613d544d7482ef4a5f4ac212721beb1b9b474fda9713b0e12a",
+                  "modeled_reference_delay_ns": "2048000000",
+                  "origin": "EdgeOverride",
+                  "relative_amplitude": 1,
+                  "rx_id": "2",
+                  "start_sample": "0",
+                  "tx_id": "0",
+                  "version": 1
+                },
+                {
+                  "asset_id": "uwa-blue-1-element-1",
+                  "evidence": "ProxySampledLink",
+                  "manifest": {
+                    "asset_id": "uwa-blue-1-element-1",
+                    "axis_kind": "ReceiverElement",
+                    "citation": "https://doi.org/10.5281/zenodo.21287414",
+                    "delay_taps": 320,
+                    "duration_s": 52.26496,
+                    "element": 1,
+                    "fc": 13000,
+                    "files": {
+                      "channel.f64le": {
+                        "bytes": 13071360,
+                        "fnv1a64": "aa787bb90e602ea6",
+                        "sha256": "e15398c2ee248b3097fab575073aa6f37b4caafb1de09bed1057caed1da9683b"
+                      },
+                      "phase.f64le": {
+                        "bytes": 4084800,
+                        "fnv1a64": "29a0e82051e9d903",
+                        "sha256": "f933301f7b7df05ef7c6c5340e53c1e0468a1c2f399e56df36c8221c444632e2"
+                      }
+                    },
+                    "fs_delay": 9765.625,
+                    "fs_time": 48.828125,
+                    "gain_reference": "Normalized",
+                    "geometry": "Unspecified",
+                    "license": "CC-BY-4.0",
+                    "name": "Blue 1 · 第2阵元",
+                    "original_axis_count": 12,
+                    "phase_count": 510600,
+                    "reference_revision": "dbf373ca7cd07ac4eb1b24a191d76bea18f73560",
+                    "resample_down": 1,
+                    "resample_up": 1,
+                    "schema": "ns3-factory-recorded-channel-v1",
+                    "snapshots": 2553,
+                    "source_name": "uwa-blue_1.mat",
+                    "source_sha256": "11dc8eae246f44782fe1a4909af380d8f4da642f802fdcb17e083c63d0be07d1",
+                    "tracking": "phi_hat",
+                    "usable_bandwidth_hz": 5000,
+                    "version": 1
+                  },
+                  "manifest_sha256": "1cfb66fb8e31c69c2c368b5c838ce5795fc710a0ca3602fbe01ed0b5c2b81033",
+                  "modeled_reference_delay_ns": "2048000000",
+                  "origin": "GlobalPool",
+                  "relative_amplitude": 1,
+                  "rx_id": "2",
+                  "start_sample": "0",
+                  "tx_id": "1",
+                  "version": 1
+                }
+              ],
+              "rx_noise": [
+                {
+                  "mode": "None",
+                  "rx_id": "2"
+                }
+              ],
+              "schema": "ns3-factory-resolved-proxy-bindings-v1",
+              "transmitter_modulations": []
+            },
+            "proxy_receptions": [
+              {
+                "transmission_id": "1000",
+                "receiver_node_id": "2",
+                "at_ns": "2337000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6555940884265348,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "11",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.6555940884265348,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "0"
+              },
+              {
+                "transmission_id": "1001",
+                "receiver_node_id": "2",
+                "at_ns": "4385000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6127082926926383,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "22",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.6127082926926383,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "1"
+              },
+              {
+                "transmission_id": "1002",
+                "receiver_node_id": "2",
+                "at_ns": "18721000000",
+                "disposition": "NotDecoded",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.5891820183377509,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "1",
+                  "crc_ok": false,
+                  "signal_power_relative": 0.5891820183377509,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "0"
+              },
+              {
+                "transmission_id": "1003",
+                "receiver_node_id": "2",
+                "at_ns": "20769000000",
+                "disposition": "LocalDelivery",
+                "mixture": {
+                  "signal_count": "1",
+                  "sample_count": "867",
+                  "mixture_power_relative": 0.6446358771983761,
+                  "noise_power_relative": 0
+                },
+                "waveform": {
+                  "payload_bit_count": "32",
+                  "bit_error_count": "0",
+                  "crc_ok": true,
+                  "signal_power_relative": 0.6446358771983761,
+                  "noise_power_relative": 0
+                },
+                "sender_node_id": "1"
+              }
+            ]
+          }
+        },
+        "failure": null
+      }
+    ],
+    "state": "Completed",
+    "rerun_available": true
+  },
+  "success": true
+}

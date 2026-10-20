@@ -37,8 +37,9 @@ class PlanningInput final {
   [[nodiscard]] static auto Create(
       PlanningCycleId cycle_id, SnapshotVersion base_snapshot_version,
       SimTime observed_at, std::vector<NodeTrafficDemand> demands,
-      SimDuration maximum_propagation_tail) -> Result<PlanningInput> {
-    if(maximum_propagation_tail < SimDuration::Zero()) {
+      SimDuration maximum_propagation_tail, bool allow_receiver_overlap = false,
+      SimDuration emission_quantum = SimDuration::FromNanoseconds(1)) -> Result<PlanningInput> {
+    if(maximum_propagation_tail < SimDuration::Zero() || emission_quantum <= SimDuration::Zero()) {
       return std::unexpected(Error{ErrorCode::kInvalidArgument,
           "Planning propagation tail must be non-negative"});
     }
@@ -64,7 +65,7 @@ class PlanningInput final {
       }
     }
     return PlanningInput{cycle_id, base_snapshot_version, observed_at,
-                         std::move(demands), maximum_propagation_tail};
+                         std::move(demands), maximum_propagation_tail, allow_receiver_overlap, emission_quantum};
   }
 
   auto cycle_id() const noexcept -> PlanningCycleId { return cycle_id_; }
@@ -75,18 +76,23 @@ class PlanningInput final {
   }
   auto demands() const noexcept -> std::span<const NodeTrafficDemand> { return demands_; }
   auto maximum_propagation_tail() const noexcept -> SimDuration { return tail_; }
+  auto allow_receiver_overlap() const noexcept -> bool { return allow_receiver_overlap_; }
+  auto emission_quantum() const noexcept -> SimDuration { return emission_quantum_; }
 
  private:
   PlanningInput(PlanningCycleId cycle_id, SnapshotVersion version,
                 SimTime observed_at, std::vector<NodeTrafficDemand> demands,
-                SimDuration tail)
+                SimDuration tail, bool allow_receiver_overlap, SimDuration emission_quantum)
       : cycle_id_(cycle_id), version_(version), observed_at_(observed_at),
-        demands_(std::move(demands)), tail_(tail) {}
+        demands_(std::move(demands)), tail_(tail), allow_receiver_overlap_(allow_receiver_overlap),
+        emission_quantum_(emission_quantum) {}
   PlanningCycleId cycle_id_;
   SnapshotVersion version_;
   SimTime observed_at_;
   std::vector<NodeTrafficDemand> demands_;
   SimDuration tail_;
+  bool allow_receiver_overlap_{false};
+  SimDuration emission_quantum_;
 };
 
 [[nodiscard]] inline auto ValidatePlanningInput(
@@ -147,7 +153,10 @@ class PlanningInput final {
       std::vector<RouteEntry>{routes.begin(), routes.end()}, structure);
   if(!rebound) return std::unexpected(rebound.error());
   auto previous_end = timing.starts_at();
+  std::vector<std::pair<NodeId,SimTime>> sender_ends;
   for(const auto& opportunity : plan.mac_plan().tx_opportunities()) {
+    if(opportunity.eligible_at.nanoseconds()%input.emission_quantum().nanoseconds()!=0)
+      return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Planned emission is off declared sample grid"});
     const auto demands = input.demands();
     const auto found = std::lower_bound(demands.begin(), demands.end(),
         opportunity.sender_node_id, [](const auto& demand, NodeId node_id) {
@@ -166,9 +175,21 @@ class PlanningInput final {
     const auto end = CheckedAdd(opportunity.eligible_at, *occupied);
     if(!end) return std::unexpected(Error{ErrorCode::kOverflow,
         "Planned physical completion time overflows"});
-    if(opportunity.eligible_at < previous_end || *end > timing.closes_at()) {
+    if((!input.allow_receiver_overlap() && opportunity.eligible_at < previous_end) || *end > timing.closes_at()) {
       return std::unexpected(Error{ErrorCode::kFailedPrecondition,
           "Planned transmissions overlap or cannot finish before cycle close"});
+    }
+    if(input.allow_receiver_overlap()) {
+      auto tx_end=CheckedAdd(opportunity.eligible_at,found->maximum_packet_airtime);
+      if(!tx_end)return std::unexpected(Error{ErrorCode::kOverflow,"Planned sender airtime overflow"});
+      auto prior=std::find_if(sender_ends.begin(),sender_ends.end(),[&](const auto& p){
+        return p.first==opportunity.sender_node_id;
+      });
+      if(prior!=sender_ends.end()) {
+        if(opportunity.eligible_at<prior->second)
+          return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Same sender transmissions overlap"});
+        prior->second=*tx_end;
+      } else sender_ends.emplace_back(opportunity.sender_node_id,*tx_end);
     }
     previous_end = *end;
   }

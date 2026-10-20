@@ -94,11 +94,20 @@ struct WaveformReceptionSummary final {
   double noise_power_upa2;
   bool normalized_power = false;
 };
+struct RecordedMixtureSummary final {
+  contracts::TransmissionId transmission_id;
+  contracts::NodeId receiver_node_id;
+  std::size_t signal_count;
+  std::size_t sample_count;
+  double mixture_power_relative;
+  double noise_power_relative;
+};
 
 class IWaveformReceptionObserver {
  public:
   virtual ~IWaveformReceptionObserver() = default;
   virtual void Observe(const WaveformReceptionSummary&) noexcept = 0;
+  virtual void ObserveMixture(const RecordedMixtureSummary&) noexcept {}
 };
 
 class WaveformTxPhy final : public contracts::ITxPhy {
@@ -320,6 +329,14 @@ class WaveformRxPhy final : public contracts::IRxPhy {
       return recorded_->ProcessWindow(inputs,config_.maximum_samples);
     }();
     if(!processed) return std::unexpected(processed.error());
+    if(recorded_->SupportsMixture() && observer_) {
+      double power=0,ambient=0;
+      for(const auto& v:processed->channel_output.samples())power+=std::norm(v);
+      for(const auto& v:processed->noise.samples())ambient+=std::norm(v);
+      const auto count=processed->channel_output.sample_count();
+      if(count) observer_->ObserveMixture({signal.transmission_id(),signal.receiver_node_id(),
+          1+window.overlapping_signals().size(),count,power/count,ambient/count});
+    }
     if(processed->channel_output.sample_count()>config_.maximum_samples)
       return std::unexpected(Error{ErrorCode::kOutOfRange,"Recorded receive waveform exceeds sample budget"});
     return DecodePropagatedWaveform(std::move(processed->channel_output),processed->noise,
