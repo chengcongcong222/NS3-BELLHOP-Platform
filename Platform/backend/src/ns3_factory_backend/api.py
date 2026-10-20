@@ -30,6 +30,7 @@ from .catalog import (
 from .gateway import WorkerGateway
 from .resource_index import VerifiedResourceIndex, repository_stamp
 from .algorithm_catalog import AlgorithmCatalog
+from .recorded_proxy import ProxyBindings
 from .resources import inspect_environment
 from .acoustic_plots import file_sha256
 from .acquisition_stream import acquisition_stream
@@ -1192,6 +1193,11 @@ def create_app(
     async def list_recorded_channels():
         from .recorded_channels import list_recordings
         return await run_in_threadpool(list_recordings, authoring_root / "recorded-channels")
+
+    @app.post("/authoring/recorded-proxy/validate")
+    async def validate_recorded_proxy(body: ProxyBindings):
+        from .recorded_proxy import resolve
+        return await run_in_threadpool(resolve, authoring_root / "recorded-channels", body)
 
     @app.get("/recorded-noise")
     async def list_recorded_noise():

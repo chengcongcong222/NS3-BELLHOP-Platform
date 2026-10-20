@@ -139,6 +139,10 @@ decoding or scientific validity of an arbitrary multi-link recorded network.
 
 ## Remaining blocking work
 
+Subsequent C receiver/preflight progress is recorded in
+[C proxy receiver checkpoint](c-proxy-receiver-checkpoint.md). It does not close
+the v5 Worker or logical-canvas gates below.
+
 1. Complete A/B common workload/observation execution contract, paired frozen
    execution beyond the tested COMM source, complete comparison metrics and
    the remaining user/browser gates. Frozen rerun and archive retry are now

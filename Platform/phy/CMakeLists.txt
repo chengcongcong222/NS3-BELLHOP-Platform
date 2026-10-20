@@ -7,6 +7,9 @@ target_include_directories(
 target_link_libraries(platform_phy INTERFACE Platform::contracts)
 
 if(BUILD_TESTING)
+  add_executable(platform_phy_recorded_proxy_receiver_test tests/recorded_proxy_receiver_test.cpp)
+  target_link_libraries(platform_phy_recorded_proxy_receiver_test PRIVATE Platform::phy)
+  add_test(NAME platform_phy_recorded_proxy_receiver_test COMMAND platform_phy_recorded_proxy_receiver_test)
   add_executable(platform_phy_receiver_sample_mixer_test tests/receiver_sample_mixer_test.cpp)
   target_link_libraries(platform_phy_receiver_sample_mixer_test PRIVATE Platform::phy)
   add_test(NAME platform_phy_receiver_sample_mixer_test COMMAND platform_phy_receiver_sample_mixer_test)

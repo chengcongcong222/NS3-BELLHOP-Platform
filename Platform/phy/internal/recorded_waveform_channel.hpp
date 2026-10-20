@@ -13,12 +13,23 @@ struct RecordedWaveforms {
   WaveformBuffer noise;
 };
 
+struct RecordedWaveformInput {
+  const WaveformBuffer* waveform;
+  const contracts::TxEmission* emission;
+  const contracts::RecordedChannelResponse* response;
+};
+
 // Run-owned bridge: numerical samples never enter runtime DTOs or traces.
 class IRecordedWaveformChannel {
  public:
   virtual ~IRecordedWaveformChannel() = default;
   virtual auto Process(const WaveformBuffer&, const contracts::TxEmission&,
       const contracts::RecordedChannelResponse&) const -> Result<RecordedWaveforms> = 0;
+  virtual auto SupportsMixture() const noexcept -> bool { return false; }
+  virtual auto ProcessWindow(std::span<const RecordedWaveformInput>, std::size_t) const
+      -> Result<RecordedWaveforms> {
+    return std::unexpected(Error{ErrorCode::kUnsupported,"Recorded mixture is not enabled"});
+  }
 };
 
 struct RecordedLink {
@@ -35,7 +46,7 @@ struct RecordedLink {
   std::shared_ptr<const std::vector<double>> noise;
 };
 
-class RecordedWaveformChannel final : public contracts::IChannelFieldProvider,
+class RecordedWaveformChannel : public contracts::IChannelFieldProvider,
                                       public IRecordedWaveformChannel {
  public:
   static auto Create(std::vector<RecordedLink> links) -> Result<RecordedWaveformChannel> {

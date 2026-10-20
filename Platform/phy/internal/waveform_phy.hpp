@@ -180,7 +180,8 @@ class WaveformRxPhy final : public contracts::IRxPhy {
   [[nodiscard]] auto Decode(const contracts::RxDecodeRequest& request) const
       -> Result<contracts::RxDecodeResult> override {
     const auto& signal = request.receiver_window().desired_signal();
-    if(!request.receiver_window().overlapping_signals().empty()) {
+    if(!request.receiver_window().overlapping_signals().empty() &&
+       !(signal.recorded_response() && recorded_ && recorded_->SupportsMixture())) {
       return std::unexpected(Error{
           ErrorCode::kUnsupported,
           "Waveform interference is not implemented; use isolated slots"});
@@ -239,7 +240,7 @@ class WaveformRxPhy final : public contracts::IRxPhy {
       }
     }, noise);
     OsdmReceptionFailure physical_failure = OsdmReceptionFailure::kNone;
-    auto received = signal.recorded_response() ? ReceiveRecorded(transmitted,signal,frame_bit_count,&physical_failure) : ReceiveWaveform(
+    auto received = signal.recorded_response() ? ReceiveRecorded(transmitted,request.receiver_window(),frame_bit_count,&physical_failure) : ReceiveWaveform(
         transmitted, frame_bit_count, config_.modulation, *taps, noise,
         config_.equalization, config_.ideal_phase_synchronization, &physical_failure);
     if(!received && physical_failure != OsdmReceptionFailure::kNone) {
@@ -296,10 +297,28 @@ class WaveformRxPhy final : public contracts::IRxPhy {
   }
 
  private:
-  auto ReceiveRecorded(const WaveformBuffer& transmitted,const contracts::ReceivedSignal& signal,
+  auto ReceiveRecorded(const WaveformBuffer& transmitted,const contracts::ReceiverWindow& window,
       std::size_t bits,OsdmReceptionFailure* failure) const -> Result<WaveformReceiverOutput> {
     if(!recorded_) return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Recorded receive operator was not bound"});
-    auto processed=recorded_->Process(transmitted,signal.emission(),*signal.recorded_response());
+    const auto& signal=window.desired_signal();
+    auto processed = [&]() -> Result<RecordedWaveforms> {
+      if(!recorded_->SupportsMixture())
+        return recorded_->Process(transmitted,signal.emission(),*signal.recorded_response());
+      std::vector<RecordedWaveformInput> inputs{{&transmitted,&signal.emission(),signal.recorded_response()}};
+      std::vector<SharedTransmissionWaveformArtifact> retained;
+      for(const auto& overlap : window.overlapping_signals()) {
+        if(!overlap.recorded_response())
+          return std::unexpected(Error{ErrorCode::kInvalidArgument,"Mixed static/recorded receiver window unsupported"});
+        auto artifact=artifacts_.get().Find(overlap.transmission_id());
+        if(!artifact) return std::unexpected(artifact.error());
+        if((*artifact)->packet_id()!=overlap.emission().packet_id())
+          return std::unexpected(Error{ErrorCode::kFailedPrecondition,"Interferer waveform identity mismatch"});
+        // Only the already emitted waveform, never the interferer's truth bits.
+        retained.push_back(*artifact);
+        inputs.push_back({&(*artifact)->transmitted_waveform(),&overlap.emission(),overlap.recorded_response()});
+      }
+      return recorded_->ProcessWindow(inputs,config_.maximum_samples);
+    }();
     if(!processed) return std::unexpected(processed.error());
     if(processed->channel_output.sample_count()>config_.maximum_samples)
       return std::unexpected(Error{ErrorCode::kOutOfRange,"Recorded receive waveform exceeds sample budget"});
